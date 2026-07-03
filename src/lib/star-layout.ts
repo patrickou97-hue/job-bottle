@@ -1,3 +1,5 @@
+import { getCompanyShortLabel } from "@/lib/utils";
+
 export type StarLayoutInput = {
   id: string;
   groupKey: string;
@@ -34,13 +36,7 @@ export function getStableHash(id: string): number {
 }
 
 export function getShortLabel(companyName: string): string {
-  const cleanName = companyName
-    .replace(/\s+/g, "")
-    .replace(/[()（）[\]【】]/g, "")
-    .replace(/(有限公司|有限责任公司|股份|集团|控股|科技|技术|信息|网络|中国|北京|上海|深圳|广州|杭州|南京|成都|重庆|武汉|西安|香港)/g, "");
-  const ascii = cleanName.match(/[A-Za-z0-9]+/g)?.join("");
-  if (ascii && ascii.length >= 2) return ascii.slice(0, 2).toUpperCase();
-  return (cleanName || companyName).slice(0, 2);
+  return getCompanyShortLabel(companyName, 3);
 }
 
 export function buildClusterLayout(

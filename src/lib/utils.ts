@@ -1,17 +1,19 @@
+import { COMPANY_SHORT_LABELS } from "@/lib/company-labels";
+
 export function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
 }
 
 export function getCompanyInitials(companyName: string) {
-  const cleanName = companyName.trim();
-  if (!cleanName) return "星";
-  const ascii = cleanName.match(/[A-Za-z0-9]+/g)?.join("");
-  if (ascii && ascii.length >= 2) return ascii.slice(0, 2).toUpperCase();
-  return cleanName.slice(0, Math.min(2, cleanName.length));
+  return getCompanyShortLabel(companyName, 3);
 }
 
 export function getCompanyShortLabel(companyName: string, maxLength = 3) {
-  const cleanName = companyName
+  const originalName = companyName.trim();
+  const manualLabel = findManualCompanyLabel(originalName);
+  if (manualLabel) return manualLabel;
+
+  const cleanName = originalName
     .trim()
     .replace(/[（(].*?[）)]/g, "")
     .replace(/股份有限公司|有限责任公司|有限公司|集团|公司/g, "")
@@ -62,6 +64,27 @@ export function getCompanyShortLabel(companyName: string, maxLength = 3) {
   if (primaryToken) return primaryToken.slice(0, maxLength);
 
   return cleanName.slice(0, maxLength);
+}
+
+function findManualCompanyLabel(companyName: string) {
+  if (!companyName) return "";
+  const direct = COMPANY_SHORT_LABELS[companyName];
+  if (direct) return direct;
+
+  const normalizedName = normalizeCompanyName(companyName);
+  const matchedEntry = Object.entries(COMPANY_SHORT_LABELS).find(
+    ([sourceName]) => normalizeCompanyName(sourceName) === normalizedName,
+  );
+  return matchedEntry?.[1] ?? "";
+}
+
+function normalizeCompanyName(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "")
+    .replace(/[()（）【】[\]{}]/g, "")
+    .replace(/人才计划|公众战略人才计划|llm方向|部分/g, "");
 }
 
 export function isValidHttpUrl(value: string) {

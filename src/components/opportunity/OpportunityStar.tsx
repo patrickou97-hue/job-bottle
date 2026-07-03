@@ -1,6 +1,6 @@
 "use client";
 
-import { getCompanyInitials, cn } from "@/lib/utils";
+import { getCompanyShortLabel, cn } from "@/lib/utils";
 import type { ApplicationStatus, Job, UserApplication } from "@/lib/types";
 
 const STATUS_STYLE: Partial<Record<ApplicationStatus, string>> = {
@@ -43,6 +43,12 @@ export function OpportunityStar({
   const captured = Boolean(application);
   const status = application?.status;
   const starSize = size ?? (compact ? 34 : captured ? 44 : 38);
+  const displayLabel = label ?? getCompanyShortLabel(job.company_name, 3);
+  const labelLength = Array.from(displayLabel).length;
+  const asciiLabel = /^[\x00-\x7F]+$/.test(displayLabel);
+  const labelFontSize = asciiLabel
+    ? Math.max(6, Math.min(10, starSize / Math.max(3.6, labelLength * 0.82)))
+    : Math.max(7, Math.min(10, starSize / Math.max(3, labelLength * 0.66)));
   const batchRing =
     job.batch_type?.includes("提前") ? "border-dashed" : job.batch_type?.includes("补录") ? "animate-pulse" : "";
 
@@ -50,7 +56,7 @@ export function OpportunityStar({
     <button
       type="button"
       className={cn(
-        "group relative flex items-center justify-center rounded-full text-[10px] font-medium outline-none transition",
+        "group relative flex items-center justify-center rounded-full font-medium outline-none transition",
         dimmed ? "opacity-26" : "opacity-100 hover:scale-[1.08]",
         captured ? "border border-nebula-silver/28" : "border border-white/[0.08]",
         selected ? "ring-2 ring-nebula-silver/35" : "",
@@ -77,7 +83,12 @@ export function OpportunityStar({
       aria-label={`${job.company_name} 星体`}
       title={`${job.company_name} · ${job.job_titles ?? "岗位"}`}
     >
-      <span className="relative z-10 text-nebula-silver/88">{label ?? getCompanyInitials(job.company_name)}</span>
+      <span
+        className="relative z-10 flex max-w-[78%] items-center justify-center break-all text-center leading-[0.9] tracking-normal text-nebula-silver/88"
+        style={{ fontSize: labelFontSize }}
+      >
+        {displayLabel}
+      </span>
       {job.batch_type?.includes("实习") ? (
         <span className="absolute -right-1 top-1 size-1.5 rounded-full bg-nebula-silver/70 shadow-[0_0_8px_rgba(226,236,252,0.35)]" />
       ) : null}

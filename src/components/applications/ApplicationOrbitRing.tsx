@@ -1,7 +1,6 @@
 "use client";
 
 import { motion, useReducedMotion } from "motion/react";
-import { hashString } from "@/lib/galaxy-taxonomy";
 import { ORBIT_CONFIG, type OrbitStatus } from "@/components/applications/ApplicationOrbitConfig";
 import { ApplicationOrbitStar } from "@/components/applications/ApplicationOrbitStar";
 import type { ApplicationWithJob } from "@/lib/types";
@@ -50,8 +49,7 @@ export function ApplicationOrbitRing({
         {slots.map((application, index) => {
           const total = Math.max(1, slots.length);
           const id = application?.id ?? `${status}-aggregate`;
-          const hashOffset = ((hashString(id) % 100) / 100 - 0.5) * 12;
-          const angle = (index / total) * 360 + hashOffset;
+          const angle = (index / total) * 360;
           const staticPoint = getOrbitPoint(angle, radius);
           const path = orbitPoints.map((offset) => getOrbitPoint(angle + offset, radius));
           return (

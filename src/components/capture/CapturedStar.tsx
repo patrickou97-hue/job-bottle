@@ -2,9 +2,12 @@ import { getCompanyInitials } from "@/lib/utils";
 import type { ApplicationWithJob } from "@/lib/types";
 
 export function CapturedStar({ application }: { application: ApplicationWithJob }) {
+  const label = getCompanyInitials(application.job.company_name);
+  const fontSize = Array.from(label).length >= 5 ? 7 : Array.from(label).length >= 4 ? 8 : 10;
+
   return (
     <span
-      className="relative flex size-8 items-center justify-center rounded-full text-[10px] font-medium text-nebula-silver"
+      className="relative flex size-8 items-center justify-center rounded-full font-medium text-nebula-silver"
       title={`${application.job.company_name} · ${application.job.job_titles ?? "岗位"}`}
       style={{
         background:
@@ -12,7 +15,12 @@ export function CapturedStar({ application }: { application: ApplicationWithJob 
         boxShadow: "0 0 18px rgba(126,158,214,0.22), inset -6px -8px 14px rgba(0,0,0,0.45)",
       }}
     >
-      {getCompanyInitials(application.job.company_name)}
+      <span
+        className="flex max-w-[82%] items-center justify-center break-all text-center leading-[0.9]"
+        style={{ fontSize }}
+      >
+        {label}
+      </span>
     </span>
   );
 }

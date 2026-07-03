@@ -1,7 +1,6 @@
 "use client";
 
-import { getShortLabel } from "@/lib/star-layout";
-import { cn } from "@/lib/utils";
+import { cn, getCompanyShortLabel } from "@/lib/utils";
 import { daysSince, momentumTier } from "@/lib/application-orbit";
 import type { ApplicationWithJob } from "@/lib/types";
 
@@ -18,7 +17,12 @@ export function ApplicationOrbitStar({
 }) {
   const offer = application.status === "offer";
   const terminal = application.status === "rejected" || application.status === "withdrawn";
-  const shortLabel = getShortLabel(application.job.company_name).slice(0, 3);
+  const shortLabel = getCompanyShortLabel(application.job.company_name, 3);
+  const labelLength = Array.from(shortLabel).length;
+  const asciiLabel = /^[\x00-\x7F]+$/.test(shortLabel);
+  const labelFontSize = asciiLabel
+    ? Math.max(6, Math.min(10, 34 / Math.max(3.8, labelLength * 0.82)))
+    : Math.max(7, Math.min(10, 34 / Math.max(3.2, labelLength * 0.66)));
   const momentum = momentumTier(application);
   const stayedDays = daysSince(application.updated_at);
   const momentumStyle = {
@@ -31,7 +35,7 @@ export function ApplicationOrbitStar({
     <button
       type="button"
       className={cn(
-        "group relative flex size-9 items-center justify-center rounded-full border text-[10px] font-medium outline-none transition",
+        "group relative flex size-9 items-center justify-center rounded-full border font-medium outline-none transition",
         offer ? "border-aurum-300/22 text-aurum-100" : "border-nebula-blue/18 text-nebula-silver",
         selected ? "ring-2 ring-nebula-silver/35" : "",
         dimmed ? "opacity-35" : "hover:scale-[1.08]",
@@ -57,7 +61,12 @@ export function ApplicationOrbitStar({
           offer ? "bg-[color:var(--gold-base)] shadow-[0_0_8px_var(--gold-glow)]" : momentumStyle,
         )}
       />
-      <span className="block max-w-8 truncate text-center leading-none">{shortLabel}</span>
+      <span
+        className="flex max-w-[29px] items-center justify-center break-all text-center leading-[0.9] tracking-normal"
+        style={{ fontSize: labelFontSize }}
+      >
+        {shortLabel}
+      </span>
       <span className="pointer-events-none absolute left-1/2 top-full z-30 mt-2 hidden w-44 -translate-x-1/2 rotate-0 rounded-2xl border border-white/[0.06] bg-[#040814]/78 px-3 py-2 text-left text-xs leading-5 text-ink-secondary shadow-[0_18px_48px_rgba(0,0,0,0.38)] backdrop-blur-xl group-hover:block group-focus:block">
         <span className="block truncate text-nebula-silver">{application.job.company_name}</span>
         <span className="block truncate text-ink-muted">{application.job.job_titles || "岗位待补充"}</span>
