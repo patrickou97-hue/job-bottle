@@ -2,12 +2,12 @@ import type { ApplicationWithJob } from "@/lib/types";
 
 export const BOTTLE_AREA = {
   centerX: 0.5,
-  neckY: 0.16,
-  bottomY: 0.83,
-  minX: 0.21,
-  maxX: 0.79,
-  maxWidthAtBottom: 0.58,
-  maxWidthAtTop: 0.26,
+  neckY: 0.14,
+  bottomY: 0.78,
+  minX: 0.28,
+  maxX: 0.72,
+  maxWidthAtBottom: 0.42,
+  maxWidthAtTop: 0.2,
 };
 
 export type BottleStackPosition = {
@@ -45,7 +45,7 @@ function jitter(hash: number, shift: number, amount: number) {
 }
 
 function rowCapacity(row: number) {
-  return Math.max(3, 6 - Math.floor(row * 0.52));
+  return Math.max(3, 5 - Math.floor(row * 0.5));
 }
 
 function sortedApplications(applications: ApplicationWithJob[]) {
@@ -77,8 +77,8 @@ export function calculateBottleStack(applications: ApplicationWithJob[]) {
       row * 0.068 -
       (col % 2) * 0.015 +
       jitter(hash, 13, 0.012);
-    const size = Math.round(40 + ((hash >>> 7) % 9));
-    const rotate = Math.round(jitter(hash, 19, 28));
+    const size = Math.round(44 + ((hash >>> 7) % 8));
+    const rotate = Math.round(jitter(hash, 19, 14));
 
     positions.set(application.id, {
       id: application.id,

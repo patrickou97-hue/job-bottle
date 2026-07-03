@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
 import { motion } from "motion/react";
 import { StackedStar } from "@/components/applications/StackedStar";
@@ -24,21 +23,28 @@ export function BottleStage({
   onSelect: (application: ApplicationWithJob) => void;
   onHover: (applicationId: string | null) => void;
 }) {
-  const [showFallback, setShowFallback] = useState(false);
   const spawnX = BOTTLE_AREA.centerX * 100;
   const spawnY = BOTTLE_AREA.neckY * 100;
 
   return (
     <div
       id="application-bottle-target"
-      className="relative mx-auto aspect-[0.58] w-full max-w-[560px]"
+      className="relative mx-auto aspect-[0.86] w-full max-w-[620px] overflow-hidden"
     >
-      <div className="pointer-events-none absolute inset-x-[18%] bottom-[5%] top-[14%] z-0 rounded-full bg-nebula-blue/10 blur-3xl" />
-      <div className="pointer-events-none absolute inset-x-[24%] bottom-[7%] h-16 rounded-full bg-aurum-300/8 blur-2xl" />
+      <div className="pointer-events-none absolute inset-x-[12%] bottom-[7%] top-[13%] z-0 rounded-full bg-nebula-blue/10 blur-3xl" />
+      <Image
+        src="/assets/star-bottle-image2.png"
+        alt=""
+        fill
+        priority
+        sizes="(max-width: 640px) 92vw, 620px"
+        className="pointer-events-none absolute inset-0 z-[5] object-contain"
+        aria-hidden="true"
+      />
 
-      <div className="absolute inset-0 z-10">
+      <div className="absolute inset-0 z-10 overflow-hidden">
         {applications.length === 0 ? (
-          <div className="absolute inset-x-[26%] bottom-[24%] text-center">
+          <div className="absolute inset-x-[26%] bottom-[28%] text-center">
             <p className="text-sm text-ink-muted/60">投递后，星星会从瓶口落入。</p>
           </div>
         ) : null}
@@ -114,38 +120,6 @@ export function BottleStage({
           );
         })}
       </div>
-
-      <Image
-        src="/assets/bottle-front.png"
-        alt=""
-        fill
-        sizes="(max-width: 640px) 92vw, 560px"
-        className="pointer-events-none absolute inset-0 z-20 object-contain"
-        aria-hidden="true"
-        onError={() => setShowFallback(true)}
-      />
-      {showFallback ? <BottleFallbackSvg /> : null}
     </div>
-  );
-}
-
-function BottleFallbackSvg() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 360 520"
-      className="pointer-events-none absolute inset-0 z-[1] h-full w-full opacity-55"
-      preserveAspectRatio="xMidYMid meet"
-    >
-      <path
-        d="M144 62C144 48 158 39 180 39C202 39 216 48 216 62V132C216 153 235 168 263 184C312 213 337 263 337 352C337 441 276 492 180 492C84 492 23 441 23 352C23 263 48 213 97 184C125 168 144 153 144 132V62Z"
-        fill="rgba(157,184,220,0.045)"
-        stroke="rgba(219,234,254,0.34)"
-        strokeWidth="1.6"
-      />
-      <ellipse cx="180" cy="58" rx="42" ry="11" fill="none" stroke="rgba(219,234,254,0.3)" strokeWidth="1.2" />
-      <path d="M62 234C47 312 56 417 105 466" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="2.4" strokeLinecap="round" />
-      <path d="M298 238C312 317 303 416 256 466" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
   );
 }

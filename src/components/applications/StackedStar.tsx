@@ -1,20 +1,70 @@
 "use client";
 
 import { motion } from "motion/react";
+import { useId } from "react";
 import { APPLICATION_STATUS_LABELS } from "@/lib/constants";
-import { getCompanyInitials, cn } from "@/lib/utils";
+import { getCompanyShortLabel, cn } from "@/lib/utils";
 import type { ApplicationStatus } from "@/lib/types";
 
-const STAR_TONE: Record<ApplicationStatus, { core: string; glow: string; text: string }> = {
-  opened: { core: "#6f7f96", glow: "rgba(111,127,150,0.2)", text: "#dce3ee" },
-  applied: { core: "#8b8f9a", glow: "rgba(139,143,154,0.22)", text: "#eef2f7" },
-  written_test: { core: "#96abc8", glow: "rgba(150,171,200,0.26)", text: "#f4f8ff" },
-  first_round: { core: "#aeb8ca", glow: "rgba(174,184,202,0.3)", text: "#f8fbff" },
-  second_round: { core: "#b9c6d8", glow: "rgba(185,198,216,0.34)", text: "#ffffff" },
-  final_round: { core: "#c3cddd", glow: "rgba(195,205,221,0.36)", text: "#ffffff" },
-  offer: { core: "#c8a96a", glow: "rgba(200,169,106,0.42)", text: "#fff8e7" },
-  rejected: { core: "#4b4f58", glow: "rgba(75,79,88,0.16)", text: "#b8bec8" },
-  withdrawn: { core: "#3f434b", glow: "rgba(63,67,75,0.14)", text: "#aab0ba" },
+const STAR_TONE: Record<
+  ApplicationStatus,
+  { core: string; edge: string; glow: string; text: string; spark?: string }
+> = {
+  opened: {
+    core: "#6d7e96",
+    edge: "#c3d6ec",
+    glow: "rgba(125, 173, 216, 0.22)",
+    text: "#edf5ff",
+  },
+  applied: {
+    core: "#8290a6",
+    edge: "#d3deee",
+    glow: "rgba(146, 178, 214, 0.24)",
+    text: "#f4f8ff",
+  },
+  written_test: {
+    core: "#8faccc",
+    edge: "#e0efff",
+    glow: "rgba(142, 190, 232, 0.28)",
+    text: "#f7fbff",
+  },
+  first_round: {
+    core: "#a7b7cf",
+    edge: "#edf7ff",
+    glow: "rgba(174, 203, 232, 0.32)",
+    text: "#ffffff",
+  },
+  second_round: {
+    core: "#b8c7dc",
+    edge: "#f5fbff",
+    glow: "rgba(189, 214, 240, 0.34)",
+    text: "#ffffff",
+  },
+  final_round: {
+    core: "#c4d1e2",
+    edge: "#ffffff",
+    glow: "rgba(204, 224, 244, 0.36)",
+    text: "#ffffff",
+  },
+  offer: {
+    core: "#c6a96d",
+    edge: "#fff2c7",
+    glow: "rgba(200, 169, 106, 0.42)",
+    text: "#fff8e7",
+    spark: "#f7d889",
+  },
+  rejected: {
+    core: "#4d535d",
+    edge: "#8a92a0",
+    glow: "rgba(84, 93, 106, 0.16)",
+    text: "#c6ccd5",
+  },
+  withdrawn: {
+    core: "#424854",
+    edge: "#77808e",
+    glow: "rgba(72, 81, 96, 0.14)",
+    text: "#b8c0cc",
+  },
 };
 
 export function StackedStar({
@@ -34,16 +84,20 @@ export function StackedStar({
   onClick: () => void;
   onHover?: (hovering: boolean) => void;
 }) {
+  const id = useId().replace(/:/g, "");
   const tone = STAR_TONE[status];
-  const initials = getCompanyInitials(companyName).slice(0, 2);
-  const fontSize = Math.max(12, Math.min(15, Math.round(size * 0.31)));
+  const label = getCompanyShortLabel(companyName, 3);
+  const fontSize =
+    label.length >= 3 ? Math.max(10, Math.min(12, Math.round(size * 0.24))) : Math.max(12, Math.min(15, Math.round(size * 0.31)));
+  const gradientId = `${id}-star-fill`;
+  const shineId = `${id}-star-shine`;
 
   return (
     <motion.button
       type="button"
       className={cn(
-        "group relative flex items-center justify-center rounded-full font-semibold leading-none transition",
-        selected && "ring-1 ring-nebula-ice/70",
+        "group relative flex items-center justify-center font-semibold leading-none transition outline-none",
+        selected && "drop-shadow-[0_0_14px_rgba(196,225,255,0.44)]",
         className,
       )}
       style={{
@@ -51,10 +105,7 @@ export function StackedStar({
         height: size,
         fontSize,
         color: tone.text,
-        background:
-          "radial-gradient(circle at 34% 27%, rgba(255,255,255,0.9), transparent 14%), " +
-          `radial-gradient(circle at 50% 50%, ${tone.core}, rgba(20,26,38,0.88) 68%)`,
-        boxShadow: `0 0 ${selected ? 24 : 16}px ${tone.glow}, inset 0 0 0 1px rgba(255,255,255,0.2)`,
+        filter: `drop-shadow(0 0 ${selected ? 18 : 12}px ${tone.glow})`,
       }}
       whileHover={{ scale: 1.08 }}
       whileTap={{ scale: 0.96 }}
@@ -66,14 +117,50 @@ export function StackedStar({
     >
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute inset-[-45%] rounded-full opacity-0 blur-md transition-opacity group-hover:opacity-100"
+        className="pointer-events-none absolute inset-[-48%] opacity-0 blur-lg transition-opacity group-hover:opacity-100"
         style={{ background: tone.glow }}
       />
-      <span className="relative z-10 whitespace-nowrap tracking-normal">{initials}</span>
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 100 100"
+        className="absolute inset-0 h-full w-full"
+      >
+        <defs>
+          <radialGradient id={gradientId} cx="42%" cy="33%" r="68%">
+            <stop offset="0" stopColor="rgba(255,255,255,0.92)" />
+            <stop offset="0.22" stopColor={tone.edge} stopOpacity="0.9" />
+            <stop offset="0.58" stopColor={tone.core} stopOpacity="0.88" />
+            <stop offset="1" stopColor="rgba(10,16,29,0.86)" />
+          </radialGradient>
+          <radialGradient id={shineId} cx="34%" cy="26%" r="38%">
+            <stop offset="0" stopColor="rgba(255,255,255,0.78)" />
+            <stop offset="1" stopColor="rgba(255,255,255,0)" />
+          </radialGradient>
+        </defs>
+        <path
+          d="M50 5.5L60.8 34.2L91.2 36.4L67.7 55.9L75.2 85.5L50 68.8L24.8 85.5L32.3 55.9L8.8 36.4L39.2 34.2L50 5.5Z"
+          fill={`url(#${gradientId})`}
+          stroke={selected ? "rgba(235,248,255,0.95)" : "rgba(235,248,255,0.42)"}
+          strokeWidth={selected ? 3.2 : 2.1}
+          strokeLinejoin="round"
+        />
+        <path
+          d="M50 12L58.2 36.3L83.6 38.8L63.9 55.1L69.8 79.4L50 65.1L30.2 79.4L36.1 55.1L16.4 38.8L41.8 36.3L50 12Z"
+          fill={`url(#${shineId})`}
+          opacity="0.38"
+        />
+      </svg>
+      <span
+        className="relative z-10 whitespace-nowrap text-center tracking-normal"
+        style={{ textShadow: "0 1px 7px rgba(0, 0, 0, 0.82)" }}
+      >
+        {label}
+      </span>
       {status === "offer" ? (
         <span
           aria-hidden="true"
-          className="absolute right-0 top-0 size-2 rounded-full bg-aurum-300/90 shadow-[0_0_10px_rgba(200,169,106,0.65)]"
+          className="absolute right-[10%] top-[13%] size-2 rounded-full shadow-[0_0_10px_rgba(200,169,106,0.65)]"
+          style={{ background: tone.spark }}
         />
       ) : null}
     </motion.button>
