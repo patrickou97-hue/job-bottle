@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="900" viewBox="0 0 900 900">
+  <g fill="#EDF2F9" opacity=".42">
+    <circle cx="82" cy="118" r=".65"/>
+    <circle cx="188" cy="44" r=".5"/>
+    <circle cx="316" cy="156" r=".62"/>
+    <circle cx="516" cy="96" r=".5"/>
+    <circle cx="748" cy="134" r=".58"/>
+    <circle cx="864" cy="62" r=".5"/>
+    <circle cx="54" cy="302" r=".55"/>
+    <circle cx="232" cy="248" r=".7"/>
+    <circle cx="422" cy="312" r=".52"/>
+    <circle cx="612" cy="238" r=".64"/>
+    <circle cx="820" cy="306" r=".54"/>
+    <circle cx="118" cy="456" r=".62"/>
+    <circle cx="342" cy="504" r=".5"/>
+    <circle cx="548" cy="438" r=".72"/>
+    <circle cx="732" cy="526" r=".5"/>
+    <circle cx="38" cy="684" r=".5"/>
+    <circle cx="264" cy="706" r=".6"/>
+    <circle cx="480" cy="632" r=".55"/>
+    <circle cx="664" cy="724" r=".68"/>
+    <circle cx="856" cy="648" r=".5"/>
+    <circle cx="146" cy="826" r=".54"/>
+    <circle cx="384" cy="852" r=".64"/>
+    <circle cx="606" cy="812" r=".5"/>
+    <circle cx="790" cy="842" r=".58"/>
+  </g>
+</svg>

@@ -1,0 +1,46 @@
+:root {
+  --space-void: #030509;
+  --space-base: #060b14;
+  --space-raised: #0a1220;
+  --scrim-read: rgba(3, 5, 9, 0.55);
+  --scrim-heavy: rgba(3, 5, 9, 0.78);
+
+  --light-silver: #9fb4ce;
+  --light-muted: #5e7794;
+  --light-ice: #c3d3e6;
+  --star-white: #edf2f9;
+  --glow-cold: rgba(159, 180, 206, 0.14);
+  --glow-cold-hi: rgba(159, 180, 206, 0.25);
+
+  --gold-base: #c9a96e;
+  --gold-muted: rgba(201, 169, 110, 0.55);
+  --gold-glow: rgba(201, 169, 110, 0.2);
+
+  --text-primary: rgba(237, 242, 249, 0.92);
+  --text-secondary: rgba(195, 211, 230, 0.66);
+  --text-muted: rgba(159, 180, 206, 0.42);
+  --text-disabled: rgba(159, 180, 206, 0.26);
+  --text-numeric: #c3d3e6;
+  --text-meta: rgba(159, 180, 206, 0.5);
+  --text-danger: rgba(214, 137, 137, 0.85);
+
+  --surface-subtle-bg: rgba(255, 255, 255, 0.025);
+  --surface-subtle-border: rgba(255, 255, 255, 0);
+  --surface-read-bg: rgba(10, 18, 32, 0.58);
+  --surface-read-border: rgba(255, 255, 255, 0.06);
+  --surface-read-shadow: 0 24px 64px -32px rgba(0, 0, 0, 0.8);
+  --surface-hover-bg: rgba(255, 255, 255, 0.045);
+  --surface-selected-bg: rgba(159, 180, 206, 0.07);
+  --surface-selected-edge: inset 2px 0 0 rgba(159, 180, 206, 0.45);
+  --surface-admin-bg: #0c1322;
+  --surface-admin-border: rgba(255, 255, 255, 0.08);
+
+  --ease-out-cine: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-ui: 180ms;
+  --dur-move: 500ms;
+  --dur-scene: 900ms;
+
+  --font-sans-cn: "MiSans VF", "MiSans", "HarmonyOS Sans SC", "PingFang SC",
+    "Noto Sans SC", "Geist", -apple-system, "Segoe UI", sans-serif;
+}
