@@ -68,6 +68,7 @@ export function CsvImportPanel() {
         industry: row.industry,
         batch_type: row.batch_type,
         job_titles: row.job_titles,
+        job_categories: row.job_categories,
         locations: row.locations,
         apply_url: row.apply_url,
         notes: row.notes,
@@ -155,6 +156,7 @@ export function CsvImportPanel() {
                       <th className="px-4 py-3 font-medium">行号</th>
                       <th className="px-4 py-3 font-medium">公司名称</th>
                       <th className="px-4 py-3 font-medium">招聘岗位</th>
+                      <th className="px-4 py-3 font-medium">岗位类别</th>
                       <th className="px-4 py-3 font-medium">所在行业</th>
                       <th className="px-4 py-3 font-medium">批次类型</th>
                       <th className="px-4 py-3 font-medium">工作地点</th>
@@ -169,6 +171,7 @@ export function CsvImportPanel() {
                         <td className="max-w-[280px] px-4 py-3">
                           <span className="line-clamp-2">{row.job_titles || "暂无"}</span>
                         </td>
+                        <td className="px-4 py-3">{row.job_categories.join("、") || "暂无"}</td>
                         <td className="px-4 py-3">{row.industry || "暂无"}</td>
                         <td className="px-4 py-3">{row.batch_type || "暂无"}</td>
                         <td className="px-4 py-3">{row.locations || "暂无"}</td>

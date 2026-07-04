@@ -1,4 +1,5 @@
 import { parse } from "papaparse";
+import { normalizeJobCategories } from "@/lib/categories";
 import { splitToTags, isValidHttpUrl } from "@/lib/utils";
 import type { CsvImportPreviewRow } from "@/lib/types";
 
@@ -39,13 +40,16 @@ export function parseJobsCsv(file: File) {
           ]
             .filter(Boolean)
             .join("；");
+          const jobTitles = pick(row, headerAliases.job_titles) || null;
+          const normalizedCategories = normalizeJobCategories(jobTitles);
           const preview: CsvImportPreviewRow = {
             rowNumber: index + 2,
             company_name: company,
             start_date: pick(row, headerAliases.start_date) || null,
             industry: pick(row, headerAliases.industry) || null,
             batch_type: pick(row, headerAliases.batch_type) || null,
-            job_titles: pick(row, headerAliases.job_titles) || null,
+            job_titles: jobTitles,
+            job_categories: normalizedCategories.categories,
             locations: pick(row, headerAliases.locations) || null,
             apply_url: applyUrl,
             notes: notes || null,
@@ -53,7 +57,7 @@ export function parseJobsCsv(file: File) {
               pick(row, headerAliases.industry),
               pick(row, headerAliases.batch_type),
               pick(row, headerAliases.locations),
-              pick(row, headerAliases.job_titles),
+              jobTitles ?? "",
             ),
             isValid: true,
             errors: [],

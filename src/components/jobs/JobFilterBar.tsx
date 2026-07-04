@@ -18,6 +18,7 @@ export function JobFilterBar({
     industries: string[];
     batchTypes: string[];
     locations: string[];
+    categories: string[];
     tags: string[];
   };
   onChange: (filters: JobFilters) => void;
@@ -31,6 +32,13 @@ export function JobFilterBar({
       ? filters.tags.filter((item) => item !== tag)
       : [...filters.tags, tag];
     setFilter({ tags });
+  }
+
+  function toggleCategory(category: string) {
+    const categories = filters.categories.includes(category)
+      ? filters.categories.filter((item) => item !== category)
+      : [...filters.categories, category];
+    setFilter({ categories });
   }
 
   return (
@@ -117,6 +125,30 @@ export function JobFilterBar({
             <option value="company_asc">公司名称排序</option>
           </Select>
         </label>
+
+        <div>
+          <span className="mb-2 block text-sm text-ink-secondary">岗位类别</span>
+          <div className="flex max-h-44 flex-wrap gap-2 overflow-y-auto pr-1">
+            {facets.categories.map((category) => {
+              const active = filters.categories.includes(category);
+              return (
+                <button
+                  key={category}
+                  type="button"
+                  className={cn(
+                    "rounded-full border px-3 py-1 text-xs transition",
+                    active
+                      ? "border-nebula-blue/30 bg-nebula-blue/14 text-nebula-silver shadow-star-sm"
+                      : "border-white/[0.08] bg-white/[0.035] text-ink-secondary hover:border-nebula-blue/28 hover:text-nebula-silver",
+                  )}
+                  onClick={() => toggleCategory(category)}
+                >
+                  {category}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         <div>
           <span className="mb-2 block text-sm text-ink-secondary">岗位标签</span>

@@ -43,6 +43,7 @@ export const EMPTY_JOB_FILTERS = {
   industry: "",
   batchType: "",
   location: "",
+  categories: [] as string[],
   tags: [] as string[],
   sortBy: "start_date_desc" as const,
 };

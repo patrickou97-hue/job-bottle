@@ -10,7 +10,7 @@ type NebulaNodeProps = {
   count: number;
   capturedCount?: number;
   imageSrc: string;
-  variant: "region" | "industry" | "batch" | "captured";
+  variant: "region" | "industry" | "category" | "captured";
   onClick: () => void;
   compact?: boolean;
 };
@@ -18,7 +18,7 @@ type NebulaNodeProps = {
 const VARIANT_STYLE = {
   region: "hue-rotate-[-8deg] saturate-[0.92]",
   industry: "hue-rotate-[4deg] saturate-[0.9]",
-  batch: "hue-rotate-[18deg] saturate-[0.82]",
+  category: "hue-rotate-[18deg] saturate-[0.82]",
   captured: "hue-rotate-[-12deg] saturate-[0.82]",
 };
 

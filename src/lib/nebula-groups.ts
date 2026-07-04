@@ -1,8 +1,9 @@
 import { APPLICATION_STATUS_LABELS } from "@/lib/constants";
+import { JOB_CATEGORIES, normalizeJobCategories } from "@/lib/categories";
 import { INDUSTRY_GROUPS, REGION_GROUPS, classifyJob } from "@/lib/galaxy-taxonomy";
 import type { ApplicationStatus, Job, UserApplication } from "@/lib/types";
 
-export type NebulaMode = "gateway" | "region" | "industry" | "batch" | "captured";
+export type NebulaMode = "gateway" | "region" | "industry" | "category" | "captured";
 
 export type NebulaCategory = {
   id: string;
@@ -10,7 +11,7 @@ export type NebulaCategory = {
   count: number;
   capturedCount?: number;
   imageSrc: string;
-  variant: "region" | "industry" | "batch" | "captured";
+  variant: "region" | "industry" | "category" | "captured";
   jobIds: string[];
 };
 
@@ -38,7 +39,7 @@ export function buildNebulaGateways(jobs: Job[], applications: UserApplication[]
   const capturedCount = (jobIds: string[]) => jobIds.filter((id) => capturedJobIds.has(id)).length;
   const regionJobIds = jobs.filter((job) => classifyJob(job, "region").slug !== "other").map((job) => job.id);
   const industryJobIds = jobs.filter((job) => classifyJob(job, "industry").slug !== "other").map((job) => job.id);
-  const batchJobIds = jobs.filter((job) => Boolean(job.batch_type)).map((job) => job.id);
+  const categoryJobIds = jobs.filter((job) => getJobCategories(job).length > 0).map((job) => job.id);
   const capturedJobList = applications.map((application) => application.job_id);
 
   return [
@@ -61,13 +62,13 @@ export function buildNebulaGateways(jobs: Job[], applications: UserApplication[]
       jobIds: industryJobIds,
     },
     {
-      id: "batch",
-      name: "批次星系",
-      count: batchJobIds.length,
-      capturedCount: capturedCount(batchJobIds),
+      id: "category",
+      name: "岗位星系",
+      count: categoryJobIds.length,
+      capturedCount: capturedCount(categoryJobIds),
       imageSrc: "/assets/nebula/nebula-batch.png",
-      variant: "batch",
-      jobIds: batchJobIds,
+      variant: "category",
+      jobIds: categoryJobIds,
     },
     {
       id: "captured",
@@ -117,20 +118,19 @@ export function buildNebulaCategories(
     }).filter((item) => item.count > 0);
   }
 
-  if (mode === "batch") {
-    const batchNames = Array.from(new Set(jobs.map((job) => job.batch_type).filter(Boolean))) as string[];
-    return batchNames.sort().map((batch) => {
-      const groupJobs = jobs.filter((job) => job.batch_type === batch);
+  if (mode === "category") {
+    return JOB_CATEGORIES.map((category) => {
+      const groupJobs = jobs.filter((job) => getJobCategories(job).includes(category));
       return {
-        id: batch,
-        name: `${batch}星云`,
+        id: category,
+        name: `${category}星云`,
         count: groupJobs.length,
         capturedCount: groupJobs.filter((job) => capturedJobIds.has(job.id)).length,
         imageSrc: "/assets/nebula/nebula-batch.png",
-        variant: "batch" as const,
+        variant: "category" as const,
         jobIds: groupJobs.map((job) => job.id),
       };
-    });
+    }).filter((item) => item.count > 0);
   }
 
   const byStatus = new Map<ApplicationStatus, string[]>();
@@ -148,4 +148,10 @@ export function buildNebulaCategories(
     variant: "captured" as const,
     jobIds,
   }));
+}
+
+function getJobCategories(job: Job) {
+  return job.job_categories?.length
+    ? job.job_categories
+    : normalizeJobCategories(job.job_titles).categories;
 }

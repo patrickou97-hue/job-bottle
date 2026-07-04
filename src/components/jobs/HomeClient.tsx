@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Archive, FlaskConical, Sparkles } from "lucide-react";
 import { EMPTY_JOB_FILTERS } from "@/lib/constants";
+import { parseJobCategoriesParam, serializeJobCategories } from "@/lib/categories";
 import { fetchActiveJobs, filterJobs, getJobFacetOptions } from "@/lib/jobs";
 import { fetchMyApplications, updateApplication, upsertApplication } from "@/lib/applications";
 import { getCurrentUserOrNull } from "@/lib/auth";
@@ -38,10 +39,14 @@ type PendingApplyConfirmation = {
 
 export function HomeClient() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [applications, setApplications] = useState<ApplicationWithJob[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [filters, setFilters] = useState<JobFilters>(EMPTY_JOB_FILTERS);
+  const [filters, setFilters] = useState<JobFilters>(() => ({
+    ...EMPTY_JOB_FILTERS,
+    categories: parseJobCategoriesParam(searchParams.get("cats")),
+  }));
   const [jobView, setJobView] = useState<JobViewMode>("all");
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
@@ -234,6 +239,18 @@ export function HomeClient() {
     }
   }
 
+  function handleFiltersChange(nextFilters: JobFilters) {
+    setFilters(nextFilters);
+    const params = new URLSearchParams(searchParams.toString());
+    if (nextFilters.categories.length > 0) {
+      params.set("cats", serializeJobCategories(nextFilters.categories));
+    } else {
+      params.delete("cats");
+    }
+    const query = params.toString();
+    router.replace(query ? `/explore?${query}` : "/explore", { scroll: false });
+  }
+
   function armApplyConfirmation(nextConfirmation: PendingApplyConfirmation) {
     if (applyConfirmFallbackRef.current) {
       window.clearTimeout(applyConfirmFallbackRef.current);
@@ -345,7 +362,7 @@ export function HomeClient() {
         <JobFilterBar
           filters={filters}
           facets={facets}
-          onChange={setFilters}
+          onChange={handleFiltersChange}
         />
 
         <section id="job-map" className="min-w-0">
@@ -378,7 +395,7 @@ export function HomeClient() {
               title="没有找到匹配岗位"
               body="可以减少筛选条件，或更换关键词后再试。"
               action={
-                <Button variant="secondary" onClick={() => setFilters(EMPTY_JOB_FILTERS)}>
+                <Button variant="secondary" onClick={() => handleFiltersChange(EMPTY_JOB_FILTERS)}>
                   清空筛选
                 </Button>
               }
@@ -577,6 +594,7 @@ function getActiveFilterChips(filters: JobFilters, jobView: JobViewMode, nebulaN
   if (filters.industry) chips.push(`行业：${filters.industry}`);
   if (filters.batchType) chips.push(`批次：${filters.batchType}`);
   if (filters.location) chips.push(`地点：${filters.location}`);
+  filters.categories.forEach((category) => chips.push(`类别：${category}`));
   filters.tags.forEach((tag) => chips.push(`标签：${tag}`));
   if (filters.sortBy === "start_date_desc") chips.push("最新开启");
   if (filters.sortBy === "start_date_asc") chips.push("开启时间优先");

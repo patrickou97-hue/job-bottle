@@ -140,6 +140,12 @@ const SOURCE_INVARIANTS = [
     label: "岗位星体使用稳定星云网格布局",
   },
   {
+    file: "src/lib/categories.ts",
+    mustInclude: ["JOB_CATEGORIES", "normalizeJobCategories", "jobMatchesSelectedCategories", "教师类", "咨询类"],
+    mustNotInclude: [],
+    label: "岗位类别归一化函数集中定义",
+  },
+  {
     file: "src/lib/dates.ts",
     mustInclude: ["Asia/Shanghai", "daysUntilShanghai", "formatShanghaiDateTime", "formatShanghaiDate"],
     mustNotInclude: ["toLocaleDateString", "getDeadlineTone", "getDeadlineLabel", "getDeadlineTime"],
@@ -188,12 +194,12 @@ const SOURCE_INVARIANTS = [
   {
     file: "src/components/galaxy/NebulaNode.tsx",
     mustInclude: ["next/image", "whileHover", "imageSrc", "个岗位"],
-    mustNotInclude: ["border-aurum", "金色"],
+    mustNotInclude: ["border-aurum", "金色", "\"batch\""],
     label: "星云入口使用图片资产而非方框卡片",
   },
   {
     file: "src/components/jobs/HomeClient.tsx",
-    mustInclude: ["NebulaGateway", "CaptureAnimation", "if (!alreadyCaptured)", "hoveredJobId", "focusJob", "nebulaSelection", "encodeURIComponent(\"/explore\")", "href=\"/my\"", "最新开启", "ApplyReturnConfirm", "visibilitychange", "keep_opened"],
+    mustInclude: ["NebulaGateway", "CaptureAnimation", "if (!alreadyCaptured)", "hoveredJobId", "focusJob", "nebulaSelection", "encodeURIComponent(\"/explore\")", "href=\"/my\"", "最新开启", "ApplyReturnConfirm", "visibilitychange", "keep_opened", "useSearchParams", "\"cats\""],
     mustNotInclude: ["queueBottleDrop(application.id);\n      if (applyWindow)", "encodeURIComponent(\"/jobs\")", "href=\"/my-applications\""],
     label: "岗位星图有星体观测、捕获动画和官网返回确认闭环",
   },
@@ -211,7 +217,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/jobs/JobFilterBar.tsx",
-    mustInclude: ["start_date_desc", "最新开启", "最近更新优先", "最早开启"],
+    mustInclude: ["start_date_desc", "最新开启", "最近更新优先", "最早开启", "岗位类别", "toggleCategory"],
     mustNotInclude: ["deadline_asc", "downloadDeadlineDigest", "digest_generate"],
     label: "探索筛选默认最新开启且不再提供下线日期入口",
   },
@@ -325,6 +331,12 @@ const SOURCE_INVARIANTS = [
     ],
     mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY", "service_role"],
     label: "v6 安全跟进迁移加固 is_admin、论坛策略和投递唯一性",
+  },
+  {
+    file: "supabase/migrations/20260704040000_job_categories.sql",
+    mustInclude: ["add column if not exists job_categories", "jobs_job_categories_gin_idx", "normalize_job_categories_from_titles", "教师类", "咨询类"],
+    mustNotInclude: ["drop column", "service_role"],
+    label: "岗位类别迁移新增数组字段、索引和现有数据回填",
   },
 ];
 const REQUIRED_FILES = [
@@ -704,6 +716,51 @@ function checkBottleGeometryProbe() {
   console.log(`✓ 星瓶几何探针通过：${positions.length} 颗测试星全部位于主腔安全区域`);
 }
 
+async function checkCategoryProbe() {
+  const typescript = await import("typescript");
+  const source = readFileSync(new URL("src/lib/categories.ts", ROOT), "utf8");
+  const transpiled = typescript.transpileModule(source, {
+    compilerOptions: {
+      module: typescript.ModuleKind.ES2022,
+      target: typescript.ScriptTarget.ES2022,
+    },
+  }).outputText;
+  const encoded = Buffer.from(transpiled).toString("base64");
+  const categories = await import(`data:text/javascript;base64,${encoded}`);
+
+  const first = categories.normalizeJobCategories("软件研发类, 硬件工程类").categories;
+  const second = categories.normalizeJobCategories("市场类（包含商分 战略）").categories;
+  const third = categories.normalizeJobCategories("教师").categories;
+
+  if (first.join(",") !== "软件研发类,硬件工程类") {
+    throw new Error(`岗位类别探针失败：复合类别输出为 ${first.join(",")}`);
+  }
+  if (second.join(",") !== "市场类") {
+    throw new Error(`岗位类别探针失败：括号注释类别输出为 ${second.join(",")}`);
+  }
+  if (third.join(",") !== "教师类") {
+    throw new Error(`岗位类别探针失败：教师别名输出为 ${third.join(",")}`);
+  }
+
+  const fixedJobs = [
+    categories.normalizeJobCategories("软件研发类, 硬件工程类").categories,
+    categories.normalizeJobCategories("产品类").categories,
+    categories.normalizeJobCategories("教师").categories,
+    categories.normalizeJobCategories("市场类（包含商分 战略）").categories,
+  ];
+  const singleCount = fixedJobs.filter((jobCategories) =>
+    categories.jobMatchesSelectedCategories(jobCategories, ["产品类"]),
+  ).length;
+  const dualCount = fixedJobs.filter((jobCategories) =>
+    categories.jobMatchesSelectedCategories(jobCategories, ["软件研发类", "教师类"]),
+  ).length;
+
+  if (singleCount !== 1) throw new Error(`岗位类别探针失败：单类别筛选返回 ${singleCount}`);
+  if (dualCount !== 2) throw new Error(`岗位类别探针失败：双类别筛选返回 ${dualCount}`);
+
+  console.log("✓ 岗位类别探针通过：归一化和单/双类别筛选结果符合预期");
+}
+
 async function checkPages(baseUrl) {
   for (const [path, requiredTexts] of Object.entries(REQUIRED_TEXT)) {
     const response = await fetchWithRetry(`${baseUrl}${path}`);
@@ -747,6 +804,7 @@ async function main() {
   await checkSecurityProbe(env);
   checkSourceInvariants();
   checkBottleGeometryProbe();
+  await checkCategoryProbe();
 
   const reusableServer = await findReusableServer();
   if (reusableServer) {

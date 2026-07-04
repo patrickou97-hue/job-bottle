@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { JOB_CATEGORIES, jobMatchesSelectedCategories, normalizeJobCategories } from "@/lib/categories";
 import { splitToTags } from "@/lib/utils";
 import type { Database, Job, JobFilters, JobFormValues } from "@/lib/types";
 
@@ -126,12 +127,17 @@ export function filterJobs(jobs: Job[], filters: JobFilters) {
     const tagsMatched =
       filters.tags.length === 0 ||
       filters.tags.some((tag) => job.tags?.includes(tag));
+    const categoriesMatched = jobMatchesSelectedCategories(
+      job.job_categories,
+      filters.categories,
+    );
 
     return (
       keywordMatched &&
       industryMatched &&
       batchMatched &&
       locationMatched &&
+      categoriesMatched &&
       tagsMatched
     );
   });
@@ -210,17 +216,22 @@ export function getJobFacetOptions(jobs: Job[]) {
     industries: Array.from(industries).sort(),
     batchTypes: Array.from(batchTypes).sort(),
     locations: Array.from(locations).sort(),
+    categories: JOB_CATEGORIES.filter((category) =>
+      jobs.some((job) => job.job_categories?.includes(category)),
+    ),
     tags: Array.from(tags).sort(),
   };
 }
 
 export function toJobPayload(values: JobFormValues) {
+  const normalizedCategories = normalizeJobCategories(values.job_titles);
   return {
     company_name: values.company_name.trim(),
     start_date: values.start_date.trim() || null,
     industry: values.industry.trim() || null,
     batch_type: values.batch_type.trim() || null,
     job_titles: values.job_titles.trim() || null,
+    job_categories: normalizedCategories.categories,
     locations: values.locations.trim() || null,
     apply_url: values.apply_url.trim(),
     notes: values.notes.trim() || null,

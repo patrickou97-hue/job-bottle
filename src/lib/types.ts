@@ -18,6 +18,7 @@ export type Job = {
   industry: string | null;
   batch_type: string | null;
   job_titles: string | null;
+  job_categories: string[];
   locations: string | null;
   apply_url: string;
   notes: string | null;
@@ -65,6 +66,7 @@ export type JobFilters = {
   industry: string;
   batchType: string;
   location: string;
+  categories: string[];
   tags: string[];
   sortBy: "start_date_desc" | "updated_desc" | "start_date_asc" | "company_asc";
 };
@@ -80,6 +82,7 @@ export type CsvImportPreviewRow = {
   industry: string | null;
   batch_type: string | null;
   job_titles: string | null;
+  job_categories: string[];
   locations: string | null;
   apply_url: string;
   notes: string | null;
@@ -179,6 +182,7 @@ export type Database = {
           industry?: string | null;
           batch_type?: string | null;
           job_titles?: string | null;
+          job_categories?: string[];
           locations?: string | null;
           apply_url: string;
           notes?: string | null;
