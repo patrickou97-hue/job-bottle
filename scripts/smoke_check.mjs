@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, rmSync } from "node:fs";
 import { createServer } from "node:net";
 import { createClient } from "@supabase/supabase-js";
 
@@ -280,6 +280,26 @@ const SOURCE_INVARIANTS = [
     mustInclude: ["statusGroup", "nextStatuses", "statusGroup.includes(application.status)"],
     mustNotInclude: [],
     label: "我的投递列表支持轨道视觉带联动过滤多个状态",
+  },
+  {
+    file: "src/components/applications/ProgressDrawer.tsx",
+    mustInclude: [
+      "handleStatusChange",
+      "progress-status-node",
+      "onBlur={() => void handleNoteBlur()}",
+      "结束这条轨道",
+      "确认删除?",
+      "最近更新",
+      "handleNodeKeyDown",
+    ],
+    mustNotInclude: ["StatusSelect", "投递状态", "rounded-[22px] border", "variant=\"secondary\"", "variant=\"danger\""],
+    label: "投递轨道侧滑面板使用无界轨道节点、备注失焦保存和行内删除确认",
+  },
+  {
+    file: "src/components/ui/Drawer.tsx",
+    mustInclude: ["before:right-full", "backdrop-blur-[24px]", "hover:bg-white/[0.08]"],
+    mustNotInclude: ["border-l", "<Button"],
+    label: "投递侧滑容器使用液态玻璃融合带和幽灵关闭按钮",
   },
   {
     file: "src/components/capture/CaptureOrbit.tsx",
@@ -816,6 +836,7 @@ async function main() {
 
   const port = await getOpenPort();
   const baseUrl = `http://127.0.0.1:${port}`;
+  rmSync(new URL(".next/dev", ROOT), { recursive: true, force: true });
   const child = spawn(
     NEXT_BIN.pathname,
     ["dev", "--hostname", "127.0.0.1", "--port", String(port)],

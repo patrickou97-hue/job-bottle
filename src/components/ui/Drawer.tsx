@@ -3,7 +3,6 @@
 import type { ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { X } from "lucide-react";
-import { Button } from "@/components/ui/Button";
 
 export function Drawer({
   open,
@@ -30,7 +29,7 @@ export function Drawer({
             onClick={onClose}
           />
           <motion.aside
-            className="absolute right-0 top-0 h-full w-full max-w-xl overflow-y-auto border-l border-nebula-blue/16 bg-void-900/92 p-5 shadow-glass backdrop-blur-2xl sm:p-7"
+            className="absolute right-0 top-0 h-full w-full max-w-xl overflow-y-auto bg-[rgba(4,8,18,0.86)] p-5 shadow-glass backdrop-blur-[24px] backdrop-saturate-[1.2] before:pointer-events-none before:absolute before:bottom-0 before:right-full before:top-0 before:w-20 before:bg-gradient-to-l before:from-[rgba(4,8,18,0.86)] before:to-transparent sm:p-7"
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
@@ -38,9 +37,14 @@ export function Drawer({
           >
             <div className="mb-6 flex items-center justify-between gap-4">
               <h2 className="text-xl font-semibold text-ink-primary">{title}</h2>
-              <Button variant="secondary" className="size-10 p-0" onClick={onClose}>
+              <button
+                type="button"
+                className="inline-flex size-10 items-center justify-center rounded-full text-ink-secondary transition hover:bg-white/[0.08] hover:text-ink-primary"
+                onClick={onClose}
+                aria-label="关闭"
+              >
                 <X aria-hidden="true" className="size-4" />
-              </Button>
+              </button>
             </div>
             {children}
           </motion.aside>
