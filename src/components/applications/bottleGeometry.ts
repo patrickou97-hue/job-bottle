@@ -3,11 +3,11 @@ import type { ApplicationWithJob } from "@/lib/types";
 export const BOTTLE_AREA = {
   centerX: 0.5,
   neckY: 0.14,
-  bottomY: 0.78,
-  minX: 0.28,
-  maxX: 0.72,
-  maxWidthAtBottom: 0.42,
-  maxWidthAtTop: 0.2,
+  bottomY: 0.8,
+  minX: 0.25,
+  maxX: 0.75,
+  maxWidthAtBottom: 0.48,
+  maxWidthAtTop: 0.22,
 };
 
 export type BottleStackPosition = {
@@ -45,7 +45,7 @@ function jitter(hash: number, shift: number, amount: number) {
 }
 
 function rowCapacity(row: number) {
-  return Math.max(3, 5 - Math.floor(row * 0.5));
+  return Math.max(4, 7 - Math.floor(row * 0.45));
 }
 
 function sortedApplications(applications: ApplicationWithJob[]) {
@@ -65,19 +65,27 @@ export function calculateBottleStack(applications: ApplicationWithJob[]) {
   sortedApplications(applications).forEach((application) => {
     const capacity = rowCapacity(row);
     const hash = hashString(application.id);
-    const rowProgress = Math.min(1, row / 8);
+    const rowProgress = Math.min(1, row / 10);
     const availableWidth =
       BOTTLE_AREA.maxWidthAtBottom -
       (BOTTLE_AREA.maxWidthAtBottom - BOTTLE_AREA.maxWidthAtTop) * rowProgress;
     const gap = availableWidth / Math.max(1, capacity - 1);
     const left = BOTTLE_AREA.centerX - availableWidth / 2;
     const x = left + gap * col + jitter(hash, 3, 0.018);
+    const status = application.status;
     const y =
-      BOTTLE_AREA.bottomY -
-      row * 0.068 -
-      (col % 2) * 0.015 +
-      jitter(hash, 13, 0.012);
-    const size = Math.round(44 + ((hash >>> 7) % 8));
+      status === "offer"
+        ? 0.34 + jitter(hash, 13, 0.04)
+        : BOTTLE_AREA.bottomY -
+          row * 0.056 -
+          (col % 2) * 0.012 +
+          jitter(hash, 13, 0.012);
+    const size =
+      status === "offer"
+        ? 40
+        : status === "rejected" || status === "withdrawn"
+          ? 16
+          : 24;
     const rotate = Math.round(jitter(hash, 19, 14));
 
     positions.set(application.id, {

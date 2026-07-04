@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import { fetchMyApplications } from "@/lib/applications";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { track } from "@/lib/track";
 import { ApplicationBottle } from "@/components/applications/ApplicationBottle";
 import type { ApplicationWithJob } from "@/lib/types";
 
-export function MyBottleClient() {
+export function MyBottleClient({ loginNextPath = "/bottle" }: { loginNextPath?: string }) {
   const router = useRouter();
   const [applications, setApplications] = useState<ApplicationWithJob[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,11 +28,13 @@ export function MyBottleClient() {
       const user = await getCurrentUserOrNull(supabase);
       if (!user) {
         setRedirecting(true);
-        router.replace(`/login?next=${encodeURIComponent("/my-bottle")}`);
+        router.replace(`/login?next=${encodeURIComponent(loginNextPath)}`);
         return;
       }
       setRedirecting(false);
-      setApplications(await fetchMyApplications(supabase, user.id));
+      const rows = await fetchMyApplications(supabase, user.id);
+      setApplications(rows);
+      void track("bottle_view", { count: rows.length });
     } catch {
       setMessage("加载失败，请稍后再试。");
     } finally {
@@ -49,6 +52,13 @@ export function MyBottleClient() {
 
   return (
     <div className="space-y-6 pb-24">
+      <section className="surface-subtle rounded-[28px] p-6">
+        <p className="text-xs tracking-[0.2em] text-ink-muted">季节容器</p>
+        <h1 className="mt-1 font-display text-3xl font-semibold text-ink-primary">
+          我的星瓶
+        </h1>
+      </section>
+
       {message ? (
         <div className="rounded-[22px] border border-red-300/25 bg-red-500/10 p-4 text-sm text-red-100">
           {message}

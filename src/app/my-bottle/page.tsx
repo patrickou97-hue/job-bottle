@@ -1,10 +1,5 @@
-import { MyBottleClient } from "@/components/applications/MyBottleClient";
-import { PageShell } from "@/components/layout/PageShell";
+import { permanentRedirect } from "next/navigation";
 
 export default function MyBottlePage() {
-  return (
-    <PageShell>
-      <MyBottleClient />
-    </PageShell>
-  );
+  permanentRedirect("/bottle");
 }

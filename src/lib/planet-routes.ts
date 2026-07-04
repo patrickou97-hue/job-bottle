@@ -40,7 +40,7 @@ export const PLANET_ROUTES: PlanetRoute[] = [
     id: 'bottle',
     label: '我的星瓶',
     description: '查看已投递岗位星星',
-    href: '/my-bottle',
+    href: '/bottle',
     orbitRadius: 390,
     orbitDuration: 64,
     initialAngle: 250,

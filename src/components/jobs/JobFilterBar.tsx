@@ -6,14 +6,18 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
-import type { JobFilters } from "@/lib/types";
+import { downloadDeadlineDigest, getUpcomingDeadlineJobs } from "@/lib/deadline-digest";
+import { track } from "@/lib/track";
+import type { Job, JobFilters } from "@/lib/types";
 
 export function JobFilterBar({
   filters,
   facets,
+  digestJobs = [],
   onChange,
 }: {
   filters: JobFilters;
+  digestJobs?: Job[];
   facets: {
     industries: string[];
     batchTypes: string[];
@@ -31,6 +35,17 @@ export function JobFilterBar({
       ? filters.tags.filter((item) => item !== tag)
       : [...filters.tags, tag];
     setFilter({ tags });
+  }
+
+  const deadlineJobs = getUpcomingDeadlineJobs(digestJobs);
+
+  async function handleShareDigest() {
+    const siteUrl =
+      typeof window === "undefined"
+        ? "https://job-bottle.vercel.app/?utm_source=digest"
+        : `${window.location.origin}/?utm_source=digest`;
+    const ok = await downloadDeadlineDigest(digestJobs, siteUrl);
+    if (ok) void track("digest_generate", { count: deadlineJobs.length });
   }
 
   return (
@@ -148,6 +163,16 @@ export function JobFilterBar({
           onClick={() => onChange(EMPTY_JOB_FILTERS)}
         >
           清空筛选
+        </Button>
+
+        <Button
+          variant="secondary"
+          className="w-full"
+          disabled={deadlineJobs.length === 0}
+          title={deadlineJobs.length === 0 ? "本周没有临近截止的岗位" : "生成本周截止分享图"}
+          onClick={() => void handleShareDigest()}
+        >
+          分享本周截止
         </Button>
       </div>
     </aside>

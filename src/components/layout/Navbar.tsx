@@ -13,7 +13,7 @@ import type { Profile } from "@/lib/types";
 const navItems = [
   { href: "/explore", label: "探索星海" },
   { href: "/my", label: "我的星图" },
-  { href: "/my-bottle", label: "我的星瓶" },
+  { href: "/bottle", label: "我的星瓶" },
   { href: "/forum", label: "讨论区" },
 ];
 

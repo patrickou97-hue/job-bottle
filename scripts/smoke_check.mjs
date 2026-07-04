@@ -14,9 +14,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/MyBottleClient.tsx",
-    mustInclude: ["router.replace(`/login?next=${encodeURIComponent(\"/my-bottle\")}`)", "py-12 text-center"],
+    mustInclude: ["loginNextPath = \"/bottle\"", "router.replace(`/login?next=${encodeURIComponent(loginNextPath)}`)", "bottle_view"],
     mustNotInclude: ["router.push(`/login?next=${encodeURIComponent(\"/my-bottle\")}`)", "bg-white/[0.035] p-8"],
-    label: "我的星瓶未登录跳转不留下卡住历史且等待态无大矩形",
+    label: "我的星瓶新 /bottle 入口使用登录回跳并记录浏览埋点",
   },
   {
     file: "src/components/applications/MyApplicationsClient.tsx",
@@ -50,21 +50,15 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/ApplicationBottle.tsx",
-    mustInclude: ["overflow-visible", "backdrop-blur-sm"],
+    mustInclude: ["2026 秋招季", "本季沉淀", "已收进", "FiligreeDivider", "生成星图年报"],
     mustNotInclude: ["bg-white/[0.025]", "shadow-[0_28px_90px"],
-    label: "星瓶舞台无大面积矩形背景",
+    label: "星瓶页按 v4 季节容器布局呈现",
   },
   {
     file: "src/components/applications/BottleStage.tsx",
-    mustInclude: ["/assets/star-bottle-image2.png", "overflow-hidden", "object-contain"],
-    mustNotInclude: ["BottleFallbackSvg", "/assets/bottle-front.png"],
-    label: "星瓶使用 image2.0 资产且舞台限制溢出",
-  },
-  {
-    file: "src/components/applications/StackedStar.tsx",
-    mustInclude: ["getCompactCompanyLabelStyle", "getCompanyShortLabel", "overflow-hidden", "text-center"],
-    mustNotInclude: ["truncate"],
-    label: "星瓶星星公司简称动态缩小且居中不省略",
+    mustInclude: ["canvasRef", "drawApplicationStar", "drawBottleAtmosphere", "/assets/star-bottle-image2.png", "useReducedMotion"],
+    mustNotInclude: ["Matter", "matter-js", "StackedStar"],
+    label: "星瓶使用 canvas 星层和简化落瓶动画且不引入物理引擎",
   },
   {
     file: "src/components/galaxy/GalaxyHome.tsx",
@@ -104,15 +98,27 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/globals.css",
-    mustInclude: ["../styles/tokens.css", "/assets/space/bg-desktop.png", "/assets/space/bg-mobile.png", "background-size: cover"],
+    mustInclude: ["../styles/tokens.css", "/assets/space/bg-desktop.png", "/assets/space/bg-mobile.png", "background-size: cover", "var(--arcane)", "linear-gradient(135deg"],
     mustNotInclude: ["linear-gradient(180deg, #01030a 0%, #02040a 52%, #01030a 100%)"],
-    label: "全站背景使用统一 space 资产和 token，避免横向分层渐变",
+    label: "全站背景和控件使用 v5 星穹绘卷 token",
   },
   {
     file: "src/styles/tokens.css",
-    mustInclude: ["--space-void", "--light-silver", "--gold-base", "--surface-read-bg", "--ease-out-cine"],
+    mustInclude: ["--night-0", "--dusk", "--star-apricot", "--arcane", "--filigree", "--bottle-glass", "--space-void: var(--night-0)"],
     mustNotInclude: [],
-    label: "视觉规格 token 已集中定义",
+    label: "v5 星穹绘卷 token 已集中定义并兼容旧变量",
+  },
+  {
+    file: "src/components/ui/FiligreeDivider.tsx",
+    mustInclude: ["DiamondDot", "var(--filigree)"],
+    mustNotInclude: [],
+    label: "v5 星纹分割线组件存在",
+  },
+  {
+    file: "src/components/ui/DiamondDot.tsx",
+    mustInclude: ["rotate-45", "var(--filigree)"],
+    mustNotInclude: [],
+    label: "v5 菱形节点组件存在",
   },
   {
     file: "src/lib/star-layout.ts",
@@ -198,9 +204,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/jobs/JobFilterBar.tsx",
-    mustInclude: ["deadline_asc", "即将截止优先"],
+    mustInclude: ["deadline_asc", "即将截止优先", "分享本周截止", "downloadDeadlineDigest", "digest_generate"],
     mustNotInclude: [],
-    label: "探索筛选支持即将截止排序",
+    label: "探索筛选支持即将截止排序和本周截止分享卡",
   },
   {
     file: "src/app/jobs/[id]/page.tsx",
@@ -274,6 +280,36 @@ const SOURCE_INVARIANTS = [
     mustNotInclude: [],
     label: "岗位星系入口路由存在",
   },
+  {
+    file: "src/app/bottle/page.tsx",
+    mustInclude: ["MyBottleClient", "loginNextPath=\"/bottle\""],
+    mustNotInclude: [],
+    label: "v4 /bottle 星瓶季节容器路由存在",
+  },
+  {
+    file: "src/app/my-bottle/page.tsx",
+    mustInclude: ["permanentRedirect(\"/bottle\")"],
+    mustNotInclude: ["MyBottleClient"],
+    label: "旧 /my-bottle 重定向至 /bottle",
+  },
+  {
+    file: "src/lib/deadline-digest.ts",
+    mustInclude: ["downloadDeadlineDigest", "1080", "1350", "job-bottle-digest", "本周截止"],
+    mustNotInclude: ["QRCode", "qrcode"],
+    label: "本周截止分享卡使用无依赖离屏 canvas 生成",
+  },
+  {
+    file: "src/lib/track.ts",
+    mustInclude: ["track", "events", "console.info"],
+    mustNotInclude: ["throw"],
+    label: "v4 埋点方法存在且不阻塞产品动作",
+  },
+  {
+    file: "supabase/migrations/20260704020000_events_tracking.sql",
+    mustInclude: ["create table if not exists public.events", "events_insert_own", "events_select_admin_all"],
+    mustNotInclude: ["service_role"],
+    label: "v4 events 埋点迁移存在",
+  },
 ];
 const REQUIRED_FILES = [
   "public/assets/space-background-desktop.png",
@@ -292,6 +328,7 @@ const REQUIRED_TEXT = {
   "/": ["秋招星瓶"],
   "/explore": ["岗位星图", "筛选", "排序方式", "最近更新优先"],
   "/my": ["我的投递"],
+  "/bottle": ["我的星瓶", "季节容器"],
   "/galaxy": ["岗位星系", "地区星系", "行业星系"],
   "/galaxy/region": ["地区星系", "北京星云", "上海星云"],
   "/galaxy/industry": ["行业星系", "互联网星云", "金融星云"],

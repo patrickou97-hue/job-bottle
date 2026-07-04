@@ -6,12 +6,12 @@
   --background: var(--space-base);
   --foreground: var(--text-primary);
   --glass-bg: var(--surface-read-bg);
-  --glass-bg-strong: rgba(10, 18, 32, 0.72);
+  --glass-bg-strong: rgba(16, 26, 54, 0.78);
   --glass-border: var(--surface-read-border);
-  --glass-border-strong: rgba(159, 180, 206, 0.14);
-  --glass-highlight: rgba(195, 211, 230, 0.1);
+  --glass-border-strong: var(--line-strong);
+  --glass-highlight: rgba(255, 246, 227, 0.1);
   --font-interface: var(--font-sans-cn);
-  --font-display: var(--font-sans-cn);
+  --font-display: "Noto Serif SC", "LXGW WenKai", "Songti SC", var(--font-sans-cn);
 }
 
 @theme inline {
@@ -28,7 +28,7 @@
 
 body {
   min-height: 100vh;
-  background: var(--space-base);
+  background: linear-gradient(135deg, var(--night-0), var(--night-1) 58%, var(--dusk));
   color: var(--foreground);
   font-family: var(--font-interface);
   font-feature-settings: "tnum";
@@ -79,7 +79,7 @@ select {
 }
 
 .star-border {
-  border-color: rgba(159, 180, 206, 0.08);
+  border-color: var(--line);
 }
 
 .star-glow {
@@ -87,40 +87,47 @@ select {
 }
 
 .gold-button {
-  border: 1px solid rgba(159, 180, 206, 0.2);
-  background: transparent;
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--night-1), var(--night-1)) padding-box,
+    linear-gradient(135deg, rgba(255, 217, 142, 0.48), rgba(255, 194, 160, 0.24), rgba(143, 134, 240, 0.42)) border-box;
   color: var(--text-primary);
-  box-shadow: none;
+  box-shadow: 0 0 0 rgba(255, 194, 160, 0);
 }
 
 .gold-button:hover {
-  border-color: rgba(159, 180, 206, 0.34);
-  background: var(--surface-hover-bg);
-  box-shadow: inset 0 -1px 0 var(--gold-muted);
+  background:
+    linear-gradient(var(--night-2), var(--night-2)) padding-box,
+    linear-gradient(135deg, rgba(255, 217, 142, 0.9), rgba(255, 194, 160, 0.52), rgba(143, 134, 240, 0.7)) border-box;
+  box-shadow: 0 0 24px rgba(143, 134, 240, 0.12);
 }
 
 .muted-button {
-  border: 1px solid rgba(159, 180, 206, 0.12);
-  background: transparent;
+  border: 1px solid var(--line);
+  background: rgba(24, 36, 72, 0.32);
   color: var(--text-secondary);
 }
 
+.muted-button:hover {
+  border-color: var(--line-strong);
+}
+
 .status-pill {
-  border: 1px solid rgba(159, 180, 206, 0.12);
-  background: rgba(159, 180, 206, 0.04);
+  border: 1px solid var(--line-strong);
+  background: rgba(180, 188, 224, 0.05);
   color: var(--light-silver);
 }
 
 .field-shell {
-  border: 1px solid rgba(159, 180, 206, 0.1);
-  background: rgba(10, 18, 32, 0.36);
+  border: 1px solid var(--line);
+  background: rgba(16, 26, 54, 0.56);
   color: var(--text-primary);
 }
 
 .field-shell:focus {
-  border-color: rgba(159, 180, 206, 0.3);
+  border-color: var(--arcane);
   outline: none;
-  box-shadow: 0 0 0 2px rgba(159, 180, 206, 0.06);
+  box-shadow: 0 0 0 3px rgba(143, 134, 240, 0.18);
 }
 
 .space-root {
@@ -143,7 +150,7 @@ select {
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
-  background: var(--space-base);
+  background: linear-gradient(135deg, var(--night-0), var(--night-1) 58%, var(--dusk));
   transform-origin: 50% 50%;
 }
 
@@ -161,7 +168,7 @@ select {
   inset: 0;
   background:
     radial-gradient(120% 90% at 50% 0%, transparent 0%, var(--scrim-read) 70%),
-    linear-gradient(to bottom, rgba(3, 5, 9, 0.2), rgba(3, 5, 9, 0.55) 60%, rgba(3, 5, 9, 0.62));
+    linear-gradient(to bottom, rgba(11, 18, 38, 0.12), rgba(11, 18, 38, 0.5) 60%, rgba(11, 18, 38, 0.7));
 }
 
 .space-bg__stars {
@@ -282,9 +289,11 @@ select {
 
 .surface-subtle {
   border: 1px solid var(--surface-subtle-border);
-  background: var(--surface-subtle-bg);
-  box-shadow: none;
-  backdrop-filter: none;
+  background:
+    linear-gradient(180deg, rgba(74, 59, 124, 0.16), transparent 26%),
+    var(--surface-subtle-bg);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(14px);
 }
 
 .surface-readable {

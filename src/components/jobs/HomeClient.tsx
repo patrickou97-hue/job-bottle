@@ -342,7 +342,12 @@ export function HomeClient() {
       />
 
       <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
-        <JobFilterBar filters={filters} facets={facets} onChange={setFilters} />
+        <JobFilterBar
+          filters={filters}
+          facets={facets}
+          digestJobs={filteredJobs}
+          onChange={setFilters}
+        />
 
         <section id="job-map" className="min-w-0">
           <div className="mb-4 flex items-center justify-between">
@@ -547,7 +552,7 @@ function JobRadarHeader({
               我的星图
             </Link>
             <Link
-              href="/my-bottle"
+              href="/bottle"
               className="inline-flex items-center gap-1.5 rounded-full border border-nebula-blue/18 bg-nebula-blue/8 px-3 py-2 text-xs text-nebula-silver transition hover:border-nebula-blue/35 hover:bg-nebula-blue/12"
             >
               <Sparkles aria-hidden="true" className="size-4" />

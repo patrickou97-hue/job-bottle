@@ -14,6 +14,7 @@ import { ApplicationOrbitRing } from "@/components/applications/ApplicationOrbit
 import { ApplicationOrbitLegend } from "@/components/applications/ApplicationOrbitLegend";
 import { ApplicationOrbitStar } from "@/components/applications/ApplicationOrbitStar";
 import { ApplicationOrbitDetail } from "@/components/applications/ApplicationOrbitDetail";
+import { FiligreeDivider } from "@/components/ui/FiligreeDivider";
 import type { ApplicationWithJob } from "@/lib/types";
 
 export function ApplicationOrbitSystem({
@@ -60,6 +61,7 @@ export function ApplicationOrbitSystem({
         </div>
         <span className="text-xs text-ink-muted">{applications.length} 颗投递星体</span>
       </div>
+      <FiligreeDivider className="mb-4 opacity-70" />
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_180px_330px]">
         <div className="relative h-[560px] overflow-hidden rounded-[24px] bg-black/10">

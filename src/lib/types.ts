@@ -139,6 +139,14 @@ export type Report = {
   resolved: boolean;
 };
 
+export type AnalyticsEvent = {
+  id: string;
+  user_id: string | null;
+  event: string;
+  props: Record<string, unknown>;
+  created_at: string;
+};
+
 export type ForumPostWithComments = ForumPost & {
   comments: ForumComment[];
 };
@@ -276,6 +284,21 @@ export type Database = {
         Update: {
           reason?: string;
           resolved?: boolean;
+        };
+        Relationships: [];
+      };
+      events: {
+        Row: AnalyticsEvent;
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          event: string;
+          props?: Record<string, unknown>;
+          created_at?: string;
+        };
+        Update: {
+          event?: string;
+          props?: Record<string, unknown>;
         };
         Relationships: [];
       };
