@@ -11,9 +11,8 @@ import { cn } from "@/lib/utils";
 import type { Profile } from "@/lib/types";
 
 const navItems = [
-  { href: "/galaxy", label: "星系入口" },
-  { href: "/jobs", label: "岗位星图" },
-  { href: "/my-applications", label: "我的投递" },
+  { href: "/explore", label: "探索星海" },
+  { href: "/my", label: "我的星图" },
   { href: "/my-bottle", label: "我的星瓶" },
   { href: "/forum", label: "讨论区" },
 ];

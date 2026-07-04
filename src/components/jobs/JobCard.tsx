@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { CompanyBadge } from "@/components/jobs/CompanyBadge";
 import { StatusPill } from "@/components/applications/StatusPill";
@@ -63,9 +64,13 @@ export function JobCard({
       {/* Company + industry */}
       <div className="min-w-0">
         <div className="flex min-w-0 items-baseline gap-3">
-          <div className="truncate text-[15px] font-medium leading-6 text-[color:var(--text-primary)]">
+          <Link
+            href={`/jobs/${job.id}`}
+            className="truncate text-[15px] font-medium leading-6 text-[color:var(--text-primary)] transition hover:text-nebula-silver"
+            onClick={(event) => event.stopPropagation()}
+          >
             {job.company_name}
-          </div>
+          </Link>
           <span className="hidden truncate text-xs text-[color:var(--text-muted)] md:inline">
             {job.job_titles || "岗位待补充"}
           </span>

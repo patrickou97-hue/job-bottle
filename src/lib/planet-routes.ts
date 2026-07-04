@@ -15,9 +15,9 @@ export type PlanetRoute = {
 export const PLANET_ROUTES: PlanetRoute[] = [
   {
     id: 'jobs',
-    label: '岗位星图',
+    label: '探索星海',
     description: '浏览和筛选当前开放岗位',
-    href: '/jobs',
+    href: '/explore',
     orbitRadius: 318,
     orbitDuration: 52,
     initialAngle: 20,
@@ -26,9 +26,9 @@ export const PLANET_ROUTES: PlanetRoute[] = [
   },
   {
     id: 'applications',
-    label: '我的投递',
+    label: '我的星图',
     description: '管理所有岗位投递进度',
-    href: '/my-applications',
+    href: '/my',
     orbitRadius: 460,
     orbitDuration: 72,
     initialAngle: 140,

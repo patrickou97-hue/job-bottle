@@ -137,7 +137,7 @@ export function HomeClient() {
         return;
       }
       if (!currentUserId) {
-        router.push(`/login?next=${encodeURIComponent("/jobs")}`);
+        router.push(`/login?next=${encodeURIComponent("/explore")}`);
         return;
       }
       if (!isValidHttpUrl(job.apply_url)) {
@@ -164,7 +164,7 @@ export function HomeClient() {
       if (!user) {
         applyWindow?.close();
         setCurrentUserId(null);
-        router.push(`/login?next=${encodeURIComponent("/jobs")}`);
+        router.push(`/login?next=${encodeURIComponent("/explore")}`);
         return;
       }
 
@@ -436,11 +436,11 @@ function JobRadarHeader({
 
           <div className="flex gap-2">
             <Link
-              href="/my-applications"
+              href="/my"
               className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.035] px-3 py-2 text-xs text-ink-secondary transition hover:border-nebula-blue/24 hover:text-nebula-silver"
             >
               <Archive aria-hidden="true" className="size-4" />
-              投递轨道
+              我的星图
             </Link>
             <Link
               href="/my-bottle"

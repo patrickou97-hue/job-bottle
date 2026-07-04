@@ -1,10 +1,5 @@
-import { MyApplicationsClient } from "@/components/applications/MyApplicationsClient";
-import { PageShell } from "@/components/layout/PageShell";
+import { permanentRedirect } from "next/navigation";
 
 export default function MyApplicationsPage() {
-  return (
-    <PageShell>
-      <MyApplicationsClient />
-    </PageShell>
-  );
+  permanentRedirect("/my");
 }

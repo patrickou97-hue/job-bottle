@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/Button";
 import { ApplicationOrbitSystem } from "@/components/applications/ApplicationOrbitSystem";
 import type { ApplicationStatus, ApplicationWithJob } from "@/lib/types";
 
-export function MyApplicationsClient() {
+export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { loginNextPath?: string }) {
   const router = useRouter();
   const [applications, setApplications] = useState<ApplicationWithJob[]>([]);
   const [selected, setSelected] = useState<ApplicationWithJob | null>(null);
@@ -39,7 +39,7 @@ export function MyApplicationsClient() {
       const user = await getCurrentUserOrNull(supabase);
       if (!user) {
         setRedirecting(true);
-        router.replace(`/login?next=${encodeURIComponent("/my-applications")}`);
+        router.replace(`/login?next=${encodeURIComponent(loginNextPath)}`);
         return;
       }
       setRedirecting(false);
@@ -57,7 +57,7 @@ export function MyApplicationsClient() {
     }, 0);
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loginNextPath]);
 
   const filtered = useMemo(() => {
     const key = keyword.trim().toLowerCase();

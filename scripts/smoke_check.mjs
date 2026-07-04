@@ -20,9 +20,33 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/MyApplicationsClient.tsx",
-    mustInclude: ["router.replace(`/login?next=${encodeURIComponent(\"/my-applications\")}`)"],
+    mustInclude: ["loginNextPath", "router.replace(`/login?next=${encodeURIComponent(loginNextPath)}`)"],
     mustNotInclude: ["router.push(`/login?next=${encodeURIComponent(\"/my-applications\")}`)"],
     label: "我的投递未登录跳转不留下卡住历史",
+  },
+  {
+    file: "src/app/explore/page.tsx",
+    mustInclude: ["HomeClient", "PageShell"],
+    mustNotInclude: [],
+    label: "PRD 新路由 /explore 使用探索星海页面",
+  },
+  {
+    file: "src/app/jobs/page.tsx",
+    mustInclude: ["permanentRedirect(\"/explore\")"],
+    mustNotInclude: ["HomeClient"],
+    label: "旧 /jobs 列表入口重定向到 /explore",
+  },
+  {
+    file: "src/app/my/page.tsx",
+    mustInclude: ["MyApplicationsClient", "loginNextPath=\"/my\""],
+    mustNotInclude: [],
+    label: "PRD 新路由 /my 承载我的星图",
+  },
+  {
+    file: "src/app/my-applications/page.tsx",
+    mustInclude: ["permanentRedirect(\"/my\")"],
+    mustNotInclude: ["MyApplicationsClient"],
+    label: "旧 /my-applications 重定向到 /my",
   },
   {
     file: "src/components/applications/ApplicationBottle.tsx",
@@ -50,8 +74,8 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/galaxy/SpaceHome.tsx",
-    mustInclude: ["OrbitLines", "PlanetTransitionOverlay", "window.setTimeout", "encodeURIComponent(planet.href)", "/brand/job-bottle-logo-v2.png", "desktopOrbitScale", "mobileOrbitScale", "planetScale={0.66}", "<CorePlanet compact />"],
-    mustNotInclude: ["router.push(planet.href)", "bg-white", "rounded-2xl"],
+    mustInclude: ["OrbitLines", "PlanetTransitionOverlay", "window.setTimeout", "encodeURIComponent(planet.href)", "/brand/job-bottle-logo-v2.png", "desktopOrbitScale", "mobileOrbitScale", "planetScale={0.66}", "<CorePlanet compact />", "href: user ? '/my' : '/login'"],
+    mustNotInclude: ["router.push(planet.href)", "href: user ? '/my-applications' : '/login'", "bg-white", "rounded-2xl"],
     label: "主页保留 logo、桌面/移动端运行星系和行星进入转场",
   },
   {
@@ -138,9 +162,21 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/jobs/HomeClient.tsx",
-    mustInclude: ["NebulaGateway", "CaptureAnimation", "if (!alreadyCaptured)", "hoveredJobId", "focusJob", "nebulaSelection"],
-    mustNotInclude: ["queueBottleDrop(application.id);\n      if (applyWindow)"],
+    mustInclude: ["NebulaGateway", "CaptureAnimation", "if (!alreadyCaptured)", "hoveredJobId", "focusJob", "nebulaSelection", "encodeURIComponent(\"/explore\")", "href=\"/my\""],
+    mustNotInclude: ["queueBottleDrop(application.id);\n      if (applyWindow)", "encodeURIComponent(\"/jobs\")", "href=\"/my-applications\""],
     label: "岗位星图有星体观测和捕获动画且重复点击不重复落星",
+  },
+  {
+    file: "src/app/jobs/[id]/page.tsx",
+    mustInclude: ["generateMetadata", "fetchJobById", "JobDetailActions", "返回探索星海", "RelatedJobs"],
+    mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY"],
+    label: "岗位详情新路由服务端读取并提供捕获入口",
+  },
+  {
+    file: "src/components/jobs/JobDetailActions.tsx",
+    mustInclude: ["登录后捕获这颗星", "upsertApplication", "safeOpenUrl", "已捕获 · 已加入你的星图"],
+    mustNotInclude: ["router.push(`/login"],
+    label: "岗位详情捕获操作为点位登录提示而非路由级拦截",
   },
   {
     file: "src/components/applications/ApplicationOrbitSystem.tsx",
@@ -194,6 +230,8 @@ const REQUIRED_FILES = [
 ];
 const REQUIRED_TEXT = {
   "/": ["秋招星瓶"],
+  "/explore": ["岗位星图", "筛选", "排序方式", "最近更新优先"],
+  "/my": ["我的投递"],
   "/galaxy": ["岗位星系", "地区星系", "行业星系"],
   "/galaxy/region": ["地区星系", "北京星云", "上海星云"],
   "/galaxy/industry": ["行业星系", "互联网星云", "金融星云"],

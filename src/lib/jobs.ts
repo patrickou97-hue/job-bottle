@@ -31,6 +31,69 @@ export async function fetchActiveJobs(supabase: SupabaseClient<Database>) {
   return (data ?? []) as Job[];
 }
 
+export async function fetchJobById(supabase: SupabaseClient<Database>, id: string) {
+  const query = supabase
+    .from("jobs")
+    .select("*")
+    .eq("id", id)
+    .eq("is_active", true)
+    .maybeSingle();
+  const { data, error } = await withTimeout(
+    Promise.resolve(query),
+    DEFAULT_JOBS_TIMEOUT_MS,
+    "读取岗位详情超时。",
+  );
+
+  if (error) throw error;
+  return (data ?? null) as Job | null;
+}
+
+export async function fetchRelatedJobs(
+  supabase: SupabaseClient<Database>,
+  job: Job,
+) {
+  const [sameCompanyResult, sameIndustryResult] = await Promise.all([
+    withTimeout(
+      Promise.resolve(
+        supabase
+          .from("jobs")
+          .select("*")
+          .eq("is_active", true)
+          .eq("company_name", job.company_name)
+          .neq("id", job.id)
+          .order("updated_at", { ascending: false })
+          .limit(5),
+      ),
+      DEFAULT_JOBS_TIMEOUT_MS,
+      "读取同公司岗位超时。",
+    ),
+    job.industry
+      ? withTimeout(
+          Promise.resolve(
+            supabase
+              .from("jobs")
+              .select("*")
+              .eq("is_active", true)
+              .neq("id", job.id)
+              .ilike("industry", `%${job.industry.split(",")[0].trim()}%`)
+              .order("updated_at", { ascending: false })
+              .limit(5),
+          ),
+          DEFAULT_JOBS_TIMEOUT_MS,
+          "读取相近岗位超时。",
+        )
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+
+  if (sameCompanyResult.error) throw sameCompanyResult.error;
+  if (sameIndustryResult.error) throw sameIndustryResult.error;
+
+  return {
+    sameCompany: (sameCompanyResult.data ?? []) as Job[],
+    sameIndustry: (sameIndustryResult.data ?? []) as Job[],
+  };
+}
+
 export async function fetchAllJobsForAdmin(supabase: SupabaseClient<Database>) {
   const query = supabase
     .from("jobs")
