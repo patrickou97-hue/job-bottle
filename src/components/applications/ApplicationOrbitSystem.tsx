@@ -57,22 +57,28 @@ export function ApplicationOrbitSystem({
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_180px_330px]">
         <div className="relative h-[560px] overflow-hidden rounded-[24px] bg-black/10">
           <div className="absolute inset-0 opacity-18 [background-image:radial-gradient(circle,rgba(214,228,255,.28)_0_1px,transparent_1.5px)] [background-size:92px_92px]" />
-          <div className="absolute left-1/2 top-1/2 z-10 grid size-24 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-nebula-blue/10 bg-nebula-blue/7 text-center text-xs text-nebula-silver shadow-[0_0_54px_rgba(126,158,214,0.12)]">
-            投递引力核心
-          </div>
+          <div className="absolute inset-0 grid place-items-center">
+            <div className="relative aspect-square h-[min(92%,520px)] max-h-[520px] w-[min(92%,520px)]">
+              <OrbitTrackLayer activeStatus={activeStatus} />
+              <div className="absolute left-1/2 top-1/2 z-10 grid size-24 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-nebula-blue/10 bg-nebula-blue/7 text-center text-xs text-nebula-silver shadow-[0_0_54px_rgba(126,158,214,0.12)]">
+                投递引力核心
+              </div>
 
-          {ORBIT_STATUS_ORDER.map((status) => (
-            <ApplicationOrbitRing
-              key={status}
-              status={status}
-              applications={grouped.get(status) ?? []}
-              scale={0.86}
-              selectedId={selectedApplication?.id}
-              highlightedStatus={activeStatus}
-              onSelect={onSelect}
-              onAggregateClick={setExpandedStatus}
-            />
-          ))}
+              {ORBIT_STATUS_ORDER.map((status) => (
+                <ApplicationOrbitRing
+                  key={status}
+                  status={status}
+                  applications={grouped.get(status) ?? []}
+                  scale={0.86}
+                  selectedId={selectedApplication?.id}
+                  highlightedStatus={activeStatus}
+                  onSelect={onSelect}
+                  onAggregateClick={setExpandedStatus}
+                  showTrack={false}
+                />
+              ))}
+            </div>
+          </div>
 
           {terminal.map((application, index) => (
             <div
@@ -148,5 +154,32 @@ export function ApplicationOrbitSystem({
         </div>
       ) : null}
     </section>
+  );
+}
+
+function OrbitTrackLayer({ activeStatus }: { activeStatus: OrbitStatus | null }) {
+  return (
+    <div className="pointer-events-none absolute left-1/2 top-1/2 size-0">
+      {ORBIT_STATUS_ORDER.map((status) => {
+        const config = ORBIT_CONFIG[status];
+        const radius = config.radius * 0.86;
+        const active = activeStatus === status;
+        return (
+          <span
+            key={status}
+            aria-hidden="true"
+            className="absolute rounded-full border border-dashed"
+            style={{
+              width: radius * 2,
+              height: radius * 2,
+              marginLeft: -radius,
+              marginTop: -radius,
+              borderColor: active ? "rgba(174,198,230,0.18)" : `rgba(148,163,184,${config.opacity * 0.14})`,
+              boxShadow: active ? "0 0 26px rgba(126,158,214,0.08)" : "none",
+            }}
+          />
+        );
+      })}
+    </div>
   );
 }

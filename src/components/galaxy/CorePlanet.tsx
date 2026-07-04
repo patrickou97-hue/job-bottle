@@ -5,10 +5,10 @@ export function CorePlanet({ compact = false }: { compact?: boolean }) {
     <div
       className="relative flex flex-col items-center justify-center rounded-full"
       style={{
-        width: compact ? 'min(34vw, 150px)' : 'min(34vw, 268px)',
-        height: compact ? 'min(34vw, 150px)' : 'min(34vw, 268px)',
-        minWidth: compact ? 132 : 190,
-        minHeight: compact ? 132 : 190,
+        width: compact ? 'min(27vw, 112px)' : 'min(34vw, 268px)',
+        height: compact ? 'min(27vw, 112px)' : 'min(34vw, 268px)',
+        minWidth: compact ? 96 : 190,
+        minHeight: compact ? 96 : 190,
         background:
           'radial-gradient(circle at 39% 34%, rgba(194,215,244,0.42) 0 5%, rgba(57,82,124,0.38) 20%, rgba(8,18,36,0.97) 62%, rgba(2,5,14,1) 100%)',
         boxShadow:
@@ -30,7 +30,7 @@ export function CorePlanet({ compact = false }: { compact?: boolean }) {
         style={{
           color: 'rgba(226,235,248,0.94)',
           textShadow: '0 0 30px rgba(143,176,220,0.22)',
-          fontSize: compact ? 'clamp(1rem,5vw,1.35rem)' : 'clamp(1.35rem,2.2vw,2rem)',
+          fontSize: compact ? 'clamp(0.82rem,4.2vw,1.05rem)' : 'clamp(1.35rem,2.2vw,2rem)',
         }}
       >
         {SITE_NAME}
@@ -39,8 +39,8 @@ export function CorePlanet({ compact = false }: { compact?: boolean }) {
         className="mt-3 max-w-[12rem] text-center leading-6"
         style={{
           color: 'rgba(156,173,199,0.72)',
-          fontSize: compact ? '0.72rem' : '0.875rem',
-          lineHeight: compact ? '1.15rem' : '1.5rem',
+          fontSize: compact ? '0.62rem' : '0.875rem',
+          lineHeight: compact ? '0.95rem' : '1.5rem',
         }}
       >
         把每一次投递，收进你的职业星图。

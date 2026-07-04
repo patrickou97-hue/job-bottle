@@ -16,6 +16,14 @@ import { PlanetTransitionOverlay } from './PlanetTransitionOverlay'
 import { SpaceBackground } from './SpaceBackground'
 
 const TRANSITION_MS = 860
+const MOBILE_PLANET_LAYOUT: Record<string, { orbitRadius: number; initialAngle: number; size: number }> = {
+  jobs: { orbitRadius: 610, initialAngle: 318, size: 74 },
+  applications: { orbitRadius: 520, initialAngle: 42, size: 60 },
+  bottle: { orbitRadius: 440, initialAngle: 162, size: 64 },
+  forum: { orbitRadius: 650, initialAngle: 232, size: 48 },
+  admin: { orbitRadius: 620, initialAngle: 104, size: 46 },
+  auth: { orbitRadius: 360, initialAngle: 352, size: 50 },
+}
 
 export function SpaceHome() {
   const router = useRouter()
@@ -105,10 +113,19 @@ export function SpaceHome() {
   const entering = selectedPlanet !== null
   const shouldOrbit = !reducedMotion && !entering
   const desktopOrbitScale = Math.min(1, Math.max(0.9, (viewportHeight - 92) / 860))
-  const maxOrbitRadius = Math.max(...planets.map((planet) => planet.orbitRadius))
+  const mobilePlanets = useMemo(
+    () =>
+      planets.map((planet) => {
+        const layout = MOBILE_PLANET_LAYOUT[planet.id]
+        if (!layout) return planet
+        return { ...planet, ...layout }
+      }),
+    [planets],
+  )
+  const mobileMaxOrbitRadius = Math.max(...mobilePlanets.map((planet) => planet.orbitRadius))
   const mobileOrbitScale = Math.min(
-    0.36,
-    Math.max(0.22, Math.min((viewportWidth - 118) / (maxOrbitRadius * 2), (viewportHeight - 330) / (maxOrbitRadius * 2))),
+    0.29,
+    Math.max(0.2, Math.min((viewportWidth - 92) / (mobileMaxOrbitRadius * 2), (viewportHeight - 300) / (mobileMaxOrbitRadius * 2))),
   )
 
   return (
@@ -200,9 +217,9 @@ export function SpaceHome() {
           animate={{ opacity: entering ? 0.14 : 1, scale: entering ? 0.9 : 1 }}
           transition={{ duration: 0.42, ease: 'easeOut' }}
         >
-          <OrbitLines planets={planets} activeId={hovered?.id} orbitScale={mobileOrbitScale} />
+          <OrbitLines planets={mobilePlanets} activeId={hovered?.id} orbitScale={mobileOrbitScale} />
           <div className="absolute">
-            {planets.map((planet) => (
+            {mobilePlanets.map((planet) => (
               <FloatingPlanet
                 key={planet.id}
                 planet={planet}
@@ -211,7 +228,7 @@ export function SpaceHome() {
                 disabled={entering}
                 shouldOrbit={shouldOrbit}
                 orbitScale={mobileOrbitScale}
-                planetScale={0.66}
+                planetScale={0.56}
                 onSelect={enterPlanet}
                 onHover={setHovered}
               />

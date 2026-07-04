@@ -13,6 +13,7 @@ export function ApplicationOrbitRing({
   highlightedStatus,
   onSelect,
   onAggregateClick,
+  showTrack = true,
 }: {
   status: OrbitStatus;
   applications: ApplicationWithJob[];
@@ -21,6 +22,7 @@ export function ApplicationOrbitRing({
   highlightedStatus?: OrbitStatus | null;
   onSelect: (application: ApplicationWithJob) => void;
   onAggregateClick?: (status: OrbitStatus) => void;
+  showTrack?: boolean;
 }) {
   const reducedMotion = useReducedMotion();
   const config = ORBIT_CONFIG[status];
@@ -33,16 +35,18 @@ export function ApplicationOrbitRing({
 
   return (
     <div className="absolute left-1/2 top-1/2 size-0">
-      <div
-        className="pointer-events-none absolute rounded-full border border-dashed"
-        style={{
-          width: radius * 2,
-          height: radius * 2,
-          marginLeft: -radius,
-          marginTop: -radius,
-          borderColor: highlightedStatus === status ? "rgba(174,198,230,0.16)" : `rgba(148,163,184,${config.opacity * 0.16})`,
-        }}
-      />
+      {showTrack ? (
+        <div
+          className="pointer-events-none absolute rounded-full border border-dashed"
+          style={{
+            width: radius * 2,
+            height: radius * 2,
+            marginLeft: -radius,
+            marginTop: -radius,
+            borderColor: highlightedStatus === status ? "rgba(174,198,230,0.16)" : `rgba(148,163,184,${config.opacity * 0.16})`,
+          }}
+        />
+      ) : null}
       <motion.div
         className="absolute size-0"
       >

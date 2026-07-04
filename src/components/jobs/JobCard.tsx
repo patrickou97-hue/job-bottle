@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
-import { CompanyBadge } from "@/components/jobs/CompanyBadge";
 import { DeadlineChip } from "@/components/jobs/DeadlineChip";
 import { StatusPill } from "@/components/applications/StatusPill";
 import { cn } from "@/lib/utils";
@@ -31,7 +30,7 @@ export function JobCard({
     <div
       id={`job-row-${job.id}`}
       className={cn(
-        "data-row group grid cursor-pointer grid-cols-[34px_32px_minmax(0,1fr)_auto] items-center gap-3 px-4 text-sm md:grid-cols-[34px_32px_minmax(0,1fr)_112px_auto]",
+        "data-row group grid cursor-pointer grid-cols-[34px_minmax(0,1fr)_auto] items-center gap-3 px-4 text-sm md:grid-cols-[34px_minmax(0,1fr)_112px_auto]",
         highlighted ? "selected" : "",
       )}
       role="button"
@@ -58,9 +57,6 @@ export function JobCard({
       <span className="text-right text-xs tabular-nums text-[color:var(--text-disabled)]">
         {typeof index === "number" ? String(index + 1).padStart(2, "0") : ""}
       </span>
-
-      {/* Company badge */}
-      <CompanyBadge companyName={job.company_name} logoUrl={job.logo_url} size="sm" />
 
       {/* Company + industry */}
       <div className="min-w-0">

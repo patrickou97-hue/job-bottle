@@ -74,9 +74,15 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/galaxy/SpaceHome.tsx",
-    mustInclude: ["OrbitLines", "PlanetTransitionOverlay", "window.setTimeout", "encodeURIComponent(planet.href)", "/brand/job-bottle-logo-v2.png", "desktopOrbitScale", "mobileOrbitScale", "planetScale={0.66}", "<CorePlanet compact />", "href: user ? '/my' : '/login'"],
+    mustInclude: ["MOBILE_PLANET_LAYOUT", "OrbitLines", "PlanetTransitionOverlay", "window.setTimeout", "encodeURIComponent(planet.href)", "/brand/job-bottle-logo-v2.png", "desktopOrbitScale", "mobileOrbitScale", "planetScale={0.56}", "<CorePlanet compact />", "href: user ? '/my' : '/login'"],
     mustNotInclude: ["router.push(planet.href)", "href: user ? '/my-applications' : '/login'", "bg-white", "rounded-2xl"],
     label: "主页保留 logo、桌面/移动端运行星系和行星进入转场",
+  },
+  {
+    file: "src/components/galaxy/CorePlanet.tsx",
+    mustInclude: ["min(27vw, 112px)", "minWidth: compact ? 96"],
+    mustNotInclude: ["minWidth: compact ? 132"],
+    label: "移动端主页中心星球缩小以避免行星拥挤",
   },
   {
     file: "src/components/galaxy/OrbitLines.tsx",
@@ -181,7 +187,7 @@ const SOURCE_INVARIANTS = [
   {
     file: "src/components/jobs/JobCard.tsx",
     mustInclude: ["DeadlineChip", "job={job}", "md:grid-cols"],
-    mustNotInclude: [],
+    mustNotInclude: ["CompanyBadge", "grid-cols-[34px_32px"],
     label: "探索列表行显示截止时间 chip",
   },
   {
@@ -210,9 +216,15 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/ApplicationOrbitRing.tsx",
-    mustInclude: ["getOrbitPoint", "x: path.map", "y: path.map"],
+    mustInclude: ["getOrbitPoint", "x: path.map", "y: path.map", "showTrack"],
     mustNotInclude: ["rotate: 360", "translateX(${radius}px)", "rotate(${angle}deg)"],
     label: "投递轨道星体使用数学坐标运动而非旋转文字父层",
+  },
+  {
+    file: "src/components/applications/ApplicationOrbitSystem.tsx",
+    mustInclude: ["OrbitTrackLayer", "aspect-square", "showTrack={false}", "ORBIT_STATUS_ORDER.map"],
+    mustNotInclude: ["scaleY"],
+    label: "投递引力核心轨道线由统一同心圆层绘制",
   },
   {
     file: "src/components/applications/ApplicationOrbitStar.tsx",
