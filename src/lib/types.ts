@@ -24,6 +24,8 @@ export type Job = {
   logo_url: string | null;
   tags: string[];
   is_active: boolean;
+  opens_at?: string | null;
+  closes_at?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -47,6 +49,8 @@ export type UserApplication = {
   user_id: string;
   job_id: string;
   status: ApplicationStatus;
+  interview_round?: number | null;
+  note?: string | null;
   progress_note: string | null;
   applied_at: string;
   updated_at: string;
@@ -117,6 +121,24 @@ export type ForumLike = {
   created_at: string;
 };
 
+export type StatusHistory = {
+  id: string;
+  application_id: string;
+  user_id: string;
+  from_status: ApplicationStatus | null;
+  to_status: ApplicationStatus;
+  changed_at: string;
+};
+
+export type Report = {
+  id: string;
+  post_id: string;
+  reporter_id: string;
+  reason: string;
+  created_at: string;
+  resolved: boolean;
+};
+
 export type ForumPostWithComments = ForumPost & {
   comments: ForumComment[];
 };
@@ -155,6 +177,8 @@ export type Database = {
           logo_url?: string | null;
           tags?: string[];
           is_active?: boolean;
+          opens_at?: string | null;
+          closes_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -168,15 +192,32 @@ export type Database = {
           user_id: string;
           job_id: string;
           status?: ApplicationStatus;
+          interview_round?: number | null;
+          note?: string | null;
           progress_note?: string | null;
           applied_at?: string;
           updated_at?: string;
         };
         Update: {
           status?: ApplicationStatus;
+          interview_round?: number | null;
+          note?: string | null;
           progress_note?: string | null;
           updated_at?: string;
         };
+        Relationships: [];
+      };
+      status_history: {
+        Row: StatusHistory;
+        Insert: {
+          id?: string;
+          application_id: string;
+          user_id: string;
+          from_status?: ApplicationStatus | null;
+          to_status: ApplicationStatus;
+          changed_at?: string;
+        };
+        Update: Partial<Omit<StatusHistory, "id">>;
         Relationships: [];
       };
       forum_posts: {
@@ -220,6 +261,22 @@ export type Database = {
           created_at?: string;
         };
         Update: Partial<Omit<ForumLike, "created_at">>;
+        Relationships: [];
+      };
+      reports: {
+        Row: Report;
+        Insert: {
+          id?: string;
+          post_id: string;
+          reporter_id: string;
+          reason: string;
+          created_at?: string;
+          resolved?: boolean;
+        };
+        Update: {
+          reason?: string;
+          resolved?: boolean;
+        };
         Relationships: [];
       };
     };
