@@ -57,7 +57,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/BottleStage.tsx",
-    mustInclude: ["canvasRef", "drawApplicationStar", "drawBottleAtmosphere", "/assets/star-bottle-image2.png", "useReducedMotion", "aspect-[2/3]"],
+    mustInclude: ["canvasRef", "drawApplicationStar", "drawBottleAtmosphere", "BOTTLE_MAIN_CAVITY_PATH", "clipToBottleMainCavity", "/assets/star-bottle-image2.png", "useReducedMotion", "aspect-[2/3]"],
     mustNotInclude: ["Matter", "matter-js", "StackedStar"],
     label: "星瓶使用 canvas 星层和简化落瓶动画且不引入物理引擎",
   },
@@ -199,8 +199,8 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/jobs/HomeClient.tsx",
-    mustInclude: ["NebulaGateway", "CaptureAnimation", "if (!alreadyCaptured)", "hoveredJobId", "focusJob", "nebulaSelection", "encodeURIComponent(\"/explore\")", "href=\"/my\"", "最新开启", "ApplyReturnConfirm", "visibilitychange", "keep_opened", "useSearchParams", "\"cats\""],
-    mustNotInclude: ["queueBottleDrop(application.id);\n      if (applyWindow)", "encodeURIComponent(\"/jobs\")", "href=\"/my-applications\""],
+    mustInclude: ["NebulaGateway", "CaptureAnimation", "if (!alreadyCaptured)", "hoveredJobId", "focusJob", "nebulaSelection", "encodeURIComponent(\"/explore\")", "href=\"/my\"", "最新开启", "ApplyReturnConfirm", "visibilitychange", "keep_opened", "useSearchParams", "\"cats\"", "window.history.replaceState"],
+    mustNotInclude: ["queueBottleDrop(application.id);\n      if (applyWindow)", "encodeURIComponent(\"/jobs\")", "href=\"/my-applications\"", "router.replace(query ? `/explore?${query}` : \"/explore\""],
     label: "岗位星图有星体观测、捕获动画和官网返回确认闭环",
   },
   {
@@ -665,21 +665,19 @@ function checkBottleGeometryProbe() {
   }
 
   function getApplicationBottleSize(application) {
-    if (application.status === "offer") return 40;
-    if (application.status === "rejected" || application.status === "withdrawn") return 16;
-    return 24;
+    if (application.status === "offer") return 34;
+    if (application.status === "rejected" || application.status === "withdrawn") return 15;
+    return 22;
   }
 
-  function getRowY(row, status) {
-    if (status === "offer") return 430 - (row - 8) * 20;
-    return 684 - row * 20;
+  function getRowY(row) {
+    return 684 - row * 18;
   }
 
-  function findStableBottlePosition(hash, safeRadius, status, rowOccupancy) {
-    const preferredStartRow = status === "offer" ? 8 : 0;
+  function findStableBottlePosition(hash, safeRadius, rowOccupancy) {
     const maxRows = 22;
-    for (let row = preferredStartRow; row < maxRows; row += 1) {
-      const y = getRowY(row, status);
+    for (let row = 0; row < maxRows; row += 1) {
+      const y = getRowY(row);
       const range = getBottleMainHorizontalRange(y, safeRadius);
       if (!range) continue;
       const rangeWidth = range.max - range.min;
@@ -719,7 +717,7 @@ function checkBottleGeometryProbe() {
   const positions = applications.map((application) => {
     const size = getApplicationBottleSize(application);
     const safeRadius = getBottleSafeRadius(size, application.status);
-    const point = findStableBottlePosition(hashString(application.id), safeRadius, application.status, rowOccupancy);
+    const point = findStableBottlePosition(hashString(application.id), safeRadius, rowOccupancy);
     return { ...application, size, safeRadius, ...point };
   });
 

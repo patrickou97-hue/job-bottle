@@ -72,7 +72,7 @@ export function calculateBottleStack(applications: ApplicationWithJob[]) {
     const hash = hashString(application.id);
     const size = getApplicationBottleSize(application);
     const safeRadius = getBottleSafeRadius(size, application.status);
-    const candidate = findStableBottlePosition(hash, safeRadius, application.status, rowOccupancy);
+    const candidate = findStableBottlePosition(hash, safeRadius, rowOccupancy);
     const rotate = Math.round(jitter(hash, 19, 14));
 
     positions.set(application.id, {
@@ -95,22 +95,20 @@ export function validateBottleStackPosition(position: BottleStackPosition, statu
 }
 
 function getApplicationBottleSize(application: ApplicationWithJob) {
-  if (application.status === "offer") return 40;
-  if (application.status === "rejected" || application.status === "withdrawn") return 16;
-  return 24;
+  if (application.status === "offer") return 34;
+  if (application.status === "rejected" || application.status === "withdrawn") return 15;
+  return 22;
 }
 
 function findStableBottlePosition(
   hash: number,
   safeRadius: number,
-  status: string,
   rowOccupancy: Map<number, number>,
 ) {
-  const preferredStartRow = status === "offer" ? 8 : 0;
   const maxRows = 22;
 
-  for (let row = preferredStartRow; row < maxRows; row += 1) {
-    const y = getRowY(row, status);
+  for (let row = 0; row < maxRows; row += 1) {
+    const y = getRowY(row);
     const range = getBottleMainHorizontalRange(y, safeRadius);
     if (!range) continue;
 
@@ -141,7 +139,6 @@ function findStableBottlePosition(
   return { x: BOTTLE_COORDINATE_WIDTH / 2, y: 560, row: maxRows };
 }
 
-function getRowY(row: number, status: string) {
-  if (status === "offer") return 430 - (row - 8) * 20;
-  return 684 - row * 20;
+function getRowY(row: number) {
+  return 684 - row * 18;
 }

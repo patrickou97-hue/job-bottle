@@ -241,14 +241,23 @@ export function HomeClient() {
 
   function handleFiltersChange(nextFilters: JobFilters) {
     setFilters(nextFilters);
-    const params = new URLSearchParams(searchParams.toString());
-    if (nextFilters.categories.length > 0) {
-      params.set("cats", serializeJobCategories(nextFilters.categories));
+    updateCategoryUrl(nextFilters.categories);
+  }
+
+  function updateCategoryUrl(categories: string[]) {
+    if (typeof window === "undefined") return;
+
+    const url = new URL(window.location.href);
+    if (categories.length > 0) {
+      url.searchParams.set("cats", serializeJobCategories(categories));
     } else {
-      params.delete("cats");
+      url.searchParams.delete("cats");
     }
-    const query = params.toString();
-    router.replace(query ? `/explore?${query}` : "/explore", { scroll: false });
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${url.pathname}${url.search}${url.hash}`,
+    );
   }
 
   function armApplyConfirmation(nextConfirmation: PendingApplyConfirmation) {
