@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { createServer } from "node:net";
+import { createClient } from "@supabase/supabase-js";
 
 const ROOT = new URL("..", import.meta.url);
 const ENV_FILE = new URL(".env.local", ROOT);
@@ -322,6 +323,21 @@ const SOURCE_INVARIANTS = [
     mustNotInclude: ["service_role"],
     label: "v4 events 埋点迁移存在",
   },
+  {
+    file: "supabase/migrations/20260704030000_security_audit_followup.sql",
+    mustInclude: [
+      "set search_path = public, pg_temp",
+      "forum_posts_select_public",
+      "forum_posts_insert_own",
+      "forum_posts_update_own",
+      "forum_comments_insert_own",
+      "char_length(content) <= 5000",
+      "duplicate_rank > 1",
+      "user_applications_user_job_unique",
+    ],
+    mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY", "service_role"],
+    label: "v6 安全跟进迁移加固 is_admin、论坛策略和投递唯一性",
+  },
 ];
 const REQUIRED_FILES = [
   "public/assets/space-background-desktop.png",
@@ -420,6 +436,99 @@ async function checkSupabase(env) {
     throw new Error(`Supabase jobs 计数异常：${contentRange || "无 content-range"}`);
   }
   console.log(`✓ Supabase jobs 可读：${count} 条开放岗位`);
+}
+
+async function checkSecurityProbe(env) {
+  const url = env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const smokeEmail = env.SMOKE_USER_EMAIL;
+  const smokePassword = env.SMOKE_USER_PASSWORD;
+  if (!url || !key) throw new Error("缺少 Supabase URL 或 publishable key");
+
+  const anonymous = createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  const { data: roleData, error: roleError } = await anonymous
+    .from("profiles")
+    .update({ role: "admin" })
+    .eq("id", "00000000-0000-0000-0000-000000000000")
+    .select("id");
+  if (!roleError && (roleData ?? []).length > 0) {
+    throw new Error("安全探针失败：匿名用户实际修改了 profiles.role");
+  }
+
+  const logoPath = `smoke/anonymous-${Date.now()}.txt`;
+  const { error: uploadError } = await anonymous.storage
+    .from("company-logos")
+    .upload(logoPath, new Blob(["smoke"], { type: "text/plain" }), { upsert: false });
+  if (!uploadError) {
+    throw new Error("安全探针失败：匿名用户可以上传 company-logos");
+  }
+
+  const { data: foreignApplications, error: foreignReadError } = await anonymous
+    .from("user_applications")
+    .select("id")
+    .eq("user_id", "00000000-0000-0000-0000-000000000000");
+  if (foreignReadError) {
+    throw new Error(`安全探针失败：匿名读取投递记录返回错误 ${foreignReadError.message}`);
+  }
+  if ((foreignApplications ?? []).length !== 0) {
+    throw new Error("安全探针失败：匿名用户读取到了他人的 user_applications");
+  }
+
+  if (!smokeEmail || !smokePassword) {
+    console.log("✓ 安全探针通过：匿名提权、匿名 logo 上传、匿名跨用户投递读取均被拒绝；登录重复 upsert 探针因未配置 SMOKE_USER_EMAIL/PASSWORD 已跳过");
+    return;
+  }
+
+  const authenticated = createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data: signIn, error: signInError } = await authenticated.auth.signInWithPassword({
+    email: smokeEmail,
+    password: smokePassword,
+  });
+  if (signInError || !signIn.user) {
+    throw new Error(`安全探针失败：测试用户登录失败 ${signInError?.message ?? ""}`.trim());
+  }
+
+  const { data: job, error: jobError } = await authenticated
+    .from("jobs")
+    .select("id")
+    .eq("is_active", true)
+    .limit(1)
+    .single();
+  if (jobError || !job) {
+    throw new Error(`安全探针失败：无法读取测试岗位 ${jobError?.message ?? ""}`.trim());
+  }
+
+  const payload = {
+    user_id: signIn.user.id,
+    job_id: job.id,
+    status: "opened",
+  };
+  const first = await authenticated
+    .from("user_applications")
+    .upsert(payload, { onConflict: "user_id,job_id" })
+    .select("id");
+  if (first.error) throw new Error(`安全探针失败：首次 upsert 失败 ${first.error.message}`);
+
+  const second = await authenticated
+    .from("user_applications")
+    .upsert(payload, { onConflict: "user_id,job_id" })
+    .select("id");
+  if (second.error) throw new Error(`安全探针失败：重复 upsert 失败 ${second.error.message}`);
+
+  const { count, error: countError } = await authenticated
+    .from("user_applications")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", signIn.user.id)
+    .eq("job_id", job.id);
+  if (countError) throw new Error(`安全探针失败：重复 upsert 计数失败 ${countError.message}`);
+  if (count !== 1) throw new Error(`安全探针失败：重复 upsert 后记录数为 ${count}`);
+
+  console.log("✓ 安全探针通过：匿名写入被拒、跨用户读取为 0、重复 upsert 仅保留一行");
 }
 
 function checkSourceInvariants() {
@@ -647,6 +756,7 @@ async function findReusableServer() {
 async function main() {
   const env = { ...process.env, ...readEnvFile() };
   await checkSupabase(env);
+  await checkSecurityProbe(env);
   checkSourceInvariants();
   checkBottleGeometryProbe();
 
