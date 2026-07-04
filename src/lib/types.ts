@@ -66,7 +66,7 @@ export type JobFilters = {
   batchType: string;
   location: string;
   tags: string[];
-  sortBy: "deadline_asc" | "updated_desc" | "start_date_asc" | "company_asc";
+  sortBy: "start_date_desc" | "updated_desc" | "start_date_asc" | "company_asc";
 };
 
 export type JobWithApplication = Job & {

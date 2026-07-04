@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Building2, ExternalLink, MapPin } from "lucide-react";
 import { JobDetailActions } from "@/components/jobs/JobDetailActions";
 import { CompanyBadge } from "@/components/jobs/CompanyBadge";
-import { DeadlineChip } from "@/components/jobs/DeadlineChip";
 import { PageShell } from "@/components/layout/PageShell";
 import { formatShanghaiDateTime } from "@/lib/dates";
 import { fetchJobById, fetchRelatedJobs } from "@/lib/jobs";
@@ -75,17 +74,11 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
             </a>
           </div>
 
-          <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <MetaItem label="城市 / base" value={job.locations || "地点待补充"} />
             <MetaItem label="行业" value={job.industry || "暂无行业"} />
             <MetaItem label="批次" value={job.batch_type || "暂无批次"} />
             <MetaItem label="开启时间" value={job.opens_at ? formatShanghaiDateTime(job.opens_at) : job.start_date || "暂无"} />
-            <div className="rounded-[18px] border border-white/[0.06] bg-white/[0.025] p-4">
-              <dt className="text-xs text-ink-muted">截止时间</dt>
-              <dd className="mt-2">
-                <DeadlineChip job={job} />
-              </dd>
-            </div>
           </div>
 
           {job.notes ? (

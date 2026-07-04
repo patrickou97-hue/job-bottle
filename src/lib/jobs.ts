@@ -1,5 +1,4 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { getDeadlineTime } from "@/lib/dates";
 import { splitToTags } from "@/lib/utils";
 import type { Database, Job, JobFilters, JobFormValues } from "@/lib/types";
 
@@ -145,19 +144,21 @@ function sortJobs(jobs: Job[], sortBy: JobFilters["sortBy"]) {
   if (sortBy === "company_asc") {
     return sorted.sort((a, b) => a.company_name.localeCompare(b.company_name, "zh-CN"));
   }
-  if (sortBy === "deadline_asc") {
+  if (sortBy === "start_date_asc") {
     return sorted.sort((a, b) => {
-      const aTime = getDeadlineTime(a);
-      const bTime = getDeadlineTime(b);
+      const aTime = getStartTime(a);
+      const bTime = getStartTime(b);
       if (aTime !== bTime) return aTime - bTime;
       return a.company_name.localeCompare(b.company_name, "zh-CN");
     });
   }
-  if (sortBy === "start_date_asc") {
+  if (sortBy === "start_date_desc") {
     return sorted.sort((a, b) => {
-      const aTime = parseLooseDate(a.start_date);
-      const bTime = parseLooseDate(b.start_date);
-      if (aTime !== bTime) return aTime - bTime;
+      const aTime = getStartTime(a);
+      const bTime = getStartTime(b);
+      if (aTime === Number.NEGATIVE_INFINITY && bTime !== Number.NEGATIVE_INFINITY) return 1;
+      if (bTime === Number.NEGATIVE_INFINITY && aTime !== Number.NEGATIVE_INFINITY) return -1;
+      if (aTime !== bTime) return bTime - aTime;
       return a.company_name.localeCompare(b.company_name, "zh-CN");
     });
   }
@@ -176,6 +177,15 @@ function parseLooseDate(value: string | null) {
   const match = normalized.match(/(\d{4})[-/](\d{1,2})(?:[-/](\d{1,2}))?/);
   if (!match) return Number.MAX_SAFE_INTEGER;
   return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3] ?? 1)).getTime();
+}
+
+function getStartTime(job: Job) {
+  if (job.opens_at) {
+    const opensAt = new Date(job.opens_at).getTime();
+    if (!Number.isNaN(opensAt)) return opensAt;
+  }
+  const looseDate = parseLooseDate(job.start_date);
+  return looseDate === Number.MAX_SAFE_INTEGER ? Number.NEGATIVE_INFINITY : looseDate;
 }
 
 export function getJobFacetOptions(jobs: Job[]) {

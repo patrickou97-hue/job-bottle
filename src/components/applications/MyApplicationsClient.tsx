@@ -14,7 +14,6 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
 import { ApplicationOrbitSystem } from "@/components/applications/ApplicationOrbitSystem";
-import { DeadlineChip } from "@/components/jobs/DeadlineChip";
 import type { ApplicationStatus, ApplicationWithJob } from "@/lib/types";
 
 export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { loginNextPath?: string }) {
@@ -185,7 +184,6 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
                   </span>
                 </span>
                 <span className="flex shrink-0 items-center gap-2">
-                  <DeadlineChip job={application.job} compact />
                   <StatusPill status={application.status} />
                   <Button
                     variant="secondary"

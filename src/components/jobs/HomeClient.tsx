@@ -345,7 +345,6 @@ export function HomeClient() {
         <JobFilterBar
           filters={filters}
           facets={facets}
-          digestJobs={filteredJobs}
           onChange={setFilters}
         />
 
@@ -579,8 +578,8 @@ function getActiveFilterChips(filters: JobFilters, jobView: JobViewMode, nebulaN
   if (filters.batchType) chips.push(`批次：${filters.batchType}`);
   if (filters.location) chips.push(`地点：${filters.location}`);
   filters.tags.forEach((tag) => chips.push(`标签：${tag}`));
+  if (filters.sortBy === "start_date_desc") chips.push("最新开启");
   if (filters.sortBy === "start_date_asc") chips.push("开启时间优先");
-  if (filters.sortBy === "deadline_asc") chips.push("即将截止优先");
   if (filters.sortBy === "company_asc") chips.push("公司名称排序");
   if (jobView === "unapplied") chips.push("只看未投递");
   if (jobView === "applied") chips.push("只看已投递");

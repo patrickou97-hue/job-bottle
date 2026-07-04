@@ -6,18 +6,14 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
-import { downloadDeadlineDigest, getUpcomingDeadlineJobs } from "@/lib/deadline-digest";
-import { track } from "@/lib/track";
-import type { Job, JobFilters } from "@/lib/types";
+import type { JobFilters } from "@/lib/types";
 
 export function JobFilterBar({
   filters,
   facets,
-  digestJobs = [],
   onChange,
 }: {
   filters: JobFilters;
-  digestJobs?: Job[];
   facets: {
     industries: string[];
     batchTypes: string[];
@@ -35,17 +31,6 @@ export function JobFilterBar({
       ? filters.tags.filter((item) => item !== tag)
       : [...filters.tags, tag];
     setFilter({ tags });
-  }
-
-  const deadlineJobs = getUpcomingDeadlineJobs(digestJobs);
-
-  async function handleShareDigest() {
-    const siteUrl =
-      typeof window === "undefined"
-        ? "https://job-bottle.vercel.app/?utm_source=digest"
-        : `${window.location.origin}/?utm_source=digest`;
-    const ok = await downloadDeadlineDigest(digestJobs, siteUrl);
-    if (ok) void track("digest_generate", { count: deadlineJobs.length });
   }
 
   return (
@@ -126,9 +111,9 @@ export function JobFilterBar({
               setFilter({ sortBy: event.target.value as JobFilters["sortBy"] })
             }
           >
-            <option value="deadline_asc">即将截止优先</option>
+            <option value="start_date_desc">最新开启</option>
             <option value="updated_desc">最近更新优先</option>
-            <option value="start_date_asc">开启时间优先</option>
+            <option value="start_date_asc">最早开启</option>
             <option value="company_asc">公司名称排序</option>
           </Select>
         </label>
@@ -163,16 +148,6 @@ export function JobFilterBar({
           onClick={() => onChange(EMPTY_JOB_FILTERS)}
         >
           清空筛选
-        </Button>
-
-        <Button
-          variant="secondary"
-          className="w-full"
-          disabled={deadlineJobs.length === 0}
-          title={deadlineJobs.length === 0 ? "本周没有临近截止的岗位" : "生成本周截止分享图"}
-          onClick={() => void handleShareDigest()}
-        >
-          分享本周截止
         </Button>
       </div>
     </aside>

@@ -44,7 +44,7 @@ export const EMPTY_JOB_FILTERS = {
   batchType: "",
   location: "",
   tags: [] as string[],
-  sortBy: "deadline_asc" as const,
+  sortBy: "start_date_desc" as const,
 };
 
 export const JOB_FIELD_LABELS = {
