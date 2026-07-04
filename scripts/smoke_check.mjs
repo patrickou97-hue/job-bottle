@@ -259,8 +259,8 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/MyApplicationsClient.tsx",
-    mustInclude: ["application.job.company_name", "StatusPill"],
-    mustNotInclude: ["DeadlineChip", "formatDateTime, isValidHttpUrl"],
+    mustInclude: ["application.job.company_name", "StatusPill", "handleApplicationChanged", "handleApplicationDeleted"],
+    mustNotInclude: ["DeadlineChip", "formatDateTime, isValidHttpUrl", "onChanged={loadData}"],
     label: "我的星图列表保留投递状态且不展示下线日期",
   },
   {
@@ -291,8 +291,10 @@ const SOURCE_INVARIANTS = [
       "确认删除?",
       "最近更新",
       "handleNodeKeyDown",
+      "saveRequestRef",
+      "optimisticApplication",
     ],
-    mustNotInclude: ["StatusSelect", "投递状态", "rounded-[22px] border", "variant=\"secondary\"", "variant=\"danger\""],
+    mustNotInclude: ["StatusSelect", "投递状态", "rounded-[22px] border", "variant=\"secondary\"", "variant=\"danger\"", "await onChanged()", "router.refresh", "window.location.reload"],
     label: "投递轨道侧滑面板使用无界轨道节点、备注失焦保存和行内删除确认",
   },
   {

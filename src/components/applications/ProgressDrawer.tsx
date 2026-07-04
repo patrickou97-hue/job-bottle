@@ -20,11 +20,13 @@ export function ProgressDrawer({
   open,
   onClose,
   onChanged,
+  onDeleted,
 }: {
   application: ApplicationWithJob | null;
   open: boolean;
   onClose: () => void;
-  onChanged: () => Promise<void> | void;
+  onChanged: (application: ApplicationWithJob) => Promise<void> | void;
+  onDeleted: (applicationId: string) => Promise<void> | void;
 }) {
   const [status, setStatus] = useState<ApplicationStatus>("opened");
   const [savedStatus, setSavedStatus] = useState<ApplicationStatus>("opened");
@@ -34,6 +36,7 @@ export function ProgressDrawer({
   const [saving, setSaving] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const messageTimerRef = useRef<number | null>(null);
+  const saveRequestRef = useRef(0);
 
   useEffect(() => {
     if (!application) return;
@@ -63,30 +66,52 @@ export function ProgressDrawer({
 
   async function saveProgress(nextStatus = status, nextNote = note, successMessage = "已保存") {
     if (!application) return false;
+    const requestId = saveRequestRef.current + 1;
+    saveRequestRef.current = requestId;
     const previousStatus = status;
     const previousNote = note;
+    const previousApplication: ApplicationWithJob = {
+      ...application,
+      status: previousStatus,
+      progress_note: previousNote.trim() || null,
+    };
+    const optimisticApplication: ApplicationWithJob = {
+      ...application,
+      status: nextStatus,
+      progress_note: nextNote.trim() || null,
+      updated_at: new Date().toISOString(),
+    };
     setStatus(nextStatus);
     setNote(nextNote);
     setSaving(true);
     setMessage("");
+    void onChanged(optimisticApplication);
     try {
-      await updateApplication(createClient(), application.id, {
+      const updated = await updateApplication(createClient(), application.id, {
         status: nextStatus,
         progress_note: nextNote.trim() || null,
       });
+      if (requestId !== saveRequestRef.current) return true;
+      const confirmedApplication: ApplicationWithJob = {
+        ...optimisticApplication,
+        ...updated,
+        job: application.job,
+      };
       setSavedStatus(nextStatus);
       setSavedNote(nextNote);
-      await onChanged();
+      void onChanged(confirmedApplication);
       flashMessage(successMessage);
       setConfirmingDelete(false);
       return true;
     } catch {
+      if (requestId !== saveRequestRef.current) return false;
       setStatus(previousStatus);
       setNote(previousNote);
-      setMessage("保存失败，请稍后再试。");
+      void onChanged(previousApplication);
+      setMessage("保存失败，请检查网络后重试。");
       return false;
     } finally {
-      setSaving(false);
+      if (requestId === saveRequestRef.current) setSaving(false);
     }
   }
 
@@ -110,10 +135,10 @@ export function ProgressDrawer({
     setMessage("");
     try {
       await deleteApplication(createClient(), application.id);
-      await onChanged();
+      await onDeleted(application.id);
       onClose();
     } catch {
-      setMessage("删除失败，请稍后再试。");
+      setMessage("删除失败，请检查网络后重试。");
     } finally {
       setSaving(false);
     }

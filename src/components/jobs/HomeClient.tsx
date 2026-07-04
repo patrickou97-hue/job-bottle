@@ -322,6 +322,32 @@ export function HomeClient() {
     }, 60);
   }
 
+  function handleApplicationChanged(nextApplication: ApplicationWithJob) {
+    setApplications((current) =>
+      current.map((application) =>
+        application.id === nextApplication.id ? nextApplication : application,
+      ),
+    );
+    setSelectedApplication((current) =>
+      current?.id === nextApplication.id ? nextApplication : current,
+    );
+    setDrawerApplication((current) =>
+      current?.id === nextApplication.id ? nextApplication : current,
+    );
+  }
+
+  function handleApplicationDeleted(applicationId: string) {
+    setApplications((current) =>
+      current.filter((application) => application.id !== applicationId),
+    );
+    setSelectedApplication((current) =>
+      current?.id === applicationId ? null : current,
+    );
+    setDrawerApplication((current) =>
+      current?.id === applicationId ? null : current,
+    );
+  }
+
   return (
     <div className="space-y-6 pb-24">
       {message ? (
@@ -433,7 +459,8 @@ export function HomeClient() {
         application={drawerApplication}
         open={Boolean(drawerApplication)}
         onClose={() => setDrawerApplication(null)}
-        onChanged={loadData}
+        onChanged={handleApplicationChanged}
+        onDeleted={handleApplicationDeleted}
       />
 
       {/* Bottom detail card for selected application */}

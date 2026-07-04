@@ -50,6 +50,20 @@ export function MyBottleClient({ loginNextPath = "/bottle" }: { loginNextPath?: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  function handleApplicationChanged(nextApplication: ApplicationWithJob) {
+    setApplications((current) =>
+      current.map((application) =>
+        application.id === nextApplication.id ? nextApplication : application,
+      ),
+    );
+  }
+
+  function handleApplicationDeleted(applicationId: string) {
+    setApplications((current) =>
+      current.filter((application) => application.id !== applicationId),
+    );
+  }
+
   return (
     <div className="space-y-6 pb-24">
       <section className="surface-subtle rounded-[28px] p-6">
@@ -71,7 +85,11 @@ export function MyBottleClient({ loginNextPath = "/bottle" }: { loginNextPath?: 
         </div>
       ) : (
         <div className="mx-auto max-w-4xl">
-          <ApplicationBottle applications={applications} onChanged={loadData} />
+          <ApplicationBottle
+            applications={applications}
+            onChanged={handleApplicationChanged}
+            onDeleted={handleApplicationDeleted}
+          />
         </div>
       )}
     </div>

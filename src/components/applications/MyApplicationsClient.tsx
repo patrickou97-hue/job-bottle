@@ -74,6 +74,28 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
     });
   }, [applications, keyword, status, statusGroup]);
 
+  function handleApplicationChanged(nextApplication: ApplicationWithJob) {
+    setApplications((current) =>
+      current.map((application) =>
+        application.id === nextApplication.id ? nextApplication : application,
+      ),
+    );
+    setSelected((current) =>
+      current?.id === nextApplication.id ? nextApplication : current,
+    );
+    setDrawerApplication((current) =>
+      current?.id === nextApplication.id ? nextApplication : current,
+    );
+  }
+
+  function handleApplicationDeleted(applicationId: string) {
+    setApplications((current) =>
+      current.filter((application) => application.id !== applicationId),
+    );
+    setSelected((current) => (current?.id === applicationId ? null : current));
+    setDrawerApplication((current) => (current?.id === applicationId ? null : current));
+  }
+
   return (
     <div className="space-y-6">
       <section className="surface-subtle rounded-[28px] p-6">
@@ -223,7 +245,8 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
         application={drawerApplication}
         open={Boolean(drawerApplication)}
         onClose={() => setDrawerApplication(null)}
-        onChanged={loadData}
+        onChanged={handleApplicationChanged}
+        onDeleted={handleApplicationDeleted}
       />
     </div>
   );

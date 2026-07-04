@@ -33,9 +33,11 @@ function setStoredCount(count: number) {
 export function ApplicationBottle({
   applications,
   onChanged,
+  onDeleted,
 }: {
   applications: ApplicationWithJob[];
-  onChanged: () => Promise<void> | void;
+  onChanged: (application: ApplicationWithJob) => Promise<void> | void;
+  onDeleted: (applicationId: string) => Promise<void> | void;
 }) {
   const [selected, setSelected] = useState<ApplicationWithJob | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -180,6 +182,7 @@ export function ApplicationBottle({
         open={Boolean(selected)}
         onClose={() => setSelected(null)}
         onChanged={onChanged}
+        onDeleted={onDeleted}
       />
     </section>
   );
