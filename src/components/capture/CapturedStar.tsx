@@ -1,9 +1,14 @@
-import { getCompanyInitials } from "@/lib/utils";
+import { getCompactCompanyLabelStyle, getCompanyInitials } from "@/lib/utils";
 import type { ApplicationWithJob } from "@/lib/types";
 
 export function CapturedStar({ application }: { application: ApplicationWithJob }) {
   const label = getCompanyInitials(application.job.company_name);
-  const fontSize = Array.from(label).length >= 5 ? 7 : Array.from(label).length >= 4 ? 8 : 10;
+  const labelStyle = getCompactCompanyLabelStyle(label, 32, {
+    minFontSize: 6,
+    maxFontSize: 10,
+    widthRatio: 0.68,
+    heightRatio: 0.58,
+  });
 
   return (
     <span
@@ -16,8 +21,8 @@ export function CapturedStar({ application }: { application: ApplicationWithJob 
       }}
     >
       <span
-        className="flex max-w-[82%] items-center justify-center break-all text-center leading-[0.9]"
-        style={{ fontSize }}
+        className="flex min-w-0 items-center justify-center overflow-hidden text-center"
+        style={labelStyle}
       >
         {label}
       </span>

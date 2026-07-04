@@ -38,7 +38,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/StackedStar.tsx",
-    mustInclude: ["getCompanyShortLabel", "fontSize", "break-all", "text-center"],
+    mustInclude: ["getCompactCompanyLabelStyle", "getCompanyShortLabel", "overflow-hidden", "text-center"],
     mustNotInclude: ["truncate"],
     label: "星瓶星星公司简称动态缩小且居中不省略",
   },
@@ -156,7 +156,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/ApplicationOrbitStar.tsx",
-    mustInclude: ["getCompanyShortLabel", "已停留", "momentumTier", "break-all", "labelFontSize"],
+    mustInclude: ["getCompactCompanyLabelStyle", "getCompanyShortLabel", "已停留", "momentumTier", "overflow-hidden"],
     mustNotInclude: [],
     label: "投递星体手工简称、动态缩放和 Doppler 动量提示存在",
   },

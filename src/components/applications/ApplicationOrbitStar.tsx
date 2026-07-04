@@ -1,6 +1,6 @@
 "use client";
 
-import { cn, getCompanyShortLabel } from "@/lib/utils";
+import { cn, getCompactCompanyLabelStyle, getCompanyShortLabel } from "@/lib/utils";
 import { daysSince, momentumTier } from "@/lib/application-orbit";
 import type { ApplicationWithJob } from "@/lib/types";
 
@@ -18,11 +18,12 @@ export function ApplicationOrbitStar({
   const offer = application.status === "offer";
   const terminal = application.status === "rejected" || application.status === "withdrawn";
   const shortLabel = getCompanyShortLabel(application.job.company_name, 3);
-  const labelLength = Array.from(shortLabel).length;
-  const asciiLabel = /^[\x00-\x7F]+$/.test(shortLabel);
-  const labelFontSize = asciiLabel
-    ? Math.max(6, Math.min(10, 34 / Math.max(3.8, labelLength * 0.82)))
-    : Math.max(7, Math.min(10, 34 / Math.max(3.2, labelLength * 0.66)));
+  const labelStyle = getCompactCompanyLabelStyle(shortLabel, 36, {
+    minFontSize: 6,
+    maxFontSize: 10,
+    widthRatio: 0.64,
+    heightRatio: 0.54,
+  });
   const momentum = momentumTier(application);
   const stayedDays = daysSince(application.updated_at);
   const momentumStyle = {
@@ -62,8 +63,8 @@ export function ApplicationOrbitStar({
         )}
       />
       <span
-        className="flex max-w-[29px] items-center justify-center break-all text-center leading-[0.9] tracking-normal"
-        style={{ fontSize: labelFontSize }}
+        className="flex min-w-0 items-center justify-center overflow-hidden text-center tracking-normal"
+        style={labelStyle}
       >
         {shortLabel}
       </span>

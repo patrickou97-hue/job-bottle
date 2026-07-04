@@ -1,6 +1,6 @@
 "use client";
 
-import { getCompanyShortLabel, cn } from "@/lib/utils";
+import { getCompactCompanyLabelStyle, getCompanyShortLabel, cn } from "@/lib/utils";
 import type { ApplicationStatus, Job, UserApplication } from "@/lib/types";
 
 const STATUS_STYLE: Partial<Record<ApplicationStatus, string>> = {
@@ -44,11 +44,12 @@ export function OpportunityStar({
   const status = application?.status;
   const starSize = size ?? (compact ? 34 : captured ? 44 : 38);
   const displayLabel = label ?? getCompanyShortLabel(job.company_name, 3);
-  const labelLength = Array.from(displayLabel).length;
-  const asciiLabel = /^[\x00-\x7F]+$/.test(displayLabel);
-  const labelFontSize = asciiLabel
-    ? Math.max(6, Math.min(10, starSize / Math.max(3.6, labelLength * 0.82)))
-    : Math.max(7, Math.min(10, starSize / Math.max(3, labelLength * 0.66)));
+  const labelStyle = getCompactCompanyLabelStyle(displayLabel, starSize, {
+    minFontSize: 6,
+    maxFontSize: 10,
+    widthRatio: 0.62,
+    heightRatio: 0.54,
+  });
   const batchRing =
     job.batch_type?.includes("提前") ? "border-dashed" : job.batch_type?.includes("补录") ? "animate-pulse" : "";
 
@@ -84,8 +85,8 @@ export function OpportunityStar({
       title={`${job.company_name} · ${job.job_titles ?? "岗位"}`}
     >
       <span
-        className="relative z-10 flex max-w-[78%] items-center justify-center break-all text-center leading-[0.9] tracking-normal text-nebula-silver/88"
-        style={{ fontSize: labelFontSize }}
+        className="relative z-10 flex min-w-0 items-center justify-center overflow-hidden text-center tracking-normal text-nebula-silver/88"
+        style={labelStyle}
       >
         {displayLabel}
       </span>

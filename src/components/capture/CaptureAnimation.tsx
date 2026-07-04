@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { getCompanyInitials } from "@/lib/utils";
+import { getCompactCompanyLabelStyle, getCompanyInitials } from "@/lib/utils";
 import type { Job } from "@/lib/types";
 
 export function CaptureAnimation({
@@ -19,15 +19,20 @@ export function CaptureAnimation({
 
   if (!job) return null;
   const label = getCompanyInitials(job.company_name);
-  const fontSize = Array.from(label).length >= 4 ? 11 : 14;
+  const labelStyle = getCompactCompanyLabelStyle(label, 42, {
+    minFontSize: 7,
+    maxFontSize: 13,
+    widthRatio: 0.66,
+    heightRatio: 0.58,
+  });
 
   return (
     <div className="pointer-events-none fixed inset-0 z-50 overflow-hidden" aria-hidden="true">
       <div className="capture-ring" />
       <div className="capture-star">
         <span
-          className="flex max-w-[76%] items-center justify-center break-all text-center leading-[0.9]"
-          style={{ fontSize }}
+          className="flex min-w-0 items-center justify-center overflow-hidden text-center"
+          style={labelStyle}
         >
           {label}
         </span>

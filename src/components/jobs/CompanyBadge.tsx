@@ -1,4 +1,4 @@
-import { getCompanyInitials } from "@/lib/utils";
+import { getCompactCompanyLabelStyle, getCompanyInitials } from "@/lib/utils";
 
 export function CompanyBadge({
   companyName,
@@ -10,9 +10,14 @@ export function CompanyBadge({
   size?: "sm" | "md" | "lg";
 }) {
   const sizeClass = size === "sm" ? "size-9" : size === "lg" ? "size-16" : "size-12";
+  const sizePx = size === "sm" ? 36 : size === "lg" ? 64 : 48;
   const label = getCompanyInitials(companyName);
-  const labelLength = Array.from(label).length;
-  const fontSize = labelLength >= 5 ? 8 : labelLength >= 4 ? 9 : labelLength >= 3 ? 10 : 14;
+  const labelStyle = getCompactCompanyLabelStyle(label, sizePx, {
+    minFontSize: 6,
+    maxFontSize: size === "lg" ? 14 : 12,
+    widthRatio: 0.68,
+    heightRatio: 0.58,
+  });
 
   return (
     <div
@@ -23,8 +28,8 @@ export function CompanyBadge({
         <img src={logoUrl} alt={`${companyName} 标识`} className="size-full object-cover" />
       ) : (
         <span
-          className="flex max-w-[82%] items-center justify-center break-all text-center leading-[0.9]"
-          style={{ fontSize }}
+          className="flex min-w-0 items-center justify-center overflow-hidden text-center"
+          style={labelStyle}
         >
           {label}
         </span>

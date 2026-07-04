@@ -3,7 +3,7 @@
 import { motion } from "motion/react";
 import { useId } from "react";
 import { APPLICATION_STATUS_LABELS } from "@/lib/constants";
-import { getCompanyShortLabel, cn } from "@/lib/utils";
+import { getCompactCompanyLabelStyle, getCompanyShortLabel, cn } from "@/lib/utils";
 import type { ApplicationStatus } from "@/lib/types";
 
 const STAR_TONE: Record<
@@ -87,13 +87,12 @@ export function StackedStar({
   const id = useId().replace(/:/g, "");
   const tone = STAR_TONE[status];
   const label = getCompanyShortLabel(companyName, 3);
-  const labelLength = Array.from(label).length;
-  const asciiLabel = /^[\x00-\x7F]+$/.test(label);
-  const fontSize = Math.round(
-    asciiLabel
-      ? Math.max(6, Math.min(14, size / Math.max(3.5, labelLength * 0.92)))
-      : Math.max(7, Math.min(14, size / Math.max(3.1, labelLength * 0.72))),
-  );
+  const labelStyle = getCompactCompanyLabelStyle(label, size, {
+    minFontSize: 6,
+    maxFontSize: 14,
+    widthRatio: 0.58,
+    heightRatio: 0.5,
+  });
   const gradientId = `${id}-star-fill`;
   const shineId = `${id}-star-shine`;
 
@@ -108,7 +107,6 @@ export function StackedStar({
       style={{
         width: size,
         height: size,
-        fontSize,
         color: tone.text,
         filter: `drop-shadow(0 0 ${selected ? 18 : 12}px ${tone.glow})`,
       }}
@@ -156,8 +154,8 @@ export function StackedStar({
         />
       </svg>
       <span
-        className="relative z-10 flex max-w-[74%] items-center justify-center break-all text-center leading-[0.9] tracking-normal"
-        style={{ textShadow: "0 1px 7px rgba(0, 0, 0, 0.82)" }}
+        className="relative z-10 flex min-w-0 items-center justify-center overflow-hidden text-center font-semibold tracking-normal"
+        style={{ ...labelStyle, textShadow: "0 1px 7px rgba(0, 0, 0, 0.82)" }}
       >
         {label}
       </span>

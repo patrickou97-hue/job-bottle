@@ -8,6 +8,38 @@ export function getCompanyInitials(companyName: string) {
   return getCompanyShortLabel(companyName, 3);
 }
 
+export function getCompactCompanyLabelStyle(
+  label: string,
+  containerSize: number,
+  options: {
+    minFontSize?: number;
+    maxFontSize?: number;
+    widthRatio?: number;
+    heightRatio?: number;
+  } = {},
+) {
+  const characters = Math.max(1, Array.from(label).length);
+  const asciiLabel = /^[\x00-\x7F]+$/.test(label);
+  const minFontSize = options.minFontSize ?? 6;
+  const maxFontSize = options.maxFontSize ?? 12;
+  const widthRatio = options.widthRatio ?? 0.62;
+  const heightRatio = options.heightRatio ?? 0.56;
+  const estimatedCharWidth = asciiLabel ? 0.58 : 0.96;
+  const fitFontSize = (containerSize * widthRatio) / Math.max(1, characters * estimatedCharWidth);
+  const fontSize = Math.floor(Math.max(minFontSize, Math.min(maxFontSize, fitFontSize)));
+
+  return {
+    fontSize,
+    lineHeight: 0.88,
+    width: Math.round(containerSize * widthRatio),
+    maxWidth: Math.round(containerSize * widthRatio),
+    maxHeight: Math.round(containerSize * heightRatio),
+    overflowWrap: "anywhere" as const,
+    wordBreak: "break-word" as const,
+    whiteSpace: "normal" as const,
+  };
+}
+
 export function getCompanyShortLabel(companyName: string, maxLength = 3) {
   const originalName = companyName.trim();
   const manualLabel = findManualCompanyLabel(originalName);
