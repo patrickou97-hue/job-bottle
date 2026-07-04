@@ -1,32 +1,18 @@
 import { SITE_NAME } from '@/lib/constants'
+import { OrbMaterial } from '@/components/visual/OrbMaterial'
 
 export function CorePlanet({ compact = false }: { compact?: boolean }) {
+  const size = compact ? 'min(27vw, 112px)' : 'min(24vw, 160px)'
   return (
-    <div
-      className="relative flex flex-col items-center justify-center rounded-full"
-      style={{
-        width: compact ? 'min(27vw, 112px)' : 'min(34vw, 268px)',
-        height: compact ? 'min(27vw, 112px)' : 'min(34vw, 268px)',
-        minWidth: compact ? 96 : 190,
-        minHeight: compact ? 96 : 190,
-        background:
-          'radial-gradient(circle at 39% 34%, rgba(194,215,244,0.42) 0 5%, rgba(57,82,124,0.38) 20%, rgba(8,18,36,0.97) 62%, rgba(2,5,14,1) 100%)',
-        boxShadow:
-          '0 0 118px rgba(91,128,178,0.18), 0 0 240px rgba(62,92,139,0.08), inset -26px -32px 72px rgba(0,0,0,0.62), inset 18px 14px 48px rgba(220,234,255,0.06)',
-      }}
-    >
-      <span
-        aria-hidden="true"
-        className="absolute right-[23%] top-[24%] size-1.5 rounded-full"
-        style={{ background: 'rgba(222,197,137,0.64)', boxShadow: '0 0 18px rgba(222,197,137,0.38)' }}
+    <div className="relative flex flex-col items-center justify-center">
+      <OrbMaterial
+        size={size}
+        variant="blue"
+        active
+        className="min-h-24 min-w-24"
       />
       <span
-        aria-hidden="true"
-        className="absolute left-[21%] top-[34%] h-8 w-20 -rotate-12 rounded-full blur-lg"
-        style={{ background: 'rgba(187,210,239,0.08)' }}
-      />
-      <span
-        className="font-display font-semibold"
+        className="mt-5 font-display font-semibold"
         style={{
           color: 'rgba(226,235,248,0.94)',
           textShadow: '0 0 30px rgba(143,176,220,0.22)',

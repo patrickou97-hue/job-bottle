@@ -87,15 +87,21 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/galaxy/CorePlanet.tsx",
-    mustInclude: ["min(27vw, 112px)", "minWidth: compact ? 96"],
-    mustNotInclude: ["minWidth: compact ? 132"],
-    label: "移动端主页中心星球缩小以避免行星拥挤",
+    mustInclude: ["OrbMaterial", "min(27vw, 112px)", "SITE_NAME", "把每一次投递"],
+    mustNotInclude: ["minWidth: compact ? 132", "{SITE_NAME}</span>\n      <span"],
+    label: "主页中心星球使用统一材质且文字位于球体外",
   },
   {
     file: "src/components/galaxy/OrbitLines.tsx",
-    mustInclude: ["border: `1px solid", "orbitScale"],
+    mustInclude: ["MAX_HOME_ORBIT_LINES", "scaleY(0.62)", "orbitScale"],
     mustNotInclude: [],
-    label: "主页轨道线作为星系元素保留且支持响应式缩放",
+    label: "主页轨道线作为星系元素保留且最多四条同心椭圆",
+  },
+  {
+    file: "src/components/visual/OrbMaterial.tsx",
+    mustInclude: ["MAX_SCENE_GLOW_ELEMENTS = 5", "MAX_HOME_ORBIT_LINES = 4", "data-orb-material", "circle at 28% 24%"],
+    mustNotInclude: [],
+    label: "统一星球材质组件定义光源、光晕预算和首页轨道预算",
   },
   {
     file: "src/components/layout/UserShell.tsx",
@@ -235,8 +241,8 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/ApplicationOrbitSystem.tsx",
-    mustInclude: ["投递中", "ApplicationOrbitRing", "ApplicationOrbitLegend", "ApplicationOrbitDetail"],
-    mustNotInclude: ["CaptureOrbit", "timeline", "投递引力核心", "接递引力核心"],
+    mustInclude: ["投递中", "ApplicationOrbitRing", "ApplicationOrbitDetail", "OrbMaterial", "counts.get(band)"],
+    mustNotInclude: ["CaptureOrbit", "timeline", "ApplicationOrbitLegend", "投递引力核心", "接递引力核心"],
     label: "我的投递主视觉使用同心投递轨道",
   },
   {
@@ -253,9 +259,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/ApplicationOrbitStar.tsx",
-    mustInclude: ["getCompactCompanyLabelStyle", "getCompanyShortLabel", "已停留", "momentumTier", "overflow-hidden"],
-    mustNotInclude: [],
-    label: "投递星体手工简称、动态缩放和 Doppler 动量提示存在",
+    mustInclude: ["OrbMaterial", "getCompanyShortLabel", "已停留", "momentumTier", "group relative flex w-16", "variant={selected || offer ? \"gold\""],
+    mustNotInclude: ["getCompactCompanyLabelStyle", "style={labelStyle}"],
+    label: "投递节点使用统一球体材质且公司简称移到球下方",
   },
   {
     file: "src/components/applications/MyApplicationsClient.tsx",
@@ -268,12 +274,6 @@ const SOURCE_INVARIANTS = [
     mustInclude: ["ORBIT_BAND_CONFIG", "探索带", "投递带", "面试带", "Offer 核", "statuses: [\"first_round\", \"second_round\", \"final_round\"]"],
     mustNotInclude: [],
     label: "投递数据七态收敛为四个视觉轨道带",
-  },
-  {
-    file: "src/components/applications/ApplicationOrbitLegend.tsx",
-    mustInclude: ["ORBIT_BANDS.map", "description", "activeBand"],
-    mustNotInclude: ["ORBIT_STATUS_ORDER.map"],
-    label: "投递轨道图例显示四个视觉带而非七个细状态",
   },
   {
     file: "src/components/applications/MyApplicationsClient.tsx",

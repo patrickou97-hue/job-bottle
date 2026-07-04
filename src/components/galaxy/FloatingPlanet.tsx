@@ -3,7 +3,7 @@
 import { motion } from 'motion/react'
 import { Briefcase, FileText, LogIn, MessageSquare, Shield, Sparkles } from 'lucide-react'
 import type { PlanetRoute } from '@/lib/galaxy-routes'
-import { planetStyle, PLANET_VISUALS } from './planet-visuals'
+import { OrbMaterial, type OrbMaterialVariant } from '@/components/visual/OrbMaterial'
 
 type FloatingPlanetProps = {
   planet: PlanetRoute
@@ -18,14 +18,19 @@ type FloatingPlanetProps = {
 }
 
 function PlanetGlyph({ planet }: { planet: PlanetRoute }) {
-  const className = planet.id === 'jobs' ? 'size-6' : 'size-5'
-  const style = { color: 'rgba(226,235,247,0.76)' }
-  if (planet.id === 'jobs') return <Briefcase className={className} style={style} />
-  if (planet.id === 'applications') return <FileText className={className} style={style} />
-  if (planet.id === 'forum') return <MessageSquare className={className} style={style} />
-  if (planet.id === 'admin') return <Shield className={className} style={style} />
-  if (planet.id === 'auth') return <LogIn className={className} style={style} />
-  return <Sparkles className={className} style={style} />
+  const className = 'size-5'
+  if (planet.id === 'jobs') return <Briefcase className={className} />
+  if (planet.id === 'applications') return <FileText className={className} />
+  if (planet.id === 'forum') return <MessageSquare className={className} />
+  if (planet.id === 'admin') return <Shield className={className} />
+  if (planet.id === 'auth') return <LogIn className={className} />
+  return <Sparkles className={className} />
+}
+
+function getOrbVariant(planet: PlanetRoute): OrbMaterialVariant {
+  if (planet.id === 'forum') return 'violet'
+  if (planet.id === 'admin') return 'muted'
+  return 'blue'
 }
 
 export function FloatingPlanet({
@@ -39,7 +44,6 @@ export function FloatingPlanet({
   onSelect,
   onHover,
 }: FloatingPlanetProps) {
-  const visual = PLANET_VISUALS[planet.variant]
   const orbitRadius = planet.orbitRadius * orbitScale
   const planetSize = planet.size * planetScale
 
@@ -82,41 +86,30 @@ export function FloatingPlanet({
           onMouseLeave={() => onHover(null)}
           onFocus={() => onHover(planet)}
           onBlur={() => onHover(null)}
-          className="relative flex size-full items-center justify-center overflow-hidden rounded-full outline-none"
-          style={planetStyle(planet.variant, hovered)}
-          animate={{
-            scale: entering ? 0.68 : hovered ? 1.13 : 1,
-            opacity: entering ? 0 : 1,
-            filter: entering ? 'blur(5px)' : hovered ? 'brightness(1.12)' : 'brightness(1)',
-          }}
-          transition={{ duration: entering ? 0.42 : 0.24, ease: 'easeOut' }}
-        >
-          <span
-            aria-hidden="true"
-            className="absolute inset-0 rounded-full"
-            style={{
-              background: `radial-gradient(circle at 30% 24%, ${visual.glint} 0 7%, transparent 29%), radial-gradient(circle at 72% 78%, rgba(0,0,0,0.38), transparent 45%)`,
-              opacity: hovered ? 1 : 0.78,
-            }}
-          />
-          <span
-            aria-hidden="true"
-            className="absolute inset-[14%] rounded-full blur-[2px]"
-            style={{
-              background: `linear-gradient(145deg, ${visual.grain}, transparent 54%)`,
-              opacity: hovered ? 0.82 : 0.48,
-            }}
-          />
-          <span className="relative z-10 flex items-center justify-center opacity-80">
-            <PlanetGlyph planet={planet} />
-          </span>
-        </motion.button>
-        <motion.span
-          className="pointer-events-none absolute left-1/2 top-full mt-4 -translate-x-1/2 whitespace-nowrap text-sm font-medium"
-          style={{ color: 'rgba(208,220,238,0.86)', textShadow: '0 0 18px rgba(112,143,185,0.24)' }}
-          animate={{ opacity: hovered && !entering ? 1 : 0, y: hovered ? 0 : -4 }}
-          transition={{ duration: 0.2 }}
-        >
+	          className="relative flex size-full items-center justify-center rounded-full outline-none"
+	          animate={{
+	            scale: entering ? 0.68 : hovered ? 1.04 : 1,
+	            opacity: entering ? 0 : 1,
+	            filter: entering ? 'blur(5px)' : hovered ? 'brightness(1.15)' : 'brightness(1)',
+	          }}
+	          transition={{ duration: entering ? 0.42 : 0.24, ease: 'easeOut' }}
+	        >
+	          <OrbMaterial
+	            size="100%"
+	            variant={getOrbVariant(planet)}
+	            active={hovered}
+	            icon={<PlanetGlyph planet={planet} />}
+	          />
+	        </motion.button>
+	        <motion.span
+	          className="pointer-events-none absolute left-1/2 top-full mt-2 -translate-x-1/2 whitespace-nowrap text-xs font-medium"
+	          style={{
+	            color: hovered ? 'rgba(230,238,250,0.94)' : 'rgba(156,173,199,0.74)',
+	            textShadow: hovered ? '0 0 18px rgba(112,143,185,0.24)' : 'none',
+	          }}
+	          animate={{ opacity: entering ? 0 : 1, y: hovered ? 1 : 0 }}
+	          transition={{ duration: 0.2 }}
+	        >
           {planet.label}
         </motion.span>
       </motion.div>

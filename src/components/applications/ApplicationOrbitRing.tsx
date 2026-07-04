@@ -3,6 +3,7 @@
 import { motion, useReducedMotion } from "motion/react";
 import { ORBIT_BAND_CONFIG, type OrbitBand } from "@/components/applications/ApplicationOrbitConfig";
 import { ApplicationOrbitStar } from "@/components/applications/ApplicationOrbitStar";
+import { OrbMaterial } from "@/components/visual/OrbMaterial";
 import type { ApplicationWithJob } from "@/lib/types";
 
 export function ApplicationOrbitRing({
@@ -80,16 +81,17 @@ export function ApplicationOrbitRing({
                     dimmed={dimmed}
                     onClick={() => onSelect(application)}
                   />
-                ) : (
-                  <button
-                    type="button"
-                    className="flex size-10 items-center justify-center rounded-full border border-nebula-blue/12 bg-nebula-blue/8 text-xs text-ink-secondary transition hover:scale-[1.06] hover:border-nebula-blue/24 hover:text-nebula-silver"
-                    onClick={() => onAggregateClick?.(band)}
-                    aria-label={`${config.label}还有 ${hiddenCount} 条投递记录`}
-                  >
-                    +{hiddenCount}
-                  </button>
-                )}
+	                ) : (
+	                  <button
+	                    type="button"
+	                    className="flex w-16 flex-col items-center justify-center gap-1 text-xs text-ink-secondary transition hover:scale-[1.06] hover:text-nebula-silver"
+	                    onClick={() => onAggregateClick?.(band)}
+	                    aria-label={`${config.label}还有 ${hiddenCount} 条投递记录`}
+	                  >
+	                    <OrbMaterial size={32} variant="muted" />
+	                    <span className="whitespace-nowrap">+{hiddenCount}</span>
+	                  </button>
+	                )}
               </div>
             </motion.div>
           );

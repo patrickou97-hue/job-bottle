@@ -1,7 +1,7 @@
 'use client'
 
 import type { PlanetRoute } from '@/lib/galaxy-routes'
-import { planetStyle, PLANET_VISUALS } from './planet-visuals'
+import { OrbMaterial, type OrbMaterialVariant } from '@/components/visual/OrbMaterial'
 
 type MobilePlanetListProps = {
   planets: PlanetRoute[]
@@ -13,7 +13,6 @@ export function MobilePlanetList({ planets, disabled, onSelect }: MobilePlanetLi
   return (
     <div className="relative z-20 flex w-full max-w-sm flex-col gap-5 px-7">
       {planets.map((planet, index) => {
-        const visual = PLANET_VISUALS[planet.variant]
         const size = Math.max(42, planet.size * 0.62)
         return (
           <button
@@ -28,18 +27,7 @@ export function MobilePlanetList({ planets, disabled, onSelect }: MobilePlanetLi
               transition: 'opacity 220ms ease, transform 220ms ease',
             }}
           >
-            <span
-              className="relative flex shrink-0 items-center justify-center overflow-hidden rounded-full"
-              style={{ width: size, height: size, ...planetStyle(planet.variant, false) }}
-            >
-              <span
-                aria-hidden="true"
-                className="absolute inset-0 rounded-full"
-                style={{
-                  background: `radial-gradient(circle at 30% 24%, ${visual.glint} 0 7%, transparent 30%), radial-gradient(circle at 72% 78%, rgba(0,0,0,0.38), transparent 45%)`,
-                }}
-              />
-            </span>
+            <OrbMaterial size={size} variant={getOrbVariant(planet)} />
             <span className="flex min-w-0 flex-col">
               <span className="font-display text-base font-semibold" style={{ color: 'rgba(228,236,247,0.9)' }}>
                 {planet.label}
@@ -52,5 +40,11 @@ export function MobilePlanetList({ planets, disabled, onSelect }: MobilePlanetLi
         )
       })}
     </div>
-  )
+	  )
+}
+
+function getOrbVariant(planet: PlanetRoute): OrbMaterialVariant {
+  if (planet.id === 'forum') return 'violet'
+  if (planet.id === 'admin') return 'muted'
+  return 'blue'
 }

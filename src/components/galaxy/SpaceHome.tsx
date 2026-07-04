@@ -17,12 +17,12 @@ import { SpaceBackground } from './SpaceBackground'
 
 const TRANSITION_MS = 860
 const MOBILE_PLANET_LAYOUT: Record<string, { orbitRadius: number; initialAngle: number; size: number }> = {
-  jobs: { orbitRadius: 610, initialAngle: 318, size: 74 },
-  applications: { orbitRadius: 520, initialAngle: 42, size: 60 },
+  jobs: { orbitRadius: 610, initialAngle: 318, size: 64 },
+  applications: { orbitRadius: 520, initialAngle: 42, size: 64 },
   bottle: { orbitRadius: 440, initialAngle: 162, size: 64 },
   forum: { orbitRadius: 650, initialAngle: 232, size: 48 },
-  admin: { orbitRadius: 620, initialAngle: 104, size: 46 },
-  auth: { orbitRadius: 360, initialAngle: 352, size: 50 },
+  admin: { orbitRadius: 620, initialAngle: 104, size: 48 },
+  auth: { orbitRadius: 360, initialAngle: 352, size: 48 },
 }
 
 export function SpaceHome() {
@@ -86,9 +86,9 @@ export function SpaceHome() {
       description: user ? '查看你的投递记录和星瓶' : '登录后保存投递记录',
       href: user ? '/my' : '/login',
       orbitRadius: 520,
-      orbitDuration: 90,
+      orbitDuration: 150,
       initialAngle: 315,
-      size: 56,
+      size: 48,
       variant: 'auth',
     }
     return [...PLANET_ROUTES.filter((planet) => !planet.adminOnly || isAdmin), authPlanet]
@@ -136,7 +136,7 @@ export function SpaceHome() {
       <SpaceBackground entering={entering} />
 
       <div className="pointer-events-none absolute left-6 top-5 z-30 flex items-center gap-3 md:left-10 md:top-8">
-        <span className="relative flex size-10 overflow-hidden rounded-full border border-white/[0.08] bg-[#08101d]/52 shadow-[0_0_28px_rgba(126,158,214,0.16)]">
+        <span className="relative flex size-10 overflow-hidden rounded-full bg-[#08101d]/52 shadow-[0_0_28px_rgba(126,158,214,0.16)]">
           <Image src="/brand/job-bottle-logo-v2.png" alt="" width={40} height={40} className="size-full object-cover" />
         </span>
         <span className="font-display text-base font-semibold tracking-normal" style={{ color: 'rgba(224,233,246,0.9)' }}>
@@ -154,7 +154,7 @@ export function SpaceHome() {
             description: user ? '查看你的投递记录和星瓶' : '登录后保存投递记录',
             href: user ? '/my' : '/login',
             orbitRadius: 0,
-            orbitDuration: 0,
+            orbitDuration: 150,
             initialAngle: 0,
             size: 48,
             variant: 'auth',

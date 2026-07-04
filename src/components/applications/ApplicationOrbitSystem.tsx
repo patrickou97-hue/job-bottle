@@ -11,10 +11,10 @@ import {
   type OrbitStatus,
 } from "@/components/applications/ApplicationOrbitConfig";
 import { ApplicationOrbitRing } from "@/components/applications/ApplicationOrbitRing";
-import { ApplicationOrbitLegend } from "@/components/applications/ApplicationOrbitLegend";
 import { ApplicationOrbitStar } from "@/components/applications/ApplicationOrbitStar";
 import { ApplicationOrbitDetail } from "@/components/applications/ApplicationOrbitDetail";
 import { FiligreeDivider } from "@/components/ui/FiligreeDivider";
+import { OrbMaterial } from "@/components/visual/OrbMaterial";
 import type { ApplicationWithJob } from "@/lib/types";
 
 export function ApplicationOrbitSystem({
@@ -46,6 +46,7 @@ export function ApplicationOrbitSystem({
   const terminal = applications.filter((application) => application.status === "rejected" || application.status === "withdrawn");
   const activeBand = lockedBand ?? highlightedBand;
   const expandedApplications = expandedBand ? grouped.get(expandedBand) ?? [] : [];
+  const bandCounts = new Map(ORBIT_BANDS.map((band) => [band, grouped.get(band)?.length ?? 0]));
 
   function selectBand(band: OrbitBand) {
     const nextBand = lockedBand === band ? null : band;
@@ -54,27 +55,30 @@ export function ApplicationOrbitSystem({
   }
 
   return (
-    <section className="surface-subtle relative overflow-hidden rounded-[28px] p-5">
+    <section className="surface-subtle relative overflow-hidden p-1">
       <div className="mb-4 flex items-baseline justify-between gap-3">
         <div>
           <h2 className="font-display text-lg font-semibold text-ink-primary">我的投递轨道</h2>
         </div>
-        <span className="text-xs text-ink-muted">{applications.length} 颗投递星体</span>
+        <span className="text-xs text-ink-muted">{applications.length} 条投递</span>
       </div>
       <FiligreeDivider className="mb-4 opacity-70" />
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_180px_330px]">
-        <div className="relative h-[560px] overflow-hidden rounded-[24px] bg-black/10">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_330px]">
+        <div className="relative h-[600px] overflow-hidden bg-black/10">
           <div className="absolute inset-0 opacity-18 [background-image:radial-gradient(circle,rgba(214,228,255,.28)_0_1px,transparent_1.5px)] [background-size:92px_92px]" />
           <div className="absolute inset-0 grid place-items-center">
-            <div className="relative aspect-square h-[min(92%,520px)] max-h-[520px] w-[min(92%,520px)]">
-              <OrbitTrackLayer activeBand={activeBand} />
-              <div className="absolute left-1/2 top-1/2 z-10 grid size-24 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-nebula-blue/10 bg-nebula-blue/7 text-center text-xs text-nebula-silver shadow-[0_0_54px_rgba(126,158,214,0.12)]">
-                <span>
-                  <span className="block font-display text-xl text-ink-primary tabular-nums">
-                    {applications.length}
-                  </span>
-                  <span className="mt-1 block text-[11px]">投递中</span>
+            <div className="relative aspect-square h-[min(94%,560px)] max-h-[560px] w-[min(94%,560px)]">
+              <OrbitTrackLayer
+                activeBand={activeBand}
+                counts={bandCounts}
+                onHover={setHighlightedBand}
+                onSelect={selectBand}
+              />
+              <div className="absolute left-1/2 top-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center text-center text-xs text-nebula-silver">
+                <OrbMaterial size={42} variant="blue" active={applications.length > 0} />
+                <span className="mt-2 block text-[11px]">
+                  投递中 <span className="font-display text-base text-ink-primary tabular-nums">{applications.length}</span>
                 </span>
               </div>
 
@@ -122,17 +126,10 @@ export function ApplicationOrbitSystem({
           ) : null}
         </div>
 
-        <ApplicationOrbitLegend
-          counts={new Map(ORBIT_BANDS.map((band) => [band, grouped.get(band)?.length ?? 0]))}
-          activeBand={activeBand}
-          onHover={setHighlightedBand}
-          onSelect={selectBand}
-        />
-
         <ApplicationOrbitDetail application={selectedApplication} onEdit={onEdit ?? onSelect} />
       </div>
       {expandedBand ? (
-        <div className="absolute inset-x-5 bottom-5 z-40 rounded-[22px] border border-white/[0.07] bg-[#040814]/92 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl xl:left-auto xl:w-[420px]">
+        <div className="absolute inset-x-5 bottom-5 z-40 bg-[#040814]/92 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl xl:left-auto xl:w-[420px]">
           <div className="mb-3 flex items-center justify-between gap-3">
             <span className="text-sm font-medium text-nebula-silver">
               {ORBIT_BAND_CONFIG[expandedBand].label} · {expandedApplications.length} 条记录
@@ -171,7 +168,17 @@ export function ApplicationOrbitSystem({
   );
 }
 
-function OrbitTrackLayer({ activeBand }: { activeBand: OrbitBand | null }) {
+function OrbitTrackLayer({
+  activeBand,
+  counts,
+  onHover,
+  onSelect,
+}: {
+  activeBand: OrbitBand | null;
+  counts: Map<OrbitBand, number>;
+  onHover: (band: OrbitBand | null) => void;
+  onSelect: (band: OrbitBand) => void;
+}) {
   return (
     <div className="pointer-events-none absolute left-1/2 top-1/2 size-0">
       {ORBIT_BANDS.map((band) => {
@@ -179,10 +186,9 @@ function OrbitTrackLayer({ activeBand }: { activeBand: OrbitBand | null }) {
         const radius = config.radius * 0.86;
         const active = activeBand === band;
         return (
-          <span
+          <div
             key={band}
-            aria-hidden="true"
-            className="absolute rounded-full border border-dashed"
+            className="pointer-events-none absolute rounded-full border border-dashed"
             style={{
               width: radius * 2,
               height: radius * 2,
@@ -191,7 +197,21 @@ function OrbitTrackLayer({ activeBand }: { activeBand: OrbitBand | null }) {
               borderColor: active ? "rgba(174,198,230,0.18)" : `rgba(148,163,184,${config.opacity * 0.14})`,
               boxShadow: active ? "0 0 26px rgba(126,158,214,0.08)" : "none",
             }}
-          />
+          >
+            <button
+              type="button"
+              className="pointer-events-auto absolute left-full top-1/2 ml-3 -translate-y-1/2 whitespace-nowrap text-left text-[11px] text-ink-muted outline-none transition hover:text-ink-primary focus-visible:text-ink-primary"
+              style={{ color: active ? "rgba(230,238,250,0.9)" : undefined }}
+              onMouseEnter={() => onHover(band)}
+              onMouseLeave={() => onHover(null)}
+              onFocus={() => onHover(band)}
+              onBlur={() => onHover(null)}
+              onClick={() => onSelect(band)}
+              aria-label={`${config.label} ${counts.get(band) ?? 0} 条记录`}
+            >
+              {config.label} · {counts.get(band) ?? 0}
+            </button>
+          </div>
         );
       })}
     </div>
