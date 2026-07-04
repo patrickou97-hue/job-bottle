@@ -21,3 +21,60 @@ export const ORBIT_CONFIG = {
 } as const;
 
 export type OrbitStatus = keyof typeof ORBIT_CONFIG;
+
+export const ORBIT_BANDS = ["explore", "submit", "interview", "offer_core"] as const;
+
+export const ORBIT_BAND_CONFIG = {
+  explore: {
+    label: "探索带",
+    description: "已打开官网",
+    statuses: ["opened"],
+    radius: 250,
+    duration: 90,
+    opacity: 0.38,
+  },
+  submit: {
+    label: "投递带",
+    description: "已投递 / 笔试",
+    statuses: ["applied", "written_test"],
+    radius: 185,
+    duration: 72,
+    opacity: 0.54,
+  },
+  interview: {
+    label: "面试带",
+    description: "一面 / 二面 / 终面",
+    statuses: ["first_round", "second_round", "final_round"],
+    radius: 118,
+    duration: 58,
+    opacity: 0.70,
+  },
+  offer_core: {
+    label: "Offer 核",
+    description: "Offer",
+    statuses: ["offer"],
+    radius: 48,
+    duration: 42,
+    opacity: 0.92,
+  },
+} as const satisfies Record<
+  string,
+  {
+    label: string;
+    description: string;
+    statuses: readonly OrbitStatus[];
+    radius: number;
+    duration: number;
+    opacity: number;
+  }
+>;
+
+export type OrbitBand = keyof typeof ORBIT_BAND_CONFIG;
+
+export function getOrbitBandForStatus(status: OrbitStatus) {
+  return (
+    ORBIT_BANDS.find((band) =>
+      (ORBIT_BAND_CONFIG[band].statuses as readonly OrbitStatus[]).includes(status),
+    ) ?? "explore"
+  );
+}

@@ -24,6 +24,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
   const [drawerApplication, setDrawerApplication] = useState<ApplicationWithJob | null>(null);
   const [keyword, setKeyword] = useState("");
   const [status, setStatus] = useState<ApplicationStatus | "">("");
+  const [statusGroup, setStatusGroup] = useState<readonly ApplicationStatus[] | "">("");
   const [loading, setLoading] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
   const [message, setMessage] = useState("");
@@ -67,10 +68,12 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
         !key ||
         application.job.company_name.toLowerCase().includes(key) ||
         (application.job.job_titles ?? "").toLowerCase().includes(key);
-      const matchesStatus = !status || application.status === status;
+      const matchesStatus = statusGroup
+        ? statusGroup.includes(application.status)
+        : !status || application.status === status;
       return matchesKeyword && matchesStatus;
     });
-  }, [applications, keyword, status]);
+  }, [applications, keyword, status, statusGroup]);
 
   return (
     <div className="space-y-6">
@@ -94,7 +97,10 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
           </div>
           <Select
             value={status}
-            onChange={(event) => setStatus(event.target.value as ApplicationStatus | "")}
+            onChange={(event) => {
+              setStatus(event.target.value as ApplicationStatus | "");
+              setStatusGroup("");
+            }}
           >
             <option value="">全部状态</option>
             {APPLICATION_STATUS.map((item) => (
@@ -120,7 +126,10 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
         selectedApplication={selected}
         onSelect={setSelected}
         onEdit={setDrawerApplication}
-        onStatusFilterChange={setStatus}
+        onStatusFilterChange={(nextStatuses) => {
+          setStatusGroup(nextStatuses);
+          if (nextStatuses) setStatus("");
+        }}
       />
 
       <section className="overflow-hidden">

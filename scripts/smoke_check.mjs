@@ -228,9 +228,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/ApplicationOrbitSystem.tsx",
-    mustInclude: ["OrbitTrackLayer", "aspect-square", "showTrack={false}", "ORBIT_STATUS_ORDER.map"],
+    mustInclude: ["OrbitTrackLayer", "aspect-square", "showTrack={false}", "ORBIT_BANDS.map", "getOrbitBandForStatus"],
     mustNotInclude: ["scaleY"],
-    label: "投递引力核心轨道线由统一同心圆层绘制",
+    label: "投递引力核心按四个视觉轨道带绘制同心圆",
   },
   {
     file: "src/components/applications/ApplicationOrbitStar.tsx",
@@ -246,9 +246,21 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/ApplicationOrbitConfig.ts",
-    mustInclude: ["opened", "radius: 260", "offer", "radius: 48"],
+    mustInclude: ["ORBIT_BAND_CONFIG", "探索带", "投递带", "面试带", "Offer 核", "statuses: [\"first_round\", \"second_round\", \"final_round\"]"],
     mustNotInclude: [],
-    label: "投递状态按外圈到 Offer 内圈映射",
+    label: "投递数据七态收敛为四个视觉轨道带",
+  },
+  {
+    file: "src/components/applications/ApplicationOrbitLegend.tsx",
+    mustInclude: ["ORBIT_BANDS.map", "description", "activeBand"],
+    mustNotInclude: ["ORBIT_STATUS_ORDER.map"],
+    label: "投递轨道图例显示四个视觉带而非七个细状态",
+  },
+  {
+    file: "src/components/applications/MyApplicationsClient.tsx",
+    mustInclude: ["statusGroup", "nextStatuses", "statusGroup.includes(application.status)"],
+    mustNotInclude: [],
+    label: "我的投递列表支持轨道视觉带联动过滤多个状态",
   },
   {
     file: "src/components/capture/CaptureOrbit.tsx",

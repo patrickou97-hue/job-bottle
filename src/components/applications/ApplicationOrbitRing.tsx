@@ -1,36 +1,36 @@
 "use client";
 
 import { motion, useReducedMotion } from "motion/react";
-import { ORBIT_CONFIG, type OrbitStatus } from "@/components/applications/ApplicationOrbitConfig";
+import { ORBIT_BAND_CONFIG, type OrbitBand } from "@/components/applications/ApplicationOrbitConfig";
 import { ApplicationOrbitStar } from "@/components/applications/ApplicationOrbitStar";
 import type { ApplicationWithJob } from "@/lib/types";
 
 export function ApplicationOrbitRing({
-  status,
+  band,
   applications,
   scale,
   selectedId,
-  highlightedStatus,
+  highlightedBand,
   onSelect,
   onAggregateClick,
   showTrack = true,
 }: {
-  status: OrbitStatus;
+  band: OrbitBand;
   applications: ApplicationWithJob[];
   scale: number;
   selectedId?: string | null;
-  highlightedStatus?: OrbitStatus | null;
+  highlightedBand?: OrbitBand | null;
   onSelect: (application: ApplicationWithJob) => void;
-  onAggregateClick?: (status: OrbitStatus) => void;
+  onAggregateClick?: (band: OrbitBand) => void;
   showTrack?: boolean;
 }) {
   const reducedMotion = useReducedMotion();
-  const config = ORBIT_CONFIG[status];
+  const config = ORBIT_BAND_CONFIG[band];
   const radius = config.radius * scale;
   const visible = applications.slice(0, 7);
   const hiddenCount = Math.max(0, applications.length - visible.length);
   const slots = hiddenCount > 0 ? [...visible, null] : visible;
-  const dimmed = Boolean(highlightedStatus && highlightedStatus !== status);
+  const dimmed = Boolean(highlightedBand && highlightedBand !== band);
   const orbitPoints = [0, 60, 120, 180, 240, 300, 360];
 
   return (
@@ -43,7 +43,7 @@ export function ApplicationOrbitRing({
             height: radius * 2,
             marginLeft: -radius,
             marginTop: -radius,
-            borderColor: highlightedStatus === status ? "rgba(174,198,230,0.16)" : `rgba(148,163,184,${config.opacity * 0.16})`,
+            borderColor: highlightedBand === band ? "rgba(174,198,230,0.16)" : `rgba(148,163,184,${config.opacity * 0.16})`,
           }}
         />
       ) : null}
@@ -52,7 +52,7 @@ export function ApplicationOrbitRing({
       >
         {slots.map((application, index) => {
           const total = Math.max(1, slots.length);
-          const id = application?.id ?? `${status}-aggregate`;
+          const id = application?.id ?? `${band}-aggregate`;
           const angle = (index / total) * 360;
           const staticPoint = getOrbitPoint(angle, radius);
           const path = orbitPoints.map((offset) => getOrbitPoint(angle + offset, radius));
@@ -84,7 +84,7 @@ export function ApplicationOrbitRing({
                   <button
                     type="button"
                     className="flex size-10 items-center justify-center rounded-full border border-nebula-blue/12 bg-nebula-blue/8 text-xs text-ink-secondary transition hover:scale-[1.06] hover:border-nebula-blue/24 hover:text-nebula-silver"
-                    onClick={() => onAggregateClick?.(status)}
+                    onClick={() => onAggregateClick?.(band)}
                     aria-label={`${config.label}还有 ${hiddenCount} 条投递记录`}
                   >
                     +{hiddenCount}
