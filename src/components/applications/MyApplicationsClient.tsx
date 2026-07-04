@@ -98,11 +98,11 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
 
   return (
     <div className="space-y-6">
-      <section className="surface-subtle rounded-[28px] p-6">
+      <section className="px-1 pt-2">
         <h1 className="text-3xl font-semibold text-ink-primary">我的投递</h1>
       </section>
 
-      <section className="surface-subtle rounded-[24px] p-4">
+      <section className="px-1">
         <div className="grid gap-3 md:grid-cols-[1fr_220px_auto]">
           <div className="relative">
             <Search
@@ -137,7 +137,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
       </section>
 
       {message ? (
-        <div className="rounded-[22px] border border-red-300/25 bg-red-500/10 p-4 text-sm text-red-100">
+        <div className="bg-red-500/10 p-4 text-sm text-red-100">
           {message}
         </div>
       ) : null}

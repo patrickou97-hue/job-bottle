@@ -48,7 +48,7 @@ export function NebulaCompanyField({
   }, [applicationByJobId, jobs]);
 
   return (
-    <div className="relative h-[420px] overflow-hidden rounded-[24px] bg-black/10 xl:h-[470px]">
+    <div className="relative h-[420px] overflow-hidden bg-black/10 xl:h-[470px]">
       <div className="absolute inset-0 opacity-20 [background-image:radial-gradient(circle,rgba(214,228,255,.30)_0_1px,transparent_1.5px)] [background-size:88px_88px]" />
       <div className="absolute inset-8 rounded-full bg-nebula-blue/[0.025] blur-3xl" />
       {positions.map((item) => {
@@ -61,7 +61,7 @@ export function NebulaCompanyField({
             <button
               key={item.id}
               type="button"
-              className="absolute flex items-center justify-center rounded-full border border-nebula-blue/12 bg-nebula-blue/8 text-xs font-medium text-ink-secondary shadow-[0_0_18px_rgba(112,143,185,0.12)] transition hover:scale-[1.06] hover:border-nebula-blue/24 hover:text-nebula-silver"
+              className="absolute flex items-center justify-center rounded-full bg-nebula-blue/8 text-xs font-medium text-ink-secondary shadow-[0_0_18px_rgba(112,143,185,0.12)] transition hover:scale-[1.06] hover:bg-nebula-blue/12 hover:text-nebula-silver"
               style={{
                 width: item.size,
                 height: item.size,
@@ -101,13 +101,13 @@ export function NebulaCompanyField({
         );
       })}
       {jobs.length === 0 ? (
-        <div className="absolute inset-0 grid place-items-center text-sm text-ink-muted">暂无岗位星体</div>
+        <div className="absolute inset-0 grid place-items-center text-sm text-ink-muted">暂无岗位</div>
       ) : null}
       {expandedJobs ? (
-        <div className="absolute inset-x-4 bottom-4 z-40 rounded-[22px] border border-white/[0.07] bg-[#040814]/90 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.42)] backdrop-blur-xl">
+        <div className="absolute inset-x-4 bottom-4 z-40 bg-[#040814]/90 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.42)] backdrop-blur-xl">
           <div className="mb-3 flex items-center justify-between gap-3">
             <span className="text-sm font-medium text-nebula-silver">
-              还有 {expandedJobs.length} 个岗位信号
+              还有 {expandedJobs.length} 个岗位
             </span>
             <button
               type="button"

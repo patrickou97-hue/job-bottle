@@ -21,9 +21,9 @@ export function OpportunitySignalList({
   onFocusJob?: (job: Job) => void;
 }) {
   return (
-    <section className="surface-subtle overflow-hidden rounded-[24px]">
-      <div className="border-b border-white/[0.045] px-4 py-3 text-sm font-medium text-ink-secondary">
-        辅助信号列表
+    <section className="overflow-hidden">
+      <div className="px-4 py-3 text-sm font-medium text-ink-secondary">
+        岗位列表
       </div>
       <div className="divide-y divide-white/[0.04]">
         {jobs.map((job) => (

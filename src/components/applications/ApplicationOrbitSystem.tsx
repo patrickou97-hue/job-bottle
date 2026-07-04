@@ -116,7 +116,7 @@ export function ApplicationOrbitSystem({
             <div className="absolute inset-0 grid place-items-center text-center">
               <div>
                 <h3 className="text-lg font-semibold text-ink-primary">暂无投递记录</h3>
-                <p className="mt-2 text-sm text-ink-muted">从岗位星图中打开官网投递后，岗位星体会进入这里。</p>
+                <p className="mt-2 text-sm text-ink-muted">从岗位星图中打开官网投递后，岗位会进入这里。</p>
               </div>
             </div>
           ) : null}

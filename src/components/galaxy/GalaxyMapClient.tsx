@@ -45,7 +45,7 @@ export function GalaxyMapClient({ kind }: { kind: GalaxyKind }) {
   );
   const stats = useMemo(() => buildGalaxyStats(jobs, capturedJobIds, kind), [capturedJobIds, jobs, kind]);
   const title = kind === "region" ? "地区星系" : "行业星系";
-  const body = kind === "region" ? "选择一个地区星云，进入对应岗位星体。" : "选择一个行业星云，进入对应岗位星体。";
+  const body = kind === "region" ? "选择一个地区星云，进入对应岗位。" : "选择一个行业星云，进入对应岗位。";
 
   return (
     <div className="space-y-8 pb-24">
@@ -55,7 +55,7 @@ export function GalaxyMapClient({ kind }: { kind: GalaxyKind }) {
           {body}
         </p>
       </section>
-      {loading ? <div className="text-center text-xs text-ink-muted">正在校准星云数量...</div> : null}
+      {loading ? <div className="text-center text-xs text-ink-muted">正在读取岗位数量...</div> : null}
       <section className="flex flex-wrap items-center justify-center gap-7">
         {(stats.length ? stats : getGalaxyGroups(kind).map((group) => ({ ...group, jobCount: 0, capturedCount: 0 }))).map((group) => (
           <NebulaNode

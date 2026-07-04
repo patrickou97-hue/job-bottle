@@ -98,8 +98,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
                   className={cn(
                     "inline-flex h-10 items-center gap-2 rounded-full border px-3 text-sm transition",
                     active
-                      ? "border-nebula-blue/30 bg-nebula-blue/10 text-nebula-silver"
-                      : "border-white/[0.07] bg-white/[0.035] text-ink-secondary hover:border-nebula-blue/24 hover:text-ink-primary",
+                      ? "bg-nebula-blue/10 text-nebula-silver"
+                      : "text-ink-secondary hover:bg-white/[0.055] hover:text-ink-primary",
                   )}
                 >
                   <Icon aria-hidden="true" className="size-4" />
@@ -109,14 +109,14 @@ export function AdminShell({ children }: { children: ReactNode }) {
             })}
             <Link
               href="/"
-              className="inline-flex h-10 items-center gap-2 rounded-full border border-white/[0.07] bg-white/[0.035] px-3 text-sm text-ink-secondary transition hover:border-nebula-blue/24 hover:text-ink-primary"
+              className="inline-flex h-10 items-center gap-2 rounded-full px-3 text-sm text-ink-secondary transition hover:bg-white/[0.055] hover:text-ink-primary"
             >
               <ArrowLeft aria-hidden="true" className="size-4" />
               返回用户端
             </Link>
             <button
               type="button"
-              className="inline-flex h-10 items-center gap-2 rounded-full border border-white/[0.07] bg-white/[0.035] px-3 text-sm text-ink-secondary transition hover:border-nebula-blue/24 hover:text-ink-primary"
+              className="inline-flex h-10 items-center gap-2 rounded-full px-3 text-sm text-ink-secondary transition hover:bg-white/[0.055] hover:text-ink-primary"
               onClick={handleLogout}
             >
               <LogOut aria-hidden="true" className="size-4" />
@@ -127,13 +127,13 @@ export function AdminShell({ children }: { children: ReactNode }) {
       </header>
       <main className="mx-auto w-full max-w-[1440px] px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
         {loading ? (
-          <div className="rounded-[24px] border border-white/[0.07] bg-white/[0.035] p-6 text-sm text-ink-secondary">
+          <div className="p-6 text-sm text-ink-secondary">
             正在确认管理员权限...
           </div>
         ) : allowed ? (
           children
         ) : (
-          <div className="rounded-[24px] border border-white/[0.07] bg-white/[0.035] p-6">
+          <div className="p-6">
             <h1 className="text-2xl font-semibold text-ink-primary">管理后台</h1>
             <p className="mt-3 text-sm text-ink-secondary">{message}</p>
             <Link

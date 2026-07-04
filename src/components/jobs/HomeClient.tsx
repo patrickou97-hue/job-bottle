@@ -416,7 +416,7 @@ export function HomeClient() {
           </div>
 
           {loading ? (
-            <div className="surface-subtle rounded-xl p-8 text-center text-sm text-ink-secondary">
+            <div className="p-8 text-center text-sm text-ink-secondary">
               加载中...
             </div>
           ) : jobs.length === 0 ? (
@@ -466,7 +466,7 @@ export function HomeClient() {
       {/* Bottom detail card for selected application */}
       {selectedApplication ? (
         <div className="fixed inset-x-0 bottom-0 z-30 px-4 pb-4 sm:px-6">
-          <div className="mx-auto max-w-2xl rounded-2xl border border-white/[0.1] bg-void-900/95 p-4 shadow-2xl backdrop-blur-xl">
+          <div className="mx-auto max-w-2xl bg-void-900/88 p-4 shadow-2xl backdrop-blur-xl">
             <div className="flex items-center gap-4">
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-semibold text-ink-primary">
@@ -536,12 +536,11 @@ function JobRadarHeader({
   ];
 
   return (
-    <section className="surface-subtle relative overflow-hidden rounded-[28px] px-5 py-4">
-      <div className="pointer-events-none absolute inset-y-5 left-0 w-px bg-gradient-to-b from-transparent via-nebula-silver/22 to-transparent" />
+    <section className="relative px-1 py-2">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           <div className="flex items-center gap-3">
-            <span className="flex size-8 items-center justify-center rounded-full border border-nebula-blue/16 bg-nebula-blue/8 text-nebula-silver">
+            <span className="flex size-8 items-center justify-center rounded-full bg-nebula-blue/8 text-nebula-silver">
               <FlaskConical aria-hidden="true" className="size-4" />
             </span>
             <div>
@@ -560,7 +559,7 @@ function JobRadarHeader({
               {activeFilterChips.map((chip) => (
                 <span
                   key={chip}
-                  className="rounded-full border border-white/[0.07] bg-white/[0.035] px-2.5 py-1 text-xs text-ink-secondary"
+                  className="whitespace-nowrap rounded-full bg-white/[0.04] px-2.5 py-1 text-xs text-ink-secondary"
                 >
                   {chip}
                 </span>
@@ -577,7 +576,7 @@ function JobRadarHeader({
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="inline-grid grid-cols-3 rounded-full border border-white/[0.07] bg-black/15 p-1">
+          <div className="inline-grid grid-cols-3 rounded-full bg-black/15 p-1">
             {modes.map((mode) => (
               <button
                 key={mode.value}
@@ -598,14 +597,14 @@ function JobRadarHeader({
           <div className="flex gap-2">
             <Link
               href="/my"
-              className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.035] px-3 py-2 text-xs text-ink-secondary transition hover:border-nebula-blue/24 hover:text-nebula-silver"
+              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-xs text-ink-secondary transition hover:bg-white/[0.055] hover:text-nebula-silver"
             >
               <Archive aria-hidden="true" className="size-4" />
               我的星图
             </Link>
             <Link
               href="/bottle"
-              className="inline-flex items-center gap-1.5 rounded-full border border-nebula-blue/18 bg-nebula-blue/8 px-3 py-2 text-xs text-nebula-silver transition hover:border-nebula-blue/35 hover:bg-nebula-blue/12"
+              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-nebula-blue/8 px-3 py-2 text-xs text-nebula-silver transition hover:bg-nebula-blue/12"
             >
               <Sparkles aria-hidden="true" className="size-4" />
               我的星瓶
@@ -651,7 +650,7 @@ function EmptyState({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="surface-subtle rounded-xl p-8 text-center">
+    <div className="p-8 text-center">
       <EmptyConstellation />
       <h3 className="text-lg font-semibold text-ink-primary">{title}</h3>
       <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-ink-muted">{body}</p>

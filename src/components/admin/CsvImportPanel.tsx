@@ -89,7 +89,7 @@ export function CsvImportPanel() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[24px] border border-white/[0.07] bg-white/[0.035] p-6">
+      <section className="px-1 pt-2">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-3xl font-semibold text-ink-primary">批量导入</h1>
@@ -107,15 +107,15 @@ export function CsvImportPanel() {
       </section>
 
       {message ? (
-        <div className="rounded-[22px] border border-nebula-blue/20 bg-nebula-blue/8 p-4 text-sm text-nebula-silver">
+        <div className="bg-nebula-blue/8 p-4 text-sm text-nebula-silver">
           {message}
         </div>
       ) : null}
 
       {isAdmin ? (
         <>
-          <section className="rounded-[24px] border border-white/[0.07] bg-white/[0.035] p-5">
-            <label className="flex cursor-pointer flex-col items-center justify-center rounded-[22px] border border-dashed border-nebula-blue/24 bg-white/[0.035] p-8 text-center transition hover:border-nebula-blue/45">
+          <section className="p-5">
+            <label className="flex cursor-pointer flex-col items-center justify-center bg-white/[0.035] p-8 text-center transition hover:bg-white/[0.055]">
               <Upload aria-hidden="true" className="mb-3 size-8 text-nebula-blue" />
               <span className="text-base font-semibold text-ink-primary">上传 CSV</span>
               <span className="mt-2 text-sm text-ink-muted">选择文件后将自动预览导入结果</span>
@@ -129,8 +129,8 @@ export function CsvImportPanel() {
           </section>
 
           {rows.length > 0 ? (
-            <section className="overflow-hidden rounded-[24px] border border-white/[0.07] bg-white/[0.035]">
-              <div className="flex flex-col gap-3 border-b border-white/[0.07] p-4 md:flex-row md:items-center md:justify-between">
+            <section className="overflow-hidden">
+              <div className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
                 <div className="text-sm text-ink-secondary">
                   预览导入：可导入 {validRows.length} 条，跳过 {invalidRows.length} 条
                 </div>
@@ -140,7 +140,7 @@ export function CsvImportPanel() {
               </div>
 
               {invalidRows.length > 0 ? (
-                <div className="border-b border-white/[0.07] bg-red-500/10 p-4 text-sm text-red-100">
+                <div className="bg-red-500/10 p-4 text-sm text-red-100">
                   {invalidRows.slice(0, 8).map((row) => (
                     <div key={row.rowNumber}>
                       第 {row.rowNumber} 行{row.errors.join("，")}，已跳过。

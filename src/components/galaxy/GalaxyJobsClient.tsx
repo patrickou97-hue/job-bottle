@@ -77,7 +77,7 @@ export function GalaxyJobsClient({ kind, slug }: { kind: GalaxyKind; slug: strin
       startCapture(job);
     }
     safeOpenUrl(job.apply_url);
-    setMessage("岗位星体已捕获，可在我的投递和星瓶中查看。");
+    setMessage("岗位已捕获，可在我的投递和星瓶中查看。");
     await loadData();
   }
 
@@ -96,11 +96,11 @@ export function GalaxyJobsClient({ kind, slug }: { kind: GalaxyKind; slug: strin
       <section className="py-6">
         <h1 className="font-display text-4xl font-semibold text-ink-primary">{group.label}</h1>
         <p className="mt-3 max-w-2xl text-sm leading-7 text-ink-secondary">
-          {loading ? "正在校准星体..." : `${jobs.length} 个岗位星体，点击星体查看信号。`}
+          {loading ? "正在读取岗位..." : `${jobs.length} 个岗位，点击查看详情。`}
         </p>
       </section>
       {message ? (
-        <div className="rounded-2xl border border-nebula-blue/18 bg-nebula-blue/8 px-4 py-3 text-sm text-nebula-silver">
+        <div className="bg-nebula-blue/8 px-4 py-3 text-sm text-nebula-silver">
           {message}
         </div>
       ) : null}
@@ -109,7 +109,7 @@ export function GalaxyJobsClient({ kind, slug }: { kind: GalaxyKind; slug: strin
         applicationByJobId={applicationByJobId}
         onApply={handleApply}
         kind={kind}
-        title={`${group.label}岗位星体`}
+        title={`${group.label}岗位星`}
         hoveredJobId={hoveredJobId}
         focusedJobId={focusedJobId}
         onHoverJob={(job) => setHoveredJobId(job?.id ?? null)}

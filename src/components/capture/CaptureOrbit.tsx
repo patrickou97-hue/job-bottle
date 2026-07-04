@@ -13,13 +13,13 @@ export function CaptureOrbit({
   const stageWidth = 100 / APPLICATION_PROGRESS_STATUS.length;
 
   return (
-    <section className="surface-subtle relative overflow-hidden rounded-[24px] px-5 py-5">
+    <section className="relative overflow-hidden px-1 py-5">
       <div className="mb-4 flex items-baseline justify-between gap-3">
         <div>
           <h2 className="font-display text-lg font-semibold text-ink-primary">我的投递轨道</h2>
-          <p className="mt-1 text-xs text-ink-muted">捕获后的岗位星体会停在当前进度附近。</p>
+          <p className="mt-1 text-xs text-ink-muted">捕获后的岗位会停在当前进度附近。</p>
         </div>
-        <span className="text-xs text-ink-muted">{applications.length} 颗星体</span>
+        <span className="text-xs text-ink-muted">{applications.length} 颗星</span>
       </div>
 
       <div className="relative h-40 overflow-hidden rounded-[18px]">
@@ -61,7 +61,7 @@ export function CaptureOrbit({
 
         {applications.length === 0 ? (
           <div className="absolute inset-0 grid place-items-center text-sm text-ink-muted">
-            暂无捕获星体
+            暂无捕获记录
           </div>
         ) : null}
       </div>

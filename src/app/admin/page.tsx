@@ -21,7 +21,7 @@ export default function AdminPage() {
   return (
     <AdminShell>
       <div className="space-y-6">
-        <section className="rounded-[24px] border border-white/[0.07] bg-white/[0.035] p-6">
+        <section className="px-1 pt-2">
           <h1 className="text-3xl font-semibold text-ink-primary">管理后台</h1>
         </section>
 
@@ -32,9 +32,9 @@ export default function AdminPage() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="group rounded-[24px] border border-white/[0.07] bg-white/[0.035] p-5 transition hover:-translate-y-0.5 hover:border-nebula-blue/25 hover:bg-white/[0.055]"
+                className="group p-5 transition hover:bg-white/[0.055]"
               >
-                <div className="mb-5 flex size-11 items-center justify-center rounded-2xl border border-nebula-blue/14 bg-nebula-blue/8 text-nebula-blue">
+                <div className="mb-5 flex size-11 items-center justify-center rounded-2xl bg-nebula-blue/8 text-nebula-blue">
                   <Icon aria-hidden="true" className="size-5" />
                 </div>
                 <h2 className="text-xl font-semibold text-ink-primary">{item.title}</h2>

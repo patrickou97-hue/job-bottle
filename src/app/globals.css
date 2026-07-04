@@ -61,20 +61,20 @@ select {
 }
 
 .glass-panel {
-  border: 1px solid var(--surface-read-border);
-  background: var(--surface-read-bg);
-  box-shadow: var(--surface-read-shadow);
+  border: 0;
+  background: transparent;
+  box-shadow: none;
   backdrop-filter: var(--surface-read-blur);
 }
 
 .glass-panel:hover {
-  border-color: rgba(159, 180, 206, 0.13);
+  background: rgba(255, 255, 255, 0.035);
 }
 
 .night-card {
-  border: 1px solid var(--surface-read-border);
-  background: var(--surface-read-bg);
-  box-shadow: var(--surface-read-shadow);
+  border: 0;
+  background: transparent;
+  box-shadow: none;
   backdrop-filter: var(--surface-read-blur);
 }
 
@@ -103,31 +103,37 @@ select {
 }
 
 .muted-button {
-  border: 1px solid var(--line);
-  background: rgba(24, 36, 72, 0.32);
+  border: 0;
+  background: transparent;
   color: var(--text-secondary);
 }
 
 .muted-button:hover {
-  border-color: var(--line-strong);
+  background: rgba(255, 255, 255, 0.055);
+  color: var(--light-silver);
 }
 
 .status-pill {
-  border: 1px solid var(--line-strong);
-  background: rgba(180, 188, 224, 0.05);
+  border: 0;
+  background: rgba(180, 188, 224, 0.055);
   color: var(--light-silver);
 }
 
 .field-shell {
-  border: 1px solid var(--line);
-  background: rgba(16, 26, 54, 0.56);
+  border: 0;
+  border-bottom: 1px solid rgba(159, 180, 206, 0.22);
+  background: transparent;
   color: var(--text-primary);
+  caret-color: var(--arcane);
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .field-shell:focus {
-  border-color: var(--arcane);
+  border-color: rgba(159, 180, 206, 0.68);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(143, 134, 240, 0.18);
+  background: rgba(255, 255, 255, 0.035);
+  box-shadow: none;
 }
 
 .space-root {
@@ -288,18 +294,16 @@ select {
 }
 
 .surface-subtle {
-  border: 1px solid var(--surface-subtle-border);
-  background:
-    linear-gradient(180deg, rgba(74, 59, 124, 0.16), transparent 26%),
-    var(--surface-subtle-bg);
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.18);
-  backdrop-filter: blur(14px);
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .surface-readable {
-  border: 1px solid var(--surface-read-border);
-  background: var(--surface-read-bg);
-  box-shadow: var(--surface-read-shadow);
+  border: 0;
+  background: rgba(5, 10, 24, 0.28);
+  box-shadow: none;
   backdrop-filter: var(--surface-read-blur);
 }
 

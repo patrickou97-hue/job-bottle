@@ -137,7 +137,7 @@ const SOURCE_INVARIANTS = [
     file: "src/lib/star-layout.ts",
     mustInclude: ["buildClusterLayout", "getStableHash", "getShortLabel", "aggregateCount", "cellWidth"],
     mustNotInclude: ["Math.random"],
-    label: "岗位星体使用稳定星云网格布局",
+    label: "岗位星使用稳定星云网格布局",
   },
   {
     file: "src/lib/categories.ts",
@@ -201,7 +201,7 @@ const SOURCE_INVARIANTS = [
     file: "src/components/jobs/HomeClient.tsx",
     mustInclude: ["NebulaGateway", "CaptureAnimation", "if (!alreadyCaptured)", "hoveredJobId", "focusJob", "nebulaSelection", "encodeURIComponent(\"/explore\")", "href=\"/my\"", "最新开启", "ApplyReturnConfirm", "visibilitychange", "keep_opened", "useSearchParams", "\"cats\"", "window.history.replaceState"],
     mustNotInclude: ["queueBottleDrop(application.id);\n      if (applyWindow)", "encodeURIComponent(\"/jobs\")", "href=\"/my-applications\"", "router.replace(query ? `/explore?${query}` : \"/explore\""],
-    label: "岗位星图有星体观测、捕获动画和官网返回确认闭环",
+    label: "岗位星图有星云入口、捕获动画和官网返回确认闭环",
   },
   {
     file: "src/components/jobs/ApplyReturnConfirm.tsx",

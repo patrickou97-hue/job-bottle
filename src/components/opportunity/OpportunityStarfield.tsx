@@ -104,28 +104,27 @@ export function OpportunityStarfield({
   const selectedJobId = focusedJobId ?? detailJob?.id ?? null;
 
   const statusText = useMemo(() => {
-    if (aggregateCount === 0) return `${visibleStarCount} 颗岗位星体`;
+    if (aggregateCount === 0) return `${visibleStarCount} 颗岗位星`;
     return `${visibleStarCount} 颗亮星，${aggregateCount} 颗暗星已聚合`;
   }, [aggregateCount, visibleStarCount]);
 
   return (
-    <section className="surface-subtle relative overflow-hidden rounded-[26px] p-5">
+    <section className="relative overflow-hidden p-1">
       <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
         <div>
           <h2 className="font-display text-lg font-semibold text-ink-primary">{title}</h2>
-          <p className="text-xs text-ink-muted">星体按星云分组规整排列，点击查看详情，去官网投递后会完成捕获。</p>
+          <p className="text-xs text-ink-muted">岗位按星云分组排列，点击查看详情，去官网投递后会完成捕获。</p>
         </div>
         <span className="text-xs text-ink-muted">{statusText}</span>
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_330px]">
-        <div className="relative h-[420px] overflow-hidden rounded-[22px] bg-black/10 xl:h-[520px]">
+        <div className="relative h-[420px] overflow-hidden bg-black/10 xl:h-[520px]">
           <div className="absolute inset-0 opacity-20 [background-image:radial-gradient(circle,rgba(214,228,255,.26)_0_1px,transparent_1.5px)] [background-size:96px_96px]" />
-          <div className="absolute inset-5 rounded-[28px] border border-white/[0.035]" />
           {clusterLabels.map((cluster) => (
             <span
               key={cluster.groupKey}
-              className="pointer-events-none absolute rounded-full border border-white/[0.045] bg-white/[0.025] px-2.5 py-1 text-[11px] text-ink-muted/70"
+              className="pointer-events-none absolute rounded-full bg-white/[0.025] px-2.5 py-1 text-[11px] text-ink-muted/70"
               style={{
                 left: `${(cluster.x / STARFIELD_WIDTH) * 100}%`,
                 top: `${(cluster.y / STARFIELD_HEIGHT) * 100}%`,
@@ -141,7 +140,7 @@ export function OpportunityStarfield({
                 <button
                   key={item.id}
                   type="button"
-                  className="absolute flex items-center justify-center rounded-full border border-nebula-blue/12 bg-nebula-blue/8 text-xs font-medium text-ink-secondary shadow-[0_0_18px_rgba(112,143,185,0.12)] transition hover:scale-[1.05] hover:border-nebula-blue/24 hover:text-nebula-silver"
+                  className="absolute flex items-center justify-center rounded-full bg-nebula-blue/8 text-xs font-medium text-ink-secondary shadow-[0_0_18px_rgba(112,143,185,0.12)] transition hover:scale-[1.05] hover:bg-nebula-blue/12 hover:text-nebula-silver"
                   style={{
                     width: item.size,
                     height: item.size,
@@ -182,7 +181,7 @@ export function OpportunityStarfield({
             );
           })}
           {jobs.length === 0 ? (
-            <div className="absolute inset-0 grid place-items-center text-sm text-ink-muted">暂无岗位星体</div>
+            <div className="absolute inset-0 grid place-items-center text-sm text-ink-muted">暂无岗位</div>
           ) : null}
         </div>
 

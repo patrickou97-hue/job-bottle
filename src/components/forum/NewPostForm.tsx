@@ -88,7 +88,7 @@ export function NewPostForm({ onCreated, onCancel }: NewPostFormProps) {
         <label className="mb-1 block text-xs font-medium text-ink-muted">
           标题
         </label>
-        <Input placeholder="输入信号标题" {...register("title")} />
+        <Input placeholder="输入标题" {...register("title")} />
         {errors.title ? (
           <p className="mt-1 text-xs text-red-300">{errors.title.message}</p>
         ) : null}
@@ -138,7 +138,7 @@ export function NewPostForm({ onCreated, onCancel }: NewPostFormProps) {
       </div>
 
       {error ? (
-        <div className="rounded-2xl border border-red-300/25 bg-red-500/10 p-3 text-sm text-red-100">
+        <div className="bg-red-500/10 p-3 text-sm text-red-100">
           {error}
         </div>
       ) : null}

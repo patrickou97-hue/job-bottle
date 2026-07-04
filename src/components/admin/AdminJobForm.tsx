@@ -108,7 +108,7 @@ export function AdminJobForm({
 
   return (
     <form
-      className="rounded-[24px] border border-white/[0.07] bg-white/[0.035] p-5"
+      className="p-5"
       onSubmit={handleSubmit(submit)}
     >
       <div className="mb-5 flex items-center justify-between gap-4">

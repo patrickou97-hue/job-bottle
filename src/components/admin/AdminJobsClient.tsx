@@ -122,7 +122,7 @@ export function AdminJobsClient() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[24px] border border-white/[0.07] bg-white/[0.035] p-6">
+      <section className="px-1 pt-2">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-3xl font-semibold text-ink-primary">岗位管理</h1>
@@ -137,7 +137,7 @@ export function AdminJobsClient() {
       </section>
 
       {message ? (
-        <div className="rounded-[22px] border border-nebula-blue/20 bg-nebula-blue/8 p-4 text-sm text-nebula-silver">
+        <div className="bg-nebula-blue/8 p-4 text-sm text-nebula-silver">
           {message}
         </div>
       ) : null}
@@ -146,7 +146,7 @@ export function AdminJobsClient() {
         <>
           <AdminJobForm job={editing} onSubmit={saveJob} onCancel={() => setEditing(null)} />
 
-          <section className="rounded-[24px] border border-white/[0.07] bg-white/[0.035] p-4">
+          <section className="px-1 py-2">
             <div className="relative">
               <Search
                 aria-hidden="true"
@@ -162,7 +162,7 @@ export function AdminJobsClient() {
           </section>
 
           {loading ? (
-            <div className="rounded-[24px] border border-white/[0.07] bg-white/[0.035] p-8 text-center text-ink-secondary">
+            <div className="p-8 text-center text-ink-secondary">
               正在读取岗位...
             </div>
           ) : (

@@ -99,7 +99,7 @@ export function PostCard({
 
   async function handleDeletePost() {
     if (!currentUserId || !isSupabaseConfigured()) return;
-    if (!window.confirm("确定要删除这条信号吗？")) return;
+    if (!window.confirm("确定要删除这条帖子吗？")) return;
     const supabase = createClient();
     await deletePost(supabase, currentUserId, post.id);
     onDeleted();
@@ -124,14 +124,14 @@ export function PostCard({
             </h3>
             {post.is_pinned ? (
               <span className="inline-flex shrink-0 items-center gap-1 text-xs text-[color:var(--light-silver)]">
-                ◆ 信标
+                置顶
               </span>
             ) : null}
           </div>
           <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-[color:var(--text-muted)]">
             <span>来源：{authorName}</span>
             <span className="text-[color:var(--text-disabled)]">·</span>
-            <span>接收于 {formatDateTime(post.created_at)}</span>
+            <span>发布于 {formatDateTime(post.created_at)}</span>
             {post.tags.length > 0 ? (
               <span className="text-[color:var(--text-muted)]">
                 {post.tags.map((t) => `#${t}`).join(" ")}
@@ -143,7 +143,7 @@ export function PostCard({
         <div className="flex shrink-0 items-center gap-4 text-xs text-[color:var(--text-muted)]">
           <SignalStrengthTicks score={strength} />
           <span className="hidden tabular-nums sm:inline">
-            回声 {post.comment_count} · 共鸣 {postLikeCount} · {formatDateTime(post.updated_at)}
+            评论 {post.comment_count} · 点赞 {postLikeCount} · {formatDateTime(post.updated_at)}
           </span>
           <span className="text-[color:var(--text-muted)]">{expanded ? "收起" : "展开"}</span>
         </div>
@@ -168,7 +168,7 @@ export function PostCard({
                   : "border-white/[0.08] bg-white/[0.04] text-ink-muted hover:border-white/[0.15]"
               }`}
             >
-              共鸣 {postLikeCount > 0 ? postLikeCount : 0}
+              点赞 {postLikeCount > 0 ? postLikeCount : 0}
             </button>
 
             {isOwner ? (
@@ -178,7 +178,7 @@ export function PostCard({
                 className="inline-flex items-center gap-1.5 rounded-full border border-red-400/25 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-200 transition hover:bg-red-500/20"
               >
                 <Trash2 aria-hidden="true" className="size-3.5" />
-                删除信号
+                删除帖子
               </button>
             ) : null}
           </div>
@@ -186,16 +186,16 @@ export function PostCard({
           {/* Comments */}
           <div className="space-y-3">
             <h4 className="text-sm font-medium text-ink-primary">
-              回声 {comments.length > 0 ? `(${comments.length})` : ""}
+              评论 {comments.length > 0 ? `(${comments.length})` : ""}
             </h4>
 
             {loadingComments ? (
               <div className="py-3 text-center text-xs text-ink-muted">
-                正在加载回声...
+                正在加载评论...
               </div>
             ) : comments.length === 0 ? (
               <div className="py-3 text-center text-xs text-ink-muted">
-                暂无回声，来说点什么吧
+                暂无评论
               </div>
             ) : (
               comments.map((comment) => (
@@ -234,7 +234,7 @@ export function PostCard({
                 <Textarea
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
-                  placeholder="发送回声..."
+                  placeholder="写下评论"
                   className="min-h-[60px] flex-1"
                   rows={2}
                 />
@@ -243,7 +243,7 @@ export function PostCard({
                   disabled={!commentText.trim() || submitting}
                   onClick={handleSubmitComment}
                 >
-                  发送回声
+                  发布评论
                 </Button>
               </div>
             ) : null}

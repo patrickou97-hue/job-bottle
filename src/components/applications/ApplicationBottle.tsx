@@ -120,22 +120,21 @@ export function ApplicationBottle({
           </button>
         </div>
 
-        <div className="surface-subtle relative overflow-hidden rounded-[28px] p-5">
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[rgba(74,59,124,0.2)] to-transparent" />
+        <div className="relative p-1">
           <h2 className="relative font-display text-2xl font-semibold text-ink-primary">
             本季统计
           </h2>
           <FiligreeDivider className="relative my-4" />
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-4 gap-5 max-sm:grid-cols-2">
             <BottleStat label="捕获" value={applications.length} />
             <BottleStat label="投递" value={appliedCount} />
             <BottleStat label="面试" value={interviewCount} />
             <BottleStat label="Offer" value={offerCount} />
           </div>
 
-          <div className="mt-5 rounded-[22px] border border-white/[0.07] bg-white/[0.035] p-4">
-            <p className="text-sm font-medium text-ink-primary">周观测日志</p>
+          <div className="mt-5 border-t border-white/[0.08] pt-4">
+            <p className="text-sm font-medium text-ink-primary">本周记录</p>
             <p className="mt-2 text-sm leading-6 text-ink-muted">
               本批次先完成星瓶容器与分享卡。周日志会在 status_history 数据稳定后接入。
             </p>
@@ -146,7 +145,7 @@ export function ApplicationBottle({
           </Button>
 
           {applications.length > 0 && displayApp ? (
-            <div className="mt-5 rounded-[22px] border border-white/[0.07] bg-white/[0.035] px-4 py-3">
+            <div className="mt-5 border-t border-white/[0.08] px-1 py-3">
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-ink-primary">
@@ -166,7 +165,7 @@ export function ApplicationBottle({
                 </span>
                 <button
                   type="button"
-                  className="rounded-full border border-white/[0.08] bg-white/[0.035] px-3 py-1 text-xs text-ink-secondary transition hover:border-nebula-blue/22 hover:text-nebula-silver"
+                  className="rounded-full px-3 py-1 text-xs text-ink-secondary transition hover:bg-white/[0.055] hover:text-nebula-silver"
                   onClick={() => setSelected(displayApp)}
                 >
                   查看进度
@@ -190,7 +189,7 @@ export function ApplicationBottle({
 
 function BottleStat({ label, value }: { label: string; value: number }) {
   return (
-    <span className="rounded-[18px] border border-white/[0.07] bg-white/[0.03] px-4 py-3">
+    <span className="px-1 py-2 text-center">
       <span className="block font-display text-3xl font-semibold tabular-nums text-ink-primary">
         {value}
       </span>

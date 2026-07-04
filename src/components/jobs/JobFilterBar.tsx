@@ -42,8 +42,7 @@ export function JobFilterBar({
   }
 
   return (
-    <aside className="surface-subtle relative rounded-[24px] p-5">
-      <div className="pointer-events-none absolute left-0 top-5 h-14 w-px bg-gradient-to-b from-nebula-silver/30 to-transparent" />
+    <aside className="relative">
       <div className="mb-5 flex items-center gap-3">
         <span className="size-1.5 rounded-full bg-nebula-blue/60" />
         <h2 className="text-base font-medium text-ink-primary">筛选</h2>
@@ -136,10 +135,10 @@ export function JobFilterBar({
                   key={category}
                   type="button"
                   className={cn(
-                    "rounded-full border px-3 py-1 text-xs transition",
+                    "whitespace-nowrap rounded-full px-3 py-1 text-xs transition",
                     active
-                      ? "border-nebula-blue/30 bg-nebula-blue/14 text-nebula-silver shadow-star-sm"
-                      : "border-white/[0.08] bg-white/[0.035] text-ink-secondary hover:border-nebula-blue/28 hover:text-nebula-silver",
+                      ? "bg-nebula-blue/14 text-nebula-silver shadow-star-sm"
+                      : "text-ink-secondary hover:bg-white/[0.055] hover:text-nebula-silver",
                   )}
                   onClick={() => toggleCategory(category)}
                 >
@@ -160,10 +159,10 @@ export function JobFilterBar({
                   key={tag}
                   type="button"
                   className={cn(
-                    "rounded-full border px-3 py-1 text-xs transition",
+                    "whitespace-nowrap rounded-full px-3 py-1 text-xs transition",
                     active
-                      ? "border-nebula-blue/30 bg-nebula-blue/14 text-nebula-silver shadow-star-sm"
-                      : "border-white/[0.08] bg-white/[0.035] text-ink-secondary hover:border-nebula-blue/28 hover:text-nebula-silver",
+                      ? "bg-nebula-blue/14 text-nebula-silver shadow-star-sm"
+                      : "text-ink-secondary hover:bg-white/[0.055] hover:text-nebula-silver",
                   )}
                   onClick={() => toggleTag(tag)}
                 >

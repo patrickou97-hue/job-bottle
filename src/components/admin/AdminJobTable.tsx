@@ -17,7 +17,7 @@ export function AdminJobTable({
 }) {
   if (jobs.length === 0) {
     return (
-      <div className="rounded-[24px] border border-white/[0.07] bg-white/[0.035] p-8 text-center">
+      <div className="p-8 text-center">
         <h2 className="text-lg font-semibold text-ink-primary">暂无数据</h2>
         <p className="mt-2 text-sm text-ink-muted">新增岗位后会显示在这里。</p>
       </div>
@@ -25,10 +25,10 @@ export function AdminJobTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-[24px] border border-white/[0.07] bg-white/[0.035]">
+    <div className="overflow-hidden">
       <div className="overflow-x-auto">
         <table className="min-w-[1100px] w-full text-left text-sm">
-          <thead className="border-b border-white/[0.07] bg-white/[0.04] text-ink-muted">
+          <thead className="bg-white/[0.04] text-ink-muted">
             <tr>
               <th className="px-4 py-3 font-medium">公司</th>
               <th className="px-4 py-3 font-medium">岗位</th>
@@ -56,10 +56,10 @@ export function AdminJobTable({
                 <td className="px-4 py-4">{job.locations || "暂无"}</td>
                 <td className="px-4 py-4">
                   <span
-                    className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-medium ${
+                    className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${
                       job.is_active
-                        ? "border-nebula-blue/30 bg-nebula-blue/10 text-nebula-silver"
-                        : "border-slate-500/35 bg-slate-500/15 text-slate-300"
+                        ? "bg-nebula-blue/10 text-nebula-silver"
+                        : "bg-slate-500/15 text-slate-300"
                     }`}
                   >
                     {job.is_active ? "上架中" : "已下架"}

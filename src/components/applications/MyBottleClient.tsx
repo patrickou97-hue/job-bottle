@@ -66,7 +66,7 @@ export function MyBottleClient({ loginNextPath = "/bottle" }: { loginNextPath?: 
 
   return (
     <div className="space-y-6 pb-24">
-      <section className="surface-subtle rounded-[28px] p-6">
+      <section className="px-1 pt-2">
         <p className="text-xs tracking-[0.2em] text-ink-muted">季节容器</p>
         <h1 className="mt-1 font-display text-3xl font-semibold text-ink-primary">
           我的星瓶
@@ -74,7 +74,7 @@ export function MyBottleClient({ loginNextPath = "/bottle" }: { loginNextPath?: 
       </section>
 
       {message ? (
-        <div className="rounded-[22px] border border-red-300/25 bg-red-500/10 p-4 text-sm text-red-100">
+        <div className="bg-red-500/10 p-4 text-sm text-red-100">
           {message}
         </div>
       ) : null}

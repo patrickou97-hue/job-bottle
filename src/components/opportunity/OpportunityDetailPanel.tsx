@@ -16,14 +16,14 @@ export function OpportunityDetailPanel({
 }) {
   if (!job) {
     return (
-      <aside className="surface-plain rounded-[22px] p-5 text-sm text-ink-muted">
-        选择一颗岗位星体查看信号。
+      <aside className="surface-plain p-5 text-sm text-ink-muted">
+        选择一个岗位查看详情。
       </aside>
     );
   }
 
   return (
-    <aside className="surface-readable rounded-[22px] p-5">
+    <aside className="surface-readable p-5">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="truncate text-lg font-semibold text-ink-primary">{job.company_name}</h3>

@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 
 export function SignalStrengthTicks({ score }: { score: number }) {
   return (
-    <span className="inline-flex items-center gap-0.5" aria-label={`信号强度 ${score}/5`}>
+    <span className="inline-flex items-center gap-0.5" aria-label={`活跃度 ${score}/5`}>
       {Array.from({ length: 5 }, (_, index) => (
         <span
           key={index}

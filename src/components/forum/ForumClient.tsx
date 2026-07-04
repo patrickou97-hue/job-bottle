@@ -63,11 +63,10 @@ export function ForumClient() {
 
   return (
     <div className="space-y-6">
-      <section className="surface-subtle relative overflow-hidden rounded-[28px] p-6">
-        <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-nebula-silver/14 to-transparent" />
+      <section className="relative px-1 pt-2">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <div className="text-xs tracking-[0.18em] text-[color:var(--text-meta)]">信号网络</div>
+            <div className="text-xs tracking-[0.18em] text-[color:var(--text-meta)]">社区</div>
             <h1 className="mt-1 text-3xl font-semibold text-ink-primary">讨论区</h1>
           </div>
           <Button onClick={() => setShowForm((v) => !v)}>
@@ -77,12 +76,12 @@ export function ForumClient() {
       </section>
 
       {showForm ? (
-        <section className="surface-subtle rounded-[24px] p-6">
+        <section className="px-1 py-2">
           <NewPostForm onCreated={handleCreated} onCancel={() => setShowForm(false)} />
         </section>
       ) : null}
 
-      <section className="surface-plain rounded-[24px] p-4">
+      <section className="px-1 py-2">
         <div className="mb-3 text-xs tracking-[0.18em] text-[color:var(--text-meta)]">频道</div>
         <div className="flex flex-wrap gap-2">
           {CATEGORIES.map((cat) => (
@@ -103,18 +102,18 @@ export function ForumClient() {
       </section>
 
       {message ? (
-        <div className="rounded-[22px] border border-red-300/25 bg-red-500/10 p-4 text-sm text-red-100">
+        <div className="bg-red-500/10 p-4 text-sm text-red-100">
           {message}
         </div>
       ) : null}
 
       <section className="space-y-3">
         {loading ? (
-          <div className="surface-subtle rounded-[24px] p-8 text-center text-ink-secondary">
+          <div className="p-8 text-center text-ink-secondary">
             正在读取讨论
           </div>
         ) : posts.length === 0 ? (
-          <div className="surface-subtle rounded-[24px] p-8 text-center">
+          <div className="p-8 text-center">
             <h2 className="text-lg font-semibold text-ink-primary">暂无讨论</h2>
             <p className="mt-2 text-sm text-ink-muted">
               发布第一条讨论。
