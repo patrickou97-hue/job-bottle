@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getDeadlineTime } from "@/lib/dates";
 import { splitToTags } from "@/lib/utils";
 import type { Database, Job, JobFilters, JobFormValues } from "@/lib/types";
 
@@ -143,6 +144,14 @@ function sortJobs(jobs: Job[], sortBy: JobFilters["sortBy"]) {
   const sorted = [...jobs];
   if (sortBy === "company_asc") {
     return sorted.sort((a, b) => a.company_name.localeCompare(b.company_name, "zh-CN"));
+  }
+  if (sortBy === "deadline_asc") {
+    return sorted.sort((a, b) => {
+      const aTime = getDeadlineTime(a);
+      const bTime = getDeadlineTime(b);
+      if (aTime !== bTime) return aTime - bTime;
+      return a.company_name.localeCompare(b.company_name, "zh-CN");
+    });
   }
   if (sortBy === "start_date_asc") {
     return sorted.sort((a, b) => {

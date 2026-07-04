@@ -3,6 +3,7 @@
 import { ExternalLink } from "lucide-react";
 import { StatusPill } from "@/components/applications/StatusPill";
 import { Button } from "@/components/ui/Button";
+import { DeadlineChip } from "@/components/jobs/DeadlineChip";
 import type { Job, UserApplication } from "@/lib/types";
 
 export function OpportunityDetailPanel({
@@ -48,6 +49,12 @@ export function OpportunityDetailPanel({
         <div>
           <dt className="text-xs text-ink-muted">开启时间</dt>
           <dd className="mt-1 text-ink-secondary">{job.start_date || "暂无"}</dd>
+        </div>
+        <div>
+          <dt className="text-xs text-ink-muted">截止时间</dt>
+          <dd className="mt-1">
+            <DeadlineChip job={job} />
+          </dd>
         </div>
       </dl>
 

@@ -115,6 +115,12 @@ const SOURCE_INVARIANTS = [
     label: "岗位星体使用稳定星云网格布局",
   },
   {
+    file: "src/lib/dates.ts",
+    mustInclude: ["Asia/Shanghai", "daysUntilShanghai", "getDeadlineTone", "getDeadlineLabel", "getDeadlineTime", "截止待补充"],
+    mustNotInclude: ["toLocaleDateString"],
+    label: "日期和截止时间逻辑集中使用上海时区工具",
+  },
+  {
     file: "supabase/migrations/20260704010000_phase0_security_hardening.sql",
     mustInclude: [
       "prevent_profile_role_escalation",
@@ -162,13 +168,31 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/jobs/HomeClient.tsx",
-    mustInclude: ["NebulaGateway", "CaptureAnimation", "if (!alreadyCaptured)", "hoveredJobId", "focusJob", "nebulaSelection", "encodeURIComponent(\"/explore\")", "href=\"/my\""],
+    mustInclude: ["NebulaGateway", "CaptureAnimation", "if (!alreadyCaptured)", "hoveredJobId", "focusJob", "nebulaSelection", "encodeURIComponent(\"/explore\")", "href=\"/my\"", "即将截止优先"],
     mustNotInclude: ["queueBottleDrop(application.id);\n      if (applyWindow)", "encodeURIComponent(\"/jobs\")", "href=\"/my-applications\""],
     label: "岗位星图有星体观测和捕获动画且重复点击不重复落星",
   },
   {
+    file: "src/components/jobs/DeadlineChip.tsx",
+    mustInclude: ["getDeadlineLabel", "getDeadlineTone", "motion-safe:animate-pulse"],
+    mustNotInclude: [],
+    label: "截止时间 chip 覆盖缺失、临近和已截止状态",
+  },
+  {
+    file: "src/components/jobs/JobCard.tsx",
+    mustInclude: ["DeadlineChip", "job={job}", "md:grid-cols"],
+    mustNotInclude: [],
+    label: "探索列表行显示截止时间 chip",
+  },
+  {
+    file: "src/components/jobs/JobFilterBar.tsx",
+    mustInclude: ["deadline_asc", "即将截止优先"],
+    mustNotInclude: [],
+    label: "探索筛选支持即将截止排序",
+  },
+  {
     file: "src/app/jobs/[id]/page.tsx",
-    mustInclude: ["generateMetadata", "fetchJobById", "JobDetailActions", "返回探索星海", "RelatedJobs"],
+    mustInclude: ["generateMetadata", "fetchJobById", "JobDetailActions", "返回探索星海", "RelatedJobs", "DeadlineChip", "截止时间"],
     mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY"],
     label: "岗位详情新路由服务端读取并提供捕获入口",
   },
@@ -195,6 +219,12 @@ const SOURCE_INVARIANTS = [
     mustInclude: ["getCompactCompanyLabelStyle", "getCompanyShortLabel", "已停留", "momentumTier", "overflow-hidden"],
     mustNotInclude: [],
     label: "投递星体手工简称、动态缩放和 Doppler 动量提示存在",
+  },
+  {
+    file: "src/components/applications/MyApplicationsClient.tsx",
+    mustInclude: ["DeadlineChip", "job={application.job}"],
+    mustNotInclude: ["formatDateTime, isValidHttpUrl"],
+    label: "我的星图列表显示捕获岗位截止时间",
   },
   {
     file: "src/components/applications/ApplicationOrbitConfig.ts",

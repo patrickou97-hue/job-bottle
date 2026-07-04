@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { CompanyBadge } from "@/components/jobs/CompanyBadge";
+import { DeadlineChip } from "@/components/jobs/DeadlineChip";
 import { StatusPill } from "@/components/applications/StatusPill";
 import { cn } from "@/lib/utils";
 import type { Job, UserApplication } from "@/lib/types";
@@ -30,7 +31,7 @@ export function JobCard({
     <div
       id={`job-row-${job.id}`}
       className={cn(
-        "data-row group grid cursor-pointer grid-cols-[34px_32px_minmax(0,1fr)_auto] items-center gap-3 px-4 text-sm",
+        "data-row group grid cursor-pointer grid-cols-[34px_32px_minmax(0,1fr)_auto] items-center gap-3 px-4 text-sm md:grid-cols-[34px_32px_minmax(0,1fr)_112px_auto]",
         highlighted ? "selected" : "",
       )}
       role="button"
@@ -84,6 +85,10 @@ export function JobCard({
           <span className="hidden text-[color:var(--text-disabled)] sm:inline">·</span>
           <span className="hidden shrink-0 sm:inline">{job.start_date || "时间待补充"}</span>
         </div>
+      </div>
+
+      <div className="hidden justify-self-end md:block">
+        <DeadlineChip job={job} compact />
       </div>
 
       {/* Status or apply */}

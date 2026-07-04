@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import { StatusSelect } from "@/components/applications/StatusSelect";
 import { StatusPill } from "@/components/applications/StatusPill";
 import { CompanyBadge } from "@/components/jobs/CompanyBadge";
+import { DeadlineChip } from "@/components/jobs/DeadlineChip";
 import type { ApplicationStatus, ApplicationWithJob } from "@/lib/types";
 
 export function ProgressDrawer({
@@ -111,6 +112,10 @@ export function ProgressDrawer({
           <div>工作地点：{job.locations || "暂无"}</div>
           <div>所在行业：{job.industry || "暂无"}</div>
           <div>批次类型：{job.batch_type || "暂无"}</div>
+          <div className="flex items-center gap-2">
+            <span>截止时间：</span>
+            <DeadlineChip job={job} compact />
+          </div>
           <div>最近更新：{formatDateTime(application.updated_at)}</div>
         </div>
 

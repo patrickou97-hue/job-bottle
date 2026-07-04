@@ -3,6 +3,7 @@ import { APPLICATION_STATUS_LABELS } from "@/lib/constants";
 import { formatDateTime, isValidHttpUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { StatusPill } from "@/components/applications/StatusPill";
+import { DeadlineChip } from "@/components/jobs/DeadlineChip";
 import type { ApplicationWithJob } from "@/lib/types";
 
 export function ApplicationOrbitDetail({
@@ -45,6 +46,12 @@ export function ApplicationOrbitDetail({
         <div>
           <dt className="text-xs text-ink-muted">最近更新</dt>
           <dd className="mt-1 text-ink-secondary">{formatDateTime(application.updated_at)}</dd>
+        </div>
+        <div>
+          <dt className="text-xs text-ink-muted">截止时间</dt>
+          <dd className="mt-1">
+            <DeadlineChip job={application.job} />
+          </dd>
         </div>
       </dl>
       <div className="mt-5 flex flex-col gap-2">

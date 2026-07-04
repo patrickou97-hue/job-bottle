@@ -111,6 +111,7 @@ export function JobFilterBar({
               setFilter({ sortBy: event.target.value as JobFilters["sortBy"] })
             }
           >
+            <option value="deadline_asc">即将截止优先</option>
             <option value="updated_desc">最近更新优先</option>
             <option value="start_date_asc">开启时间优先</option>
             <option value="company_asc">公司名称排序</option>

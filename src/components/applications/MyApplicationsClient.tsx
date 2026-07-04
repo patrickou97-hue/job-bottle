@@ -7,13 +7,14 @@ import { APPLICATION_STATUS, APPLICATION_STATUS_LABELS } from "@/lib/constants";
 import { fetchMyApplications } from "@/lib/applications";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
-import { formatDateTime, isValidHttpUrl } from "@/lib/utils";
+import { isValidHttpUrl } from "@/lib/utils";
 import { ProgressDrawer } from "@/components/applications/ProgressDrawer";
 import { StatusPill } from "@/components/applications/StatusPill";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
 import { ApplicationOrbitSystem } from "@/components/applications/ApplicationOrbitSystem";
+import { DeadlineChip } from "@/components/jobs/DeadlineChip";
 import type { ApplicationStatus, ApplicationWithJob } from "@/lib/types";
 
 export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { loginNextPath?: string }) {
@@ -172,11 +173,10 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
                     <span className="truncate">{application.job.industry || "暂无行业"}</span>
                     <span className="text-[color:var(--text-disabled)]">·</span>
                     <span className="truncate">{application.job.batch_type || "暂无批次"}</span>
-                    <span className="hidden text-[color:var(--text-disabled)] sm:inline">·</span>
-                    <span className="hidden shrink-0 sm:inline">{formatDateTime(application.updated_at)}</span>
                   </span>
                 </span>
                 <span className="flex shrink-0 items-center gap-2">
+                  <DeadlineChip job={application.job} compact />
                   <StatusPill status={application.status} />
                   <Button
                     variant="secondary"
