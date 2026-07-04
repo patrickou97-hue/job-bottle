@@ -128,7 +128,7 @@ export function filterJobs(jobs: Job[], filters: JobFilters) {
       filters.tags.length === 0 ||
       filters.tags.some((tag) => job.tags?.includes(tag));
     const categoriesMatched = jobMatchesSelectedCategories(
-      job.job_categories,
+      getJobCategories(job),
       filters.categories,
     );
 
@@ -217,10 +217,16 @@ export function getJobFacetOptions(jobs: Job[]) {
     batchTypes: Array.from(batchTypes).sort(),
     locations: Array.from(locations).sort(),
     categories: JOB_CATEGORIES.filter((category) =>
-      jobs.some((job) => job.job_categories?.includes(category)),
+      jobs.some((job) => getJobCategories(job).includes(category)),
     ),
     tags: Array.from(tags).sort(),
   };
+}
+
+function getJobCategories(job: Job) {
+  return job.job_categories?.length
+    ? job.job_categories
+    : normalizeJobCategories(job.job_titles).categories;
 }
 
 export function toJobPayload(values: JobFormValues) {
