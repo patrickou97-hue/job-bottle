@@ -56,9 +56,21 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/BottleStage.tsx",
-    mustInclude: ["canvasRef", "drawApplicationStar", "drawBottleAtmosphere", "/assets/star-bottle-image2.png", "useReducedMotion"],
+    mustInclude: ["canvasRef", "drawApplicationStar", "drawBottleAtmosphere", "/assets/star-bottle-image2.png", "useReducedMotion", "aspect-[2/3]"],
     mustNotInclude: ["Matter", "matter-js", "StackedStar"],
     label: "星瓶使用 canvas 星层和简化落瓶动画且不引入物理引擎",
+  },
+  {
+    file: "src/lib/bottleShape.ts",
+    mustInclude: ["BOTTLE_INNER_PATH", "BOTTLE_MAIN_CAVITY_PATH", "isBottleCircleInsideMainCavity", "getBottleSafeRadius"],
+    mustNotInclude: ["Math.random"],
+    label: "星瓶内腔使用真实几何路径和安全半径判定",
+  },
+  {
+    file: "src/components/applications/bottleGeometry.ts",
+    mustInclude: ["getBottleMainHorizontalRange", "isBottleCircleInsideMainCavity", "validateBottleStackPosition"],
+    mustNotInclude: ["Math.random"],
+    label: "星瓶落位算法逐候选点执行主腔几何判定",
   },
   {
     file: "src/components/galaxy/GalaxyHome.tsx",
@@ -434,6 +446,167 @@ function checkSourceInvariants() {
   }
 }
 
+function checkBottleGeometryProbe() {
+  const width = 512;
+  const centerX = width / 2;
+  const mainTopY = 304;
+  const mainBottomY = 704;
+  const statusWeight = {
+    rejected: 0,
+    withdrawn: 0,
+    opened: 1,
+    applied: 1,
+    written_test: 2,
+    first_round: 2,
+    second_round: 2,
+    final_round: 2,
+    offer: -1,
+  };
+  const statuses = ["opened", "applied", "written_test", "first_round", "second_round", "final_round", "offer", "rejected", "withdrawn"];
+
+  function hashString(value) {
+    let hash = 2166136261;
+    for (let index = 0; index < value.length; index += 1) {
+      hash ^= value.charCodeAt(index);
+      hash = Math.imul(hash, 16777619);
+    }
+    return hash >>> 0;
+  }
+
+  function jitter(hash, shift, amount) {
+    return (((hash >>> shift) % 1000) / 999 - 0.5) * amount;
+  }
+
+  function smooth(value) {
+    const t = Math.max(0, Math.min(1, value));
+    return t * t * (3 - 2 * t);
+  }
+
+  function lerp(start, end, t) {
+    return start + (end - start) * t;
+  }
+
+  function getBottleMainHalfWidth(y) {
+    if (y < mainTopY || y > mainBottomY) return 0;
+    if (y < 344) return lerp(58, 132, smooth((y - mainTopY) / 40));
+    if (y < 420) return lerp(132, 212, smooth((y - 344) / 76));
+    if (y < 640) return 212;
+    return lerp(212, 156, smooth((y - 640) / 64));
+  }
+
+  function getBottleSafeRadius(size, status) {
+    const bodyRadius = size / 2;
+    const glowRadius = status === "offer" ? size * 0.34 : status === "rejected" || status === "withdrawn" ? 3 : size * 0.22;
+    return bodyRadius + glowRadius + 6;
+  }
+
+  function isPointInsideBottleMainCavity(x, y) {
+    const halfWidth = getBottleMainHalfWidth(y);
+    if (halfWidth <= 0) return false;
+    return Math.abs(x - centerX) <= halfWidth;
+  }
+
+  function isBottleCircleInsideMainCavity(x, y, radius) {
+    if (y - radius < mainTopY || y + radius > mainBottomY) return false;
+    const samples = [
+      [0, 0],
+      [radius, 0],
+      [-radius, 0],
+      [0, radius],
+      [0, -radius],
+      [radius * 0.72, radius * 0.72],
+      [radius * 0.72, -radius * 0.72],
+      [-radius * 0.72, radius * 0.72],
+      [-radius * 0.72, -radius * 0.72],
+    ];
+    return samples.every(([dx, dy]) => isPointInsideBottleMainCavity(x + dx, y + dy));
+  }
+
+  function getBottleMainHorizontalRange(y, radius) {
+    const halfWidth = getBottleMainHalfWidth(y);
+    if (halfWidth <= 0) return null;
+    const min = centerX - halfWidth + radius;
+    const max = centerX + halfWidth - radius;
+    if (min >= max) return null;
+    return { min, max };
+  }
+
+  function rowCapacity(row) {
+    return Math.max(4, 7 - Math.floor(row * 0.45));
+  }
+
+  function getApplicationBottleSize(application) {
+    if (application.status === "offer") return 40;
+    if (application.status === "rejected" || application.status === "withdrawn") return 16;
+    return 24;
+  }
+
+  function getRowY(row, status) {
+    if (status === "offer") return 430 - (row - 8) * 20;
+    return 684 - row * 20;
+  }
+
+  function findStableBottlePosition(hash, safeRadius, status, rowOccupancy) {
+    const preferredStartRow = status === "offer" ? 8 : 0;
+    const maxRows = 22;
+    for (let row = preferredStartRow; row < maxRows; row += 1) {
+      const y = getRowY(row, status);
+      const range = getBottleMainHorizontalRange(y, safeRadius);
+      if (!range) continue;
+      const rangeWidth = range.max - range.min;
+      const capacity = Math.max(1, Math.min(rowCapacity(row), Math.floor(rangeWidth / Math.max(26, safeRadius * 1.22))));
+      const occupied = rowOccupancy.get(row) ?? 0;
+      if (occupied >= capacity) continue;
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        const slotWidth = rangeWidth / capacity;
+        const baseX = range.min + slotWidth * (occupied + 0.5);
+        const x = baseX + jitter(hash, attempt + 3, 24);
+        const yJittered = y + jitter(hash, attempt + 13, 10);
+        if (isBottleCircleInsideMainCavity(x, yJittered, safeRadius)) {
+          rowOccupancy.set(row, occupied + 1);
+          return { x, y: yJittered, row };
+        }
+      }
+      const fallbackX = range.min + rangeWidth * 0.5;
+      if (isBottleCircleInsideMainCavity(fallbackX, y, safeRadius)) {
+        rowOccupancy.set(row, occupied + 1);
+        return { x: fallbackX, y, row };
+      }
+    }
+    throw new Error("星瓶几何探针无法找到合法落位");
+  }
+
+  const applications = Array.from({ length: 80 }, (_, index) => ({
+    id: `smoke-bottle-star-${String(index + 1).padStart(2, "0")}`,
+    status: statuses[index % statuses.length],
+    applied_at: `2026-07-${String((index % 24) + 1).padStart(2, "0")}T08:00:00Z`,
+  })).sort((a, b) => {
+    const statusDelta = (statusWeight[a.status] ?? 1) - (statusWeight[b.status] ?? 1);
+    if (statusDelta !== 0) return statusDelta;
+    return new Date(a.applied_at).getTime() - new Date(b.applied_at).getTime();
+  });
+
+  const rowOccupancy = new Map();
+  const positions = applications.map((application) => {
+    const size = getApplicationBottleSize(application);
+    const safeRadius = getBottleSafeRadius(size, application.status);
+    const point = findStableBottlePosition(hashString(application.id), safeRadius, application.status, rowOccupancy);
+    return { ...application, size, safeRadius, ...point };
+  });
+
+  const invalid = positions.filter((position) => !isBottleCircleInsideMainCavity(position.x, position.y, position.safeRadius));
+  if (invalid.length > 0) {
+    throw new Error(`星瓶几何探针失败：${invalid.map((item) => item.id).join(", ")} 越界`);
+  }
+
+  const neckStops = positions.filter((position) => position.y < mainTopY + position.safeRadius);
+  if (neckStops.length > 0) {
+    throw new Error(`星瓶几何探针失败：${neckStops.map((item) => item.id).join(", ")} 停在瓶颈`);
+  }
+
+  console.log(`✓ 星瓶几何探针通过：${positions.length} 颗测试星全部位于主腔安全区域`);
+}
+
 async function checkPages(baseUrl) {
   for (const [path, requiredTexts] of Object.entries(REQUIRED_TEXT)) {
     const response = await fetchWithRetry(`${baseUrl}${path}`);
@@ -475,6 +648,7 @@ async function main() {
   const env = { ...process.env, ...readEnvFile() };
   await checkSupabase(env);
   checkSourceInvariants();
+  checkBottleGeometryProbe();
 
   const reusableServer = await findReusableServer();
   if (reusableServer) {

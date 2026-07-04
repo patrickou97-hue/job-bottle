@@ -99,7 +99,7 @@ export function BottleStage({
   return (
     <div
       id="application-bottle-target"
-      className="relative mx-auto aspect-[0.78] w-full max-w-[560px] overflow-hidden"
+      className="relative mx-auto aspect-[2/3] w-full max-w-[520px] overflow-hidden"
     >
       <div className="pointer-events-none absolute inset-x-[14%] bottom-[8%] top-[12%] z-0 rounded-[46%] bg-[color:var(--bottle-glass)] shadow-[inset_0_-80px_90px_rgba(74,81,112,0.34),0_0_80px_rgba(143,134,240,0.1)]" />
       <div className="pointer-events-none absolute inset-x-[19%] bottom-[10%] top-[18%] z-[1] rounded-[45%] bg-[radial-gradient(circle_at_50%_70%,rgba(74,81,112,.38),transparent_55%),linear-gradient(180deg,rgba(24,36,72,.1),rgba(11,18,38,.42))]" />
@@ -203,13 +203,13 @@ function drawApplicationStar(
     return;
   }
 
-  const halo = context.createRadialGradient(0, 0, size * 0.1, 0, 0, size * (offer ? 1.35 : 1.05));
+  const halo = context.createRadialGradient(0, 0, size * 0.1, 0, 0, size * (offer ? 0.95 : 0.72));
   halo.addColorStop(0, offer ? "rgba(255,246,227,0.72)" : "rgba(255,246,227,0.52)");
   halo.addColorStop(0.32, "rgba(255,217,142,0.32)");
   halo.addColorStop(1, "rgba(255,194,160,0)");
   context.fillStyle = halo;
   context.beginPath();
-  context.arc(0, 0, size * (offer ? 1.35 : 1.05), 0, Math.PI * 2);
+  context.arc(0, 0, size * (offer ? 0.95 : 0.72), 0, Math.PI * 2);
   context.fill();
 
   const gradient = context.createLinearGradient(-size / 2, -size / 2, size / 2, size / 2);
