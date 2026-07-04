@@ -174,9 +174,15 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/jobs/HomeClient.tsx",
-    mustInclude: ["NebulaGateway", "CaptureAnimation", "if (!alreadyCaptured)", "hoveredJobId", "focusJob", "nebulaSelection", "encodeURIComponent(\"/explore\")", "href=\"/my\"", "即将截止优先"],
+    mustInclude: ["NebulaGateway", "CaptureAnimation", "if (!alreadyCaptured)", "hoveredJobId", "focusJob", "nebulaSelection", "encodeURIComponent(\"/explore\")", "href=\"/my\"", "即将截止优先", "ApplyReturnConfirm", "visibilitychange", "keep_opened"],
     mustNotInclude: ["queueBottleDrop(application.id);\n      if (applyWindow)", "encodeURIComponent(\"/jobs\")", "href=\"/my-applications\""],
-    label: "岗位星图有星体观测和捕获动画且重复点击不重复落星",
+    label: "岗位星图有星体观测、捕获动画和官网返回确认闭环",
+  },
+  {
+    file: "src/components/jobs/ApplyReturnConfirm.tsx",
+    mustInclude: ["投递完成了吗", "已投递", "还没有", "不投了"],
+    mustNotInclude: ["DDL", "截止提醒"],
+    label: "官网投递返回确认条提供 opened/applied 语义分离",
   },
   {
     file: "src/components/jobs/DeadlineChip.tsx",
@@ -204,9 +210,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/jobs/JobDetailActions.tsx",
-    mustInclude: ["登录后捕获这颗星", "upsertApplication", "safeOpenUrl", "已捕获 · 已加入你的星图"],
+    mustInclude: ["登录后捕获这颗星", "upsertApplication", "safeOpenUrl", "ApplyReturnConfirm", "keep_opened", "withdrawn"],
     mustNotInclude: ["router.push(`/login"],
-    label: "岗位详情捕获操作为点位登录提示而非路由级拦截",
+    label: "岗位详情捕获操作为点位登录提示并支持回到页面后确认投递",
   },
   {
     file: "src/components/applications/ApplicationOrbitSystem.tsx",

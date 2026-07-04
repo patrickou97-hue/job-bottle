@@ -1,14 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ExternalLink, Sparkles } from "lucide-react";
 import { getCurrentUserOrNull } from "@/lib/auth";
-import { upsertApplication } from "@/lib/applications";
+import { updateApplication, upsertApplication } from "@/lib/applications";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { isValidHttpUrl, safeOpenUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { StatusPill } from "@/components/applications/StatusPill";
+import { ApplyReturnConfirm } from "@/components/jobs/ApplyReturnConfirm";
 import type { Job, UserApplication } from "@/lib/types";
 
 export function JobDetailActions({
@@ -21,7 +22,36 @@ export function JobDetailActions({
   const [application, setApplication] = useState<UserApplication | null>(initialApplication ?? null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [showApplyConfirmation, setShowApplyConfirmation] = useState(false);
+  const [confirmBusy, setConfirmBusy] = useState(false);
+  const applyConfirmationArmedRef = useRef(false);
+  const applyPageWasHiddenRef = useRef(false);
+  const applyConfirmFallbackRef = useRef<number | null>(null);
   const loginHref = `/login?next=${encodeURIComponent(`/jobs/${job.id}`)}`;
+
+  useEffect(() => {
+    function handleVisibilityChange() {
+      if (!application || !applyConfirmationArmedRef.current) return;
+      if (document.visibilityState === "hidden") {
+        applyPageWasHiddenRef.current = true;
+        return;
+      }
+      if (applyPageWasHiddenRef.current) {
+        setShowApplyConfirmation(true);
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [application]);
+
+  useEffect(() => {
+    return () => {
+      if (applyConfirmFallbackRef.current) {
+        window.clearTimeout(applyConfirmFallbackRef.current);
+      }
+    };
+  }, []);
 
   async function captureAndOpen() {
     setMessage("");
@@ -45,11 +75,61 @@ export function JobDetailActions({
       const nextApplication = await upsertApplication(supabase, user.id, job.id);
       setApplication(nextApplication);
       safeOpenUrl(job.apply_url);
-      setMessage("已捕获 · 已加入你的星图。");
+      if (nextApplication.status === "opened") {
+        armApplyConfirmation();
+        setMessage("已记录为“已打开官网”，回来后可确认是否已投递。");
+      } else {
+        setMessage("已打开官网，当前投递状态保持不变。");
+      }
     } catch {
       setMessage("捕获失败，网络似乎断开了。重试");
     } finally {
       setBusy(false);
+    }
+  }
+
+  function armApplyConfirmation() {
+    if (applyConfirmFallbackRef.current) {
+      window.clearTimeout(applyConfirmFallbackRef.current);
+    }
+    applyConfirmationArmedRef.current = true;
+    applyPageWasHiddenRef.current = false;
+    setShowApplyConfirmation(false);
+    applyConfirmFallbackRef.current = window.setTimeout(() => {
+      if (applyConfirmationArmedRef.current) {
+        setShowApplyConfirmation(true);
+      }
+    }, 2200);
+  }
+
+  async function resolveApplyConfirmation(status: "applied" | "withdrawn" | "keep_opened") {
+    if (!application) return;
+    if (applyConfirmFallbackRef.current) {
+      window.clearTimeout(applyConfirmFallbackRef.current);
+      applyConfirmFallbackRef.current = null;
+    }
+    if (status === "keep_opened") {
+      applyConfirmationArmedRef.current = false;
+      setShowApplyConfirmation(false);
+      setMessage("已保留为“已打开官网”，之后可继续更新进度。");
+      return;
+    }
+
+    setConfirmBusy(true);
+    setMessage("");
+    try {
+      const nextApplication = await updateApplication(createClient(), application.id, {
+        status,
+        progress_note: application.progress_note,
+      });
+      setApplication(nextApplication);
+      applyConfirmationArmedRef.current = false;
+      setShowApplyConfirmation(false);
+      setMessage(status === "applied" ? "已确认投递，星体进入投递轨道。" : "已标记为不投了。");
+    } catch {
+      setMessage("状态更新失败，请稍后再试。");
+    } finally {
+      setConfirmBusy(false);
     }
   }
 
@@ -80,6 +160,17 @@ export function JobDetailActions({
           </Button>
         </div>
       </div>
+      {application && showApplyConfirmation ? (
+        <div className="mt-4">
+          <ApplyReturnConfirm
+            companyName={job.company_name}
+            busy={confirmBusy}
+            onApplied={() => void resolveApplyConfirmation("applied")}
+            onLater={() => void resolveApplyConfirmation("keep_opened")}
+            onWithdraw={() => void resolveApplyConfirmation("withdrawn")}
+          />
+        </div>
+      ) : null}
       {message && message !== "登录后捕获这颗星。" ? (
         <p className="mt-3 text-xs text-nebula-silver">{message}</p>
       ) : null}

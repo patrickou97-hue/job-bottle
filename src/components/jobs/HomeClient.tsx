@@ -1,18 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Archive, FlaskConical, Sparkles } from "lucide-react";
 import { EMPTY_JOB_FILTERS } from "@/lib/constants";
 import { fetchActiveJobs, filterJobs, getJobFacetOptions } from "@/lib/jobs";
-import { fetchMyApplications, upsertApplication } from "@/lib/applications";
+import { fetchMyApplications, updateApplication, upsertApplication } from "@/lib/applications";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { queueBottleDrop } from "@/lib/bottle-drop";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { cn, isValidHttpUrl, safeOpenUrl, formatDateTime } from "@/lib/utils";
 import { JobFilterBar } from "@/components/jobs/JobFilterBar";
 import { JobCard } from "@/components/jobs/JobCard";
+import { ApplyReturnConfirm } from "@/components/jobs/ApplyReturnConfirm";
 import { ProgressDrawer } from "@/components/applications/ProgressDrawer";
 import { StatusPill } from "@/components/applications/StatusPill";
 import { Button } from "@/components/ui/Button";
@@ -29,6 +30,11 @@ import type {
 } from "@/lib/types";
 
 type JobViewMode = "all" | "unapplied" | "applied";
+type PendingApplyConfirmation = {
+  applicationId: string;
+  companyName: string;
+  progressNote: string | null;
+};
 
 export function HomeClient() {
   const router = useRouter();
@@ -47,6 +53,12 @@ export function HomeClient() {
   const [focusedJobId, setFocusedJobId] = useState<string | null>(null);
   const [nebulaSelection, setNebulaSelection] = useState<NebulaSelection | null>(null);
   const [nebulaResetSignal, setNebulaResetSignal] = useState(0);
+  const [pendingApplyConfirmation, setPendingApplyConfirmation] =
+    useState<PendingApplyConfirmation | null>(null);
+  const [showApplyConfirmation, setShowApplyConfirmation] = useState(false);
+  const [confirmBusy, setConfirmBusy] = useState(false);
+  const applyPageWasHiddenRef = useRef(false);
+  const applyConfirmFallbackRef = useRef<number | null>(null);
   const { capturedJob, startCapture, clearCapture } = useCaptureMotion();
 
   async function loadData() {
@@ -89,6 +101,30 @@ export function HomeClient() {
       void loadData();
     }, 0);
     return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    function handleVisibilityChange() {
+      if (!pendingApplyConfirmation) return;
+      if (document.visibilityState === "hidden") {
+        applyPageWasHiddenRef.current = true;
+        return;
+      }
+      if (applyPageWasHiddenRef.current) {
+        setShowApplyConfirmation(true);
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [pendingApplyConfirmation]);
+
+  useEffect(() => {
+    return () => {
+      if (applyConfirmFallbackRef.current) {
+        window.clearTimeout(applyConfirmFallbackRef.current);
+      }
+    };
   }, []);
 
   const applicationByJobId = useMemo(() => {
@@ -170,6 +206,13 @@ export function HomeClient() {
 
       const alreadyCaptured = applications.some((item) => item.job_id === job.id);
       const application = await upsertApplication(supabase, user.id, job.id);
+      if (application.status === "opened") {
+        armApplyConfirmation({
+          applicationId: application.id,
+          companyName: job.company_name,
+          progressNote: application.progress_note,
+        });
+      }
       if (!alreadyCaptured) {
         queueBottleDrop(application.id);
         startCapture(job);
@@ -179,11 +222,62 @@ export function HomeClient() {
       } else {
         safeOpenUrl(job.apply_url);
       }
-      setMessage("已加入投递记录，可在「我的星瓶」中查看进度。");
+      setMessage(
+        application.status === "opened"
+          ? "已记录为“已打开官网”，回来后可确认是否已投递。"
+          : "已打开官网，当前投递状态保持不变。",
+      );
       await loadData();
     } catch {
       applyWindow?.close();
       setMessage("投递记录保存失败，请稍后再试。");
+    }
+  }
+
+  function armApplyConfirmation(nextConfirmation: PendingApplyConfirmation) {
+    if (applyConfirmFallbackRef.current) {
+      window.clearTimeout(applyConfirmFallbackRef.current);
+    }
+    applyPageWasHiddenRef.current = false;
+    setPendingApplyConfirmation(nextConfirmation);
+    setShowApplyConfirmation(false);
+    applyConfirmFallbackRef.current = window.setTimeout(() => {
+      setShowApplyConfirmation(true);
+    }, 2200);
+  }
+
+  async function resolveApplyConfirmation(status: "applied" | "withdrawn" | "keep_opened") {
+    if (!pendingApplyConfirmation) return;
+    if (status === "keep_opened") {
+      if (applyConfirmFallbackRef.current) {
+        window.clearTimeout(applyConfirmFallbackRef.current);
+        applyConfirmFallbackRef.current = null;
+      }
+      setPendingApplyConfirmation(null);
+      setShowApplyConfirmation(false);
+      setMessage("已保留为“已打开官网”，之后可继续更新进度。");
+      return;
+    }
+
+    setConfirmBusy(true);
+    setMessage("");
+    try {
+      if (applyConfirmFallbackRef.current) {
+        window.clearTimeout(applyConfirmFallbackRef.current);
+        applyConfirmFallbackRef.current = null;
+      }
+      await updateApplication(createClient(), pendingApplyConfirmation.applicationId, {
+        status,
+        progress_note: pendingApplyConfirmation.progressNote,
+      });
+      setPendingApplyConfirmation(null);
+      setShowApplyConfirmation(false);
+      setMessage(status === "applied" ? "已确认投递，星体进入投递轨道。" : "已标记为不投了。");
+      await loadData();
+    } catch {
+      setMessage("状态更新失败，请稍后再试。");
+    } finally {
+      setConfirmBusy(false);
     }
   }
 
@@ -208,6 +302,16 @@ export function HomeClient() {
         <div className="rounded-2xl border border-nebula-blue/20 bg-nebula-blue/8 px-4 py-3 text-sm text-nebula-silver">
           {message}
         </div>
+      ) : null}
+
+      {pendingApplyConfirmation && showApplyConfirmation ? (
+        <ApplyReturnConfirm
+          companyName={pendingApplyConfirmation.companyName}
+          busy={confirmBusy}
+          onApplied={() => void resolveApplyConfirmation("applied")}
+          onLater={() => void resolveApplyConfirmation("keep_opened")}
+          onWithdraw={() => void resolveApplyConfirmation("withdrawn")}
+        />
       ) : null}
 
       <JobRadarHeader
