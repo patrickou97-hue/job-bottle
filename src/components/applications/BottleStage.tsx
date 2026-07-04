@@ -7,7 +7,7 @@ import { BOTTLE_AREA, type BottleStackPosition } from "@/components/applications
 import {
   BOTTLE_COORDINATE_HEIGHT,
   BOTTLE_COORDINATE_WIDTH,
-  BOTTLE_MAIN_CAVITY_PATH,
+  BOTTLE_INNER_PATH,
 } from "@/lib/bottleShape";
 import type { ApplicationStatus, ApplicationWithJob } from "@/lib/types";
 
@@ -60,14 +60,14 @@ export function BottleStage({
       const rect = resize();
       frame = 0;
       ctx.clearRect(0, 0, rect.width, rect.height);
-      drawBottleAtmosphere(ctx, rect.width, rect.height);
 
       const falling = fallingId && !reducedMotion;
       const elapsed = Math.min(1, (now - startedAt) / 800);
       const eased = 1 - Math.pow(1 - elapsed, 2);
       const bounce = elapsed > 0.72 ? Math.sin((elapsed - 0.72) * Math.PI * 7) * 4 * (1 - elapsed) : 0;
 
-      clipToBottleMainCavity(ctx, rect.width, rect.height);
+      clipToBottleInterior(ctx, rect.width, rect.height);
+      drawBottleAtmosphere(ctx, rect.width, rect.height);
       drawableApplications.forEach((application) => {
         const position = positions.get(application.id);
         if (!position) return;
@@ -108,9 +108,6 @@ export function BottleStage({
       id="application-bottle-target"
       className="relative mx-auto aspect-[2/3] w-full max-w-[520px] overflow-hidden"
     >
-      <div className="pointer-events-none absolute inset-x-[14%] bottom-[8%] top-[12%] z-0 rounded-[46%] bg-[color:var(--bottle-glass)] shadow-[inset_0_-80px_90px_rgba(74,81,112,0.34),0_0_80px_rgba(143,134,240,0.1)]" />
-      <div className="pointer-events-none absolute inset-x-[19%] bottom-[10%] top-[18%] z-[1] rounded-[45%] bg-[radial-gradient(circle_at_50%_70%,rgba(74,81,112,.38),transparent_55%),linear-gradient(180deg,rgba(24,36,72,.1),rgba(11,18,38,.42))]" />
-
       <canvas
         ref={canvasRef}
         className="absolute inset-0 z-10 h-full w-full"
@@ -171,26 +168,21 @@ export function BottleStage({
 }
 
 function drawBottleAtmosphere(context: CanvasRenderingContext2D, width: number, height: number) {
-  const glow = context.createRadialGradient(width * 0.5, height * 0.72, 10, width * 0.5, height * 0.72, width * 0.34);
-  glow.addColorStop(0, "rgba(255,217,142,0.08)");
-  glow.addColorStop(0.42, "rgba(143,134,240,0.05)");
+  const glow = context.createRadialGradient(width * 0.5, height * 0.62, 8, width * 0.5, height * 0.62, width * 0.24);
+  glow.addColorStop(0, "rgba(199,226,255,0.08)");
+  glow.addColorStop(0.48, "rgba(143,184,240,0.045)");
   glow.addColorStop(1, "rgba(11,18,38,0)");
   context.fillStyle = glow;
   context.fillRect(0, 0, width, height);
-
-  context.fillStyle = "rgba(74,81,112,0.26)";
-  context.beginPath();
-  context.ellipse(width * 0.5, height * 0.8, width * 0.27, height * 0.04, 0, 0, Math.PI * 2);
-  context.fill();
 }
 
-function clipToBottleMainCavity(context: CanvasRenderingContext2D, width: number, height: number) {
+function clipToBottleInterior(context: CanvasRenderingContext2D, width: number, height: number) {
   const scaleX = width / BOTTLE_COORDINATE_WIDTH;
   const scaleY = height / BOTTLE_COORDINATE_HEIGHT;
 
   context.save();
   context.scale(scaleX, scaleY);
-  context.clip(new Path2D(BOTTLE_MAIN_CAVITY_PATH));
+  context.clip(new Path2D(BOTTLE_INNER_PATH));
   context.scale(1 / scaleX, 1 / scaleY);
 }
 

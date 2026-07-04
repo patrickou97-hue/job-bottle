@@ -2,14 +2,14 @@ export const BOTTLE_COORDINATE_WIDTH = 512;
 export const BOTTLE_COORDINATE_HEIGHT = 768;
 
 export const BOTTLE_INNER_PATH =
-  "M218 112 C218 92 294 92 294 112 L294 238 C294 274 348 286 386 336 C440 408 442 650 382 704 C336 746 176 746 130 704 C70 650 72 408 126 336 C164 286 218 274 218 238 Z";
+  "M215 196 C215 186 297 186 297 196 L297 278 C297 304 342 314 376 344 C418 382 424 520 378 570 C330 610 182 610 134 570 C88 520 94 382 136 344 C170 314 215 304 215 278 Z";
 
 export const BOTTLE_MAIN_CAVITY_PATH =
-  "M160 306 C190 278 322 278 352 306 C424 374 432 642 378 700 C330 736 182 736 134 700 C80 642 88 374 160 306 Z";
+  "M150 318 C184 288 328 288 362 318 C416 366 424 520 378 570 C330 608 182 608 134 570 C88 520 96 366 150 318 Z";
 
 const CENTER_X = BOTTLE_COORDINATE_WIDTH / 2;
-const MAIN_TOP_Y = 304;
-const MAIN_BOTTOM_Y = 704;
+const MAIN_TOP_Y = 300;
+const MAIN_BOTTOM_Y = 582;
 
 export function getBottleSafeRadius(size: number, status?: string) {
   const bodyRadius = size / 2;
@@ -52,10 +52,10 @@ export function isPointInsideBottleMainCavity(x: number, y: number) {
 
 function getBottleMainHalfWidth(y: number) {
   if (y < MAIN_TOP_Y || y > MAIN_BOTTOM_Y) return 0;
-  if (y < 344) return lerp(58, 132, smooth((y - MAIN_TOP_Y) / 40));
-  if (y < 420) return lerp(132, 212, smooth((y - 344) / 76));
-  if (y < 640) return 212;
-  return lerp(212, 156, smooth((y - 640) / 64));
+  if (y < 334) return lerp(54, 128, smooth((y - MAIN_TOP_Y) / 34));
+  if (y < 390) return lerp(128, 166, smooth((y - 334) / 56));
+  if (y < 528) return 166;
+  return lerp(166, 128, smooth((y - 528) / 54));
 }
 
 function smooth(value: number) {

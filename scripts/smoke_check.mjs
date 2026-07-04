@@ -57,7 +57,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/BottleStage.tsx",
-    mustInclude: ["canvasRef", "drawApplicationStar", "drawBottleAtmosphere", "BOTTLE_MAIN_CAVITY_PATH", "clipToBottleMainCavity", "/assets/star-bottle-image2.png", "useReducedMotion", "aspect-[2/3]"],
+    mustInclude: ["canvasRef", "drawApplicationStar", "drawBottleAtmosphere", "BOTTLE_INNER_PATH", "clipToBottleInterior", "/assets/star-bottle-image2.png", "useReducedMotion", "aspect-[2/3]"],
     mustNotInclude: ["Matter", "matter-js", "StackedStar"],
     label: "星瓶使用 canvas 星层和简化落瓶动画且不引入物理引擎",
   },
@@ -578,8 +578,8 @@ function checkSourceInvariants() {
 function checkBottleGeometryProbe() {
   const width = 512;
   const centerX = width / 2;
-  const mainTopY = 304;
-  const mainBottomY = 704;
+  const mainTopY = 300;
+  const mainBottomY = 582;
   const statusWeight = {
     rejected: 0,
     withdrawn: 0,
@@ -617,10 +617,10 @@ function checkBottleGeometryProbe() {
 
   function getBottleMainHalfWidth(y) {
     if (y < mainTopY || y > mainBottomY) return 0;
-    if (y < 344) return lerp(58, 132, smooth((y - mainTopY) / 40));
-    if (y < 420) return lerp(132, 212, smooth((y - 344) / 76));
-    if (y < 640) return 212;
-    return lerp(212, 156, smooth((y - 640) / 64));
+    if (y < 334) return lerp(54, 128, smooth((y - mainTopY) / 34));
+    if (y < 390) return lerp(128, 166, smooth((y - 334) / 56));
+    if (y < 528) return 166;
+    return lerp(166, 128, smooth((y - 528) / 54));
   }
 
   function getBottleSafeRadius(size, status) {
@@ -661,7 +661,7 @@ function checkBottleGeometryProbe() {
   }
 
   function rowCapacity(row) {
-    return Math.max(4, 7 - Math.floor(row * 0.45));
+    return Math.max(5, 10 - Math.floor(row * 0.35));
   }
 
   function getApplicationBottleSize(application) {
@@ -671,7 +671,7 @@ function checkBottleGeometryProbe() {
   }
 
   function getRowY(row) {
-    return 684 - row * 18;
+    return 552 - row * 18;
   }
 
   function findStableBottlePosition(hash, safeRadius, rowOccupancy) {
@@ -681,7 +681,7 @@ function checkBottleGeometryProbe() {
       const range = getBottleMainHorizontalRange(y, safeRadius);
       if (!range) continue;
       const rangeWidth = range.max - range.min;
-      const capacity = Math.max(1, Math.min(rowCapacity(row), Math.floor(rangeWidth / Math.max(26, safeRadius * 1.22))));
+      const capacity = Math.max(1, Math.min(rowCapacity(row), Math.floor(rangeWidth / Math.max(24, safeRadius * 1.05))));
       const occupied = rowOccupancy.get(row) ?? 0;
       if (occupied >= capacity) continue;
       for (let attempt = 0; attempt < 20; attempt += 1) {

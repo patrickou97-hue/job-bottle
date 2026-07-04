@@ -52,7 +52,7 @@ function jitter(hash: number, shift: number, amount: number) {
 }
 
 function rowCapacity(row: number) {
-  return Math.max(4, 7 - Math.floor(row * 0.45));
+  return Math.max(5, 10 - Math.floor(row * 0.35));
 }
 
 function sortedApplications(applications: ApplicationWithJob[]) {
@@ -113,7 +113,7 @@ function findStableBottlePosition(
     if (!range) continue;
 
     const width = range.max - range.min;
-    const capacity = Math.max(1, Math.min(rowCapacity(row), Math.floor(width / Math.max(26, safeRadius * 1.22))));
+    const capacity = Math.max(1, Math.min(rowCapacity(row), Math.floor(width / Math.max(24, safeRadius * 1.05))));
     const occupied = rowOccupancy.get(row) ?? 0;
     if (occupied >= capacity) continue;
 
@@ -140,5 +140,5 @@ function findStableBottlePosition(
 }
 
 function getRowY(row: number) {
-  return 684 - row * 18;
+  return 552 - row * 18;
 }
