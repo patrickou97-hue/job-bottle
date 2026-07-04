@@ -12,6 +12,7 @@ type FloatingPlanetProps = {
   disabled: boolean
   shouldOrbit: boolean
   orbitScale: number
+  planetScale?: number
   onSelect: (planet: PlanetRoute) => void
   onHover: (planet: PlanetRoute | null) => void
 }
@@ -34,11 +35,13 @@ export function FloatingPlanet({
   disabled,
   shouldOrbit,
   orbitScale,
+  planetScale = 1,
   onSelect,
   onHover,
 }: FloatingPlanetProps) {
   const visual = PLANET_VISUALS[planet.variant]
   const orbitRadius = planet.orbitRadius * orbitScale
+  const planetSize = planet.size * planetScale
 
   return (
     <motion.div
@@ -58,10 +61,10 @@ export function FloatingPlanet({
       <motion.div
         className="absolute"
         style={{
-          width: planet.size,
-          height: planet.size,
-          marginLeft: -planet.size / 2,
-          marginTop: -planet.size / 2,
+          width: planetSize,
+          height: planetSize,
+          marginLeft: -planetSize / 2,
+          marginTop: -planetSize / 2,
           x: orbitRadius,
         }}
         initial={{ rotate: -planet.initialAngle }}

@@ -10,7 +10,6 @@ import { PLANET_ROUTES, type PlanetRoute } from '@/lib/galaxy-routes'
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client'
 import { CorePlanet } from './CorePlanet'
 import { FloatingPlanet } from './FloatingPlanet'
-import { MobilePlanetList } from './MobilePlanetList'
 import { OrbitLines } from './OrbitLines'
 import { PlanetLabel } from './PlanetLabel'
 import { PlanetTransitionOverlay } from './PlanetTransitionOverlay'
@@ -25,22 +24,21 @@ export function SpaceHome() {
   const [selectedPlanet, setSelectedPlanet] = useState<PlanetRoute | null>(null)
   const [user, setUser] = useState<{ id: string } | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
-  const [isMobile, setIsMobile] = useState(false)
+  const [viewportWidth, setViewportWidth] = useState(1200)
   const [viewportHeight, setViewportHeight] = useState(900)
 
   useEffect(() => {
-    const mqMobile = window.matchMedia('(max-width: 767px)')
-    const onMobile = (event: MediaQueryListEvent) => setIsMobile(event.matches)
-    const onResize = () => setViewportHeight(window.innerHeight)
+    const onResize = () => {
+      setViewportWidth(window.innerWidth)
+      setViewportHeight(window.innerHeight)
+    }
     const frame = window.requestAnimationFrame(() => {
-      setIsMobile(mqMobile.matches)
+      setViewportWidth(window.innerWidth)
       setViewportHeight(window.innerHeight)
     })
-    mqMobile.addEventListener('change', onMobile)
     window.addEventListener('resize', onResize)
     return () => {
       window.cancelAnimationFrame(frame)
-      mqMobile.removeEventListener('change', onMobile)
       window.removeEventListener('resize', onResize)
     }
   }, [])
@@ -105,8 +103,13 @@ export function SpaceHome() {
   }
 
   const entering = selectedPlanet !== null
-  const shouldOrbit = !reducedMotion && !isMobile && !entering
-  const orbitScale = Math.min(1, Math.max(0.9, (viewportHeight - 92) / 860))
+  const shouldOrbit = !reducedMotion && !entering
+  const desktopOrbitScale = Math.min(1, Math.max(0.9, (viewportHeight - 92) / 860))
+  const maxOrbitRadius = Math.max(...planets.map((planet) => planet.orbitRadius))
+  const mobileOrbitScale = Math.min(
+    0.36,
+    Math.max(0.22, Math.min((viewportWidth - 118) / (maxOrbitRadius * 2), (viewportHeight - 330) / (maxOrbitRadius * 2))),
+  )
 
   return (
     <main
@@ -155,7 +158,7 @@ export function SpaceHome() {
           animate={{ opacity: entering ? 0 : 1, scale: entering ? 1.08 : 1 }}
           transition={{ duration: 0.48, ease: 'easeOut' }}
         >
-          <OrbitLines planets={planets} activeId={hovered?.id} orbitScale={orbitScale} />
+          <OrbitLines planets={planets} activeId={hovered?.id} orbitScale={desktopOrbitScale} />
         </motion.div>
 
         <motion.div
@@ -175,7 +178,7 @@ export function SpaceHome() {
               entering={entering}
               disabled={entering}
               shouldOrbit={shouldOrbit}
-              orbitScale={orbitScale}
+              orbitScale={desktopOrbitScale}
               onSelect={enterPlanet}
               onHover={setHovered}
             />
@@ -193,12 +196,31 @@ export function SpaceHome() {
 
       <section className="relative z-10 flex h-full flex-col items-center justify-center gap-12 md:hidden">
         <motion.div
+          className="relative flex h-[min(72svh,560px)] min-h-[420px] w-full items-center justify-center"
           animate={{ opacity: entering ? 0.14 : 1, scale: entering ? 0.9 : 1 }}
           transition={{ duration: 0.42, ease: 'easeOut' }}
         >
-          <CorePlanet />
+          <OrbitLines planets={planets} activeId={hovered?.id} orbitScale={mobileOrbitScale} />
+          <div className="absolute">
+            {planets.map((planet) => (
+              <FloatingPlanet
+                key={planet.id}
+                planet={planet}
+                hovered={hovered?.id === planet.id}
+                entering={entering}
+                disabled={entering}
+                shouldOrbit={shouldOrbit}
+                orbitScale={mobileOrbitScale}
+                planetScale={0.66}
+                onSelect={enterPlanet}
+                onHover={setHovered}
+              />
+            ))}
+          </div>
+          <div className="relative z-20">
+            <CorePlanet compact />
+          </div>
         </motion.div>
-        <MobilePlanetList planets={planets} disabled={entering} onSelect={enterPlanet} />
       </section>
 
       <PlanetLabel planet={hovered} />

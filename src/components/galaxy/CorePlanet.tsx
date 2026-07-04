@@ -1,14 +1,14 @@
 import { SITE_NAME } from '@/lib/constants'
 
-export function CorePlanet() {
+export function CorePlanet({ compact = false }: { compact?: boolean }) {
   return (
     <div
       className="relative flex flex-col items-center justify-center rounded-full"
       style={{
-        width: 'min(34vw, 268px)',
-        height: 'min(34vw, 268px)',
-        minWidth: 190,
-        minHeight: 190,
+        width: compact ? 'min(34vw, 150px)' : 'min(34vw, 268px)',
+        height: compact ? 'min(34vw, 150px)' : 'min(34vw, 268px)',
+        minWidth: compact ? 132 : 190,
+        minHeight: compact ? 132 : 190,
         background:
           'radial-gradient(circle at 39% 34%, rgba(194,215,244,0.42) 0 5%, rgba(57,82,124,0.38) 20%, rgba(8,18,36,0.97) 62%, rgba(2,5,14,1) 100%)',
         boxShadow:
@@ -26,12 +26,23 @@ export function CorePlanet() {
         style={{ background: 'rgba(187,210,239,0.08)' }}
       />
       <span
-        className="font-display text-[clamp(1.35rem,2.2vw,2rem)] font-semibold"
-        style={{ color: 'rgba(226,235,248,0.94)', textShadow: '0 0 30px rgba(143,176,220,0.22)' }}
+        className="font-display font-semibold"
+        style={{
+          color: 'rgba(226,235,248,0.94)',
+          textShadow: '0 0 30px rgba(143,176,220,0.22)',
+          fontSize: compact ? 'clamp(1rem,5vw,1.35rem)' : 'clamp(1.35rem,2.2vw,2rem)',
+        }}
       >
         {SITE_NAME}
       </span>
-      <span className="mt-3 max-w-[12rem] text-center text-sm leading-6" style={{ color: 'rgba(156,173,199,0.72)' }}>
+      <span
+        className="mt-3 max-w-[12rem] text-center leading-6"
+        style={{
+          color: 'rgba(156,173,199,0.72)',
+          fontSize: compact ? '0.72rem' : '0.875rem',
+          lineHeight: compact ? '1.15rem' : '1.5rem',
+        }}
+      >
         把每一次投递，收进你的职业星图。
       </span>
     </div>

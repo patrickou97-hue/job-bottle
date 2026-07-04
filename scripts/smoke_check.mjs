@@ -32,15 +32,15 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/BottleStage.tsx",
-    mustInclude: ["showFallback ? <BottleFallbackSvg /> : null", "onError={() => setShowFallback(true)}"],
-    mustNotInclude: ["<BottleFallbackSvg />\n    </div>"],
-    label: "旧版 SVG 瓶身只作为失败 fallback",
+    mustInclude: ["/assets/star-bottle-image2.png", "overflow-hidden", "object-contain"],
+    mustNotInclude: ["BottleFallbackSvg", "/assets/bottle-front.png"],
+    label: "星瓶使用 image2.0 资产且舞台限制溢出",
   },
   {
     file: "src/components/applications/StackedStar.tsx",
-    mustInclude: ["whitespace-nowrap", "fontSize"],
+    mustInclude: ["getCompanyShortLabel", "fontSize", "break-all", "text-center"],
     mustNotInclude: ["truncate"],
-    label: "星星公司简称不被省略",
+    label: "星瓶星星公司简称动态缩小且居中不省略",
   },
   {
     file: "src/components/galaxy/GalaxyHome.tsx",
@@ -50,9 +50,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/galaxy/SpaceHome.tsx",
-    mustInclude: ["OrbitLines", "PlanetTransitionOverlay", "window.setTimeout", "encodeURIComponent(planet.href)", "/brand/job-bottle-logo-v2.png", "Math.max(0.9"],
+    mustInclude: ["OrbitLines", "PlanetTransitionOverlay", "window.setTimeout", "encodeURIComponent(planet.href)", "/brand/job-bottle-logo-v2.png", "desktopOrbitScale", "mobileOrbitScale", "planetScale={0.66}", "<CorePlanet compact />"],
     mustNotInclude: ["router.push(planet.href)", "bg-white", "rounded-2xl"],
-    label: "主页保留 logo、大轨道和行星进入转场",
+    label: "主页保留 logo、桌面/移动端运行星系和行星进入转场",
   },
   {
     file: "src/components/galaxy/OrbitLines.tsx",
@@ -128,9 +128,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/ApplicationOrbitStar.tsx",
-    mustInclude: ["slice(0, 3)", "已停留", "momentumTier"],
+    mustInclude: ["getCompanyShortLabel", "已停留", "momentumTier", "break-all", "labelFontSize"],
     mustNotInclude: [],
-    label: "投递星体简称限制和 Doppler 动量提示存在",
+    label: "投递星体手工简称、动态缩放和 Doppler 动量提示存在",
   },
   {
     file: "src/components/applications/ApplicationOrbitConfig.ts",
@@ -158,6 +158,7 @@ const REQUIRED_FILES = [
   "public/assets/space/bg-mobile.png",
   "public/assets/space/stars-far.svg",
   "public/assets/space/stars-near.svg",
+  "public/assets/star-bottle-image2.png",
   "public/assets/nebula/nebula-region.png",
   "public/assets/nebula/nebula-industry.png",
   "public/assets/nebula/nebula-batch.png",
