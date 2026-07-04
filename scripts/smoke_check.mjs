@@ -626,7 +626,7 @@ function checkBottleGeometryProbe() {
   function getBottleSafeRadius(size, status) {
     const bodyRadius = size / 2;
     const glowRadius = status === "offer" ? size * 0.34 : status === "rejected" || status === "withdrawn" ? 3 : size * 0.22;
-    return bodyRadius + glowRadius + 6;
+    return bodyRadius + glowRadius + 3;
   }
 
   function isPointInsideBottleMainCavity(x, y) {
@@ -661,41 +661,69 @@ function checkBottleGeometryProbe() {
   }
 
   function rowCapacity(row) {
-    return Math.max(5, 10 - Math.floor(row * 0.35));
+    return Math.max(7, 14 - Math.floor(row * 0.35));
   }
 
-  function getApplicationBottleSize(application) {
-    if (application.status === "offer") return 34;
-    if (application.status === "rejected" || application.status === "withdrawn") return 15;
-    return 22;
+  function getApplicationBottleSize(application, total) {
+    const ended = application.status === "rejected" || application.status === "withdrawn";
+    if (total > 60) {
+      if (application.status === "offer") return 10;
+      return ended ? 7 : 9;
+    }
+    if (total <= 10) {
+      if (application.status === "offer") return 26;
+      return ended ? 13 : 20;
+    }
+    if (total <= 30) {
+      if (application.status === "offer") return 20;
+      return ended ? 10 : 15;
+    }
+    return ended ? 8 : 12;
   }
 
-  function getRowY(row) {
-    return 552 - row * 18;
+  function getRowY(row, total) {
+    const step = total > 60 ? 23 : 27;
+    return 552 - row * step;
   }
 
-  function findStableBottlePosition(hash, safeRadius, rowOccupancy) {
+  function isClearOfPlacedStars(x, y, safeRadius, placedStars) {
+    return placedStars.every((star) => {
+      const minDistance = safeRadius + star.safeRadius + 4;
+      const dx = x - star.x;
+      const dy = y - star.y;
+      return dx * dx + dy * dy >= minDistance * minDistance;
+    });
+  }
+
+  function findStableBottlePosition(hash, safeRadius, total, rowOccupancy, placedStars) {
     const maxRows = 22;
     for (let row = 0; row < maxRows; row += 1) {
-      const y = getRowY(row);
+      const y = getRowY(row, total);
       const range = getBottleMainHorizontalRange(y, safeRadius);
       if (!range) continue;
       const rangeWidth = range.max - range.min;
-      const capacity = Math.max(1, Math.min(rowCapacity(row), Math.floor(rangeWidth / Math.max(24, safeRadius * 1.05))));
+      const capacity = Math.max(1, Math.min(rowCapacity(row), Math.floor(rangeWidth / Math.max(26, safeRadius * 2 + 4))));
       const occupied = rowOccupancy.get(row) ?? 0;
       if (occupied >= capacity) continue;
       for (let attempt = 0; attempt < 20; attempt += 1) {
+        const col = (occupied + attempt * 3 + (hash % capacity)) % capacity;
         const slotWidth = rangeWidth / capacity;
-        const baseX = range.min + slotWidth * (occupied + 0.5);
-        const x = baseX + jitter(hash, attempt + 3, 24);
-        const yJittered = y + jitter(hash, attempt + 13, 10);
-        if (isBottleCircleInsideMainCavity(x, yJittered, safeRadius)) {
+        const baseX = range.min + slotWidth * (col + 0.5);
+        const x = baseX + jitter(hash, attempt + 3, 4);
+        const yJittered = y + jitter(hash, attempt + 13, 2);
+        if (
+          isBottleCircleInsideMainCavity(x, yJittered, safeRadius) &&
+          isClearOfPlacedStars(x, yJittered, safeRadius, placedStars)
+        ) {
           rowOccupancy.set(row, occupied + 1);
           return { x, y: yJittered, row };
         }
       }
       const fallbackX = range.min + rangeWidth * 0.5;
-      if (isBottleCircleInsideMainCavity(fallbackX, y, safeRadius)) {
+      if (
+        isBottleCircleInsideMainCavity(fallbackX, y, safeRadius) &&
+        isClearOfPlacedStars(fallbackX, y, safeRadius, placedStars)
+      ) {
         rowOccupancy.set(row, occupied + 1);
         return { x: fallbackX, y, row };
       }
@@ -703,35 +731,53 @@ function checkBottleGeometryProbe() {
     throw new Error("星瓶几何探针无法找到合法落位");
   }
 
-  const applications = Array.from({ length: 80 }, (_, index) => ({
-    id: `smoke-bottle-star-${String(index + 1).padStart(2, "0")}`,
-    status: statuses[index % statuses.length],
-    applied_at: `2026-07-${String((index % 24) + 1).padStart(2, "0")}T08:00:00Z`,
-  })).sort((a, b) => {
-    const statusDelta = (statusWeight[a.status] ?? 1) - (statusWeight[b.status] ?? 1);
-    if (statusDelta !== 0) return statusDelta;
-    return new Date(a.applied_at).getTime() - new Date(b.applied_at).getTime();
-  });
+  for (const count of [7, 30, 80]) {
+    const applications = Array.from({ length: count }, (_, index) => ({
+      id: `smoke-bottle-star-${String(index + 1).padStart(2, "0")}`,
+      status: statuses[index % statuses.length],
+      applied_at: `2026-07-${String((index % 24) + 1).padStart(2, "0")}T08:00:00Z`,
+    })).sort((a, b) => {
+      const statusDelta = (statusWeight[a.status] ?? 1) - (statusWeight[b.status] ?? 1);
+      if (statusDelta !== 0) return statusDelta;
+      return new Date(a.applied_at).getTime() - new Date(b.applied_at).getTime();
+    });
 
-  const rowOccupancy = new Map();
-  const positions = applications.map((application) => {
-    const size = getApplicationBottleSize(application);
-    const safeRadius = getBottleSafeRadius(size, application.status);
-    const point = findStableBottlePosition(hashString(application.id), safeRadius, rowOccupancy);
-    return { ...application, size, safeRadius, ...point };
-  });
+    const rowOccupancy = new Map();
+    const placedStars = [];
+    const positions = applications.map((application) => {
+      const size = getApplicationBottleSize(application, count);
+      const safeRadius = getBottleSafeRadius(size, application.status);
+      const point = findStableBottlePosition(hashString(application.id), safeRadius, count, rowOccupancy, placedStars);
+      const position = { ...application, size, safeRadius, ...point };
+      placedStars.push(position);
+      return position;
+    });
 
-  const invalid = positions.filter((position) => !isBottleCircleInsideMainCavity(position.x, position.y, position.safeRadius));
-  if (invalid.length > 0) {
-    throw new Error(`星瓶几何探针失败：${invalid.map((item) => item.id).join(", ")} 越界`);
+    const invalid = positions.filter((position) => !isBottleCircleInsideMainCavity(position.x, position.y, position.safeRadius));
+    if (invalid.length > 0) {
+      throw new Error(`星瓶几何探针失败：${count} 颗场景 ${invalid.map((item) => item.id).join(", ")} 越界`);
+    }
+
+    const neckStops = positions.filter((position) => position.y < mainTopY + position.safeRadius);
+    if (neckStops.length > 0) {
+      throw new Error(`星瓶几何探针失败：${count} 颗场景 ${neckStops.map((item) => item.id).join(", ")} 停在瓶颈`);
+    }
+
+    for (let outer = 0; outer < positions.length; outer += 1) {
+      for (let inner = outer + 1; inner < positions.length; inner += 1) {
+        const a = positions[outer];
+        const b = positions[inner];
+        const minDistance = a.safeRadius + b.safeRadius + 4;
+        const dx = a.x - b.x;
+        const dy = a.y - b.y;
+        if (dx * dx + dy * dy < minDistance * minDistance) {
+          throw new Error(`星瓶几何探针失败：${count} 颗场景 ${a.id} 与 ${b.id} 重叠`);
+        }
+      }
+    }
+
+    console.log(`✓ 星瓶几何探针通过：${count} 颗测试星全部位于主腔安全区域且互不重叠`);
   }
-
-  const neckStops = positions.filter((position) => position.y < mainTopY + position.safeRadius);
-  if (neckStops.length > 0) {
-    throw new Error(`星瓶几何探针失败：${neckStops.map((item) => item.id).join(", ")} 停在瓶颈`);
-  }
-
-  console.log(`✓ 星瓶几何探针通过：${positions.length} 颗测试星全部位于主腔安全区域`);
 }
 
 async function checkCategoryProbe() {

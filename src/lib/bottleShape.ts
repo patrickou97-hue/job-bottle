@@ -14,7 +14,7 @@ const MAIN_BOTTOM_Y = 582;
 export function getBottleSafeRadius(size: number, status?: string) {
   const bodyRadius = size / 2;
   const glowRadius = status === "offer" ? size * 0.34 : status === "rejected" || status === "withdrawn" ? 3 : size * 0.22;
-  return bodyRadius + glowRadius + 6;
+  return bodyRadius + glowRadius + 3;
 }
 
 export function getBottleMainHorizontalRange(y: number, radius: number) {
