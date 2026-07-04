@@ -11,7 +11,7 @@ export const ORBIT_STATUS_ORDER = [
 ] as const satisfies readonly ApplicationStatus[];
 
 export const ORBIT_CONFIG = {
-  opened: { label: "已打开官网", radius: 260, duration: 96, opacity: 0.38 },
+  opened: { label: "已浏览", radius: 260, duration: 96, opacity: 0.38 },
   applied: { label: "已投递", radius: 220, duration: 84, opacity: 0.46 },
   written_test: { label: "笔试", radius: 180, duration: 72, opacity: 0.54 },
   first_round: { label: "一面", radius: 145, duration: 62, opacity: 0.62 },
@@ -27,7 +27,7 @@ export const ORBIT_BANDS = ["explore", "submit", "interview", "offer_core"] as c
 export const ORBIT_BAND_CONFIG = {
   explore: {
     label: "探索带",
-    description: "已打开官网",
+    description: "已浏览",
     statuses: ["opened"],
     radius: 250,
     duration: 90,

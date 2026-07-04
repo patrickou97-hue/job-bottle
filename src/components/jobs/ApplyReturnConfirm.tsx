@@ -22,7 +22,7 @@ export function ApplyReturnConfirm({
         <div className="min-w-0">
           <div className="text-sm font-medium text-ink-primary">投递完成了吗？</div>
           <div className="mt-1 truncate text-xs text-ink-muted">
-            {companyName} 已记录为“已打开官网”，确认后会进入“已投递”。
+            {companyName} 已记录为“已浏览”，确认后会进入“已投递”。
           </div>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">

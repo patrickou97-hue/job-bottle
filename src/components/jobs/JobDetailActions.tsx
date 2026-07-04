@@ -77,9 +77,9 @@ export function JobDetailActions({
       safeOpenUrl(job.apply_url);
       if (nextApplication.status === "opened") {
         armApplyConfirmation();
-        setMessage("已记录为“已打开官网”，回来后可确认是否已投递。");
+        setMessage("已记录为“已浏览”，回来后可确认是否已投递。");
       } else {
-        setMessage("已打开官网，当前投递状态保持不变。");
+        setMessage("已浏览，当前投递状态保持不变。");
       }
     } catch {
       setMessage("捕获失败，网络似乎断开了。重试");
@@ -111,7 +111,7 @@ export function JobDetailActions({
     if (status === "keep_opened") {
       applyConfirmationArmedRef.current = false;
       setShowApplyConfirmation(false);
-      setMessage("已保留为“已打开官网”，之后可继续更新进度。");
+      setMessage("已保留为“已浏览”，之后可继续更新进度。");
       return;
     }
 

@@ -16,7 +16,7 @@ export function OpportunityStarfield({
   applicationByJobId,
   onApply,
   kind,
-  title = "岗位星体观测",
+  title = "岗位星图",
   hoveredJobId,
   focusedJobId,
   onHoverJob,

@@ -131,7 +131,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
             ))}
           </Select>
           <Button variant="secondary" onClick={loadData}>
-            重新读取
+            刷新
           </Button>
         </div>
       </section>

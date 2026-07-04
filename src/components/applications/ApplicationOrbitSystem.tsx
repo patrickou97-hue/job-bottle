@@ -70,7 +70,12 @@ export function ApplicationOrbitSystem({
             <div className="relative aspect-square h-[min(92%,520px)] max-h-[520px] w-[min(92%,520px)]">
               <OrbitTrackLayer activeBand={activeBand} />
               <div className="absolute left-1/2 top-1/2 z-10 grid size-24 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-nebula-blue/10 bg-nebula-blue/7 text-center text-xs text-nebula-silver shadow-[0_0_54px_rgba(126,158,214,0.12)]">
-                投递引力核心
+                <span>
+                  <span className="block font-display text-xl text-ink-primary tabular-nums">
+                    {applications.length}
+                  </span>
+                  <span className="mt-1 block text-[11px]">投递中</span>
+                </span>
               </div>
 
               {ORBIT_BANDS.map((band) => (

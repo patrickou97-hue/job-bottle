@@ -500,7 +500,7 @@
 
 ## 第十八轮：PRD_8 星云观测 + 同心投递轨道 (2026-07-03)
 
-### 岗位星体观测
+### 岗位星图
 - 新增 `NebulaGateway.tsx`、`NebulaNode.tsx`、`NebulaCompanyField.tsx`、`NebulaDetailWindow.tsx`。
 - `/jobs` 顶部观测区从“全部公司星体直铺”改为三层结构：星系入口 -> 具体星云 -> 公司星体详情。
 - 星云入口使用 image2.0 透明 PNG 资产：`public/assets/nebula/nebula-region.png`、`nebula-industry.png`、`nebula-batch.png`、`nebula-captured.png` 及常用别名文件。

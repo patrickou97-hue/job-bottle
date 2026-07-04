@@ -123,7 +123,7 @@ export function ApplicationBottle({
         <div className="surface-subtle relative overflow-hidden rounded-[28px] p-5">
           <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[rgba(74,59,124,0.2)] to-transparent" />
           <h2 className="relative font-display text-2xl font-semibold text-ink-primary">
-            本季沉淀
+            本季统计
           </h2>
           <FiligreeDivider className="relative my-4" />
 

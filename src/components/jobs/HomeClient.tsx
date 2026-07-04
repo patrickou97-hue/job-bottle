@@ -229,8 +229,8 @@ export function HomeClient() {
       }
       setMessage(
         application.status === "opened"
-          ? "已记录为“已打开官网”，回来后可确认是否已投递。"
-          : "已打开官网，当前投递状态保持不变。",
+          ? "已记录为“已浏览”，回来后可确认是否已投递。"
+          : "已浏览，当前投递状态保持不变。",
       );
       await loadData();
     } catch {
@@ -281,7 +281,7 @@ export function HomeClient() {
       }
       setPendingApplyConfirmation(null);
       setShowApplyConfirmation(false);
-      setMessage("已保留为“已打开官网”，之后可继续更新进度。");
+      setMessage("已保留为“已浏览”，之后可继续更新进度。");
       return;
     }
 
@@ -423,7 +423,7 @@ export function HomeClient() {
             <EmptyState
               title="暂无开放岗位"
               body="当前没有可展示的岗位，请稍后再查看。"
-              action={<Button onClick={loadData}>重新读取</Button>}
+              action={<Button onClick={loadData}>刷新</Button>}
             />
           ) : filteredJobs.length === 0 ? (
             <EmptyState

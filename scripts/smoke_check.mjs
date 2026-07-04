@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { existsSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, rmSync, statSync } from "node:fs";
 import { createServer } from "node:net";
 import { createClient } from "@supabase/supabase-js";
 
@@ -51,7 +51,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/ApplicationBottle.tsx",
-    mustInclude: ["2026 秋招季", "本季沉淀", "已收进", "FiligreeDivider", "生成星图年报"],
+    mustInclude: ["2026 秋招季", "本季统计", "已收进", "FiligreeDivider", "生成星图年报"],
     mustNotInclude: ["bg-white/[0.025]", "shadow-[0_28px_90px"],
     label: "星瓶页按 v4 季节容器布局呈现",
   },
@@ -189,7 +189,7 @@ const SOURCE_INVARIANTS = [
     file: "src/components/galaxy/NebulaGateway.tsx",
     mustInclude: ["NebulaNode", "NebulaCompanyField", "返回星云入口", "onSelectionChange"],
     mustNotInclude: ["Math.random"],
-    label: "岗位星体观测默认进入星云入口并可下钻到公司星体",
+    label: "岗位星图默认进入星云入口并可下钻到公司星体",
   },
   {
     file: "src/components/galaxy/NebulaNode.tsx",
@@ -235,8 +235,8 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/ApplicationOrbitSystem.tsx",
-    mustInclude: ["投递引力核心", "ApplicationOrbitRing", "ApplicationOrbitLegend", "ApplicationOrbitDetail"],
-    mustNotInclude: ["CaptureOrbit", "timeline"],
+    mustInclude: ["投递中", "ApplicationOrbitRing", "ApplicationOrbitLegend", "ApplicationOrbitDetail"],
+    mustNotInclude: ["CaptureOrbit", "timeline", "投递引力核心", "接递引力核心"],
     label: "我的投递主视觉使用同心投递轨道",
   },
   {
@@ -249,7 +249,7 @@ const SOURCE_INVARIANTS = [
     file: "src/components/applications/ApplicationOrbitSystem.tsx",
     mustInclude: ["OrbitTrackLayer", "aspect-square", "showTrack={false}", "ORBIT_BANDS.map", "getOrbitBandForStatus"],
     mustNotInclude: ["scaleY"],
-    label: "投递引力核心按四个视觉轨道带绘制同心圆",
+    label: "投递轨道按四个视觉轨道带绘制同心圆",
   },
   {
     file: "src/components/applications/ApplicationOrbitStar.tsx",
@@ -387,6 +387,28 @@ const REQUIRED_TEXT = {
   "/forum": ["讨论区"],
   "/admin": ["管理后台"],
 };
+
+const FORBIDDEN_COPY = [
+  "接递引力核心",
+  "投递引力核心",
+  "重新读取",
+  "发送信号",
+  "岗位星体观测",
+  "本季沉淀",
+  "拒绝和放弃为终止状态",
+  "截止待补充",
+  "已打开官网",
+];
+
+function collectFiles(directoryUrl) {
+  const entries = readdirSync(directoryUrl, { withFileTypes: true });
+  return entries.flatMap((entry) => {
+    const entryUrl = new URL(`${entry.name}${entry.isDirectory() ? "/" : ""}`, directoryUrl);
+    if (entry.isDirectory()) return collectFiles(entryUrl);
+    if (!entry.isFile()) return [];
+    return [entryUrl];
+  });
+}
 
 function readEnvFile() {
   if (!existsSync(ENV_FILE)) return {};
@@ -575,6 +597,22 @@ function checkSourceInvariants() {
     }
     console.log(`✓ 源码约束正常：${invariant.label}`);
   }
+
+  const copyScanRoots = ["src/", "docs/handoff/"].map((path) => new URL(path, ROOT));
+  const sourceFiles = copyScanRoots
+    .filter((url) => existsSync(url) && statSync(url).isDirectory())
+    .flatMap((url) => collectFiles(url))
+    .filter((url) => /\.(tsx?|md|css)$/.test(url.pathname));
+
+  for (const fileUrl of sourceFiles) {
+    const source = readFileSync(fileUrl, "utf8");
+    for (const text of FORBIDDEN_COPY) {
+      if (source.includes(text)) {
+        throw new Error(`${fileUrl.pathname.replace(ROOT.pathname, "")} 仍包含下线文案：${text}`);
+      }
+    }
+  }
+  console.log("✓ 下线文案未在源码与交接文档中残留");
 }
 
 function checkBottleGeometryProbe() {

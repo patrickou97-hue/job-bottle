@@ -74,7 +74,7 @@ export function NewPostForm({ onCreated, onCancel }: NewPostFormProps) {
 
       onCreated();
     } catch {
-      setError("发送信号失败，请稍后再试。");
+      setError("发布失败，请检查网络后重试。");
     } finally {
       setSubmitting(false);
     }
@@ -82,7 +82,7 @@ export function NewPostForm({ onCreated, onCancel }: NewPostFormProps) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <h2 className="text-lg font-semibold text-ink-primary">发送信号</h2>
+      <h2 className="text-lg font-semibold text-ink-primary">发布</h2>
 
       <div>
         <label className="mb-1 block text-xs font-medium text-ink-muted">
@@ -118,7 +118,7 @@ export function NewPostForm({ onCreated, onCancel }: NewPostFormProps) {
           内容
         </label>
         <Textarea
-          placeholder="写下你想发送的内容..."
+          placeholder="写下你想发布的内容"
           rows={6}
           {...register("content")}
         />
@@ -145,7 +145,7 @@ export function NewPostForm({ onCreated, onCancel }: NewPostFormProps) {
 
       <div className="flex gap-3">
         <Button type="submit" disabled={submitting}>
-          {submitting ? "发送中..." : "发送信号"}
+          {submitting ? "发布中" : "发布"}
         </Button>
         <Button type="button" variant="secondary" onClick={onCancel}>
           取消

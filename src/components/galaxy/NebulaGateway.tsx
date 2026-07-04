@@ -98,7 +98,7 @@ export function NebulaGateway({
     <section className="surface-subtle relative overflow-hidden rounded-[28px] p-5">
       <div className="mb-2 flex items-center justify-between gap-3">
         <div>
-          <h2 className="font-display text-lg font-semibold text-ink-primary">岗位星体观测</h2>
+          <h2 className="font-display text-lg font-semibold text-ink-primary">岗位星图</h2>
         </div>
         {mode !== "gateway" ? (
           <button

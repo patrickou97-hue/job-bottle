@@ -13,15 +13,15 @@ export const APPLICATION_STATUS = [
 ] as const;
 
 export const APPLICATION_STATUS_LABELS = {
-  opened: "已打开官网",
+  opened: "已浏览",
   applied: "已投递",
   written_test: "笔试",
   first_round: "一面",
   second_round: "二面",
   final_round: "终面",
   offer: "Offer",
-  rejected: "已拒绝",
-  withdrawn: "已放弃",
+  rejected: "已结束",
+  withdrawn: "已结束",
 } as const;
 
 export const PROFILE_ROLES = ["user", "admin"] as const;

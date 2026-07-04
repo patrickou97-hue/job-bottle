@@ -71,7 +71,7 @@ export function ForumClient() {
             <h1 className="mt-1 text-3xl font-semibold text-ink-primary">讨论区</h1>
           </div>
           <Button onClick={() => setShowForm((v) => !v)}>
-            发送信号
+            发布
           </Button>
         </div>
       </section>
@@ -111,13 +111,13 @@ export function ForumClient() {
       <section className="space-y-3">
         {loading ? (
           <div className="surface-subtle rounded-[24px] p-8 text-center text-ink-secondary">
-            正在接收信号...
+            正在读取讨论
           </div>
         ) : posts.length === 0 ? (
           <div className="surface-subtle rounded-[24px] p-8 text-center">
-            <h2 className="text-lg font-semibold text-ink-primary">暂无信号</h2>
+            <h2 className="text-lg font-semibold text-ink-primary">暂无讨论</h2>
             <p className="mt-2 text-sm text-ink-muted">
-              点击「发送信号」来发起第一个讨论。
+              发布第一条讨论。
             </p>
           </div>
         ) : (

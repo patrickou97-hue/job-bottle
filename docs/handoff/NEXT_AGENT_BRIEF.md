@@ -31,7 +31,7 @@
 - 登录态读取统一走 `getCurrentUserOrNull()`，它会先查浏览器本地 session、解析过期时间，并带 1800ms 超时保护，避免个人页无限“读取中”。
 - `MyBottleClient` 的 loading 状态不要再加大矩形背景，否则会重新出现星瓶页背景分层。
 - `/jobs` 顶部已有岗位星图状态栏和“全部 / 未投递 / 已投递”切换。
-- `/jobs` 顶部“岗位星体观测”已按 PRD_8 重构为星云入口层，不要改回 167 个公司星体默认直铺。
+- `/jobs` 顶部“岗位星图”已按 PRD_8 重构为星云入口层，不要改回 167 个公司星体默认直铺。
 - 星云相关组件在 `src/components/galaxy/NebulaGateway.tsx`、`NebulaNode.tsx`、`NebulaCompanyField.tsx`、`NebulaDetailWindow.tsx`；分组规则在 `src/lib/nebula-groups.ts`。
 - 星云入口资产在 `public/assets/nebula/`，当前主资产为 region、industry、batch、captured 四张 image2.0 透明 PNG，部分子星云复用别名文件和 CSS 滤镜。
 - 星云内公司星体使用 `src/lib/star-layout.ts` 的稳定布局与聚合机制；不要引入随机散点，否则会重新出现重叠和刷新跳动。
