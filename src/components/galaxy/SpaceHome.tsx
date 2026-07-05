@@ -86,7 +86,7 @@ export function SpaceHome() {
       description: user ? '查看你的投递记录和星瓶' : '登录后保存投递记录',
       href: user ? '/my' : '/login',
       orbitRadius: 790,
-      orbitDuration: 150,
+      orbitDuration: 120,
       initialAngle: 38,
       size: 48,
       variant: 'auth',

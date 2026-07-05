@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ProgressDrawer } from "@/components/applications/ProgressDrawer";
 import { StatusPill } from "@/components/applications/StatusPill";
 import { BottleStage } from "@/components/applications/BottleStage";
@@ -39,6 +40,7 @@ export function ApplicationBottle({
   onChanged: (application: ApplicationWithJob) => Promise<void> | void;
   onDeleted: (applicationId: string) => Promise<void> | void;
 }) {
+  const router = useRouter();
   const [selected, setSelected] = useState<ApplicationWithJob | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [fallingId, setFallingId] = useState<string | null>(null);
@@ -113,7 +115,7 @@ export function ApplicationBottle({
             type="button"
             className="mx-auto mt-3 block rounded-full px-4 py-2 text-sm text-ink-secondary transition hover:bg-white/[0.04] hover:text-nebula-silver"
             onClick={() => {
-              window.location.href = "/my";
+              router.push("/my");
             }}
           >
             已收进 {applications.length} 颗星

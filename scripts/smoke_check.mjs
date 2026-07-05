@@ -323,8 +323,8 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/lib/track.ts",
-    mustInclude: ["track", "events", "console.info"],
-    mustNotInclude: ["throw"],
+    mustInclude: ["track", "events", "Analytics must never block product actions"],
+    mustNotInclude: ["throw", "console.info"],
     label: "v4 埋点方法存在且不阻塞产品动作",
   },
   {

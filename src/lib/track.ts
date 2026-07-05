@@ -4,7 +4,6 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 type TrackProps = Record<string, unknown>;
 
 export async function track(event: string, props: TrackProps = {}) {
-  console.info("[track]", event, props);
   if (!isSupabaseConfigured()) return;
 
   try {
