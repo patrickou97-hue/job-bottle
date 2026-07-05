@@ -1,4 +1,4 @@
-export const SITE_NAME = "秋招星瓶";
+export const SITE_NAME = "拾星";
 
 export const APPLICATION_STATUS = [
   "opened",

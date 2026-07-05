@@ -1,4 +1,4 @@
-# Job Bottle — Metaphor-Driven Function Redesign
+# 拾星 — Metaphor-Driven Function Redesign
 ## Reinterpreting existing functions as information-carrying deep-space systems
 
 > Scope note: no Hermes report is available in this conversation. Every file path is labeled **recommended new file** or **assumed existing (verify)**. Where a design needs a data field that may not exist (e.g. status-change timestamps), the doc says exactly what to check and what the fallback is. No feature below is decorative-only; each visual channel is listed with the product data it encodes.

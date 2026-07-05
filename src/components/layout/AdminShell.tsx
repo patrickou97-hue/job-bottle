@@ -75,9 +75,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
       <header className="sticky top-0 z-40 border-b border-white/[0.07] bg-void-950/88 backdrop-blur-xl">
         <div className="mx-auto flex min-h-16 w-full max-w-[1440px] flex-col gap-3 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-10">
           <Link href="/admin" className="flex min-w-0 items-center gap-3">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-nebula-silver/10 bg-white/[0.04] text-nebula-blue">
-              <Settings aria-hidden="true" className="size-5" />
-            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/shi-xing-wordmark.png" alt={SITE_NAME} className="h-8 w-auto shrink-0 object-contain" />
             <span className="min-w-0">
               <span className="block truncate text-sm font-semibold text-ink-primary">
                 管理后台

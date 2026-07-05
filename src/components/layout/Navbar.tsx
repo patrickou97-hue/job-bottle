@@ -91,15 +91,8 @@ export function Navbar() {
     <header className="sticky top-0 z-40 border-b border-white/[0.055] bg-[#01030a]/58 backdrop-blur-xl">
       <div className="mx-auto flex h-16 w-full max-w-[1440px] items-center justify-between px-4 sm:px-6 lg:px-10">
         <Link href="/" className="flex min-w-0 items-center gap-3">
-          <span className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.025] shadow-[0_10px_30px_rgba(0,0,0,0.35)]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/job-bottle-logo-v2.png" alt={SITE_NAME} className="size-full object-cover" />
-          </span>
-          <span className="flex min-w-0 flex-col">
-            <span className="truncate text-sm font-semibold text-ink-primary">
-              {SITE_NAME}
-            </span>
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/brand/shi-xing-wordmark.png" alt={SITE_NAME} className="h-8 w-auto object-contain md:h-9" />
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">{nav}</nav>

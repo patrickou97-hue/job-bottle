@@ -7,7 +7,7 @@ export function PlanetLabel({ planet }: { planet: PlanetRoute | null }) {
       style={{ opacity: planet ? 1 : 0.42, transition: 'opacity 220ms ease' }}
     >
       <span className="font-display text-xl font-semibold" style={{ color: 'rgba(229,236,247,0.92)' }}>
-        {planet?.label ?? '秋招星瓶'}
+        {planet?.label ?? '拾星'}
       </span>
       <span className="max-w-sm text-sm leading-6" style={{ color: 'rgba(151,167,194,0.68)' }}>
         {planet?.description ?? ''}

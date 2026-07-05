@@ -76,7 +76,7 @@ export function LoginForm() {
         <Sparkles aria-hidden="true" className="size-7" />
       </div>
       <h1 className="text-center text-2xl font-semibold text-ink-primary">
-        登录秋招星瓶
+        登录拾星
       </h1>
       <p className="mt-3 text-center text-sm leading-6 text-ink-secondary">
         {isRegister

@@ -1,4 +1,4 @@
-# Job Bottle — Visual Redesign Implementation Specification
+# 拾星 — Visual Redesign Implementation Specification
 
 > Scope note: the Hermes inspection report was not attached to this conversation; only its constraint "no external image assets" was quoted (and overridden by the client). Every file path in this document is therefore a **recommended new file** or an **assumed existing file (unverified)** and is labeled as such. Nothing here should be treated as a confirmed reference to the current repo. All tokens, algorithms, and component contracts are codebase-independent and safe to implement as written.
 
@@ -6,11 +6,11 @@
 
 ## 1. Visual target definition
 
-One sentence to align everyone: **Job Bottle should feel like the quiet interior of an observatory — a dark instrument you look *through*, not a dark website you look *at*.**
+One sentence to align everyone: **拾星 should feel like the quiet interior of an observatory — a dark instrument you look *through*, not a dark website you look *at*.**
 
 What separates that from the three failure modes:
 
-| Axis | Generic dark SaaS | Game / solar system | Neon cyberpunk | **Job Bottle target** |
+| Axis | Generic dark SaaS | Game / solar system | Neon cyberpunk | **拾星 target** |
 |---|---|---|---|---|
 | Background | flat `#111` or `#1a1a2e` gradient | saturated purple space, big planets | magenta/cyan gradients | photographic near-black blue, faint structure, no visible gradient steps |
 | Surfaces | cards with borders + shadows everywhere | rounded bubbles | glass panels with glow borders | almost no cards; content floats on darkness, separated by rhythm and hairlines |
@@ -709,7 +709,7 @@ Risks: interior clip-path tracing accuracy; bottle PNG weight.
 
 ### Paste-ready kickoff prompt for the coding agent
 
-> Implement Phase 1 of the Job Bottle visual redesign. (1) Create `styles/tokens.css` with the exact custom properties from §2 of the attached spec and import it globally. (2) Create `components/layout/SpaceBackground.tsx` and `components/layout/SpaceShell.tsx` per §3.3 — fixed, z-index −1, layers: base color, media-queried background image (`/public/assets/space/bg-desktop.avif`, `bg-mobile.avif` — use temporary near-black placeholders if assets aren't generated yet), vignette, two tiled star SVG layers, 3%-opacity SVG-noise overlay, one meteor element gated behind `prefers-reduced-motion` and min-width 768px. (3) Mount SpaceShell in the user-facing layout only — locate the actual layout file first and report its path; do NOT wrap admin routes. (4) Search all user-route pages/components for `background`, `background-image`, and gradient declarations; remove full-bleed ones and replace panel styles with the surface tokens; list every file you changed. (5) Do not modify any Supabase, auth, data-fetching, or admin-authorization code. Acceptance: one background-painting element in DevTools, no visible color seams on any user page, meteor absent under reduced motion, Lighthouse mobile performance ≥ 85. Report anything in the codebase that conflicts with this plan instead of guessing.
+> Implement Phase 1 of the 拾星 visual redesign. (1) Create `styles/tokens.css` with the exact custom properties from §2 of the attached spec and import it globally. (2) Create `components/layout/SpaceBackground.tsx` and `components/layout/SpaceShell.tsx` per §3.3 — fixed, z-index −1, layers: base color, media-queried background image (`/public/assets/space/bg-desktop.avif`, `bg-mobile.avif` — use temporary near-black placeholders if assets aren't generated yet), vignette, two tiled star SVG layers, 3%-opacity SVG-noise overlay, one meteor element gated behind `prefers-reduced-motion` and min-width 768px. (3) Mount SpaceShell in the user-facing layout only — locate the actual layout file first and report its path; do NOT wrap admin routes. (4) Search all user-route pages/components for `background`, `background-image`, and gradient declarations; remove full-bleed ones and replace panel styles with the surface tokens; list every file you changed. (5) Do not modify any Supabase, auth, data-fetching, or admin-authorization code. Acceptance: one background-painting element in DevTools, no visible color seams on any user page, meteor absent under reduced motion, Lighthouse mobile performance ≥ 85. Report anything in the codebase that conflicts with this plan instead of guessing.
 
 ---
 

@@ -5,13 +5,11 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { motion, useReducedMotion } from 'motion/react'
 import { getCurrentUserOrNull } from '@/lib/auth'
-import { SITE_NAME } from '@/lib/constants'
 import { PLANET_ROUTES, type PlanetRoute } from '@/lib/galaxy-routes'
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client'
 import { CorePlanet } from './CorePlanet'
 import { FloatingPlanet } from './FloatingPlanet'
 import { OrbitLines } from './OrbitLines'
-import { PlanetLabel } from './PlanetLabel'
 import { PlanetTransitionOverlay } from './PlanetTransitionOverlay'
 import { SpaceBackground } from './SpaceBackground'
 
@@ -145,13 +143,15 @@ export function SpaceHome() {
     >
       <SpaceBackground entering={entering} />
 
-      <div className="pointer-events-none absolute left-6 top-5 z-30 flex items-center gap-3 md:left-10 md:top-8">
-        <span className="relative flex size-10 overflow-hidden rounded-full bg-[#08101d]/52 shadow-[0_0_28px_rgba(126,158,214,0.16)]">
-          <Image src="/brand/job-bottle-logo-v2.png" alt="" width={40} height={40} className="size-full object-cover" />
-        </span>
-        <span className="font-display text-base font-semibold tracking-normal" style={{ color: 'rgba(224,233,246,0.9)' }}>
-          {SITE_NAME}
-        </span>
+      <div className="pointer-events-none absolute left-5 top-5 z-30 md:left-10 md:top-8">
+        <Image
+          src="/brand/shi-xing-wordmark.png"
+          alt="拾星"
+          width={220}
+          height={98}
+          priority
+          className="h-9 w-auto object-contain drop-shadow-[0_0_18px_rgba(122,156,210,0.18)] md:h-10"
+        />
       </div>
 
       <button
@@ -250,7 +250,6 @@ export function SpaceHome() {
         </motion.div>
       </section>
 
-      <PlanetLabel planet={hovered} />
       <PlanetTransitionOverlay planet={selectedPlanet} />
     </main>
   )

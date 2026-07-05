@@ -18,9 +18,9 @@ export async function generateMetadata({ params }: JobDetailPageProps): Promise<
   const { id } = await params;
   const supabase = await createClient();
   const job = await fetchJobById(supabase, id);
-  if (!job) return { title: "岗位详情 | 秋招星瓶" };
+  if (!job) return { title: "岗位详情 | 拾星" };
   return {
-    title: `${job.company_name} ${job.job_titles || "岗位"} | 秋招星瓶`,
+    title: `${job.company_name} ${job.job_titles || "岗位"} | 拾星`,
     description: [job.company_name, job.job_titles, job.locations, job.batch_type].filter(Boolean).join(" · "),
   };
 }

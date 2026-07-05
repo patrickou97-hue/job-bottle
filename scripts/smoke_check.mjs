@@ -81,15 +81,15 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/galaxy/SpaceHome.tsx",
-    mustInclude: ["MOBILE_PLANET_LAYOUT", "OrbitLines", "PlanetTransitionOverlay", "window.setTimeout", "encodeURIComponent(planet.href)", "/brand/job-bottle-logo-v2.png", "desktopOrbitScale", "mobileOrbitScale", "planetScale={0.82}", "<CorePlanet compact />", "href: user ? '/my' : '/login'"],
-    mustNotInclude: ["router.push(planet.href)", "href: user ? '/my-applications' : '/login'", "bg-white", "rounded-2xl"],
-    label: "主页保留 logo、桌面/移动端运行星系和行星进入转场",
+    mustInclude: ["MOBILE_PLANET_LAYOUT", "OrbitLines", "PlanetTransitionOverlay", "window.setTimeout", "encodeURIComponent(planet.href)", "/brand/shi-xing-wordmark.png", "desktopOrbitScale", "mobileOrbitScale", "planetScale={0.82}", "<CorePlanet compact />", "href: user ? '/my' : '/login'"],
+    mustNotInclude: ["router.push(planet.href)", "href: user ? '/my-applications' : '/login'", "bg-white", "rounded-2xl", "<PlanetLabel"],
+    label: "主页保留拾星字标、桌面/移动端运行星系和行星进入转场",
   },
   {
     file: "src/components/galaxy/CorePlanet.tsx",
-    mustInclude: ["OrbMaterial", "min(34vw, 132px)", "SITE_NAME"],
-    mustNotInclude: ["把每一次投递", "minWidth: compact ? 132", "{SITE_NAME}</span>\n      <span"],
-    label: "主页中心星球使用统一材质且文字位于球体外",
+    mustInclude: ["OrbMaterial", "min(34vw, 132px)", "/brand/shi-xing-wordmark.png", "alt=\"拾星\""],
+    mustNotInclude: ["把每一次投递", "minWidth: compact ? 132", "{SITE_NAME}</span>\n      <span", "SITE_NAME"],
+    label: "主页中心星球使用统一材质且拾星字标置于核心中间",
   },
   {
     file: "src/components/galaxy/OrbitLines.tsx",
@@ -369,15 +369,15 @@ const REQUIRED_FILES = [
   "public/assets/nebula/nebula-captured.png",
 ];
 const REQUIRED_TEXT = {
-  "/": ["秋招星瓶"],
+  "/": ["拾星"],
   "/explore": ["岗位星图", "筛选", "排序方式", "最新开启"],
   "/my": ["我的投递"],
   "/bottle": ["我的星瓶", "季节容器"],
   "/galaxy": ["岗位星系", "地区星系", "行业星系"],
   "/galaxy/region": ["地区星系", "北京星云", "上海星云"],
   "/galaxy/industry": ["行业星系", "互联网星云", "金融星云"],
-  "/jobs": ["秋招星瓶", "筛选", "排序方式", "最新开启"],
-  "/login": ["登录秋招星瓶", "邮箱", "密码"],
+  "/jobs": ["拾星", "筛选", "排序方式", "最新开启"],
+  "/login": ["登录拾星", "邮箱", "密码"],
   "/forum": ["讨论区"],
   "/admin": ["管理后台"],
 };
@@ -888,7 +888,7 @@ async function findReusableServer() {
     try {
       const response = await fetch(candidate, { signal: AbortSignal.timeout(1200) });
       const html = await response.text();
-      if (response.ok && html.includes("秋招星瓶")) return candidate;
+      if (response.ok && html.includes("拾星")) return candidate;
     } catch {
       // Keep trying the next likely local server.
     }
