@@ -5,6 +5,10 @@ import { Briefcase, FileText, LogIn, MessageSquare, Shield, Sparkles } from 'luc
 import type { PlanetRoute } from '@/lib/galaxy-routes'
 import { OrbMaterial, type OrbMaterialVariant } from '@/components/visual/OrbMaterial'
 
+const ORBIT_Y_SCALE = 0.62
+const ORBIT_ROTATION_DEG = -7
+const ORBIT_KEYFRAME_OFFSETS = [0, 60, 120, 180, 240, 300, 360]
+
 type FloatingPlanetProps = {
   planet: PlanetRoute
   hovered: boolean
@@ -46,21 +50,19 @@ export function FloatingPlanet({
 }: FloatingPlanetProps) {
   const orbitRadius = planet.orbitRadius * orbitScale
   const planetSize = planet.size * planetScale
+  const staticPoint = getOrbitPoint(planet.initialAngle, orbitRadius)
+  const path = ORBIT_KEYFRAME_OFFSETS.map((offset) => getOrbitPoint(planet.initialAngle + offset, orbitRadius))
 
   return (
     <motion.div
       className="absolute left-1/2 top-1/2 size-0"
-      initial={{ rotate: planet.initialAngle }}
+      initial={false}
       animate={
         shouldOrbit
-          ? {
-              rotate: [planet.initialAngle, planet.initialAngle + 360],
-            }
-          : {
-              rotate: planet.initialAngle,
-            }
+          ? { x: path.map((point) => point.x), y: path.map((point) => point.y) }
+          : { x: staticPoint.x, y: staticPoint.y }
       }
-      transition={shouldOrbit ? { duration: planet.orbitDuration, repeat: Infinity, ease: 'linear' } : undefined}
+      transition={shouldOrbit ? { duration: planet.orbitDuration, repeat: Infinity, ease: 'linear' } : { duration: 0.2, ease: 'easeOut' }}
     >
       <motion.div
         className="absolute"
@@ -69,13 +71,7 @@ export function FloatingPlanet({
           height: planetSize,
           marginLeft: -planetSize / 2,
           marginTop: -planetSize / 2,
-          x: orbitRadius,
         }}
-        initial={{ rotate: -planet.initialAngle }}
-        animate={{
-          rotate: shouldOrbit ? [-planet.initialAngle, -planet.initialAngle - 360] : -planet.initialAngle,
-        }}
-        transition={shouldOrbit ? { duration: planet.orbitDuration, repeat: Infinity, ease: 'linear' } : undefined}
       >
         <motion.button
           type="button"
@@ -115,4 +111,15 @@ export function FloatingPlanet({
       </motion.div>
     </motion.div>
   )
+}
+
+function getOrbitPoint(angleDeg: number, radius: number) {
+  const angle = (angleDeg * Math.PI) / 180
+  const rotation = (ORBIT_ROTATION_DEG * Math.PI) / 180
+  const x = Math.cos(angle) * radius
+  const y = Math.sin(angle) * radius * ORBIT_Y_SCALE
+  return {
+    x: x * Math.cos(rotation) - y * Math.sin(rotation),
+    y: x * Math.sin(rotation) + y * Math.cos(rotation),
+  }
 }
