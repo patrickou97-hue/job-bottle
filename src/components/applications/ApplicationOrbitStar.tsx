@@ -31,7 +31,7 @@ export function ApplicationOrbitStar({
     <button
       type="button"
       className={cn(
-        "group relative flex w-16 flex-col items-center justify-center gap-1 font-medium outline-none transition",
+        "group relative flex size-16 items-center justify-center font-medium outline-none transition",
         dimmed ? "opacity-35" : "hover:scale-[1.08]",
         momentum === "red" ? "brightness-[0.82]" : "",
         terminal ? "grayscale opacity-45" : "",
@@ -54,10 +54,10 @@ export function ApplicationOrbitStar({
           )}
         />
       </span>
-      <span className="max-w-16 whitespace-nowrap text-center text-[11px] leading-4 text-ink-secondary group-hover:text-ink-primary">
+      <span className="absolute left-1/2 top-[50px] max-w-20 -translate-x-1/2 whitespace-nowrap text-center text-[11px] leading-4 text-ink-secondary group-hover:text-ink-primary">
         {shortLabel}
       </span>
-      <span className="pointer-events-none absolute left-1/2 top-full z-30 mt-2 hidden w-44 -translate-x-1/2 rotate-0 bg-[#040814]/78 px-3 py-2 text-left text-xs leading-5 text-ink-secondary shadow-[0_18px_48px_rgba(0,0,0,0.38)] backdrop-blur-xl group-hover:block group-focus:block">
+      <span className="pointer-events-none absolute left-1/2 top-[72px] z-30 hidden w-44 -translate-x-1/2 rotate-0 bg-[#040814]/78 px-3 py-2 text-left text-xs leading-5 text-ink-secondary shadow-[0_18px_48px_rgba(0,0,0,0.38)] backdrop-blur-xl group-hover:block group-focus:block">
         <span className="block truncate text-nebula-silver">{application.job.company_name}</span>
         <span className="block truncate text-ink-muted">{application.job.job_titles || "岗位待补充"}</span>
         {momentum === "red" ? (

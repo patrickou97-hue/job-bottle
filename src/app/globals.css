@@ -11,14 +11,13 @@
   --glass-border-strong: var(--line-strong);
   --glass-highlight: rgba(255, 246, 227, 0.1);
   --font-interface: var(--font-sans-cn);
-  --font-display: "Noto Serif SC", "LXGW WenKai", "Songti SC", var(--font-sans-cn);
+  --font-display: var(--font-sans-cn);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: "Geist", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
-    "Noto Sans CJK SC", "Source Han Sans SC", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-sans-cn);
   --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, monospace;
 }
 

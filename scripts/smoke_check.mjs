@@ -259,7 +259,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/ApplicationOrbitStar.tsx",
-    mustInclude: ["OrbMaterial", "getCompanyShortLabel", "已停留", "momentumTier", "group relative flex w-16", "variant={selected || offer ? \"gold\""],
+    mustInclude: ["OrbMaterial", "getCompanyShortLabel", "已停留", "momentumTier", "group relative flex size-16", "variant={selected || offer ? \"gold\""],
     mustNotInclude: ["getCompactCompanyLabelStyle", "style={labelStyle}"],
     label: "投递节点使用统一球体材质且公司简称移到球下方",
   },

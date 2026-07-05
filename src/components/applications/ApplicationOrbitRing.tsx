@@ -91,12 +91,12 @@ export function ApplicationOrbitRing({
 	                ) : (
 	                  <button
 	                    type="button"
-	                    className="flex w-16 flex-col items-center justify-center gap-1 text-xs text-ink-secondary transition hover:scale-[1.06] hover:text-nebula-silver"
+	                    className="relative flex size-16 items-center justify-center text-xs text-ink-secondary transition hover:scale-[1.06] hover:text-nebula-silver"
 	                    onClick={() => onAggregateClick?.(band)}
 	                    aria-label={`${config.label}还有 ${hiddenCount} 条投递记录`}
 	                  >
 	                    <OrbMaterial size={32} variant="muted" />
-	                    <span className="whitespace-nowrap">+{hiddenCount}</span>
+	                    <span className="absolute left-1/2 top-[50px] -translate-x-1/2 whitespace-nowrap">+{hiddenCount}</span>
 	                  </button>
 	                )}
               </div>
