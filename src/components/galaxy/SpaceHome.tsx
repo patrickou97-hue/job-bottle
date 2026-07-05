@@ -85,9 +85,9 @@ export function SpaceHome() {
       label: user ? '个人中心' : '登录',
       description: user ? '查看你的投递记录和星瓶' : '登录后保存投递记录',
       href: user ? '/my' : '/login',
-      orbitRadius: 520,
+      orbitRadius: 790,
       orbitDuration: 150,
-      initialAngle: 315,
+      initialAngle: 38,
       size: 48,
       variant: 'auth',
     }
@@ -119,7 +119,7 @@ export function SpaceHome() {
       0.52,
       Math.min(
         (viewportWidth - 220) / (desktopMaxOrbitRadius * 2),
-        (viewportHeight - 190) / (desktopMaxOrbitRadius * 2),
+        (viewportHeight - 120) / (desktopMaxOrbitRadius * 2),
       ),
     ),
   )
