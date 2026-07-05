@@ -241,7 +241,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/ApplicationOrbitSystem.tsx",
-    mustInclude: ["投递中", "ApplicationOrbitRing", "ApplicationOrbitDetail", "OrbMaterial", "counts.get(band)"],
+    mustInclude: ["投递中", "ApplicationOrbitRing", "ApplicationOrbitDetail", "OrbMaterial", "OrbitTrackLayer"],
     mustNotInclude: ["CaptureOrbit", "timeline", "ApplicationOrbitLegend", "投递引力核心", "接递引力核心"],
     label: "我的投递主视觉使用同心投递轨道",
   },
@@ -274,12 +274,6 @@ const SOURCE_INVARIANTS = [
     mustInclude: ["ORBIT_BAND_CONFIG", "探索带", "投递带", "面试带", "Offer 核", "statuses: [\"first_round\", \"second_round\", \"final_round\"]"],
     mustNotInclude: [],
     label: "投递数据七态收敛为四个视觉轨道带",
-  },
-  {
-    file: "src/components/applications/MyApplicationsClient.tsx",
-    mustInclude: ["statusGroup", "nextStatuses", "statusGroup.includes(application.status)"],
-    mustNotInclude: [],
-    label: "我的投递列表支持轨道视觉带联动过滤多个状态",
   },
   {
     file: "src/components/applications/ProgressDrawer.tsx",

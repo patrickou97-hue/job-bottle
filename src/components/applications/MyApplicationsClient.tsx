@@ -23,7 +23,6 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
   const [drawerApplication, setDrawerApplication] = useState<ApplicationWithJob | null>(null);
   const [keyword, setKeyword] = useState("");
   const [status, setStatus] = useState<ApplicationStatus | "">("");
-  const [statusGroup, setStatusGroup] = useState<readonly ApplicationStatus[] | "">("");
   const [loading, setLoading] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
   const [message, setMessage] = useState("");
@@ -67,12 +66,10 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
         !key ||
         application.job.company_name.toLowerCase().includes(key) ||
         (application.job.job_titles ?? "").toLowerCase().includes(key);
-      const matchesStatus = statusGroup
-        ? statusGroup.includes(application.status)
-        : !status || application.status === status;
+      const matchesStatus = !status || application.status === status;
       return matchesKeyword && matchesStatus;
     });
-  }, [applications, keyword, status, statusGroup]);
+  }, [applications, keyword, status]);
 
   function handleApplicationChanged(nextApplication: ApplicationWithJob) {
     setApplications((current) =>
@@ -120,7 +117,6 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
             value={status}
             onChange={(event) => {
               setStatus(event.target.value as ApplicationStatus | "");
-              setStatusGroup("");
             }}
           >
             <option value="">全部状态</option>
@@ -147,10 +143,6 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
         selectedApplication={selected}
         onSelect={setSelected}
         onEdit={setDrawerApplication}
-        onStatusFilterChange={(nextStatuses) => {
-          setStatusGroup(nextStatuses);
-          if (nextStatuses) setStatus("");
-        }}
       />
 
       <section className="overflow-hidden">

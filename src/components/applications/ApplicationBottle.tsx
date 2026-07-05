@@ -133,13 +133,6 @@ export function ApplicationBottle({
             <BottleStat label="Offer" value={offerCount} />
           </div>
 
-          <div className="mt-5 border-t border-white/[0.08] pt-4">
-            <p className="text-sm font-medium text-ink-primary">本周记录</p>
-            <p className="mt-2 text-sm leading-6 text-ink-muted">
-              本批次先完成星瓶容器与分享卡。周日志会在 status_history 数据稳定后接入。
-            </p>
-          </div>
-
           <Button className="mt-5 w-full" disabled title="年报将在下一批次接入">
             生成星图年报
           </Button>

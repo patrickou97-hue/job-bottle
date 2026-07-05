@@ -6,6 +6,13 @@ import { ApplicationOrbitStar } from "@/components/applications/ApplicationOrbit
 import { OrbMaterial } from "@/components/visual/OrbMaterial";
 import type { ApplicationWithJob } from "@/lib/types";
 
+const BAND_ANGLE_OFFSET: Record<OrbitBand, number> = {
+  explore: -118,
+  submit: -34,
+  interview: 64,
+  offer_core: 152,
+};
+
 export function ApplicationOrbitRing({
   band,
   applications,
@@ -54,7 +61,7 @@ export function ApplicationOrbitRing({
         {slots.map((application, index) => {
           const total = Math.max(1, slots.length);
           const id = application?.id ?? `${band}-aggregate`;
-          const angle = (index / total) * 360;
+	          const angle = (index / total) * 360 + BAND_ANGLE_OFFSET[band] + getStableAngleOffset(id);
           const staticPoint = getOrbitPoint(angle, radius);
           const path = orbitPoints.map((offset) => getOrbitPoint(angle + offset, radius));
           return (
@@ -107,4 +114,13 @@ function getOrbitPoint(angleDeg: number, radius: number) {
     x: Math.cos(angle) * radius,
     y: Math.sin(angle) * radius,
   };
+}
+
+function getStableAngleOffset(value: string) {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return ((hash >>> 0) % 31) - 15;
 }

@@ -22,16 +22,12 @@ export function ApplicationOrbitSystem({
   selectedApplication,
   onSelect,
   onEdit,
-  onStatusFilterChange,
 }: {
   applications: ApplicationWithJob[];
   selectedApplication: ApplicationWithJob | null;
   onSelect: (application: ApplicationWithJob) => void;
   onEdit?: (application: ApplicationWithJob) => void;
-  onStatusFilterChange?: (statuses: readonly OrbitStatus[] | "") => void;
 }) {
-  const [highlightedBand, setHighlightedBand] = useState<OrbitBand | null>(null);
-  const [lockedBand, setLockedBand] = useState<OrbitBand | null>(null);
   const [expandedBand, setExpandedBand] = useState<OrbitBand | null>(null);
   const grouped = useMemo(() => {
     const map = new Map<OrbitBand, ApplicationWithJob[]>();
@@ -44,15 +40,10 @@ export function ApplicationOrbitSystem({
     return map;
   }, [applications]);
   const terminal = applications.filter((application) => application.status === "rejected" || application.status === "withdrawn");
-  const activeBand = lockedBand ?? highlightedBand;
+  const activeBand = selectedApplication && selectedApplication.status in ORBIT_CONFIG
+    ? getOrbitBandForStatus(selectedApplication.status as OrbitStatus)
+    : null;
   const expandedApplications = expandedBand ? grouped.get(expandedBand) ?? [] : [];
-  const bandCounts = new Map(ORBIT_BANDS.map((band) => [band, grouped.get(band)?.length ?? 0]));
-
-  function selectBand(band: OrbitBand) {
-    const nextBand = lockedBand === band ? null : band;
-    setLockedBand(nextBand);
-    onStatusFilterChange?.(nextBand ? ORBIT_BAND_CONFIG[nextBand].statuses : "");
-  }
 
   return (
     <section className="surface-subtle relative overflow-hidden p-1">
@@ -69,12 +60,7 @@ export function ApplicationOrbitSystem({
           <div className="absolute inset-0 opacity-18 [background-image:radial-gradient(circle,rgba(214,228,255,.28)_0_1px,transparent_1.5px)] [background-size:92px_92px]" />
           <div className="absolute inset-0 grid place-items-center">
             <div className="relative aspect-square h-[min(94%,560px)] max-h-[560px] w-[min(94%,560px)]">
-              <OrbitTrackLayer
-                activeBand={activeBand}
-                counts={bandCounts}
-                onHover={setHighlightedBand}
-                onSelect={selectBand}
-              />
+              <OrbitTrackLayer activeBand={activeBand} />
               <div className="absolute left-1/2 top-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center text-center text-xs text-nebula-silver">
                 <OrbMaterial size={42} variant="blue" active={applications.length > 0} />
                 <span className="mt-2 block text-[11px]">
@@ -168,17 +154,7 @@ export function ApplicationOrbitSystem({
   );
 }
 
-function OrbitTrackLayer({
-  activeBand,
-  counts,
-  onHover,
-  onSelect,
-}: {
-  activeBand: OrbitBand | null;
-  counts: Map<OrbitBand, number>;
-  onHover: (band: OrbitBand | null) => void;
-  onSelect: (band: OrbitBand) => void;
-}) {
+function OrbitTrackLayer({ activeBand }: { activeBand: OrbitBand | null }) {
   return (
     <div className="pointer-events-none absolute left-1/2 top-1/2 size-0">
       {ORBIT_BANDS.map((band) => {
@@ -186,7 +162,7 @@ function OrbitTrackLayer({
         const radius = config.radius * 0.86;
         const active = activeBand === band;
         return (
-          <div
+          <span
             key={band}
             className="pointer-events-none absolute rounded-full border border-dashed"
             style={{
@@ -197,21 +173,7 @@ function OrbitTrackLayer({
               borderColor: active ? "rgba(174,198,230,0.18)" : `rgba(148,163,184,${config.opacity * 0.14})`,
               boxShadow: active ? "0 0 26px rgba(126,158,214,0.08)" : "none",
             }}
-          >
-            <button
-              type="button"
-              className="pointer-events-auto absolute left-full top-1/2 ml-3 -translate-y-1/2 whitespace-nowrap text-left text-[11px] text-ink-muted outline-none transition hover:text-ink-primary focus-visible:text-ink-primary"
-              style={{ color: active ? "rgba(230,238,250,0.9)" : undefined }}
-              onMouseEnter={() => onHover(band)}
-              onMouseLeave={() => onHover(null)}
-              onFocus={() => onHover(band)}
-              onBlur={() => onHover(null)}
-              onClick={() => onSelect(band)}
-              aria-label={`${config.label} ${counts.get(band) ?? 0} 条记录`}
-            >
-              {config.label} · {counts.get(band) ?? 0}
-            </button>
-          </div>
+          />
         );
       })}
     </div>
