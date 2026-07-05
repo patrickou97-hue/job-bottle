@@ -81,14 +81,14 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/galaxy/SpaceHome.tsx",
-    mustInclude: ["MOBILE_PLANET_LAYOUT", "OrbitLines", "PlanetTransitionOverlay", "window.setTimeout", "encodeURIComponent(planet.href)", "/brand/job-bottle-logo-v2.png", "desktopOrbitScale", "mobileOrbitScale", "planetScale={0.56}", "<CorePlanet compact />", "href: user ? '/my' : '/login'"],
+    mustInclude: ["MOBILE_PLANET_LAYOUT", "OrbitLines", "PlanetTransitionOverlay", "window.setTimeout", "encodeURIComponent(planet.href)", "/brand/job-bottle-logo-v2.png", "desktopOrbitScale", "mobileOrbitScale", "planetScale={0.82}", "<CorePlanet compact />", "href: user ? '/my' : '/login'"],
     mustNotInclude: ["router.push(planet.href)", "href: user ? '/my-applications' : '/login'", "bg-white", "rounded-2xl"],
     label: "主页保留 logo、桌面/移动端运行星系和行星进入转场",
   },
   {
     file: "src/components/galaxy/CorePlanet.tsx",
-    mustInclude: ["OrbMaterial", "min(27vw, 112px)", "SITE_NAME", "把每一次投递"],
-    mustNotInclude: ["minWidth: compact ? 132", "{SITE_NAME}</span>\n      <span"],
+    mustInclude: ["OrbMaterial", "min(34vw, 132px)", "SITE_NAME"],
+    mustNotInclude: ["把每一次投递", "minWidth: compact ? 132", "{SITE_NAME}</span>\n      <span"],
     label: "主页中心星球使用统一材质且文字位于球体外",
   },
   {
@@ -224,7 +224,7 @@ const SOURCE_INVARIANTS = [
   {
     file: "src/components/jobs/JobFilterBar.tsx",
     mustInclude: ["start_date_desc", "最新开启", "最近更新优先", "最早开启", "岗位类别", "toggleCategory"],
-    mustNotInclude: ["deadline_asc", "downloadDeadlineDigest", "digest_generate"],
+    mustNotInclude: ["deadline_asc", "downloadDeadlineDigest", "digest_generate", "岗位标签", "toggleTag"],
     label: "探索筛选默认最新开启且不再提供下线日期入口",
   },
   {

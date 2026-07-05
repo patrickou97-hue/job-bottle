@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
 import {
   ORBIT_BAND_CONFIG,
@@ -44,6 +44,7 @@ export function ApplicationOrbitSystem({
     ? getOrbitBandForStatus(selectedApplication.status as OrbitStatus)
     : null;
   const expandedApplications = expandedBand ? grouped.get(expandedBand) ?? [] : [];
+  const orbitScale = useResponsiveOrbitScale();
 
   return (
     <section className="surface-subtle relative overflow-hidden p-1">
@@ -56,11 +57,11 @@ export function ApplicationOrbitSystem({
       <FiligreeDivider className="mb-4 opacity-70" />
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_330px]">
-        <div className="relative h-[600px] overflow-hidden bg-black/10">
+        <div className="relative mx-auto h-[430px] w-full max-w-[760px] overflow-hidden bg-black/10 sm:h-[540px] lg:h-[640px] xl:max-w-none">
           <div className="absolute inset-0 opacity-18 [background-image:radial-gradient(circle,rgba(214,228,255,.28)_0_1px,transparent_1.5px)] [background-size:92px_92px]" />
           <div className="absolute inset-0 grid place-items-center">
-            <div className="relative aspect-square h-[min(94%,560px)] max-h-[560px] w-[min(94%,560px)]">
-              <OrbitTrackLayer activeBand={activeBand} />
+            <div className="relative aspect-square h-[min(88vw,600px)] max-h-[600px] w-[min(88vw,600px)] sm:h-[min(92%,600px)] sm:w-[min(92%,600px)]">
+              <OrbitTrackLayer activeBand={activeBand} scale={orbitScale} />
               <div className="absolute left-1/2 top-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center text-center text-xs text-nebula-silver">
                 <OrbMaterial size={42} variant="blue" active={applications.length > 0} />
                 <span className="mt-2 block text-[11px]">
@@ -73,7 +74,7 @@ export function ApplicationOrbitSystem({
                   key={band}
                   band={band}
                   applications={grouped.get(band) ?? []}
-                  scale={0.86}
+                  scale={orbitScale}
                   selectedId={selectedApplication?.id}
                   highlightedBand={activeBand}
                   onSelect={onSelect}
@@ -154,12 +155,12 @@ export function ApplicationOrbitSystem({
   );
 }
 
-function OrbitTrackLayer({ activeBand }: { activeBand: OrbitBand | null }) {
+function OrbitTrackLayer({ activeBand, scale }: { activeBand: OrbitBand | null; scale: number }) {
   return (
     <div className="pointer-events-none absolute left-1/2 top-1/2 size-0">
       {ORBIT_BANDS.map((band) => {
         const config = ORBIT_BAND_CONFIG[band];
-        const radius = config.radius * 0.86;
+        const radius = config.radius * scale;
         const active = activeBand === band;
         return (
           <span
@@ -178,4 +179,28 @@ function OrbitTrackLayer({ activeBand }: { activeBand: OrbitBand | null }) {
       })}
     </div>
   );
+}
+
+function useResponsiveOrbitScale() {
+  const [scale, setScale] = useState(0.78);
+
+  useEffect(() => {
+    const update = () => {
+      const width = window.innerWidth;
+      if (width < 420) {
+        setScale(0.48);
+      } else if (width < 640) {
+        setScale(0.54);
+      } else if (width < 1024) {
+        setScale(0.66);
+      } else {
+        setScale(0.78);
+      }
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  return scale;
 }

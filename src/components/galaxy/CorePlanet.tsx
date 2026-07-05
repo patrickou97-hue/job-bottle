@@ -2,7 +2,7 @@ import { SITE_NAME } from '@/lib/constants'
 import { OrbMaterial } from '@/components/visual/OrbMaterial'
 
 export function CorePlanet({ compact = false }: { compact?: boolean }) {
-  const size = compact ? 'min(27vw, 112px)' : 'min(24vw, 160px)'
+  const size = compact ? 'min(34vw, 132px)' : 'min(24vw, 160px)'
   return (
     <div className="relative flex flex-col items-center justify-center">
       <OrbMaterial
@@ -20,16 +20,6 @@ export function CorePlanet({ compact = false }: { compact?: boolean }) {
         }}
       >
         {SITE_NAME}
-      </span>
-      <span
-        className="mt-3 max-w-[12rem] text-center leading-6"
-        style={{
-          color: 'rgba(156,173,199,0.72)',
-          fontSize: compact ? '0.62rem' : '0.875rem',
-          lineHeight: compact ? '0.95rem' : '1.5rem',
-        }}
-      >
-        把每一次投递，收进你的职业星图。
       </span>
     </div>
   )

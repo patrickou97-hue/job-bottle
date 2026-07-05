@@ -89,10 +89,10 @@ export function ApplicationBottle({
   }
 
   return (
-    <section className="relative overflow-visible px-2 pb-4 pt-1">
-      <div className="grid gap-6 lg:grid-cols-[minmax(320px,0.9fr)_minmax(300px,0.8fr)] lg:items-center">
-        <div>
-          <div className="mb-4 text-center">
+    <section className="relative overflow-visible px-0 pb-4 pt-1">
+      <div className="grid justify-items-center gap-8 lg:grid-cols-[minmax(320px,0.9fr)_minmax(300px,0.8fr)] lg:items-center lg:justify-items-stretch">
+        <div className="w-full max-w-[560px]">
+          <div className="mb-4 hidden text-center sm:block">
             <p className="text-xs tracking-[0.2em] text-ink-muted">2026 秋招季 · 第 {getSeasonWeek()} 周</p>
             <h1 className="mt-2 font-display text-3xl font-semibold text-ink-primary">
               我的星瓶
@@ -120,13 +120,13 @@ export function ApplicationBottle({
           </button>
         </div>
 
-        <div className="relative p-1">
+        <div className="relative w-full max-w-[560px] p-1 text-center lg:max-w-none lg:text-left">
           <h2 className="relative font-display text-2xl font-semibold text-ink-primary">
             本季统计
           </h2>
           <FiligreeDivider className="relative my-4" />
 
-          <div className="grid grid-cols-4 gap-5 max-sm:grid-cols-2">
+          <div className="mx-auto grid max-w-md grid-cols-4 gap-5 max-sm:grid-cols-2 lg:max-w-none">
             <BottleStat label="捕获" value={applications.length} />
             <BottleStat label="投递" value={appliedCount} />
             <BottleStat label="面试" value={interviewCount} />

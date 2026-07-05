@@ -58,6 +58,6 @@ export const JOB_FIELD_LABELS = {
   apply_url: "投递链接",
   notes: "备注",
   logo_url: "公司标识",
-  tags: "岗位标签",
+  tags: "标签",
   is_active: "展示状态",
 } as const;

@@ -10,7 +10,7 @@ export function PlanetLabel({ planet }: { planet: PlanetRoute | null }) {
         {planet?.label ?? '秋招星瓶'}
       </span>
       <span className="max-w-sm text-sm leading-6" style={{ color: 'rgba(151,167,194,0.68)' }}>
-        {planet?.description ?? '把每一次投递，收进你的职业星图。'}
+        {planet?.description ?? ''}
       </span>
     </div>
   )

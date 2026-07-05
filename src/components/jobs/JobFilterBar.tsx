@@ -27,13 +27,6 @@ export function JobFilterBar({
     onChange({ ...filters, ...partial });
   }
 
-  function toggleTag(tag: string) {
-    const tags = filters.tags.includes(tag)
-      ? filters.tags.filter((item) => item !== tag)
-      : [...filters.tags, tag];
-    setFilter({ tags });
-  }
-
   function toggleCategory(category: string) {
     const categories = filters.categories.includes(category)
       ? filters.categories.filter((item) => item !== category)
@@ -143,30 +136,6 @@ export function JobFilterBar({
                   onClick={() => toggleCategory(category)}
                 >
                   {category}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div>
-          <span className="mb-2 block text-sm text-ink-secondary">岗位标签</span>
-          <div className="flex max-h-56 flex-wrap gap-2 overflow-y-auto pr-1">
-            {facets.tags.slice(0, 60).map((tag) => {
-              const active = filters.tags.includes(tag);
-              return (
-                <button
-                  key={tag}
-                  type="button"
-                  className={cn(
-                    "whitespace-nowrap rounded-full px-3 py-1 text-xs transition",
-                    active
-                      ? "bg-nebula-blue/14 text-nebula-silver shadow-star-sm"
-                      : "text-ink-secondary hover:bg-white/[0.055] hover:text-nebula-silver",
-                  )}
-                  onClick={() => toggleTag(tag)}
-                >
-                  {tag}
                 </button>
               );
             })}

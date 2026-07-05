@@ -166,7 +166,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
             {filtered.map((application, index) => (
               <div
                 key={application.id}
-                className="data-row grid w-full grid-cols-[34px_minmax(0,1fr)_auto] items-center gap-3 px-4 text-left"
+                className="data-row grid w-full grid-cols-[26px_minmax(0,1fr)_auto] items-center gap-2 px-2 text-left sm:grid-cols-[34px_minmax(0,1fr)_auto] sm:gap-3 sm:px-4"
                 role="button"
                 tabIndex={0}
                 onClick={() => setSelected(application)}
@@ -189,7 +189,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
                       {application.job.job_titles || "岗位待补充"}
                     </span>
                   </span>
-                  <span className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-[color:var(--text-muted)]">
+                  <span className="mt-0.5 hidden min-w-0 items-center gap-1.5 text-xs text-[color:var(--text-muted)] md:flex">
                     <span className="truncate">{application.job.locations || "暂无地点"}</span>
                     <span className="text-[color:var(--text-disabled)]">·</span>
                     <span className="truncate">{application.job.industry || "暂无行业"}</span>

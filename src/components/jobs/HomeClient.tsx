@@ -630,7 +630,6 @@ function getActiveFilterChips(filters: JobFilters, jobView: JobViewMode, nebulaN
   if (filters.batchType) chips.push(`批次：${filters.batchType}`);
   if (filters.location) chips.push(`地点：${filters.location}`);
   filters.categories.forEach((category) => chips.push(`类别：${category}`));
-  filters.tags.forEach((tag) => chips.push(`标签：${tag}`));
   if (filters.sortBy === "start_date_desc") chips.push("最新开启");
   if (filters.sortBy === "start_date_asc") chips.push("开启时间优先");
   if (filters.sortBy === "company_asc") chips.push("公司名称排序");

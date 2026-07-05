@@ -17,12 +17,12 @@ import { SpaceBackground } from './SpaceBackground'
 
 const TRANSITION_MS = 860
 const MOBILE_PLANET_LAYOUT: Record<string, { orbitRadius: number; initialAngle: number; size: number }> = {
-  jobs: { orbitRadius: 610, initialAngle: 318, size: 64 },
-  applications: { orbitRadius: 520, initialAngle: 42, size: 64 },
-  bottle: { orbitRadius: 440, initialAngle: 162, size: 64 },
-  forum: { orbitRadius: 650, initialAngle: 232, size: 48 },
-  admin: { orbitRadius: 620, initialAngle: 104, size: 48 },
-  auth: { orbitRadius: 360, initialAngle: 352, size: 48 },
+  jobs: { orbitRadius: 210, initialAngle: 350, size: 58 },
+  applications: { orbitRadius: 225, initialAngle: 92, size: 58 },
+  bottle: { orbitRadius: 185, initialAngle: 202, size: 58 },
+  forum: { orbitRadius: 170, initialAngle: 285, size: 48 },
+  admin: { orbitRadius: 235, initialAngle: 150, size: 46 },
+  auth: { orbitRadius: 155, initialAngle: 35, size: 46 },
 }
 
 export function SpaceHome() {
@@ -124,8 +124,8 @@ export function SpaceHome() {
   )
   const mobileMaxOrbitRadius = Math.max(...mobilePlanets.map((planet) => planet.orbitRadius))
   const mobileOrbitScale = Math.min(
-    0.29,
-    Math.max(0.2, Math.min((viewportWidth - 92) / (mobileMaxOrbitRadius * 2), (viewportHeight - 300) / (mobileMaxOrbitRadius * 2))),
+    1,
+    Math.max(0.72, Math.min((viewportWidth - 112) / (mobileMaxOrbitRadius * 2), (viewportHeight - 320) / (mobileMaxOrbitRadius * 2))),
   )
 
   return (
@@ -213,7 +213,7 @@ export function SpaceHome() {
 
       <section className="relative z-10 flex h-full flex-col items-center justify-center gap-12 md:hidden">
         <motion.div
-          className="relative flex h-[min(72svh,560px)] min-h-[420px] w-full items-center justify-center"
+          className="relative flex h-[min(78svh,640px)] min-h-[500px] w-full items-center justify-center"
           animate={{ opacity: entering ? 0.14 : 1, scale: entering ? 0.9 : 1 }}
           transition={{ duration: 0.42, ease: 'easeOut' }}
         >
@@ -228,7 +228,7 @@ export function SpaceHome() {
                 disabled={entering}
                 shouldOrbit={shouldOrbit}
                 orbitScale={mobileOrbitScale}
-                planetScale={0.56}
+                planetScale={0.82}
                 onSelect={enterPlanet}
                 onHover={setHovered}
               />
