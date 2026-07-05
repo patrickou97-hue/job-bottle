@@ -112,7 +112,17 @@ export function SpaceHome() {
 
   const entering = selectedPlanet !== null
   const shouldOrbit = !reducedMotion && !entering
-  const desktopOrbitScale = Math.min(1, Math.max(0.9, (viewportHeight - 92) / 860))
+  const desktopMaxOrbitRadius = Math.max(...planets.map((planet) => planet.orbitRadius))
+  const desktopOrbitScale = Math.min(
+    0.78,
+    Math.max(
+      0.52,
+      Math.min(
+        (viewportWidth - 220) / (desktopMaxOrbitRadius * 2),
+        (viewportHeight - 190) / (desktopMaxOrbitRadius * 2),
+      ),
+    ),
+  )
   const mobilePlanets = useMemo(
     () =>
       planets.map((planet) => {

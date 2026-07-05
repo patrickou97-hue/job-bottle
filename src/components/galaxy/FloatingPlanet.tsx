@@ -5,9 +5,7 @@ import { Briefcase, FileText, LogIn, MessageSquare, Shield, Sparkles } from 'luc
 import type { PlanetRoute } from '@/lib/galaxy-routes'
 import { OrbMaterial, type OrbMaterialVariant } from '@/components/visual/OrbMaterial'
 
-const ORBIT_Y_SCALE = 0.62
-const ORBIT_ROTATION_DEG = -7
-const ORBIT_KEYFRAME_OFFSETS = [0, 60, 120, 180, 240, 300, 360]
+const ORBIT_KEYFRAME_OFFSETS = Array.from({ length: 73 }, (_, index) => index * 5)
 
 type FloatingPlanetProps = {
   planet: PlanetRoute
@@ -115,11 +113,8 @@ export function FloatingPlanet({
 
 function getOrbitPoint(angleDeg: number, radius: number) {
   const angle = (angleDeg * Math.PI) / 180
-  const rotation = (ORBIT_ROTATION_DEG * Math.PI) / 180
-  const x = Math.cos(angle) * radius
-  const y = Math.sin(angle) * radius * ORBIT_Y_SCALE
   return {
-    x: x * Math.cos(rotation) - y * Math.sin(rotation),
-    y: x * Math.sin(rotation) + y * Math.cos(rotation),
+    x: Math.cos(angle) * radius,
+    y: Math.sin(angle) * radius,
   }
 }

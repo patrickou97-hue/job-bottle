@@ -12,6 +12,7 @@ const BAND_ANGLE_OFFSET: Record<OrbitBand, number> = {
   interview: 64,
   offer_core: 152,
 };
+const ORBIT_KEYFRAME_OFFSETS = Array.from({ length: 73 }, (_, index) => index * 5);
 
 export function ApplicationOrbitRing({
   band,
@@ -39,7 +40,7 @@ export function ApplicationOrbitRing({
   const hiddenCount = Math.max(0, applications.length - visible.length);
   const slots = hiddenCount > 0 ? [...visible, null] : visible;
   const dimmed = Boolean(highlightedBand && highlightedBand !== band);
-  const orbitPoints = [0, 60, 120, 180, 240, 300, 360];
+  const orbitPoints = ORBIT_KEYFRAME_OFFSETS;
 
   return (
     <div className="absolute left-1/2 top-1/2 size-0">

@@ -93,9 +93,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/galaxy/OrbitLines.tsx",
-    mustInclude: ["MAX_HOME_ORBIT_LINES", "scaleY(0.62)", "orbitScale"],
+    mustInclude: ["MAX_HOME_ORBIT_LINES", "orbitScale", "border:"],
     mustNotInclude: [],
-    label: "主页轨道线作为星系元素保留且最多四条同心椭圆",
+    label: "主页轨道线作为星系元素保留且最多四条同心圆",
   },
   {
     file: "src/components/visual/OrbMaterial.tsx",
