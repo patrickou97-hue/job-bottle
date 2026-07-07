@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Menu, Shield, User } from "lucide-react";
+import { LogOut, Shield, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
@@ -88,14 +88,14 @@ export function Navbar() {
   );
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/[0.055] bg-[#01030a]/58 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 w-full max-w-[1440px] items-center justify-between px-4 sm:px-6 lg:px-10">
+    <header className="sticky top-0 z-40 px-3 pt-3 sm:px-5 lg:px-8">
+      <div className="mx-auto flex h-16 w-full max-w-[1380px] items-center justify-between rounded-full bg-[rgba(4,9,22,0.58)] px-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_22px_70px_rgba(0,0,0,0.22)] backdrop-blur-2xl backdrop-saturate-[1.15] sm:px-4">
         <Link href="/" className="flex min-w-0 items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/brand/shi-xing-wordmark.png" alt={SITE_NAME} className="h-8 w-auto object-contain md:h-9" />
         </Link>
 
-        <nav className="hidden items-center gap-1 md:flex">{nav}</nav>
+        <nav className="hidden items-center gap-1 rounded-full bg-white/[0.025] px-1 py-1 md:flex">{nav}</nav>
 
         <div className="hidden items-center gap-2 md:flex">
           {profile ? (
@@ -103,13 +103,13 @@ export function Navbar() {
               {profile.role === "admin" ? (
                 <Link
                   href="/admin"
-                  className="inline-flex h-10 items-center gap-2 rounded-full border border-nebula-blue/16 bg-white/[0.035] px-3 text-sm text-ink-secondary transition hover:border-nebula-blue/30 hover:text-nebula-silver"
+                  className="text-action pressable h-10 px-3 text-sm"
                 >
                   <Shield aria-hidden="true" className="size-4" />
                   管理入口
                 </Link>
               ) : null}
-              <span className="inline-flex items-center gap-2 rounded-full border border-star-300/20 bg-white/5 px-3 py-2 text-sm text-ink-secondary">
+              <span className="status-pill inline-flex h-10 items-center gap-2 rounded-full px-3 text-sm text-ink-secondary">
                 {profile.role === "admin" ? (
                   <Shield aria-hidden="true" className="size-4 text-nebula-blue" />
                 ) : (
@@ -119,7 +119,7 @@ export function Navbar() {
               </span>
               <button
                 type="button"
-                className="muted-button inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm transition hover:bg-white/10"
+                className="muted-button pressable inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm transition hover:bg-white/10"
                 onClick={handleLogout}
               >
                 <LogOut aria-hidden="true" className="size-4" />
@@ -135,17 +135,30 @@ export function Navbar() {
 
         <button
           type="button"
-          className="muted-button inline-flex size-10 items-center justify-center rounded-full md:hidden"
+          className="muted-button pressable relative inline-flex size-10 items-center justify-center rounded-full md:hidden"
           onClick={() => setMenuOpen((value) => !value)}
           aria-label="打开导航"
         >
-          <Menu aria-hidden="true" className="size-5" />
+          <span
+            aria-hidden="true"
+            className={cn(
+              "absolute h-px w-5 bg-current transition duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+              menuOpen ? "rotate-45" : "-translate-y-1.5",
+            )}
+          />
+          <span
+            aria-hidden="true"
+            className={cn(
+              "absolute h-px w-5 bg-current transition duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
+              menuOpen ? "-rotate-45" : "translate-y-1.5",
+            )}
+          />
         </button>
       </div>
 
       {menuOpen ? (
-        <div className="border-t border-white/[0.07] bg-void-900/95 px-4 py-3 md:hidden">
-          <nav className="grid gap-2">{nav}</nav>
+        <div className="mx-auto mt-3 max-w-[1380px] rounded-[28px] bg-[rgba(4,9,22,0.82)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_24px_80px_rgba(0,0,0,0.26)] backdrop-blur-2xl md:hidden">
+          <nav className="grid gap-1">{nav}</nav>
           <div className="mt-3">
             {profile ? (
               <div className="grid gap-2">

@@ -35,22 +35,22 @@ export function JobFilterBar({
   }
 
   return (
-    <aside className="relative">
-      <div className="mb-5 flex items-center gap-3">
-        <span className="size-1.5 rounded-full bg-nebula-blue/60" />
-        <h2 className="text-base font-medium text-ink-primary">筛选</h2>
+    <aside className="liquid-panel relative p-5">
+      <div className="mb-5">
+        <h2 className="section-title text-base">筛选</h2>
+        <p className="mt-1 text-xs leading-5 text-ink-muted">缩小列表范围，不会刷新页面。</p>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-5">
         <label className="block">
           <span className="mb-2 block text-sm text-ink-secondary">关键词</span>
           <div className="relative">
             <Search
               aria-hidden="true"
-              className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-nebula-blue/70"
+              className="absolute left-0 top-1/2 size-4 -translate-y-1/2 text-nebula-blue/70"
             />
             <Input
-              className="pl-9"
+              className="pl-7"
               value={filters.keyword}
               onChange={(event) => setFilter({ keyword: event.target.value })}
               placeholder="搜索公司或岗位"
@@ -127,12 +127,8 @@ export function JobFilterBar({
                 <button
                   key={category}
                   type="button"
-                  className={cn(
-                    "whitespace-nowrap rounded-full px-3 py-1 text-xs transition",
-                    active
-                      ? "bg-nebula-blue/14 text-nebula-silver shadow-star-sm"
-                      : "text-ink-secondary hover:bg-white/[0.055] hover:text-nebula-silver",
-                  )}
+                  data-active={active}
+                  className={cn("chip-button", active && "shadow-star-sm")}
                   onClick={() => toggleCategory(category)}
                 >
                   {category}

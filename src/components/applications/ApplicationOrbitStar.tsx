@@ -1,9 +1,10 @@
 "use client";
 
 import { OrbMaterial } from "@/components/visual/OrbMaterial";
+import type { OrbMaterialVariant } from "@/components/visual/OrbMaterial";
 import { cn, getCompanyShortLabel } from "@/lib/utils";
 import { daysSince, momentumTier } from "@/lib/application-orbit";
-import type { ApplicationWithJob } from "@/lib/types";
+import type { ApplicationStatus, ApplicationWithJob } from "@/lib/types";
 
 export function ApplicationOrbitStar({
   application,
@@ -43,7 +44,7 @@ export function ApplicationOrbitStar({
       <span className="relative">
         <OrbMaterial
           size={32}
-          variant={selected || offer ? "gold" : terminal ? "muted" : "blue"}
+          variant={selected || offer ? "gold" : terminal ? "muted" : getApplicationOrbVariant(application.status)}
           active={selected || offer}
         />
         <span
@@ -66,4 +67,12 @@ export function ApplicationOrbitStar({
       </span>
     </button>
   );
+}
+
+function getApplicationOrbVariant(status: ApplicationStatus): OrbMaterialVariant {
+  if (status === "opened") return "blue";
+  if (status === "applied" || status === "written_test") return "violet";
+  if (status === "first_round" || status === "second_round" || status === "final_round") return "rose";
+  if (status === "offer") return "gold";
+  return "muted";
 }

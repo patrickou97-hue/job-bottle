@@ -14,7 +14,6 @@ import { ApplicationOrbitRing } from "@/components/applications/ApplicationOrbit
 import { ApplicationOrbitStar } from "@/components/applications/ApplicationOrbitStar";
 import { ApplicationOrbitDetail } from "@/components/applications/ApplicationOrbitDetail";
 import { FiligreeDivider } from "@/components/ui/FiligreeDivider";
-import { OrbMaterial } from "@/components/visual/OrbMaterial";
 import type { ApplicationWithJob } from "@/lib/types";
 
 export function ApplicationOrbitSystem({
@@ -47,24 +46,24 @@ export function ApplicationOrbitSystem({
   const orbitScale = useResponsiveOrbitScale();
 
   return (
-    <section className="surface-subtle relative overflow-hidden p-1">
-      <div className="mb-4 flex items-baseline justify-between gap-3">
+    <section className="relative overflow-hidden">
+      <div className="section-heading">
         <div>
-          <h2 className="font-display text-lg font-semibold text-ink-primary">我的投递轨道</h2>
+          <h2 className="section-title">我的投递轨道</h2>
         </div>
-        <span className="text-xs text-ink-muted">{applications.length} 条投递</span>
+        <span className="section-meta">{applications.length} 条投递</span>
       </div>
       <FiligreeDivider className="mb-4 opacity-70" />
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_330px]">
-        <div className="relative mx-auto h-[460px] w-full max-w-[840px] overflow-hidden bg-black/10 sm:h-[600px] lg:h-[760px] xl:max-w-none">
+        <div className="liquid-panel relative mx-auto h-[460px] w-full max-w-[840px] overflow-hidden sm:h-[600px] lg:h-[760px] xl:max-w-none">
           <div className="absolute inset-0 opacity-18 [background-image:radial-gradient(circle,rgba(214,228,255,.28)_0_1px,transparent_1.5px)] [background-size:92px_92px]" />
           <div className="absolute inset-0 grid place-items-center">
             <div className="relative aspect-square h-[min(90vw,720px)] max-h-[720px] w-[min(90vw,720px)] sm:h-[min(92%,720px)] sm:w-[min(92%,720px)]">
               <OrbitTrackLayer activeBand={activeBand} scale={orbitScale} />
               <div className="absolute left-1/2 top-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center text-center text-xs text-nebula-silver">
-                <OrbMaterial size={42} variant="blue" active={applications.length > 0} />
-                <span className="mt-2 block text-[11px]">
+                <RadarCore active={applications.length > 0} />
+                <span className="mt-3 block text-[11px]">
                   投递中 <span className="font-display text-base text-ink-primary tabular-nums">{applications.length}</span>
                 </span>
               </div>
@@ -104,10 +103,10 @@ export function ApplicationOrbitSystem({
           ))}
 
           {applications.length === 0 ? (
-            <div className="absolute inset-0 grid place-items-center text-center">
+            <div className="empty-state absolute inset-0">
               <div>
-                <h3 className="text-lg font-semibold text-ink-primary">暂无投递记录</h3>
-                <p className="mt-2 text-sm text-ink-muted">从岗位星图中打开官网投递后，岗位会进入这里。</p>
+                <h3>暂无投递记录</h3>
+                <p>从岗位星图中打开官网投递后，岗位会进入这里。</p>
               </div>
             </div>
           ) : null}
@@ -116,7 +115,7 @@ export function ApplicationOrbitSystem({
         <ApplicationOrbitDetail application={selectedApplication} onEdit={onEdit ?? onSelect} />
       </div>
       {expandedBand ? (
-        <div className="absolute inset-x-5 bottom-5 z-40 bg-[#040814]/92 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl xl:left-auto xl:w-[420px]">
+        <div className="liquid-panel absolute inset-x-5 bottom-5 z-40 p-4 backdrop-blur-xl xl:left-auto xl:w-[420px]">
           <div className="mb-3 flex items-center justify-between gap-3">
             <span className="text-sm font-medium text-nebula-silver">
               {ORBIT_BAND_CONFIG[expandedBand].label} · {expandedApplications.length} 条记录
@@ -135,7 +134,7 @@ export function ApplicationOrbitSystem({
               <button
                 key={application.id}
                 type="button"
-                className="flex w-full items-center justify-between gap-3 rounded-2xl px-3 py-2 text-left text-sm transition hover:bg-white/[0.04]"
+                className="pressable flex w-full items-center justify-between gap-3 rounded-2xl px-3 py-2 text-left text-sm transition hover:bg-white/[0.04]"
                 onClick={() => {
                   setExpandedBand(null);
                   onSelect(application);
@@ -203,4 +202,16 @@ function useResponsiveOrbitScale() {
   }, []);
 
   return scale;
+}
+
+function RadarCore({ active }: { active: boolean }) {
+  // Replaces the old OrbMaterial center with radar waves while keeping application planets on OrbMaterial.
+  return (
+    <span className="radar-core" data-active={active ? "true" : "false"} aria-hidden="true">
+      <span />
+      <span />
+      <span />
+      <i />
+    </span>
+  );
 }

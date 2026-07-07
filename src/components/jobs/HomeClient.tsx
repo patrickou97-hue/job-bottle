@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Archive, FlaskConical, Sparkles } from "lucide-react";
+import { Archive, Sparkles } from "lucide-react";
 import { EMPTY_JOB_FILTERS } from "@/lib/constants";
 import { parseJobCategoriesParam, serializeJobCategories } from "@/lib/categories";
 import { fetchActiveJobs, filterJobs, getJobFacetOptions } from "@/lib/jobs";
@@ -349,9 +349,9 @@ export function HomeClient() {
   }
 
   return (
-    <div className="space-y-6 pb-24">
+    <div className="observatory-page space-y-8">
       {message ? (
-        <div className="rounded-2xl border border-nebula-blue/20 bg-nebula-blue/8 px-4 py-3 text-sm text-nebula-silver">
+        <div className="info-banner text-sm">
           {message}
         </div>
       ) : null}
@@ -393,7 +393,7 @@ export function HomeClient() {
         onSelectionChange={setNebulaSelection}
       />
 
-      <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
+      <div className="grid gap-8 xl:grid-cols-[300px_minmax(0,1fr)]">
         <JobFilterBar
           filters={filters}
           facets={facets}
@@ -401,10 +401,10 @@ export function HomeClient() {
         />
 
         <section id="job-map" className="min-w-0">
-          <div className="mb-4 flex items-center justify-between">
+          <div className="section-heading">
             <div className="flex items-baseline gap-2">
-              <h2 className="text-base font-medium text-ink-primary">
-                {loading ? "加载中..." : `${filteredJobs.length} 个岗位`}
+              <h2 className="section-title">
+                {loading ? "正在读取" : `${filteredJobs.length} 个岗位`}
               </h2>
               {!loading && filteredJobs.length !== jobs.length && (
                 <span className="text-xs text-ink-muted">
@@ -416,8 +416,8 @@ export function HomeClient() {
           </div>
 
           {loading ? (
-            <div className="p-8 text-center text-sm text-ink-secondary">
-              加载中...
+            <div className="empty-state">
+              <span className="loading-line">正在读取岗位</span>
             </div>
           ) : jobs.length === 0 ? (
             <EmptyState
@@ -436,7 +436,7 @@ export function HomeClient() {
               }
             />
           ) : (
-            <div className="overflow-hidden">
+            <div className="liquid-panel overflow-hidden">
               {filteredJobs.map((job, index) => (
                 <JobCard
                   key={job.id}
@@ -466,7 +466,7 @@ export function HomeClient() {
       {/* Bottom detail card for selected application */}
       {selectedApplication ? (
         <div className="fixed inset-x-0 bottom-0 z-30 px-4 pb-4 sm:px-6">
-          <div className="mx-auto max-w-2xl bg-void-900/88 p-4 shadow-2xl backdrop-blur-xl">
+          <div className="liquid-panel mx-auto max-w-2xl p-4">
             <div className="flex items-center gap-4">
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-semibold text-ink-primary">
@@ -536,37 +536,40 @@ function JobRadarHeader({
   ];
 
   return (
-    <section className="relative px-1 py-2">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="min-w-0">
-          <div className="flex items-center gap-3">
-            <span className="flex size-8 items-center justify-center rounded-full bg-nebula-blue/8 text-nebula-silver">
-              <FlaskConical aria-hidden="true" className="size-4" />
-            </span>
-            <div>
-              <h1 className="text-lg font-medium text-ink-primary">岗位星图</h1>
-              <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-muted">
-                <span>{stats.totalJobs} 个开放岗位</span>
-                <span>{stats.visibleJobs} 个当前结果</span>
-                <span>{stats.companyCount} 家公司</span>
-                <span>{stats.savedJobs} 条已收录</span>
-              </div>
-            </div>
-          </div>
+    <section className="page-hero">
+      <div className="min-w-0">
+        <p className="page-kicker">职位发现</p>
+        <h1 className="page-title">岗位星图</h1>
+        <p className="page-subtitle">
+          用筛选和星图快速定位公司、岗位与投递状态，保留列表视图方便逐条阅读。
+        </p>
+      </div>
 
+      <div className="liquid-panel p-4 md:p-5">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 md:grid-cols-2 lg:grid-cols-4">
+          <StatNumber value={stats.totalJobs} label="开放岗位" />
+          <StatNumber value={stats.visibleJobs} label="当前结果" />
+          <StatNumber value={stats.companyCount} label="公司" />
+          <StatNumber value={stats.savedJobs} label="已收录" />
+        </div>
+      </div>
+
+      <div className="md:col-span-2">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0">
           {activeFilterChips.length > 0 ? (
-            <div className="mt-3 flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {activeFilterChips.map((chip) => (
                 <span
                   key={chip}
-                  className="whitespace-nowrap rounded-full bg-white/[0.04] px-2.5 py-1 text-xs text-ink-secondary"
+                  className="status-pill whitespace-nowrap rounded-full px-2.5 py-1 text-xs text-ink-secondary"
                 >
                   {chip}
                 </span>
               ))}
               <button
                 type="button"
-                className="rounded-full px-2.5 py-1 text-xs text-ink-muted transition hover:bg-white/[0.05] hover:text-nebula-silver"
+                className="chip-button"
                 onClick={onClear}
               >
                 清空
@@ -582,7 +585,7 @@ function JobRadarHeader({
                 key={mode.value}
                 type="button"
                 className={cn(
-                  "rounded-full px-3 py-1.5 text-xs transition",
+                  "pressable rounded-full px-3 py-1.5 text-xs transition",
                   jobView === mode.value
                     ? "bg-nebula-silver/12 text-nebula-silver shadow-[0_0_22px_rgba(150,184,220,0.1)]"
                     : "text-ink-muted hover:text-ink-secondary",
@@ -597,14 +600,14 @@ function JobRadarHeader({
           <div className="flex gap-2">
             <Link
               href="/my"
-              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-xs text-ink-secondary transition hover:bg-white/[0.055] hover:text-nebula-silver"
+              className="text-action pressable px-3 py-2 text-xs"
             >
               <Archive aria-hidden="true" className="size-4" />
               我的星图
             </Link>
             <Link
               href="/bottle"
-              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-nebula-blue/8 px-3 py-2 text-xs text-nebula-silver transition hover:bg-nebula-blue/12"
+              className="text-action pressable rounded-full bg-nebula-blue/8 px-3 py-2 text-xs text-nebula-silver hover:bg-nebula-blue/12"
             >
               <Sparkles aria-hidden="true" className="size-4" />
               我的星瓶
@@ -618,7 +621,19 @@ function JobRadarHeader({
           当前筛选匹配 {stats.matchingJobs} 个岗位，已按投递视图收窄为 {stats.visibleJobs} 个。
         </div>
       ) : null}
+      </div>
     </section>
+  );
+}
+
+function StatNumber({ value, label }: { value: number; label: string }) {
+  return (
+    <div>
+      <div className="font-display text-2xl font-semibold leading-none text-ink-primary tabular-nums md:text-3xl">
+        {value}
+      </div>
+      <div className="mt-2 whitespace-nowrap text-xs text-ink-muted">{label}</div>
+    </div>
   );
 }
 
@@ -649,10 +664,10 @@ function EmptyState({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="p-8 text-center">
+    <div className="empty-state">
       <EmptyConstellation />
-      <h3 className="text-lg font-semibold text-ink-primary">{title}</h3>
-      <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-ink-muted">{body}</p>
+      <h3>{title}</h3>
+      <p className="mx-auto max-w-md">{body}</p>
       {action ? <div className="mt-5">{action}</div> : null}
     </div>
   );

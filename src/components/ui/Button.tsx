@@ -15,12 +15,12 @@ export function Button({
     <button
       type={type}
       className={cn(
-        "inline-flex h-10 w-auto items-center justify-center whitespace-nowrap rounded-full px-4 text-sm font-medium transition disabled:pointer-events-none disabled:opacity-50",
-        variant === "primary" && "gold-button active:scale-[0.98]",
+        "pressable inline-flex h-10 w-auto items-center justify-center gap-2 whitespace-nowrap rounded-full px-4 text-sm font-medium transition disabled:pointer-events-none disabled:opacity-45",
+        variant === "primary" && "gold-button",
         variant === "secondary" &&
-          "muted-button hover:bg-white/[0.07]",
+          "muted-button hover:bg-white/[0.07] active:bg-white/[0.09]",
         variant === "danger" &&
-          "bg-red-500/10 text-red-100 hover:bg-red-500/20",
+          "bg-[rgba(245,138,158,0.1)] text-[color:var(--text-danger)] hover:bg-[rgba(245,138,158,0.16)]",
         className,
       )}
       {...props}

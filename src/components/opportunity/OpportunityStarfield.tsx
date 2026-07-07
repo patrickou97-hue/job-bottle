@@ -110,16 +110,15 @@ export function OpportunityStarfield({
 
   return (
     <section className="relative overflow-hidden p-1">
-      <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
+      <div className="section-heading mb-4">
         <div>
-          <h2 className="font-display text-lg font-semibold text-ink-primary">{title}</h2>
-          <p className="text-xs text-ink-muted">岗位按星云分组排列，点击查看详情，去官网投递后会完成捕获。</p>
+          <h2 className="section-title">{title}</h2>
         </div>
         <span className="text-xs text-ink-muted">{statusText}</span>
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_330px]">
-        <div className="relative h-[420px] overflow-hidden bg-black/10 xl:h-[520px]">
+        <div className="relative h-[420px] overflow-hidden rounded-[28px] bg-black/10 xl:h-[520px]">
           <div className="absolute inset-0 opacity-20 [background-image:radial-gradient(circle,rgba(214,228,255,.26)_0_1px,transparent_1.5px)] [background-size:96px_96px]" />
           {clusterLabels.map((cluster) => (
             <span
@@ -161,8 +160,9 @@ export function OpportunityStarfield({
                 key={item.id}
                 className="absolute"
                 style={{
-                  left: `calc(${(item.x / STARFIELD_WIDTH) * 100}% - ${item.size / 2}px)`,
+                  left: `${(item.x / STARFIELD_WIDTH) * 100}%`,
                   top: `calc(${(item.y / STARFIELD_HEIGHT) * 100}% - ${item.size / 2}px)`,
+                  transform: "translateX(-50%)",
                 }}
               >
                 <OpportunityStar

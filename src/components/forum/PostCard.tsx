@@ -162,10 +162,10 @@ export function PostCard({
             <button
               type="button"
               onClick={handleLike}
-              className={`relative inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+            className={`pressable relative inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition ${
                 liked
-                  ? "border-nebula-blue/25 bg-nebula-blue/8 text-[color:var(--light-silver)]"
-                  : "border-white/[0.08] bg-white/[0.04] text-ink-muted hover:border-white/[0.15]"
+                  ? "bg-nebula-blue/8 text-[color:var(--light-silver)]"
+                  : "bg-white/[0.04] text-ink-muted hover:bg-white/[0.07]"
               }`}
             >
               点赞 {postLikeCount > 0 ? postLikeCount : 0}
@@ -175,7 +175,7 @@ export function PostCard({
               <button
                 type="button"
                 onClick={handleDeletePost}
-                className="inline-flex items-center gap-1.5 rounded-full border border-red-400/25 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-200 transition hover:bg-red-500/20"
+                className="pressable inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-[color:var(--text-danger)] transition hover:bg-[rgba(245,138,158,0.1)]"
               >
                 <Trash2 aria-hidden="true" className="size-3.5" />
                 删除帖子
@@ -190,11 +190,11 @@ export function PostCard({
             </h4>
 
             {loadingComments ? (
-              <div className="py-3 text-center text-xs text-ink-muted">
-                正在加载评论...
+              <div className="empty-state min-h-24 py-3">
+                <span className="loading-line text-xs">正在读取评论</span>
               </div>
             ) : comments.length === 0 ? (
-              <div className="py-3 text-center text-xs text-ink-muted">
+              <div className="empty-state min-h-24 py-3 text-xs">
                 暂无评论
               </div>
             ) : (
@@ -261,5 +261,5 @@ function FreshnessDot({ tier }: { tier: "fresh" | "recent" | "old" }) {
   if (tier === "recent") {
     return <span className="size-1.5 rounded-full bg-[color:var(--light-muted)] opacity-80" aria-hidden="true" />;
   }
-  return <span className="size-1.5 rounded-full border border-[color:var(--light-muted)] opacity-40" aria-hidden="true" />;
+  return <span className="size-1.5 rounded-full bg-[color:var(--light-muted)] opacity-25" aria-hidden="true" />;
 }

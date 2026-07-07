@@ -33,7 +33,7 @@ export function Drawer({
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
-            transition={{ duration: 0.28, ease: "easeOut" }}
+            transition={{ duration: 0.34, ease: [0.16, 1, 0.3, 1] }}
           >
             <div className="mb-6 flex items-center justify-between gap-4">
               <h2 className="text-xl font-semibold text-ink-primary">{title}</h2>

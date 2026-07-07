@@ -8,8 +8,8 @@ export default function LoginPage() {
       <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center">
         <Suspense
           fallback={
-            <div className="surface-readable rounded-[28px] p-8 text-ink-secondary">
-              正在打开登录星窗...
+            <div className="empty-state">
+              <span className="loading-line">正在打开登录</span>
             </div>
           }
         >

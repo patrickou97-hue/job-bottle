@@ -81,8 +81,8 @@ export function NewPostForm({ onCreated, onCancel }: NewPostFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <h2 className="text-lg font-semibold text-ink-primary">发布</h2>
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      <h2 className="section-title">发布</h2>
 
       <div>
         <label className="mb-1 block text-xs font-medium text-ink-muted">
@@ -138,7 +138,7 @@ export function NewPostForm({ onCreated, onCancel }: NewPostFormProps) {
       </div>
 
       {error ? (
-        <div className="bg-red-500/10 p-3 text-sm text-red-100">
+        <div className="message-banner text-sm">
           {error}
         </div>
       ) : null}

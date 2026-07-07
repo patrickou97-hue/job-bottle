@@ -92,38 +92,53 @@ export function GalaxyJobsClient({ kind, slug }: { kind: GalaxyKind; slug: strin
   }
 
   return (
-    <div className="space-y-6 pb-24">
-      <section className="py-6">
-        <h1 className="font-display text-4xl font-semibold text-ink-primary">{group.label}</h1>
-        <p className="mt-3 max-w-2xl text-sm leading-7 text-ink-secondary">
-          {loading ? "正在读取岗位..." : `${jobs.length} 个岗位，点击查看详情。`}
-        </p>
+    <div className="observatory-page space-y-8">
+      <section className="page-hero">
+        <div>
+          <p className="page-kicker">岗位星图</p>
+          <h1 className="page-title">{group.label}</h1>
+          <p className="page-subtitle">
+            {loading ? "正在读取岗位" : `${jobs.length} 个岗位`}
+          </p>
+        </div>
+        <div className="liquid-panel p-5">
+          <div className="font-display text-3xl font-semibold text-ink-primary tabular-nums">{jobs.length}</div>
+          <div className="mt-2 text-xs text-ink-muted">当前结果</div>
+        </div>
       </section>
       {message ? (
-        <div className="bg-nebula-blue/8 px-4 py-3 text-sm text-nebula-silver">
+        <div className="info-banner text-sm">
           {message}
         </div>
       ) : null}
-      <OpportunityStarfield
-        jobs={jobs}
-        applicationByJobId={applicationByJobId}
-        onApply={handleApply}
-        kind={kind}
-        title={`${group.label}岗位星`}
-        hoveredJobId={hoveredJobId}
-        focusedJobId={focusedJobId}
-        onHoverJob={(job) => setHoveredJobId(job?.id ?? null)}
-        onFocusJob={focusJob}
-      />
-      <OpportunitySignalList
-        jobs={jobs}
-        applicationByJobId={applicationByJobId}
-        onApply={handleApply}
-        hoveredJobId={hoveredJobId}
-        focusedJobId={focusedJobId}
-        onHoverJob={(job) => setHoveredJobId(job?.id ?? null)}
-        onFocusJob={focusJob}
-      />
+      {loading ? (
+        <div className="empty-state">
+          <span className="loading-line">正在读取岗位</span>
+        </div>
+      ) : (
+        <>
+          <OpportunityStarfield
+            jobs={jobs}
+            applicationByJobId={applicationByJobId}
+            onApply={handleApply}
+            kind={kind}
+            title={`${group.label}岗位星`}
+            hoveredJobId={hoveredJobId}
+            focusedJobId={focusedJobId}
+            onHoverJob={(job) => setHoveredJobId(job?.id ?? null)}
+            onFocusJob={focusJob}
+          />
+          <OpportunitySignalList
+            jobs={jobs}
+            applicationByJobId={applicationByJobId}
+            onApply={handleApply}
+            hoveredJobId={hoveredJobId}
+            focusedJobId={focusedJobId}
+            onHoverJob={(job) => setHoveredJobId(job?.id ?? null)}
+            onFocusJob={focusJob}
+          />
+        </>
+      )}
       <CaptureAnimation job={capturedJob} onDone={clearCapture} />
     </div>
   );

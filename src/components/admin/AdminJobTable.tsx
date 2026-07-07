@@ -17,15 +17,17 @@ export function AdminJobTable({
 }) {
   if (jobs.length === 0) {
     return (
-      <div className="p-8 text-center">
-        <h2 className="text-lg font-semibold text-ink-primary">暂无数据</h2>
-        <p className="mt-2 text-sm text-ink-muted">新增岗位后会显示在这里。</p>
+      <div className="empty-state">
+        <div>
+          <h2>暂无数据</h2>
+          <p>新增岗位后会显示在这里。</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden">
+    <div className="liquid-panel overflow-hidden">
       <div className="overflow-x-auto">
         <table className="min-w-[1100px] w-full text-left text-sm">
           <thead className="bg-white/[0.04] text-ink-muted">
@@ -58,8 +60,8 @@ export function AdminJobTable({
                   <span
                     className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${
                       job.is_active
-                        ? "bg-nebula-blue/10 text-nebula-silver"
-                        : "bg-slate-500/15 text-slate-300"
+                        ? "status-pill text-nebula-silver"
+                        : "status-pill text-slate-300"
                     }`}
                   >
                     {job.is_active ? "上架中" : "已下架"}

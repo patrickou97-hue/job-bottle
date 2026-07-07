@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 export const MAX_SCENE_GLOW_ELEMENTS = 5;
 export const MAX_HOME_ORBIT_LINES = 4;
 
-export type OrbMaterialVariant = "blue" | "violet" | "gold" | "muted";
+export type OrbMaterialVariant = "blue" | "violet" | "gold" | "rose" | "cream" | "muted";
 
 const ORB_PALETTE: Record<
   OrbMaterialVariant,
@@ -17,25 +17,39 @@ const ORB_PALETTE: Record<
   }
 > = {
   blue: {
-    light: "rgba(224,236,255,0.82)",
-    main: "rgba(75,103,154,0.78)",
-    dark: "rgba(6,13,30,0.98)",
+    light: "rgba(220,232,255,0.86)",
+    main: "rgba(49,59,89,0.88)",
+    dark: "rgba(7,12,28,0.98)",
     glow: "rgba(126,158,214,0.2)",
     icon: "rgba(230,238,250,0.76)",
   },
   violet: {
-    light: "rgba(224,220,248,0.68)",
-    main: "rgba(82,75,128,0.76)",
+    light: "rgba(221,216,246,0.72)",
+    main: "rgba(105,100,140,0.82)",
     dark: "rgba(12,9,28,0.98)",
-    glow: "rgba(142,132,205,0.17)",
+    glow: "rgba(105,100,140,0.22)",
     icon: "rgba(229,224,248,0.74)",
   },
   gold: {
-    light: "rgba(255,248,218,0.86)",
-    main: "rgba(185,155,82,0.62)",
-    dark: "rgba(18,14,24,0.96)",
-    glow: "rgba(222,197,137,0.22)",
+    light: "rgba(242,229,189,0.95)",
+    main: "rgba(242,209,109,0.7)",
+    dark: "rgba(37,30,34,0.96)",
+    glow: "rgba(242,209,109,0.24)",
     icon: "rgba(255,247,218,0.82)",
+  },
+  rose: {
+    light: "rgba(242,229,189,0.72)",
+    main: "rgba(217,173,169,0.68)",
+    dark: "rgba(38,30,45,0.98)",
+    glow: "rgba(217,173,169,0.2)",
+    icon: "rgba(248,234,230,0.78)",
+  },
+  cream: {
+    light: "rgba(255,247,214,0.9)",
+    main: "rgba(242,229,189,0.62)",
+    dark: "rgba(43,39,55,0.98)",
+    glow: "rgba(242,229,189,0.18)",
+    icon: "rgba(255,248,226,0.8)",
   },
   muted: {
     light: "rgba(218,226,240,0.48)",

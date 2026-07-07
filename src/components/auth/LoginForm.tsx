@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
@@ -71,11 +70,9 @@ export function LoginForm() {
   const isRegister = mode === "register";
 
   return (
-    <div className="surface-readable mx-auto w-full max-w-md rounded-[28px] p-6 sm:p-8">
-      <div className="mx-auto mb-6 flex size-14 items-center justify-center rounded-[22px] border border-nebula-blue/24 bg-nebula-blue/10 text-nebula-blue shadow-star-sm">
-        <Sparkles aria-hidden="true" className="size-7" />
-      </div>
-      <h1 className="text-center text-2xl font-semibold text-ink-primary">
+    <div className="liquid-panel mx-auto w-full max-w-md p-6 sm:p-8">
+      <p className="page-kicker text-center">账号</p>
+      <h1 className="mt-2 text-center text-3xl font-semibold tracking-[-0.02em] text-ink-primary">
         登录拾星
       </h1>
       <p className="mt-3 text-center text-sm leading-6 text-ink-secondary">
@@ -84,7 +81,7 @@ export function LoginForm() {
           : "登录后管理投递进度。"}
       </p>
 
-      <form className="mt-7 space-y-4" onSubmit={handleSubmit(onSubmit)}>
+      <form className="mt-8 space-y-5" onSubmit={handleSubmit(onSubmit)}>
         <label className="block">
           <span className="mb-2 block text-sm text-ink-secondary">邮箱</span>
           <Input type="email" autoComplete="email" {...register("email")} />
@@ -107,7 +104,7 @@ export function LoginForm() {
           ) : null}
         </label>
 
-        {message ? <p className="text-sm text-nebula-silver">{message}</p> : null}
+        {message ? <p className="info-banner text-sm">{message}</p> : null}
 
         <Button type="submit" className="w-full" disabled={busy}>
           {isRegister ? "注册" : "登录"}
@@ -116,7 +113,7 @@ export function LoginForm() {
 
       <button
         type="button"
-        className="mt-5 w-full text-center text-sm text-nebula-silver hover:text-ink-primary"
+        className="text-action mx-auto mt-5 flex justify-center text-sm"
         onClick={() => {
           setMode(isRegister ? "login" : "register");
           setMessage("");

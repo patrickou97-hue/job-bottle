@@ -94,20 +94,33 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
   }
 
   return (
-    <div className="space-y-6">
-      <section className="px-1 pt-2">
-        <h1 className="text-3xl font-semibold text-ink-primary">我的投递</h1>
+    <div className="observatory-page space-y-8">
+      <section className="page-hero">
+        <div>
+          <p className="page-kicker">进度管理</p>
+          <h1 className="page-title">我的投递</h1>
+          <p className="page-subtitle">
+            所有已浏览和已投递记录集中在这里，轨道负责展示阶段，列表负责快速查找和操作。
+          </p>
+        </div>
+        <div className="liquid-panel p-4 md:p-5">
+          <div className="grid grid-cols-3 gap-4">
+            <StatBlock value={applications.length} label="全部记录" />
+            <StatBlock value={applications.filter((item) => item.status !== "rejected" && item.status !== "withdrawn").length} label="投递中" />
+            <StatBlock value={applications.filter((item) => item.status === "offer").length} label="Offer" />
+          </div>
+        </div>
       </section>
 
-      <section className="px-1">
-        <div className="grid gap-3 md:grid-cols-[1fr_220px_auto]">
+      <section className="liquid-panel p-4">
+        <div className="grid gap-4 md:grid-cols-[1fr_220px_auto]">
           <div className="relative">
             <Search
               aria-hidden="true"
-              className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-nebula-blue/70"
+              className="absolute left-0 top-1/2 size-4 -translate-y-1/2 text-nebula-blue/70"
             />
             <Input
-              className="pl-9"
+              className="pl-7"
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
               placeholder="搜索公司或岗位"
@@ -133,7 +146,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
       </section>
 
       {message ? (
-        <div className="bg-red-500/10 p-4 text-sm text-red-100">
+        <div className="message-banner text-sm">
           {message}
         </div>
       ) : null}
@@ -145,23 +158,23 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
         onEdit={setDrawerApplication}
       />
 
-      <section className="overflow-hidden">
+      <section className="liquid-panel overflow-hidden">
         {loading || redirecting ? (
-          <div className="p-8 text-center text-ink-secondary">
-            {redirecting ? "正在前往登录..." : "正在读取投递轨道..."}
+          <div className="empty-state">
+            <span className="loading-line">{redirecting ? "正在前往登录" : "正在读取投递"}</span>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="p-8 text-center">
-            <h2 className="text-lg font-semibold text-ink-primary">暂无投递记录</h2>
-            <p className="mt-2 text-sm text-ink-muted">
-              从岗位星图中打开官网投递后，记录会出现在这里。
-            </p>
+          <div className="empty-state">
+            <div>
+              <h2>暂无投递记录</h2>
+              <p>从岗位星图中打开官网投递后，记录会出现在这里。</p>
+            </div>
           </div>
         ) : (
           <div>
-            <div className="mb-2 flex items-center justify-between px-4 text-xs tracking-[0.18em] text-[color:var(--text-meta)]">
+            <div className="section-heading px-4 pt-4">
               <span>投递记录</span>
-              <span>{filtered.length} 条</span>
+              <span className="section-meta">{filtered.length} 条</span>
             </div>
             {filtered.map((application, index) => (
               <div
@@ -240,6 +253,17 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
         onChanged={handleApplicationChanged}
         onDeleted={handleApplicationDeleted}
       />
+    </div>
+  );
+}
+
+function StatBlock({ value, label }: { value: number; label: string }) {
+  return (
+    <div>
+      <div className="font-display text-2xl font-semibold leading-none text-ink-primary tabular-nums md:text-3xl">
+        {value}
+      </div>
+      <div className="mt-2 whitespace-nowrap text-xs text-ink-muted">{label}</div>
     </div>
   );
 }

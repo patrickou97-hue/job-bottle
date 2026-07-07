@@ -86,7 +86,7 @@ export function JobCard({
       {application ? (
         <button
           type="button"
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[rgba(159,180,206,0.18)] px-3 py-1 text-xs text-[color:var(--light-silver)] transition hover:bg-[color:var(--surface-hover-bg)]"
+          className="pressable inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs text-[color:var(--light-silver)] transition hover:bg-[color:var(--surface-hover-bg)]"
           onClick={(e) => {
             e.stopPropagation();
             onOpenProgress?.(job);
@@ -96,7 +96,7 @@ export function JobCard({
           <span className="hidden sm:inline">查看进度</span>
         </button>
       ) : (
-        <span className="inline-flex shrink-0 items-center gap-1 text-xs text-[color:var(--text-muted)] transition-colors group-hover:text-[color:var(--light-silver)]">
+        <span className="text-action shrink-0 text-xs group-hover:text-[color:var(--light-silver)]">
           <ExternalLink aria-hidden="true" className="size-4" />
           <span className="hidden sm:inline">去官网投递</span>
         </span>

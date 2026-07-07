@@ -28,7 +28,10 @@ function PlanetGlyph({ planet }: { planet: PlanetRoute }) {
 }
 
 function getOrbVariant(planet: PlanetRoute): OrbMaterialVariant {
-  if (planet.id === 'forum') return 'violet'
+  if (planet.id === 'applications') return 'violet'
+  if (planet.id === 'bottle') return 'gold'
+  if (planet.id === 'forum') return 'rose'
+  if (planet.id === 'auth') return 'cream'
   if (planet.id === 'admin') return 'muted'
   return 'blue'
 }

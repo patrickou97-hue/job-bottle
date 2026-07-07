@@ -92,14 +92,11 @@ export function ApplicationBottle({
 
   return (
     <section className="relative overflow-visible px-0 pb-4 pt-1">
-      <div className="grid justify-items-center gap-8 lg:grid-cols-[minmax(320px,0.9fr)_minmax(300px,0.8fr)] lg:items-center lg:justify-items-stretch">
+      <div className="grid justify-items-center gap-10 lg:grid-cols-[minmax(320px,0.95fr)_minmax(300px,0.75fr)] lg:items-center lg:justify-items-stretch">
         <div className="w-full max-w-[560px]">
-          <div className="mb-4 hidden text-center sm:block">
-            <p className="text-xs tracking-[0.2em] text-ink-muted">2026 秋招季 · 第 {getSeasonWeek()} 周</p>
-            <h1 className="mt-2 font-display text-3xl font-semibold text-ink-primary">
-              我的星瓶
-            </h1>
-          </div>
+          <p className="mb-4 text-center text-xs tracking-[0.16em] text-ink-muted">
+            2026 秋招季 · 第 {getSeasonWeek()} 周
+          </p>
 
           <BottleStage
             applications={applications}
@@ -113,7 +110,7 @@ export function ApplicationBottle({
 
           <button
             type="button"
-            className="mx-auto mt-3 block rounded-full px-4 py-2 text-sm text-ink-secondary transition hover:bg-white/[0.04] hover:text-nebula-silver"
+            className="text-action pressable mx-auto mt-3 justify-center rounded-full px-4 py-2 text-sm"
             onClick={() => {
               router.push("/my");
             }}
@@ -122,8 +119,8 @@ export function ApplicationBottle({
           </button>
         </div>
 
-        <div className="relative w-full max-w-[560px] p-1 text-center lg:max-w-none lg:text-left">
-          <h2 className="relative font-display text-2xl font-semibold text-ink-primary">
+        <div className="liquid-panel relative w-full max-w-[560px] p-6 text-center lg:max-w-none lg:text-left">
+          <h2 className="relative section-title">
             本季统计
           </h2>
           <FiligreeDivider className="relative my-4" />
@@ -160,7 +157,7 @@ export function ApplicationBottle({
                 </span>
                 <button
                   type="button"
-                  className="rounded-full px-3 py-1 text-xs text-ink-secondary transition hover:bg-white/[0.055] hover:text-nebula-silver"
+                  className="text-action pressable rounded-full px-3 py-1 text-xs"
                   onClick={() => setSelected(displayApp)}
                 >
                   查看进度

@@ -95,15 +95,15 @@ export function NebulaGateway({
   }
 
   return (
-    <section className="surface-subtle relative overflow-hidden rounded-[28px] p-5">
-      <div className="mb-2 flex items-center justify-between gap-3">
+    <section className="liquid-panel relative overflow-hidden p-5">
+      <div className="section-heading mb-2">
         <div>
-          <h2 className="font-display text-lg font-semibold text-ink-primary">岗位星图</h2>
+          <h2 className="section-title">岗位星图</h2>
         </div>
         {mode !== "gateway" ? (
           <button
             type="button"
-            className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs text-ink-secondary transition hover:bg-white/[0.04] hover:text-nebula-silver"
+            className="text-action pressable inline-flex items-center gap-2 px-3 py-1.5 text-xs"
             onClick={back}
           >
             <ArrowLeft aria-hidden="true" className="size-4" />
@@ -120,7 +120,7 @@ export function NebulaGateway({
             animate={{ opacity: 1, y: 0 }}
             exit={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96 }}
             transition={{ duration: 0.42, ease: "easeOut" }}
-            className="grid min-h-[520px] items-center gap-5 md:grid-cols-2 xl:grid-cols-4"
+            className="grid min-h-[360px] items-center gap-5 md:grid-cols-2 xl:grid-cols-4"
           >
             {gatewayNodes.map((node) => (
               <NebulaNode
@@ -167,7 +167,7 @@ export function NebulaGateway({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.42, ease: "easeOut" }}
-            className="grid min-h-[520px] items-center gap-x-5 gap-y-2 md:grid-cols-2 xl:grid-cols-3"
+            className="grid min-h-[390px] items-center gap-x-5 gap-y-2 md:grid-cols-2 xl:grid-cols-3"
           >
             {categoryNodes.map((node) => (
               <NebulaNode key={node.id} {...node} compact onClick={() => enterNebula(node)} />

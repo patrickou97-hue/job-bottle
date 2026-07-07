@@ -48,14 +48,15 @@ export function GalaxyMapClient({ kind }: { kind: GalaxyKind }) {
   const body = kind === "region" ? "选择一个地区星云，进入对应岗位。" : "选择一个行业星云，进入对应岗位。";
 
   return (
-    <div className="space-y-8 pb-24">
-      <section className="py-8">
-        <h1 className="font-display text-4xl font-semibold text-ink-primary">{title}</h1>
-        <p className="mt-3 max-w-2xl text-sm leading-7 text-ink-secondary">
-          {body}
-        </p>
+    <div className="observatory-page space-y-8">
+      <section className="page-hero">
+        <div>
+          <p className="page-kicker">岗位星系</p>
+          <h1 className="page-title">{title}</h1>
+          <p className="page-subtitle">{body}</p>
+        </div>
       </section>
-      {loading ? <div className="text-center text-xs text-ink-muted">正在读取岗位数量...</div> : null}
+      {loading ? <div className="empty-state"><span className="loading-line">正在读取岗位数量</span></div> : null}
       <section className="flex flex-wrap items-center justify-center gap-7">
         {(stats.length ? stats : getGalaxyGroups(kind).map((group) => ({ ...group, jobCount: 0, capturedCount: 0 }))).map((group) => (
           <NebulaNode

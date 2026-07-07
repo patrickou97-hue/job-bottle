@@ -40,7 +40,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
 
   return (
     <PageShell>
-      <main className="mx-auto max-w-5xl space-y-6 pb-24">
+      <main className="observatory-page mx-auto max-w-5xl space-y-8">
         <Link
           href="/explore"
           className="inline-flex items-center gap-2 text-sm text-ink-muted transition hover:text-nebula-silver"
@@ -49,7 +49,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
           返回探索星海
         </Link>
 
-        <section className="surface-readable overflow-hidden rounded-[28px] p-5 sm:p-7">
+        <section className="liquid-panel overflow-hidden p-5 sm:p-7">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex min-w-0 gap-4">
               <CompanyBadge companyName={job.company_name} logoUrl={job.logo_url} size="lg" />
@@ -82,7 +82,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
           </div>
 
           {job.notes ? (
-            <div className="mt-7 rounded-[22px] border border-white/[0.06] bg-white/[0.025] p-4">
+            <div className="mt-7 rounded-[22px] bg-white/[0.025] p-4">
               <h2 className="text-sm font-medium text-ink-primary">岗位备注</h2>
               <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-ink-secondary">{job.notes}</p>
             </div>
@@ -102,7 +102,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
 
 function MetaItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[18px] border border-white/[0.06] bg-white/[0.025] p-4">
+    <div className="rounded-[18px] bg-white/[0.025] p-4">
       <dt className="flex items-center gap-2 text-xs text-ink-muted">
         {label.includes("城市") ? <MapPin aria-hidden="true" className="size-3.5" /> : <Building2 aria-hidden="true" className="size-3.5" />}
         {label}
@@ -114,7 +114,7 @@ function MetaItem({ label, value }: { label: string; value: string }) {
 
 function RelatedJobs({ title, jobs }: { title: string; jobs: Job[] }) {
   return (
-    <section className="surface-subtle rounded-[24px] p-5">
+    <section className="liquid-panel p-5">
       <h2 className="text-base font-medium text-ink-primary">{title}</h2>
       {jobs.length === 0 ? (
         <p className="mt-4 text-sm text-ink-muted">暂无更多岗位</p>

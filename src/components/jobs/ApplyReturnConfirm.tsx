@@ -17,7 +17,7 @@ export function ApplyReturnConfirm({
   onWithdraw: () => void;
 }) {
   return (
-    <div className="rounded-[22px] border border-nebula-blue/18 bg-[#07101f]/92 px-4 py-3 shadow-[0_18px_60px_rgba(0,0,0,0.32)] backdrop-blur-xl">
+    <div className="liquid-panel px-4 py-3 backdrop-blur-xl">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="min-w-0">
           <div className="text-sm font-medium text-ink-primary">投递完成了吗？</div>

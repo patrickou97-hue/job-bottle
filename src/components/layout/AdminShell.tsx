@@ -72,8 +72,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen text-ink-primary">
       <StarFieldBackground quiet />
-      <header className="sticky top-0 z-40 border-b border-white/[0.07] bg-void-950/88 backdrop-blur-xl">
-        <div className="mx-auto flex min-h-16 w-full max-w-[1440px] flex-col gap-3 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-10">
+      <header className="sticky top-0 z-40 px-3 pt-3 sm:px-5 lg:px-8">
+        <div className="mx-auto flex min-h-16 w-full max-w-[1380px] flex-col gap-3 rounded-[28px] bg-[rgba(4,9,22,0.66)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_22px_70px_rgba(0,0,0,0.2)] backdrop-blur-2xl sm:px-5 lg:flex-row lg:items-center lg:justify-between">
           <Link href="/admin" className="flex min-w-0 items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/brand/shi-xing-wordmark.png" alt={SITE_NAME} className="h-8 w-auto shrink-0 object-contain" />
@@ -95,7 +95,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "inline-flex h-10 items-center gap-2 rounded-full border px-3 text-sm transition",
+                    "pressable inline-flex h-10 items-center gap-2 rounded-full px-3 text-sm transition",
                     active
                       ? "bg-nebula-blue/10 text-nebula-silver"
                       : "text-ink-secondary hover:bg-white/[0.055] hover:text-ink-primary",
@@ -124,15 +124,15 @@ export function AdminShell({ children }: { children: ReactNode }) {
           </nav>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-[1440px] px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
+      <main className="mx-auto w-full max-w-[1440px] px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
         {loading ? (
-          <div className="p-6 text-sm text-ink-secondary">
-            正在确认管理员权限...
+          <div className="empty-state text-sm text-ink-secondary">
+            <span className="loading-line">正在确认管理员权限</span>
           </div>
         ) : allowed ? (
           children
         ) : (
-          <div className="p-6">
+          <div className="liquid-panel p-6">
             <h1 className="text-2xl font-semibold text-ink-primary">管理后台</h1>
             <p className="mt-3 text-sm text-ink-secondary">{message}</p>
             <Link

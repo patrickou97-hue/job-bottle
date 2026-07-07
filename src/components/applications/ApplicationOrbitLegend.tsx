@@ -23,10 +23,10 @@ export function ApplicationOrbitLegend({
         <button
           key={band}
           type="button"
-          className={`flex items-center justify-between gap-3 rounded-full px-3 py-2 text-left transition ${
+          className={`pressable flex items-center justify-between gap-3 rounded-full px-3 py-2 text-left transition ${
             activeBand === band
               ? "bg-nebula-blue/10 text-nebula-silver"
-              : "text-ink-muted hover:bg-white/[0.035] hover:text-ink-secondary"
+              : "text-ink-muted hover:bg-white/[0.045] hover:text-ink-secondary"
           }`}
           onMouseEnter={() => onHover(band)}
           onMouseLeave={() => onHover(null)}

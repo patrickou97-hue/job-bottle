@@ -5,7 +5,7 @@ import { PageShell } from "@/components/layout/PageShell";
 export default function ExplorePage() {
   return (
     <PageShell>
-      <Suspense fallback={<div className="surface-subtle rounded-xl p-8 text-center text-sm text-ink-secondary">加载中...</div>}>
+      <Suspense fallback={<div className="empty-state"><span className="loading-line">正在加载岗位</span></div>}>
         <HomeClient />
       </Suspense>
     </PageShell>

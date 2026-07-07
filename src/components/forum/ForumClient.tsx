@@ -62,27 +62,38 @@ export function ForumClient() {
   }
 
   return (
-    <div className="space-y-6">
-      <section className="relative px-1 pt-2">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <div className="text-xs tracking-[0.18em] text-[color:var(--text-meta)]">社区</div>
-            <h1 className="mt-1 text-3xl font-semibold text-ink-primary">讨论区</h1>
-          </div>
+    <div className="observatory-page space-y-8">
+      <section className="page-hero">
+        <div>
+          <p className="page-kicker">同路人讨论</p>
+          <h1 className="page-title">讨论区</h1>
+          <p className="page-subtitle">
+            记录信息、经验和问题。帖子按频道收纳，展开后再处理评论与互动。
+          </p>
+        </div>
+        <div className="flex items-end justify-start md:justify-end">
           <Button onClick={() => setShowForm((v) => !v)}>
-            发布
+            {showForm ? "收起" : "发布"}
           </Button>
         </div>
       </section>
 
+      <section className="px-1">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="section-title">频道</h2>
+          </div>
+          <span className="section-meta">{posts.length} 条内容</span>
+        </div>
+      </section>
+
       {showForm ? (
-        <section className="px-1 py-2">
+        <section className="liquid-panel p-5">
           <NewPostForm onCreated={handleCreated} onCancel={() => setShowForm(false)} />
         </section>
       ) : null}
 
-      <section className="px-1 py-2">
-        <div className="mb-3 text-xs tracking-[0.18em] text-[color:var(--text-meta)]">频道</div>
+      <section className="px-1">
         <div className="flex flex-wrap gap-2">
           {CATEGORIES.map((cat) => (
             <button
@@ -102,22 +113,22 @@ export function ForumClient() {
       </section>
 
       {message ? (
-        <div className="bg-red-500/10 p-4 text-sm text-red-100">
+        <div className="message-banner text-sm">
           {message}
         </div>
       ) : null}
 
-      <section className="space-y-3">
+      <section className="liquid-panel overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center text-ink-secondary">
-            正在读取讨论
+          <div className="empty-state">
+            <span className="loading-line">正在读取讨论</span>
           </div>
         ) : posts.length === 0 ? (
-          <div className="p-8 text-center">
-            <h2 className="text-lg font-semibold text-ink-primary">暂无讨论</h2>
-            <p className="mt-2 text-sm text-ink-muted">
-              发布第一条讨论。
-            </p>
+          <div className="empty-state">
+            <div>
+              <h2>暂无讨论</h2>
+              <p>发布第一条讨论。</p>
+            </div>
           </div>
         ) : (
           posts.map((post) => (

@@ -48,7 +48,7 @@ export function NebulaCompanyField({
   }, [applicationByJobId, jobs]);
 
   return (
-    <div className="relative h-[420px] overflow-hidden bg-black/10 xl:h-[470px]">
+    <div className="relative h-[420px] overflow-hidden rounded-[28px] bg-black/10 xl:h-[470px]">
       <div className="absolute inset-0 opacity-20 [background-image:radial-gradient(circle,rgba(214,228,255,.30)_0_1px,transparent_1.5px)] [background-size:88px_88px]" />
       <div className="absolute inset-8 rounded-full bg-nebula-blue/[0.025] blur-3xl" />
       {positions.map((item) => {
@@ -81,8 +81,9 @@ export function NebulaCompanyField({
             key={item.id}
             className="absolute"
             style={{
-              left: `calc(${(item.x / FIELD_WIDTH) * 100}% - ${item.size / 2}px)`,
+              left: `${(item.x / FIELD_WIDTH) * 100}%`,
               top: `calc(${(item.y / FIELD_HEIGHT) * 100}% - ${item.size / 2}px)`,
+              transform: "translateX(-50%)",
             }}
           >
             <OpportunityStar
@@ -104,7 +105,7 @@ export function NebulaCompanyField({
         <div className="absolute inset-0 grid place-items-center text-sm text-ink-muted">暂无岗位</div>
       ) : null}
       {expandedJobs ? (
-        <div className="absolute inset-x-4 bottom-4 z-40 bg-[#040814]/90 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.42)] backdrop-blur-xl">
+        <div className="liquid-panel absolute inset-x-4 bottom-4 z-40 p-4">
           <div className="mb-3 flex items-center justify-between gap-3">
             <span className="text-sm font-medium text-nebula-silver">
               还有 {expandedJobs.length} 个岗位
@@ -123,7 +124,7 @@ export function NebulaCompanyField({
               <button
                 key={job.id}
                 type="button"
-                className="flex w-full items-center justify-between gap-3 rounded-2xl px-3 py-2 text-left text-sm transition hover:bg-white/[0.04]"
+                className="pressable flex w-full items-center justify-between gap-3 rounded-2xl px-3 py-2 text-left text-sm transition hover:bg-white/[0.04]"
                 onClick={() => {
                   setExpandedJobs(null);
                   onSelect(job);

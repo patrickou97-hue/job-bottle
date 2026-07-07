@@ -236,7 +236,7 @@ export function ProgressDrawer({
                 {index === 0 ? " " : " / "}
                 <button
                   type="button"
-                  className="text-ink-secondary transition hover:text-ink-primary"
+                  className="text-action inline-flex text-xs"
                   onClick={() => void handleStatusChange(item)}
                 >
                   {APPLICATION_STATUS_LABELS[item]}
@@ -263,7 +263,7 @@ export function ProgressDrawer({
               href={isValidHttpUrl(job.apply_url) ? job.apply_url : undefined}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-2 text-sm text-nebula-silver transition hover:text-ink-primary aria-disabled:pointer-events-none aria-disabled:opacity-40"
+              className="text-action text-sm text-nebula-silver aria-disabled:pointer-events-none aria-disabled:opacity-40"
               aria-disabled={!isValidHttpUrl(job.apply_url)}
             >
               <ExternalLink aria-hidden="true" className="size-4" />

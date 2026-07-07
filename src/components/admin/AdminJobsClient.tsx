@@ -121,11 +121,13 @@ export function AdminJobsClient() {
   }
 
   return (
-    <div className="space-y-6">
-      <section className="px-1 pt-2">
+    <div className="observatory-page space-y-8">
+      <section className="page-hero">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-3xl font-semibold text-ink-primary">岗位管理</h1>
+            <p className="page-kicker">管理员</p>
+            <h1 className="page-title">岗位管理</h1>
+            <p className="page-subtitle">搜索、编辑、上下架和维护岗位基础信息。</p>
           </div>
           <Link href="/admin/import">
             <Button className="gap-2">
@@ -137,7 +139,7 @@ export function AdminJobsClient() {
       </section>
 
       {message ? (
-        <div className="bg-nebula-blue/8 p-4 text-sm text-nebula-silver">
+        <div className="info-banner text-sm">
           {message}
         </div>
       ) : null}
@@ -146,14 +148,14 @@ export function AdminJobsClient() {
         <>
           <AdminJobForm job={editing} onSubmit={saveJob} onCancel={() => setEditing(null)} />
 
-          <section className="px-1 py-2">
+          <section className="liquid-panel p-4">
             <div className="relative">
               <Search
                 aria-hidden="true"
-                className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-nebula-blue/70"
+                className="absolute left-0 top-1/2 size-4 -translate-y-1/2 text-nebula-blue/70"
               />
               <Input
-                className="pl-9"
+                className="pl-7"
                 value={keyword}
                 onChange={(event) => setKeyword(event.target.value)}
                 placeholder="搜索公司、岗位、行业或地点"
@@ -162,8 +164,8 @@ export function AdminJobsClient() {
           </section>
 
           {loading ? (
-            <div className="p-8 text-center text-ink-secondary">
-              正在读取岗位...
+            <div className="empty-state">
+              <span className="loading-line">正在读取岗位</span>
             </div>
           ) : (
             <AdminJobTable

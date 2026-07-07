@@ -108,12 +108,12 @@ export function AdminJobForm({
 
   return (
     <form
-      className="p-5"
+      className="liquid-panel p-5"
       onSubmit={handleSubmit(submit)}
     >
       <div className="mb-5 flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-ink-primary">
+          <h2 className="section-title">
             {job ? "编辑岗位" : "新增岗位"}
           </h2>
         </div>
@@ -141,8 +141,8 @@ export function AdminJobForm({
         </Field>
         <Field label={JOB_FIELD_LABELS.logo_url}>
           <Input {...register("logo_url")} placeholder="图片链接，可选" />
-          <label className="mt-2 inline-flex cursor-pointer items-center rounded-full border border-nebula-blue/18 bg-white/[0.035] px-3 py-2 text-xs text-nebula-silver transition hover:border-nebula-blue/34">
-            {uploadingLogo ? "正在上传..." : "上传公司标识"}
+          <label className="chip-button mt-2 cursor-pointer text-nebula-silver hover:bg-white/[0.045]">
+            {uploadingLogo ? "正在上传" : "上传公司标识"}
             <input
               type="file"
               accept="image/png,image/jpeg,image/webp,image/svg+xml"
@@ -166,7 +166,7 @@ export function AdminJobForm({
         </Field>
       </div>
 
-      {message ? <p className="mt-4 text-sm text-nebula-silver">{message}</p> : null}
+      {message ? <p className="info-banner mt-4 text-sm">{message}</p> : null}
 
       <div className="mt-5 flex gap-3">
         <Button type="submit" disabled={saving}>

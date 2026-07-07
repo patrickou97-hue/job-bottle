@@ -88,12 +88,13 @@ export function CsvImportPanel() {
   }
 
   return (
-    <div className="space-y-6">
-      <section className="px-1 pt-2">
+    <div className="observatory-page space-y-8">
+      <section className="page-hero">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-3xl font-semibold text-ink-primary">批量导入</h1>
-            <p className="mt-2 text-sm leading-6 text-ink-secondary">
+            <p className="page-kicker">管理员</p>
+            <h1 className="page-title">批量导入</h1>
+            <p className="page-subtitle">
               请上传包含以下字段的 CSV 文件：公司名称、开启时间、所在行业、类型、招聘岗位、工作地点、投递链接、备注。
             </p>
           </div>
@@ -107,15 +108,15 @@ export function CsvImportPanel() {
       </section>
 
       {message ? (
-        <div className="bg-nebula-blue/8 p-4 text-sm text-nebula-silver">
+        <div className="info-banner text-sm">
           {message}
         </div>
       ) : null}
 
       {isAdmin ? (
         <>
-          <section className="p-5">
-            <label className="flex cursor-pointer flex-col items-center justify-center bg-white/[0.035] p-8 text-center transition hover:bg-white/[0.055]">
+          <section className="liquid-panel p-5">
+            <label className="pressable flex cursor-pointer flex-col items-center justify-center p-8 text-center transition hover:bg-white/[0.045]">
               <Upload aria-hidden="true" className="mb-3 size-8 text-nebula-blue" />
               <span className="text-base font-semibold text-ink-primary">上传 CSV</span>
               <span className="mt-2 text-sm text-ink-muted">选择文件后将自动预览导入结果</span>
@@ -129,7 +130,7 @@ export function CsvImportPanel() {
           </section>
 
           {rows.length > 0 ? (
-            <section className="overflow-hidden">
+            <section className="liquid-panel overflow-hidden">
               <div className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
                 <div className="text-sm text-ink-secondary">
                   预览导入：可导入 {validRows.length} 条，跳过 {invalidRows.length} 条
@@ -140,7 +141,7 @@ export function CsvImportPanel() {
               </div>
 
               {invalidRows.length > 0 ? (
-                <div className="bg-red-500/10 p-4 text-sm text-red-100">
+                <div className="message-banner text-sm">
                   {invalidRows.slice(0, 8).map((row) => (
                     <div key={row.rowNumber}>
                       第 {row.rowNumber} 行{row.errors.join("，")}，已跳过。

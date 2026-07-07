@@ -9,7 +9,7 @@ export function Select({
   return (
     <select
       className={cn(
-        "field-shell h-10 w-full px-0 text-sm placeholder:text-ink-muted",
+        "field-shell h-11 w-full px-0 text-sm placeholder:text-ink-muted",
         className,
       )}
       {...props}

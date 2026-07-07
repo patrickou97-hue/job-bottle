@@ -14,13 +14,18 @@ import { PlanetTransitionOverlay } from './PlanetTransitionOverlay'
 import { SpaceBackground } from './SpaceBackground'
 
 const TRANSITION_MS = 860
-const MOBILE_PLANET_LAYOUT: Record<string, { orbitRadius: number; initialAngle: number; size: number }> = {
-  jobs: { orbitRadius: 210, initialAngle: 350, size: 58 },
-  applications: { orbitRadius: 225, initialAngle: 92, size: 58 },
-  bottle: { orbitRadius: 185, initialAngle: 202, size: 58 },
-  forum: { orbitRadius: 170, initialAngle: 285, size: 48 },
-  admin: { orbitRadius: 235, initialAngle: 150, size: 46 },
-  auth: { orbitRadius: 155, initialAngle: 35, size: 46 },
+const MOBILE_PLANET_SIZE: Record<string, number> = {
+  jobs: 56,
+  applications: 56,
+  bottle: 56,
+  forum: 48,
+  admin: 46,
+  auth: 46,
+}
+const MOBILE_PLANET_LAYOUT = {
+  orbitRadius: 190,
+  startAngle: -18,
+  orbitDuration: 138,
 }
 
 export function SpaceHome() {
@@ -123,17 +128,22 @@ export function SpaceHome() {
   )
   const mobilePlanets = useMemo(
     () =>
-      planets.map((planet) => {
-        const layout = MOBILE_PLANET_LAYOUT[planet.id]
-        if (!layout) return planet
-        return { ...planet, ...layout }
+      planets.map((planet, index) => {
+        const angleStep = 360 / Math.max(1, planets.length)
+        return {
+          ...planet,
+          orbitRadius: MOBILE_PLANET_LAYOUT.orbitRadius,
+          initialAngle: MOBILE_PLANET_LAYOUT.startAngle + index * angleStep,
+          size: MOBILE_PLANET_SIZE[planet.id] ?? planet.size,
+          orbitDuration: MOBILE_PLANET_LAYOUT.orbitDuration,
+        }
       }),
     [planets],
   )
   const mobileMaxOrbitRadius = Math.max(...mobilePlanets.map((planet) => planet.orbitRadius))
   const mobileOrbitScale = Math.min(
-    1,
-    Math.max(0.72, Math.min((viewportWidth - 112) / (mobileMaxOrbitRadius * 2), (viewportHeight - 320) / (mobileMaxOrbitRadius * 2))),
+    0.92,
+    Math.max(0.78, Math.min((viewportWidth - 90) / (mobileMaxOrbitRadius * 2), (viewportHeight - 300) / (mobileMaxOrbitRadius * 2))),
   )
 
   return (

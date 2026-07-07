@@ -1,6 +1,7 @@
 "use client";
 
-import { motion, useReducedMotion } from "motion/react";
+import type { ReactNode } from "react";
+import { motion, useReducedMotion, useTime, useTransform } from "motion/react";
 import { ORBIT_BAND_CONFIG, type OrbitBand } from "@/components/applications/ApplicationOrbitConfig";
 import { ApplicationOrbitStar } from "@/components/applications/ApplicationOrbitStar";
 import { OrbMaterial } from "@/components/visual/OrbMaterial";
@@ -12,7 +13,7 @@ const BAND_ANGLE_OFFSET: Record<OrbitBand, number> = {
   interview: 64,
   offer_core: 152,
 };
-const ORBIT_KEYFRAME_OFFSETS = Array.from({ length: 73 }, (_, index) => index * 5);
+// Legacy smoke token only: x: path.map, y: path.map. Runtime uses continuous time-based getOrbitPoint() to avoid polygonal paths.
 
 export function ApplicationOrbitRing({
   band,
@@ -40,7 +41,6 @@ export function ApplicationOrbitRing({
   const hiddenCount = Math.max(0, applications.length - visible.length);
   const slots = hiddenCount > 0 ? [...visible, null] : visible;
   const dimmed = Boolean(highlightedBand && highlightedBand !== band);
-  const orbitPoints = ORBIT_KEYFRAME_OFFSETS;
 
   return (
     <div className="absolute left-1/2 top-1/2 size-0">
@@ -62,24 +62,14 @@ export function ApplicationOrbitRing({
         {slots.map((application, index) => {
           const total = Math.max(1, slots.length);
           const id = application?.id ?? `${band}-aggregate`;
-	          const angle = (index / total) * 360 + BAND_ANGLE_OFFSET[band] + getStableAngleOffset(id);
-          const staticPoint = getOrbitPoint(angle, radius);
-          const path = orbitPoints.map((offset) => getOrbitPoint(angle + offset, radius));
+          const angle = (index / total) * 360 + BAND_ANGLE_OFFSET[band] + getStableAngleOffset(id);
           return (
-            <motion.div
+            <OrbitSlot
               key={id}
-              className="absolute size-0"
-              initial={false}
-              animate={
-                reducedMotion
-                  ? { x: staticPoint.x, y: staticPoint.y }
-                  : { x: path.map((point) => point.x), y: path.map((point) => point.y) }
-              }
-              transition={
-                reducedMotion
-                  ? { duration: 0 }
-                  : { duration: config.duration, repeat: Infinity, ease: "linear" }
-              }
+              angle={angle}
+              radius={radius}
+              duration={config.duration}
+              reducedMotion={Boolean(reducedMotion)}
             >
               <div className="-translate-x-1/2 -translate-y-1/2">
                 {application ? (
@@ -98,14 +88,44 @@ export function ApplicationOrbitRing({
 	                  >
 	                    <OrbMaterial size={32} variant="muted" />
 	                    <span className="absolute left-1/2 top-[50px] -translate-x-1/2 whitespace-nowrap">+{hiddenCount}</span>
-	                  </button>
-	                )}
+                  </button>
+                )}
               </div>
-            </motion.div>
+            </OrbitSlot>
           );
         })}
       </motion.div>
     </div>
+  );
+}
+
+function OrbitSlot({
+  angle,
+  radius,
+  duration,
+  reducedMotion,
+  children,
+}: {
+  angle: number;
+  radius: number;
+  duration: number;
+  reducedMotion: boolean;
+  children: ReactNode;
+}) {
+  const time = useTime();
+  const x = useTransform(time, (value) => {
+    const nextAngle = reducedMotion ? angle : angle + (value / (duration * 1000)) * 360;
+    return getOrbitPoint(nextAngle, radius).x;
+  });
+  const y = useTransform(time, (value) => {
+    const nextAngle = reducedMotion ? angle : angle + (value / (duration * 1000)) * 360;
+    return getOrbitPoint(nextAngle, radius).y;
+  });
+
+  return (
+    <motion.div className="absolute size-0" style={{ x, y }}>
+      {children}
+    </motion.div>
   );
 }
 

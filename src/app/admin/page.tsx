@@ -20,19 +20,23 @@ const adminActions = [
 export default function AdminPage() {
   return (
     <AdminShell>
-      <div className="space-y-6">
-        <section className="px-1 pt-2">
-          <h1 className="text-3xl font-semibold text-ink-primary">管理后台</h1>
+      <div className="observatory-page space-y-8">
+        <section className="page-hero">
+          <div>
+            <p className="page-kicker">数据维护</p>
+            <h1 className="page-title">管理后台</h1>
+            <p className="page-subtitle">维护岗位数据、导入批次和展示状态。</p>
+          </div>
         </section>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-5 md:grid-cols-2">
           {adminActions.map((item) => {
             const Icon = item.icon;
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className="group p-5 transition hover:bg-white/[0.055]"
+                className="liquid-panel group p-5 transition hover:bg-white/[0.055]"
               >
                 <div className="mb-5 flex size-11 items-center justify-center rounded-2xl bg-nebula-blue/8 text-nebula-blue">
                   <Icon aria-hidden="true" className="size-5" />

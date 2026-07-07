@@ -65,26 +65,34 @@ export function MyBottleClient({ loginNextPath = "/bottle" }: { loginNextPath?: 
   }
 
   return (
-    <div className="space-y-6 pb-24">
-      <section className="px-1 pt-2 text-center sm:text-left">
-        <p className="text-xs tracking-[0.2em] text-ink-muted">季节容器</p>
-        <h1 className="mt-1 font-display text-3xl font-semibold text-ink-primary">
-          我的星瓶
-        </h1>
+    <div className="observatory-page space-y-8">
+      <section className="page-hero">
+        <div>
+          <p className="page-kicker">季节容器</p>
+          <h1 className="page-title">我的星瓶</h1>
+          <p className="page-subtitle">
+            每次打开官网投递后，记录会沉入瓶底。颜色和亮度跟随当前投递阶段变化。
+          </p>
+        </div>
+        <div className="liquid-panel p-4 md:p-5">
+          <p className="text-sm leading-7 text-ink-secondary">
+            已收进 <span className="font-display text-3xl font-semibold text-ink-primary tabular-nums">{applications.length}</span> 颗星
+          </p>
+        </div>
       </section>
 
       {message ? (
-        <div className="bg-red-500/10 p-4 text-sm text-red-100">
+        <div className="message-banner text-sm">
           {message}
         </div>
       ) : null}
 
       {loading || redirecting ? (
-        <div className="py-12 text-center text-sm text-ink-secondary">
-          {redirecting ? "正在前往登录..." : "读取投递记录..."}
+        <div className="empty-state">
+          <span className="loading-line">{redirecting ? "正在前往登录" : "正在读取星瓶"}</span>
         </div>
       ) : (
-        <div className="mx-auto max-w-4xl">
+        <div className="mx-auto max-w-5xl">
           <ApplicationBottle
             applications={applications}
             onChanged={handleApplicationChanged}

@@ -14,14 +14,17 @@ export function ApplicationOrbitDetail({
 }) {
   if (!application) {
     return (
-      <aside className="surface-plain p-5 text-sm text-ink-muted">
-        选择一条投递记录查看详情。
+      <aside className="liquid-panel empty-state min-h-[260px] p-5 text-sm text-ink-muted">
+        <div>
+          <h3>选择一条记录</h3>
+          <p>点击轨道或列表中的投递记录查看详情。</p>
+        </div>
       </aside>
     );
   }
 
   return (
-    <aside className="surface-readable p-5">
+    <aside className="liquid-panel p-5">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="truncate text-lg font-semibold text-ink-primary">{application.job.company_name}</h3>
@@ -29,7 +32,7 @@ export function ApplicationOrbitDetail({
         </div>
         <StatusPill status={application.status} />
       </div>
-      <dl className="grid gap-3 text-sm">
+      <dl className="grid gap-4 text-sm">
         <div>
           <dt className="text-xs text-ink-muted">当前轨道</dt>
           <dd className="mt-1 text-ink-secondary">{APPLICATION_STATUS_LABELS[application.status]}</dd>
@@ -47,7 +50,7 @@ export function ApplicationOrbitDetail({
           <dd className="mt-1 text-ink-secondary">{formatDateTime(application.updated_at)}</dd>
         </div>
       </dl>
-      <div className="mt-5 flex flex-col gap-2">
+      <div className="mt-6 flex flex-col gap-2">
         <Button onClick={() => onEdit(application)}>查看 / 修改进度</Button>
         <Button
           variant="secondary"

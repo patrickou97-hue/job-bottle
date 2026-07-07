@@ -134,7 +134,7 @@ export function JobDetailActions({
   }
 
   return (
-    <div className="sticky bottom-4 z-20 rounded-[22px] border border-white/[0.07] bg-[#040814]/88 p-4 shadow-[0_22px_70px_rgba(0,0,0,0.36)] backdrop-blur-xl">
+    <div className="liquid-panel sticky bottom-4 z-20 p-4 backdrop-blur-xl">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-sm font-medium text-ink-primary">
@@ -149,7 +149,7 @@ export function JobDetailActions({
           {message === "登录后捕获这颗星。" ? (
             <Link
               href={loginHref}
-              className="muted-button inline-flex h-10 items-center justify-center rounded-full px-4 text-sm font-medium"
+              className="muted-button pressable inline-flex h-10 items-center justify-center rounded-full px-4 text-sm font-medium"
             >
               登录后捕获
             </Link>
