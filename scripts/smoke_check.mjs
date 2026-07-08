@@ -159,9 +159,15 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/resume/ResumeBuilderClient.tsx",
-    mustInclude: ["ResumeEditor", "ResumePreview", "ResumePdfExportButton", "新建简历", "实时预览", "saveLocalResumes"],
+    mustInclude: ["ResumeEditor", "ResumePreview", "ResumePdfExportButton", "新建简历", "实时预览", "saveLocalResumes", "fetchMyResumes", "upsertMyResume", "已同步到账号"],
     mustNotInclude: [],
-    label: "简历制作器提供列表、编辑、预览和本地保存",
+    label: "简历制作器提供列表、编辑、预览、本地保存和账号同步",
+  },
+  {
+    file: "src/lib/resume-sync.ts",
+    mustInclude: ["fetchMyResumes", "upsertMyResume", "deleteMyResume", "content_json", "isMissingResumeTableError"],
+    mustNotInclude: ["service_role"],
+    label: "简历同步层映射 resumes 表并兼容未运行迁移的本地回退",
   },
   {
     file: "supabase/migrations/20260708090000_resumes.sql",

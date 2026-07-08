@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Copy, FileText, Plus, Trash2 } from "lucide-react";
 import { ResumeEditor, type EditorSection } from "@/components/resume/ResumeEditor";
 import { ResumePdfExportButton } from "@/components/resume/ResumePdfExportButton";
@@ -14,9 +14,17 @@ import {
   saveLocalResumes,
   type ResumeDocument,
 } from "@/lib/resume";
+import {
+  deleteMyResume,
+  fetchMyResumes,
+  isMissingResumeTableError,
+  upsertMyResume,
+} from "@/lib/resume-sync";
 import { fetchActiveJobs } from "@/lib/jobs";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import type { Job } from "@/lib/types";
+
+type StorageMode = "local" | "cloud";
 
 export function ResumeBuilderClient() {
   const [resumes, setResumes] = useState<ResumeDocument[]>([]);
@@ -25,6 +33,9 @@ export function ResumeBuilderClient() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [saveState, setSaveState] = useState("已保存到本地");
+  const [storageMode, setStorageMode] = useState<StorageMode>("local");
+  const [userId, setUserId] = useState<string | null>(null);
+  const cloudFingerprintRef = useRef("");
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -40,25 +51,94 @@ export function ResumeBuilderClient() {
   useEffect(() => {
     if (!loaded) return;
     saveLocalResumes(resumes);
-    const timer = window.setTimeout(() => setSaveState("已保存到本地"), 120);
+
+    if (storageMode !== "cloud" || !userId || !isSupabaseConfigured()) {
+      const timer = window.setTimeout(() => setSaveState("已保存到本地"), 120);
+      return () => window.clearTimeout(timer);
+    }
+
+    const fingerprint = JSON.stringify(resumes);
+    if (fingerprint === cloudFingerprintRef.current) {
+      const timer = window.setTimeout(() => setSaveState("已同步到账号"), 120);
+      return () => window.clearTimeout(timer);
+    }
+
+    setSaveState("正在同步");
+    const timer = window.setTimeout(async () => {
+      try {
+        const supabase = createClient();
+        await Promise.all(resumes.map((resume) => upsertMyResume(supabase, userId, resume)));
+        cloudFingerprintRef.current = fingerprint;
+        setSaveState("已同步到账号");
+      } catch (error) {
+        if (isMissingResumeTableError(error)) {
+          setStorageMode("local");
+          setSaveState("云端未启用，已保存到本地");
+          return;
+        }
+        setSaveState("同步失败，已保存到本地");
+      }
+    }, 700);
+
     return () => window.clearTimeout(timer);
-  }, [loaded, resumes]);
+  }, [loaded, resumes, storageMode, userId]);
 
   useEffect(() => {
-    if (!isSupabaseConfigured()) return;
+    if (!loaded || !isSupabaseConfigured()) return;
     const supabase = createClient();
     let mounted = true;
-    async function loadJobs() {
+    async function loadCloudData() {
       const user = await getCurrentUserOrNull(supabase);
       if (!mounted || !user) return;
-      const rows = await fetchActiveJobs(supabase);
-      if (mounted) setJobs(rows);
+      setUserId(user.id);
+
+      const [rows, cloudResumesResult] = await Promise.allSettled([
+        fetchActiveJobs(supabase),
+        fetchMyResumes(supabase),
+      ]);
+
+      if (!mounted) return;
+
+      if (rows.status === "fulfilled") setJobs(rows.value);
+
+      if (cloudResumesResult.status === "rejected") {
+        if (isMissingResumeTableError(cloudResumesResult.reason)) {
+          setStorageMode("local");
+          setSaveState("云端未启用，已保存到本地");
+          return;
+        }
+        setStorageMode("local");
+        setSaveState("同步失败，已保存到本地");
+        return;
+      }
+
+      const cloudResumes = cloudResumesResult.value;
+      setStorageMode("cloud");
+
+      if (cloudResumes.length > 0) {
+        const fingerprint = JSON.stringify(cloudResumes);
+        cloudFingerprintRef.current = fingerprint;
+        setResumes(cloudResumes);
+        setSelectedId((current) =>
+          current && cloudResumes.some((resume) => resume.id === current)
+            ? current
+            : cloudResumes[0]?.id ?? null,
+        );
+        setSaveState("已同步到账号");
+        return;
+      }
+
+      const localResumes = loadLocalResumes();
+      const initial = localResumes.length > 0 ? localResumes : [createSampleResume()];
+      setResumes(initial);
+      setSelectedId(initial[0]?.id ?? null);
+      setSaveState("正在同步");
     }
-    void loadJobs();
+    void loadCloudData();
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [loaded]);
 
   const selectedResume = useMemo(
     () => resumes.find((resume) => resume.id === selectedId) ?? resumes[0] ?? null,
@@ -105,6 +185,17 @@ export function ResumeBuilderClient() {
       if (selectedId === id) setSelectedId(next[0].id);
       return next;
     });
+    if (storageMode === "cloud" && userId && isSupabaseConfigured()) {
+      const supabase = createClient();
+      void deleteMyResume(supabase, id).catch((error) => {
+        if (isMissingResumeTableError(error)) {
+          setStorageMode("local");
+          setSaveState("云端未启用，已保存到本地");
+          return;
+        }
+        setSaveState("删除同步失败，本地已删除");
+      });
+    }
   }
 
   if (!loaded || !selectedResume) {

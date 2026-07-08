@@ -10,7 +10,7 @@ export function ResumePreview({ resume }: { resume: ResumeDocument }) {
   return (
     <div
       id="resume-print-area"
-      className="resume-paper mx-auto min-h-[1123px] w-full max-w-[794px] bg-white px-12 py-11 text-[#151822] shadow-[0_24px_90px_rgba(0,0,0,0.28)]"
+      className="resume-paper mx-auto min-h-[1123px] w-full max-w-[794px] bg-white px-10 py-8 text-[#11141c] shadow-[0_24px_90px_rgba(0,0,0,0.28)]"
     >
       {resume.templateId === "modern" ? (
         <ResumeTemplateModern resume={resume} />
@@ -24,17 +24,17 @@ export function ResumePreview({ resume }: { resume: ResumeDocument }) {
 function ResumeTemplateClassic({ resume }: { resume: ResumeDocument }) {
   const basics = resume.content.basics;
   return (
-    <article className="resume-classic font-sans">
-      <header className="border-b border-[#1d2433] pb-4 text-center">
-        <h1 className="text-3xl font-bold tracking-wide">{basics.name || "姓名"}</h1>
-        {basics.englishName ? <p className="mt-1 text-sm">{basics.englishName}</p> : null}
-        <p className="mt-3 text-[12px] leading-5 text-[#3c4350]">
+    <article className="resume-classic font-sans text-[11.5px] leading-[1.42]">
+      <header className="border-b border-[#141923] pb-2 text-center">
+        <h1 className="text-[25px] font-bold leading-none tracking-[0.18em]">{basics.name || "姓名"}</h1>
+        {basics.englishName ? <p className="mt-1 text-[11px]">{basics.englishName}</p> : null}
+        <p className="mt-2 text-[11.5px] leading-[1.45] text-[#303846]">
           {[basics.phone, basics.email, basics.city, basics.linkedin, basics.github, basics.website]
             .filter(Boolean)
             .join(" | ")}
         </p>
         {(basics.targetRole || resume.targetRole) ? (
-          <p className="mt-2 text-sm font-semibold">{basics.targetRole || resume.targetRole}</p>
+          <p className="mt-1 text-[12px] font-semibold">{basics.targetRole || resume.targetRole}</p>
         ) : null}
       </header>
 
@@ -46,18 +46,18 @@ function ResumeTemplateClassic({ resume }: { resume: ResumeDocument }) {
 function ResumeTemplateModern({ resume }: { resume: ResumeDocument }) {
   const basics = resume.content.basics;
   return (
-    <article className="resume-modern font-sans">
-      <header className="grid gap-4 border-b border-[#d7dbe3] pb-5 sm:grid-cols-[1fr_auto]">
+    <article className="resume-modern font-sans text-[11.5px] leading-[1.42]">
+      <header className="grid gap-3 border-b border-[#cfd4de] pb-3 sm:grid-cols-[1fr_auto]">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-[#20283a]">{basics.name || "姓名"}</h1>
-          {basics.englishName ? <p className="mt-1 text-sm text-[#596273]">{basics.englishName}</p> : null}
+          <h1 className="text-[25px] font-bold leading-none tracking-tight text-[#20283a]">{basics.name || "姓名"}</h1>
+          {basics.englishName ? <p className="mt-1 text-[11px] text-[#596273]">{basics.englishName}</p> : null}
           {(basics.targetRole || resume.targetRole) ? (
-            <p className="mt-3 text-sm font-semibold text-[#313b59]">
+            <p className="mt-2 text-[12px] font-semibold text-[#313b59]">
               {basics.targetRole || resume.targetRole}
             </p>
           ) : null}
         </div>
-        <p className="max-w-[300px] whitespace-pre-line text-right text-[12px] leading-5 text-[#4c5567]">
+        <p className="max-w-[300px] whitespace-pre-line text-right text-[11.5px] leading-[1.45] text-[#4c5567]">
           {[basics.phone, basics.email, basics.city, basics.linkedin, basics.github, basics.website]
             .filter(Boolean)
             .join("\n")}
@@ -72,8 +72,8 @@ function ResumeTemplateModern({ resume }: { resume: ResumeDocument }) {
 function ResumeSections({ resume, tone }: { resume: ResumeDocument; tone: "classic" | "modern" }) {
   const sectionClass =
     tone === "modern"
-      ? "mt-5 border-l-2 border-[#69648c]/35 pl-4"
-      : "mt-5";
+      ? "mt-3 border-l-2 border-[#69648c]/30 pl-3"
+      : "mt-3";
 
   return (
     <div>
@@ -81,14 +81,24 @@ function ResumeSections({ resume, tone }: { resume: ResumeDocument; tone: "class
         <section className={sectionClass}>
           <SectionTitle title="教育经历" />
           {resume.content.education.map((item) => (
-            <div key={item.id} className="mt-3">
+            <div key={item.id} className="mt-2">
               <ResumeRow
                 title={`${item.school || "学校"}${item.major ? ` · ${item.major}` : ""}`}
                 meta={[item.degree, item.gpa].filter(Boolean).join(" | ")}
                 time={[item.startDate, item.endDate].filter(Boolean).join(" - ")}
               />
-              {item.courses ? <p className="mt-1 text-[12px] leading-5">相关课程：{item.courses}</p> : null}
-              {item.honors ? <p className="mt-1 text-[12px] leading-5">荣誉奖项：{item.honors}</p> : null}
+              {item.courses ? (
+                <p className="mt-0.5 text-[11.5px] leading-[1.42]">
+                  <span className="font-semibold">相关课程：</span>
+                  {item.courses}
+                </p>
+              ) : null}
+              {item.honors ? (
+                <p className="mt-0.5 text-[11.5px] leading-[1.42]">
+                  <span className="font-semibold">荣誉奖项：</span>
+                  {item.honors}
+                </p>
+              ) : null}
             </div>
           ))}
         </section>
@@ -137,7 +147,7 @@ function ResumeSections({ resume, tone }: { resume: ResumeDocument; tone: "class
 
 function SectionTitle({ title }: { title: string }) {
   return (
-    <h2 className="border-b border-[#d7dbe3] pb-1 text-[15px] font-bold tracking-wide text-[#1f2634]">
+    <h2 className="border-b border-[#1d2433] pb-0.5 text-[14px] font-bold leading-[1.25] tracking-wide text-[#111827]">
       {title}
     </h2>
   );
@@ -147,10 +157,10 @@ function ResumeRow({ title, meta, time }: { title: string; meta?: string; time?:
   return (
     <div className="flex gap-3">
       <div className="min-w-0 flex-1">
-        <p className="text-[13px] font-bold leading-5">{title}</p>
-        {meta ? <p className="text-[12px] leading-5 text-[#4f5868]">{meta}</p> : null}
+        <p className="text-[12px] font-bold leading-[1.35]">{title}</p>
+        {meta ? <p className="text-[11.5px] leading-[1.35] text-[#3f4858]">{meta}</p> : null}
       </div>
-      {time ? <p className="shrink-0 text-right text-[12px] leading-5 text-[#4f5868]">{time}</p> : null}
+      {time ? <p className="shrink-0 text-right text-[11.5px] leading-[1.35] text-[#3f4858]">{time}</p> : null}
     </div>
   );
 }
@@ -158,7 +168,7 @@ function ResumeRow({ title, meta, time }: { title: string; meta?: string; time?:
 function ExperienceBlock({ item }: { item: ResumeExperience }) {
   const time = item.current ? `${item.startDate} - 至今` : [item.startDate, item.endDate].filter(Boolean).join(" - ");
   return (
-    <div className="mt-3">
+    <div className="mt-2">
       <ResumeRow
         title={`${item.company || "公司"}${item.title ? ` · ${item.title}` : ""}`}
         meta={item.location}
@@ -171,7 +181,7 @@ function ExperienceBlock({ item }: { item: ResumeExperience }) {
 
 function ProjectBlock({ item }: { item: ResumeProject }) {
   return (
-    <div className="mt-3">
+    <div className="mt-2">
       <ResumeRow
         title={`${item.name || "项目名称"}${item.role ? ` · ${item.role}` : ""}`}
         meta={item.keywords}
@@ -186,7 +196,7 @@ function SkillLine({ group }: { group: ResumeSkillGroup }) {
   const skills = group.skills.map((skill) => skill.trim()).filter(Boolean);
   if (!group.category && skills.length === 0) return null;
   return (
-    <p className="mt-2 text-[12px] leading-5">
+    <p className="mt-1.5 text-[11.5px] leading-[1.45]">
       <span className="font-semibold">{group.category || "技能"}：</span>
       {skills.join("、")}
     </p>
@@ -207,9 +217,9 @@ function CustomSections({
     <section className={sectionClass}>
       <SectionTitle title={title} />
       {sections.map((section) => (
-        <div key={section.id} className="mt-3">
+        <div key={section.id} className="mt-2">
           {section.title && section.title !== title ? (
-            <p className="text-[13px] font-bold leading-5">{section.title}</p>
+            <p className="text-[12px] font-bold leading-[1.35]">{section.title}</p>
           ) : null}
           <BulletList bullets={section.bullets} />
         </div>
@@ -222,7 +232,7 @@ function BulletList({ bullets }: { bullets: string[] }) {
   const clean = bullets.map((bullet) => bullet.trim()).filter(Boolean);
   if (clean.length === 0) return null;
   return (
-    <ul className="mt-1 list-disc space-y-0.5 pl-5 text-[12px] leading-5">
+    <ul className="mt-0.5 list-disc space-y-0 pl-4 text-[11.5px] leading-[1.42] marker:text-[9px]">
       {clean.map((bullet, index) => (
         <li key={`${bullet}-${index}`}>{bullet}</li>
       ))}
