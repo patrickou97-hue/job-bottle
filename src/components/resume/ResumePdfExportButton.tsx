@@ -9,6 +9,73 @@ const PRINT_AREA_ID = "resume-print-area";
 const EXPORT_AREA_ID = "resume-print-area-export";
 const A4_PIXEL_WIDTH = 794;
 const A4_PIXEL_MIN_HEIGHT = 1123;
+const UNSUPPORTED_COLOR_FUNCTION = /\b(?:lab|lch|oklab|oklch|color|color-mix)\(/i;
+
+const EXPORT_STYLE_PROPERTIES = [
+  "alignItems",
+  "backgroundColor",
+  "borderBottomColor",
+  "borderBottomStyle",
+  "borderBottomWidth",
+  "borderColor",
+  "borderLeftColor",
+  "borderLeftStyle",
+  "borderLeftWidth",
+  "borderRadius",
+  "borderRightColor",
+  "borderRightStyle",
+  "borderRightWidth",
+  "borderStyle",
+  "borderTopColor",
+  "borderTopStyle",
+  "borderTopWidth",
+  "borderWidth",
+  "bottom",
+  "boxSizing",
+  "color",
+  "display",
+  "flex",
+  "flexBasis",
+  "flexDirection",
+  "flexGrow",
+  "flexShrink",
+  "flexWrap",
+  "fontFamily",
+  "fontSize",
+  "fontStyle",
+  "fontWeight",
+  "gap",
+  "gridTemplateColumns",
+  "height",
+  "justifyContent",
+  "left",
+  "letterSpacing",
+  "lineHeight",
+  "listStylePosition",
+  "listStyleType",
+  "marginBottom",
+  "marginLeft",
+  "marginRight",
+  "marginTop",
+  "maxWidth",
+  "minHeight",
+  "minWidth",
+  "objectFit",
+  "overflow",
+  "overflowWrap",
+  "paddingBottom",
+  "paddingLeft",
+  "paddingRight",
+  "paddingTop",
+  "position",
+  "right",
+  "textAlign",
+  "textDecoration",
+  "top",
+  "verticalAlign",
+  "whiteSpace",
+  "width",
+] as const;
 
 export function ResumePdfExportButton({ resume }: { resume: ResumeDocument }) {
   const [isExporting, setIsExporting] = useState(false);
@@ -92,6 +159,7 @@ async function createExportTarget(target: HTMLElement) {
   const clone = target.cloneNode(true) as HTMLElement;
   clone.id = EXPORT_AREA_ID;
   clone.setAttribute("aria-hidden", "true");
+  inlineHtml2CanvasSafeStyles(target, clone);
   clone.style.position = "fixed";
   clone.style.left = "-10000px";
   clone.style.top = "0";
@@ -110,6 +178,37 @@ async function createExportTarget(target: HTMLElement) {
 
   await Promise.all([waitForFonts(), waitForImages(clone)]);
   return clone;
+}
+
+function inlineHtml2CanvasSafeStyles(sourceRoot: HTMLElement, cloneRoot: HTMLElement) {
+  const sources = [sourceRoot, ...Array.from(sourceRoot.querySelectorAll<HTMLElement>("*"))];
+  const clones = [cloneRoot, ...Array.from(cloneRoot.querySelectorAll<HTMLElement>("*"))];
+
+  sources.forEach((source, index) => {
+    const clone = clones[index];
+    if (!clone) return;
+    const computedStyle = window.getComputedStyle(source);
+    clone.removeAttribute("class");
+
+    EXPORT_STYLE_PROPERTIES.forEach((property) => {
+      const value = computedStyle[property];
+      if (!value) return;
+      clone.style[property] = normalizeExportCssValue(property, value);
+    });
+
+    if (clone instanceof HTMLImageElement) {
+      clone.style.display = "block";
+    }
+  });
+}
+
+function normalizeExportCssValue(property: (typeof EXPORT_STYLE_PROPERTIES)[number], value: string) {
+  if (!UNSUPPORTED_COLOR_FUNCTION.test(value)) return value;
+
+  if (property === "backgroundColor") return "#ffffff";
+  if (property.toLowerCase().includes("border")) return "#d7dbe3";
+  if (property === "color") return "#151822";
+  return "initial";
 }
 
 async function waitForFonts() {
