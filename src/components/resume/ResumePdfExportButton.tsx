@@ -11,70 +11,28 @@ const A4_PIXEL_WIDTH = 794;
 const A4_PIXEL_MIN_HEIGHT = 1123;
 const UNSUPPORTED_COLOR_FUNCTION = /\b(?:lab|lch|oklab|oklch|color|color-mix)\(/i;
 
-const EXPORT_STYLE_PROPERTIES = [
-  "alignItems",
+const SAFE_TEXT_COLOR = "#151822";
+const SAFE_MUTED_COLOR = "#4c5567";
+const SAFE_BORDER_COLOR = "#d7dbe3";
+const SAFE_BACKGROUND_COLOR = "#ffffff";
+const EXPORT_COLOR_PROPERTIES = [
   "backgroundColor",
+  "borderBlockColor",
+  "borderBlockEndColor",
+  "borderBlockStartColor",
   "borderBottomColor",
-  "borderBottomStyle",
-  "borderBottomWidth",
   "borderColor",
+  "borderInlineColor",
+  "borderInlineEndColor",
+  "borderInlineStartColor",
   "borderLeftColor",
-  "borderLeftStyle",
-  "borderLeftWidth",
-  "borderRadius",
   "borderRightColor",
-  "borderRightStyle",
-  "borderRightWidth",
-  "borderStyle",
   "borderTopColor",
-  "borderTopStyle",
-  "borderTopWidth",
-  "borderWidth",
-  "bottom",
-  "boxSizing",
+  "caretColor",
   "color",
-  "display",
-  "flex",
-  "flexBasis",
-  "flexDirection",
-  "flexGrow",
-  "flexShrink",
-  "flexWrap",
-  "fontFamily",
-  "fontSize",
-  "fontStyle",
-  "fontWeight",
-  "gap",
-  "gridTemplateColumns",
-  "height",
-  "justifyContent",
-  "left",
-  "letterSpacing",
-  "lineHeight",
-  "listStylePosition",
-  "listStyleType",
-  "marginBottom",
-  "marginLeft",
-  "marginRight",
-  "marginTop",
-  "maxWidth",
-  "minHeight",
-  "minWidth",
-  "objectFit",
-  "overflow",
-  "overflowWrap",
-  "paddingBottom",
-  "paddingLeft",
-  "paddingRight",
-  "paddingTop",
-  "position",
-  "right",
-  "textAlign",
-  "textDecoration",
-  "top",
-  "verticalAlign",
-  "whiteSpace",
-  "width",
+  "columnRuleColor",
+  "outlineColor",
+  "textDecorationColor",
 ] as const;
 
 export function ResumePdfExportButton({ resume }: { resume: ResumeDocument }) {
@@ -92,6 +50,7 @@ export function ResumePdfExportButton({ resume }: { resume: ResumeDocument }) {
       const target = document.getElementById(PRINT_AREA_ID);
       if (!target) throw new Error("没有找到简历预览区域。");
       exportTarget = await createExportTarget(target);
+      const pageBreaks = collectPageBreaks(exportTarget);
       const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
         import("html2canvas"),
         import("jspdf"),
@@ -122,11 +81,13 @@ export function ResumePdfExportButton({ resume }: { resume: ResumeDocument }) {
       const pageHeight = pdf.internal.pageSize.getHeight();
       const imageWidth = pageWidth;
       const imageHeight = (canvas.height * imageWidth) / canvas.width;
+      const canvasScale = canvas.width / exportTarget.scrollWidth;
+      const canvasPageBreaks = pageBreaks.map((breakPoint) => Math.round(breakPoint * canvasScale));
 
       if (imageHeight <= pageHeight + 1) {
         pdf.addImage(canvas.toDataURL("image/jpeg", 0.92), "JPEG", 0, 0, imageWidth, imageHeight);
       } else {
-        addCanvasAcrossPages(pdf, canvas, pageWidth, pageHeight);
+        addCanvasAcrossPages(pdf, canvas, pageWidth, pageHeight, canvasPageBreaks);
       }
 
       pdf.save(`${name}-Resume.pdf`);
@@ -159,7 +120,7 @@ async function createExportTarget(target: HTMLElement) {
   const clone = target.cloneNode(true) as HTMLElement;
   clone.id = EXPORT_AREA_ID;
   clone.setAttribute("aria-hidden", "true");
-  inlineHtml2CanvasSafeStyles(target, clone);
+  patchHtml2CanvasUnsupportedColors(target, clone);
   clone.style.position = "fixed";
   clone.style.left = "-10000px";
   clone.style.top = "0";
@@ -180,7 +141,7 @@ async function createExportTarget(target: HTMLElement) {
   return clone;
 }
 
-function inlineHtml2CanvasSafeStyles(sourceRoot: HTMLElement, cloneRoot: HTMLElement) {
+function patchHtml2CanvasUnsupportedColors(sourceRoot: HTMLElement, cloneRoot: HTMLElement) {
   const sources = [sourceRoot, ...Array.from(sourceRoot.querySelectorAll<HTMLElement>("*"))];
   const clones = [cloneRoot, ...Array.from(cloneRoot.querySelectorAll<HTMLElement>("*"))];
 
@@ -188,27 +149,33 @@ function inlineHtml2CanvasSafeStyles(sourceRoot: HTMLElement, cloneRoot: HTMLEle
     const clone = clones[index];
     if (!clone) return;
     const computedStyle = window.getComputedStyle(source);
-    clone.removeAttribute("class");
 
-    EXPORT_STYLE_PROPERTIES.forEach((property) => {
+    EXPORT_COLOR_PROPERTIES.forEach((property) => {
       const value = computedStyle[property];
-      if (!value) return;
-      clone.style[property] = normalizeExportCssValue(property, value);
+      if (value && UNSUPPORTED_COLOR_FUNCTION.test(value)) {
+        clone.style[property] = fallbackExportColor(property, value);
+      }
     });
-
-    if (clone instanceof HTMLImageElement) {
-      clone.style.display = "block";
-    }
   });
 }
 
-function normalizeExportCssValue(property: (typeof EXPORT_STYLE_PROPERTIES)[number], value: string) {
-  if (!UNSUPPORTED_COLOR_FUNCTION.test(value)) return value;
+function fallbackExportColor(property: (typeof EXPORT_COLOR_PROPERTIES)[number], value: string) {
+  const lowerProperty = property.toLowerCase();
+  if (lowerProperty.includes("background")) return SAFE_BACKGROUND_COLOR;
+  if (lowerProperty.includes("border") || lowerProperty.includes("outline") || lowerProperty.includes("rule")) {
+    return SAFE_BORDER_COLOR;
+  }
 
-  if (property === "backgroundColor") return "#ffffff";
-  if (property.toLowerCase().includes("border")) return "#d7dbe3";
-  if (property === "color") return "#151822";
-  return "initial";
+  return value.includes("0.") ? SAFE_MUTED_COLOR : SAFE_TEXT_COLOR;
+}
+
+function collectPageBreaks(root: HTMLElement) {
+  const rootRect = root.getBoundingClientRect();
+  const candidates = Array.from(root.querySelectorAll<HTMLElement>("article > header, article section"))
+    .map((element) => Math.round(element.getBoundingClientRect().top - rootRect.top))
+    .filter((top) => top > 0);
+
+  return Array.from(new Set(candidates)).sort((first, second) => first - second);
 }
 
 async function waitForFonts() {
@@ -248,13 +215,19 @@ function addCanvasAcrossPages(
   sourceCanvas: HTMLCanvasElement,
   pageWidth: number,
   pageHeight: number,
+  pageBreaks: number[],
 ) {
   const sliceHeight = Math.floor((sourceCanvas.width * pageHeight) / pageWidth);
   let offsetY = 0;
   let pageIndex = 0;
 
   while (offsetY < sourceCanvas.height) {
-    const currentSliceHeight = Math.min(sliceHeight, sourceCanvas.height - offsetY);
+    const currentSliceHeight = chooseSliceHeight(
+      offsetY,
+      sliceHeight,
+      sourceCanvas.height,
+      pageBreaks,
+    );
     if (currentSliceHeight < 8) break;
 
     const pageCanvas = document.createElement("canvas");
@@ -282,4 +255,22 @@ function addCanvasAcrossPages(
     offsetY += currentSliceHeight;
     pageIndex += 1;
   }
+}
+
+function chooseSliceHeight(
+  offsetY: number,
+  sliceHeight: number,
+  canvasHeight: number,
+  pageBreaks: number[],
+) {
+  const remainingHeight = canvasHeight - offsetY;
+  if (remainingHeight <= sliceHeight) return remainingHeight;
+
+  const desiredEnd = offsetY + sliceHeight;
+  const minEnd = offsetY + Math.floor(sliceHeight * 0.56);
+  const candidate = [...pageBreaks]
+    .reverse()
+    .find((breakPoint) => breakPoint > minEnd && breakPoint < desiredEnd - 24);
+
+  return candidate ? candidate - offsetY : sliceHeight;
 }
