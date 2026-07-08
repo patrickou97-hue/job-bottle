@@ -133,6 +133,19 @@ export type StatusHistory = {
   changed_at: string;
 };
 
+export type ResumeRow = {
+  id: string;
+  user_id: string;
+  title: string;
+  target_role: string | null;
+  job_target: string | null;
+  linked_job_id: string | null;
+  template_id: "classic" | "modern";
+  content_json: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+};
+
 export type Report = {
   id: string;
   post_id: string;
@@ -230,6 +243,31 @@ export type Database = {
           changed_at?: string;
         };
         Update: Partial<Omit<StatusHistory, "id">>;
+        Relationships: [];
+      };
+      resumes: {
+        Row: ResumeRow;
+        Insert: {
+          id?: string;
+          user_id: string;
+          title?: string;
+          target_role?: string | null;
+          job_target?: string | null;
+          linked_job_id?: string | null;
+          template_id?: "classic" | "modern";
+          content_json?: Record<string, unknown>;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          title?: string;
+          target_role?: string | null;
+          job_target?: string | null;
+          linked_job_id?: string | null;
+          template_id?: "classic" | "modern";
+          content_json?: Record<string, unknown>;
+          updated_at?: string;
+        };
         Relationships: [];
       };
       forum_posts: {

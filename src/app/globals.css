@@ -588,6 +588,43 @@ select {
   }
 }
 
+.resume-paper {
+  color: #151822;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+@page {
+  size: A4;
+  margin: 12mm;
+}
+
+@media print {
+  html,
+  body {
+    background: #ffffff !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  #resume-print-area,
+  #resume-print-area * {
+    visibility: visible !important;
+  }
+
+  #resume-print-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 186mm !important;
+    min-height: auto !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+}
+
 @media (min-width: 768px) {
   .page-hero {
     grid-template-columns: minmax(0, 0.9fr) minmax(260px, 0.5fr);

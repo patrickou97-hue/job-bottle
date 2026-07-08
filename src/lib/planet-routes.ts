@@ -7,7 +7,7 @@ export type PlanetRoute = {
   orbitDuration: number
   initialAngle: number
   size: number
-  variant: 'jobs' | 'applications' | 'bottle' | 'auth' | 'admin' | 'forum'
+  variant: 'jobs' | 'applications' | 'bottle' | 'resume' | 'auth' | 'admin' | 'forum'
   requiresAuth?: boolean
   adminOnly?: boolean
 }
@@ -47,6 +47,17 @@ export const PLANET_ROUTES: PlanetRoute[] = [
     size: 64,
     variant: 'bottle',
     requiresAuth: true,
+  },
+  {
+    id: 'resume',
+    label: '简历制作',
+    description: '编辑简历并导出 PDF',
+    href: '/resume',
+    orbitRadius: 790,
+    orbitDuration: 130,
+    initialAngle: 26,
+    size: 56,
+    variant: 'resume',
   },
   {
     id: 'forum',

@@ -44,6 +44,17 @@ export const PLANET_VISUALS: Record<PlanetVariant, PlanetVisual> = {
     glint: 'rgba(241,248,255,0.48)',
     grain: 'rgba(183,199,228,0.12)',
   },
+  resume: {
+    surface: {
+      background:
+        'radial-gradient(circle at 34% 25%, rgba(242,229,189,0.58) 0 4%, rgba(105,100,140,0.62) 18%, rgba(49,59,89,0.98) 58%, rgba(6,9,20,1) 100%)',
+      boxShadow:
+        '0 0 30px rgba(242,209,109,0.16), 0 0 82px rgba(105,100,140,0.11), inset -14px -20px 36px rgba(0,0,0,0.62), inset 10px 8px 22px rgba(242,229,189,0.06)',
+    },
+    hoverGlow: '0 0 40px rgba(242,229,189,0.24), 0 0 104px rgba(105,100,140,0.16), inset -14px -20px 36px rgba(0,0,0,0.55)',
+    glint: 'rgba(255,246,227,0.42)',
+    grain: 'rgba(217,173,169,0.11)',
+  },
   auth: {
     surface: {
       background:

@@ -152,6 +152,24 @@ const SOURCE_INVARIANTS = [
     label: "岗位类别归一化函数集中定义",
   },
   {
+    file: "src/lib/resume.ts",
+    mustInclude: ["ResumeDocument", "ResumeContent", "createSampleResume", "loadLocalResumes", "linkedJobId", "classic", "modern"],
+    mustNotInclude: [],
+    label: "简历制作器定义结构化简历模型和本地持久化",
+  },
+  {
+    file: "src/components/resume/ResumeBuilderClient.tsx",
+    mustInclude: ["ResumeEditor", "ResumePreview", "ResumePdfExportButton", "新建简历", "实时预览", "saveLocalResumes"],
+    mustNotInclude: [],
+    label: "简历制作器提供列表、编辑、预览和本地保存",
+  },
+  {
+    file: "supabase/migrations/20260708090000_resumes.sql",
+    mustInclude: ["create table if not exists public.resumes", "content_json jsonb", "resumes_select_own", "resumes_update_own"],
+    mustNotInclude: ["service_role"],
+    label: "简历表迁移预留账号同步和 owner-only RLS",
+  },
+  {
     file: "src/lib/dates.ts",
     mustInclude: ["Asia/Shanghai", "daysUntilShanghai", "formatShanghaiDateTime", "formatShanghaiDate"],
     mustNotInclude: ["toLocaleDateString", "getDeadlineTone", "getDeadlineLabel", "getDeadlineTime"],
@@ -373,6 +391,7 @@ const REQUIRED_TEXT = {
   "/explore": ["岗位星图", "筛选", "排序方式", "最新开启"],
   "/my": ["我的投递"],
   "/bottle": ["我的星瓶", "季节容器"],
+  "/resume": ["简历制作"],
   "/galaxy": ["岗位星系", "地区星系", "行业星系"],
   "/galaxy/region": ["地区星系", "北京星云", "上海星云"],
   "/galaxy/industry": ["行业星系", "互联网星云", "金融星云"],
