@@ -171,9 +171,15 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/resume/ResumePdfExportButton.tsx",
-    mustInclude: ["html2canvas", "jsPDF", "addCanvasAcrossPages", "正在生成"],
+    mustInclude: ["exportResumeToPdf", "正在生成", "PDF 已开始下载"],
     mustNotInclude: ["window.print", "document.title"],
-    label: "简历 PDF 导出直接生成文件且不走浏览器打印页眉页脚",
+    label: "简历 PDF 导出直接生成矢量文件且不走浏览器打印页眉页脚",
+  },
+  {
+    file: "src/components/resume/resumePdf.ts",
+    mustInclude: ["jsPDF", "NotoSerifSC-Regular.ttf", "NotoSerifSC-Bold.ttf", "format: \"letter\"", "exportResumeToPdf", "addFileToVFS"],
+    mustNotInclude: ["html2canvas", "window.print"],
+    label: "简历 PDF 矢量排版器嵌入中文字体并输出 Letter 页面",
   },
   {
     file: "src/lib/resume-sync.ts",

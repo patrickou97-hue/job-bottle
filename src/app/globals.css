@@ -21,6 +21,22 @@
   --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, monospace;
 }
 
+@font-face {
+  font-family: "Noto Serif SC Local";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/NotoSerifSC-Regular.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Noto Serif SC Local";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/NotoSerifSC-Bold.ttf") format("truetype");
+}
+
 * {
   box-sizing: border-box;
 }
@@ -590,6 +606,7 @@ select {
 
 .resume-paper {
   color: #151822;
+  font-family: "Noto Serif SC Local", "Songti SC", "STSong", "SimSun", serif;
   print-color-adjust: exact;
   -webkit-print-color-adjust: exact;
 }

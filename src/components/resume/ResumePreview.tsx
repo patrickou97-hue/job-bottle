@@ -10,7 +10,7 @@ export function ResumePreview({ resume }: { resume: ResumeDocument }) {
   return (
     <div
       id="resume-print-area"
-      className="resume-paper mx-auto min-h-[1123px] w-full max-w-[794px] bg-white px-10 py-8 text-[#11141c] shadow-[0_24px_90px_rgba(0,0,0,0.28)]"
+      className="resume-paper mx-auto min-h-[1056px] w-full max-w-[816px] bg-white px-[46px] py-[30px] text-[#111111] shadow-[0_24px_90px_rgba(0,0,0,0.28)]"
     >
       {resume.templateId === "modern" ? (
         <ResumeTemplateModern resume={resume} />
@@ -24,18 +24,18 @@ export function ResumePreview({ resume }: { resume: ResumeDocument }) {
 function ResumeTemplateClassic({ resume }: { resume: ResumeDocument }) {
   const basics = resume.content.basics;
   return (
-    <article className="resume-classic font-sans text-[11.5px] leading-[1.42]">
-      <header className="relative border-b border-[#141923] pb-2 text-center">
-        <div className={basics.photoDataUrl ? "pr-[92px]" : ""}>
-          <h1 className="text-[25px] font-bold leading-none tracking-[0.18em]">{basics.name || "姓名"}</h1>
-          {basics.englishName ? <p className="mt-1 text-[11px]">{basics.englishName}</p> : null}
-          <p className="mt-2 text-[11.5px] leading-[1.45] text-[#303846]">
-            {[basics.phone, basics.email, basics.city, basics.linkedin, basics.github, basics.website]
+    <article className="resume-classic text-[13px] leading-[1.24]">
+      <header className="relative pb-2 text-center">
+        <div className={basics.photoDataUrl ? "px-[88px]" : ""}>
+          <h1 className="text-[25px] font-bold leading-none tracking-[0.2em]">{basics.name || "姓名"}</h1>
+          {basics.englishName ? <p className="mt-1 text-[12px]">{basics.englishName}</p> : null}
+          <p className="mt-2 text-[13px] leading-[1.3] text-[#111111]">
+            {[basics.phone, basics.email, basics.city]
               .filter(Boolean)
               .join(" | ")}
           </p>
           {(basics.targetRole || resume.targetRole) ? (
-            <p className="mt-1 text-[12px] font-semibold">{basics.targetRole || resume.targetRole}</p>
+            <p className="mt-1 text-[13px] font-semibold">{basics.targetRole || resume.targetRole}</p>
           ) : null}
         </div>
         <ResumePhoto src={basics.photoDataUrl} />
@@ -79,7 +79,7 @@ function ResumePhoto({ src, inline = false }: { src: string; inline?: boolean })
   if (!src) return null;
   const className = inline
     ? "h-[78px] w-[62px] shrink-0 overflow-hidden border border-[#d7dbe3] bg-white"
-    : "absolute right-0 top-0 h-[78px] w-[62px] overflow-hidden border border-[#d7dbe3] bg-white";
+    : "absolute right-0 top-[-8px] h-[86px] w-[68px] overflow-hidden border border-[#d7dbe3] bg-white";
 
   return (
     <div className={className}>
@@ -108,13 +108,13 @@ function ResumeSections({ resume, tone }: { resume: ResumeDocument; tone: "class
                 time={[item.startDate, item.endDate].filter(Boolean).join(" - ")}
               />
               {item.courses ? (
-                <p className="mt-0.5 text-[11.5px] leading-[1.42]">
+                <p className="mt-0 text-[13px] leading-[1.24]">
                   <span className="font-semibold">相关课程：</span>
                   {item.courses}
                 </p>
               ) : null}
               {item.honors ? (
-                <p className="mt-0.5 text-[11.5px] leading-[1.42]">
+                <p className="mt-0 text-[13px] leading-[1.24]">
                   <span className="font-semibold">荣誉奖项：</span>
                   {item.honors}
                 </p>
@@ -167,7 +167,7 @@ function ResumeSections({ resume, tone }: { resume: ResumeDocument; tone: "class
 
 function SectionTitle({ title }: { title: string }) {
   return (
-    <h2 className="border-b border-[#1d2433] pb-0.5 text-[14px] font-bold leading-[1.25] tracking-wide text-[#111827]">
+    <h2 className="mt-1 border-b border-[#111111] pb-0 text-[16px] font-bold leading-[1.1] tracking-normal text-[#111111]">
       {title}
     </h2>
   );
@@ -177,10 +177,10 @@ function ResumeRow({ title, meta, time }: { title: string; meta?: string; time?:
   return (
     <div className="flex gap-3">
       <div className="min-w-0 flex-1">
-        <p className="text-[12px] font-bold leading-[1.35]">{title}</p>
-        {meta ? <p className="text-[11.5px] leading-[1.35] text-[#3f4858]">{meta}</p> : null}
+        <p className="text-[13px] font-bold leading-[1.22]">{title}</p>
+        {meta ? <p className="text-[13px] leading-[1.22] text-[#111111]">{meta}</p> : null}
       </div>
-      {time ? <p className="shrink-0 text-right text-[11.5px] leading-[1.35] text-[#3f4858]">{time}</p> : null}
+      {time ? <p className="shrink-0 text-right text-[13px] leading-[1.22] text-[#111111]">{time}</p> : null}
     </div>
   );
 }
@@ -216,7 +216,7 @@ function SkillLine({ group }: { group: ResumeSkillGroup }) {
   const skills = group.skills.map((skill) => skill.trim()).filter(Boolean);
   if (!group.category && skills.length === 0) return null;
   return (
-    <p className="mt-1.5 text-[11.5px] leading-[1.45]">
+    <p className="mt-1 text-[13px] leading-[1.25]">
       <span className="font-semibold">{group.category || "技能"}：</span>
       {skills.join("、")}
     </p>
@@ -239,7 +239,7 @@ function CustomSections({
       {sections.map((section) => (
         <div key={section.id} className="mt-2">
           {section.title && section.title !== title ? (
-            <p className="text-[12px] font-bold leading-[1.35]">{section.title}</p>
+            <p className="text-[13px] font-bold leading-[1.22]">{section.title}</p>
           ) : null}
           <BulletList bullets={section.bullets} />
         </div>
@@ -252,7 +252,7 @@ function BulletList({ bullets }: { bullets: string[] }) {
   const clean = bullets.map((bullet) => bullet.trim()).filter(Boolean);
   if (clean.length === 0) return null;
   return (
-    <ul className="mt-0.5 list-disc space-y-0 pl-4 text-[11.5px] leading-[1.42] marker:text-[9px]">
+    <ul className="mt-0 list-disc space-y-0 pl-4 text-[13px] leading-[1.24] marker:text-[9px]">
       {clean.map((bullet, index) => (
         <li key={`${bullet}-${index}`}>{bullet}</li>
       ))}
