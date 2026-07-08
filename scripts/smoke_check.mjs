@@ -153,7 +153,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/lib/resume.ts",
-    mustInclude: ["ResumeDocument", "ResumeContent", "createSampleResume", "loadLocalResumes", "linkedJobId", "classic", "modern"],
+    mustInclude: ["ResumeDocument", "ResumeContent", "createSampleResume", "loadLocalResumes", "linkedJobId", "photoDataUrl", "classic", "modern"],
     mustNotInclude: [],
     label: "简历制作器定义结构化简历模型和本地持久化",
   },
@@ -162,6 +162,18 @@ const SOURCE_INVARIANTS = [
     mustInclude: ["ResumeEditor", "ResumePreview", "ResumePdfExportButton", "新建简历", "实时预览", "saveLocalResumes", "fetchMyResumes", "upsertMyResume", "已同步到账号"],
     mustNotInclude: [],
     label: "简历制作器提供列表、编辑、预览、本地保存和账号同步",
+  },
+  {
+    file: "src/components/resume/ResumeEditor.tsx",
+    mustInclude: ["PhotoField", "cropPhotoToPortrait", "上传照片", "AI 优化即将上线"],
+    mustNotInclude: [],
+    label: "简历编辑器提供照片上传自动裁剪和 AI 能力预留入口",
+  },
+  {
+    file: "src/components/resume/ResumePdfExportButton.tsx",
+    mustInclude: ["html2canvas", "jsPDF", "addCanvasAcrossPages", "正在生成"],
+    mustNotInclude: ["window.print", "document.title"],
+    label: "简历 PDF 导出直接生成文件且不走浏览器打印页眉页脚",
   },
   {
     file: "src/lib/resume-sync.ts",

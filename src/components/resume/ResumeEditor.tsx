@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ImagePlus, Plus, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -85,6 +85,10 @@ export function ResumeEditor({
 
       {activeSection === "basic" ? (
         <section className="space-y-4">
+          <PhotoField
+            value={resume.content.basics.photoDataUrl}
+            onChange={(value) => patchBasics("photoDataUrl", value)}
+          />
           <FieldGrid>
             <TextField label="简历名称" value={resume.title} onChange={(value) => patchResume({ title: value })} />
             <SelectField
@@ -228,6 +232,112 @@ export function ResumeEditor({
       ) : null}
     </div>
   );
+}
+
+function PhotoField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  async function handleFile(file: File | undefined) {
+    if (!file) return;
+    const dataUrl = await cropPhotoToPortrait(file);
+    onChange(dataUrl);
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-4 rounded-[22px] bg-white/[0.035] p-4">
+      <div className="flex h-28 w-[86px] items-center justify-center overflow-hidden rounded-[14px] bg-white/[0.07] ring-1 ring-white/[0.08]">
+        {value ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={value} alt="简历照片预览" className="h-full w-full object-cover" />
+        ) : (
+          <ImagePlus aria-hidden="true" className="size-7 text-ink-muted" />
+        )}
+      </div>
+      <div className="min-w-[220px] flex-1">
+        <p className="text-sm font-semibold text-ink-primary">简历照片</p>
+        <p className="mt-1 text-xs leading-5 text-ink-muted">
+          上传后自动居中裁剪为证件照比例，适合中文简历放在右上角。
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <label className="muted-button pressable inline-flex cursor-pointer items-center gap-2 rounded-full px-4 py-2 text-sm">
+            <ImagePlus aria-hidden="true" className="size-4" />
+            上传照片
+            <input
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              onChange={(event) => {
+                void handleFile(event.target.files?.[0]);
+                event.currentTarget.value = "";
+              }}
+            />
+          </label>
+          {value ? (
+            <button
+              type="button"
+              className="muted-button pressable inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm text-red-100"
+              onClick={() => onChange("")}
+            >
+              <X aria-hidden="true" className="size-4" />
+              移除
+            </button>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+async function cropPhotoToPortrait(file: File) {
+  const image = await loadImageFromFile(file);
+  const outputWidth = 360;
+  const outputHeight = 450;
+  const outputRatio = outputWidth / outputHeight;
+  const inputRatio = image.naturalWidth / image.naturalHeight;
+  let sourceWidth = image.naturalWidth;
+  let sourceHeight = image.naturalHeight;
+  let sourceX = 0;
+  let sourceY = 0;
+
+  if (inputRatio > outputRatio) {
+    sourceWidth = image.naturalHeight * outputRatio;
+    sourceX = (image.naturalWidth - sourceWidth) / 2;
+  } else {
+    sourceHeight = image.naturalWidth / outputRatio;
+    sourceY = Math.max(0, (image.naturalHeight - sourceHeight) * 0.32);
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = outputWidth;
+  canvas.height = outputHeight;
+  const context = canvas.getContext("2d");
+  if (!context) return "";
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, outputWidth, outputHeight);
+  context.drawImage(
+    image,
+    sourceX,
+    sourceY,
+    sourceWidth,
+    sourceHeight,
+    0,
+    0,
+    outputWidth,
+    outputHeight,
+  );
+  return canvas.toDataURL("image/jpeg", 0.88);
+}
+
+function loadImageFromFile(file: File) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("照片读取失败，请换一张图片。"));
+    reader.onload = () => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error("照片格式无法识别，请换一张图片。"));
+      image.src = String(reader.result);
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 function FieldGrid({ children }: { children: React.ReactNode }) {

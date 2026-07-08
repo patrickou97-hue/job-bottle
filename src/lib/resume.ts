@@ -3,6 +3,7 @@ export type ResumeTemplateId = "classic" | "modern";
 export type ResumeBasics = {
   name: string;
   englishName: string;
+  photoDataUrl: string;
   phone: string;
   email: string;
   city: string;
@@ -109,6 +110,7 @@ export function createEmptyResume(): ResumeDocument {
       basics: {
         name: "",
         englishName: "",
+        photoDataUrl: "",
         phone: "",
         email: "",
         city: "",
@@ -145,6 +147,7 @@ export function createSampleResume(): ResumeDocument {
       basics: {
         name: "王小星",
         englishName: "Stella Wang",
+        photoDataUrl: "",
         phone: "138 0000 0000",
         email: "stella@example.com",
         city: "上海",
@@ -237,7 +240,8 @@ export function loadLocalResumes() {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as ResumeDocument[]) : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map(normalizeResumeDocument).filter((resume) => resume !== null);
   } catch {
     return [];
   }
@@ -312,4 +316,40 @@ export function createBlankCustomSection(title = "自定义模块"): ResumeCusto
 
 export function compactList(values: string[]) {
   return values.map((value) => value.trim()).filter(Boolean);
+}
+
+function normalizeResumeDocument(value: unknown): ResumeDocument | null {
+  if (!value || typeof value !== "object") return null;
+  const fallback = createEmptyResume();
+  const resume = value as Partial<ResumeDocument>;
+  const content = resume.content && typeof resume.content === "object" ? resume.content : fallback.content;
+  const basics = content.basics && typeof content.basics === "object" ? content.basics : fallback.content.basics;
+
+  return {
+    ...fallback,
+    ...resume,
+    id: typeof resume.id === "string" ? resume.id : fallback.id,
+    title: typeof resume.title === "string" ? resume.title : fallback.title,
+    targetRole: typeof resume.targetRole === "string" ? resume.targetRole : "",
+    jobTarget: typeof resume.jobTarget === "string" ? resume.jobTarget : "",
+    linkedJobId: typeof resume.linkedJobId === "string" ? resume.linkedJobId : null,
+    templateId: resume.templateId === "modern" ? "modern" : "classic",
+    content: {
+      ...fallback.content,
+      ...content,
+      basics: {
+        ...fallback.content.basics,
+        ...basics,
+      },
+      education: Array.isArray(content.education) ? content.education : [],
+      work: Array.isArray(content.work) ? content.work : [],
+      projects: Array.isArray(content.projects) ? content.projects : [],
+      skills: Array.isArray(content.skills) ? content.skills : [],
+      campus: Array.isArray(content.campus) ? content.campus : [],
+      awards: Array.isArray(content.awards) ? content.awards : [],
+      certifications: Array.isArray(content.certifications) ? content.certifications : [],
+      languages: Array.isArray(content.languages) ? content.languages : [],
+      customSections: Array.isArray(content.customSections) ? content.customSections : [],
+    },
+  };
 }

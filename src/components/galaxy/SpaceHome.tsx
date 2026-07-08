@@ -24,9 +24,18 @@ const MOBILE_PLANET_SIZE: Record<string, number> = {
   auth: 46,
 }
 const MOBILE_PLANET_LAYOUT = {
-  orbitRadius: 190,
+  orbitRadius: 210,
   startAngle: -18,
   orbitDuration: 138,
+}
+const MOBILE_ROUTE_LAYOUT: Record<string, { radius: number; angle: number }> = {
+  jobs: { radius: 226, angle: 12 },
+  applications: { radius: 226, angle: 104 },
+  bottle: { radius: 226, angle: 198 },
+  resume: { radius: 146, angle: 302 },
+  forum: { radius: 146, angle: 48 },
+  admin: { radius: 226, angle: 276 },
+  auth: { radius: 146, angle: 168 },
 }
 
 export function SpaceHome() {
@@ -89,7 +98,7 @@ export function SpaceHome() {
       label: user ? '个人中心' : '登录',
       description: user ? '查看你的投递记录和星瓶' : '登录后保存投递记录',
       href: user ? '/my' : '/login',
-      orbitRadius: 1110,
+      orbitRadius: 990,
       orbitDuration: 120,
       initialAngle: 38,
       size: 48,
@@ -131,10 +140,11 @@ export function SpaceHome() {
     () =>
       planets.map((planet, index) => {
         const angleStep = 360 / Math.max(1, planets.length)
+        const mobile = MOBILE_ROUTE_LAYOUT[planet.id]
         return {
           ...planet,
-          orbitRadius: MOBILE_PLANET_LAYOUT.orbitRadius,
-          initialAngle: MOBILE_PLANET_LAYOUT.startAngle + index * angleStep,
+          orbitRadius: mobile?.radius ?? MOBILE_PLANET_LAYOUT.orbitRadius,
+          initialAngle: mobile?.angle ?? MOBILE_PLANET_LAYOUT.startAngle + index * angleStep,
           size: MOBILE_PLANET_SIZE[planet.id] ?? planet.size,
           orbitDuration: MOBILE_PLANET_LAYOUT.orbitDuration,
         }

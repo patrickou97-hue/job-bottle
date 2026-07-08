@@ -25,17 +25,20 @@ function ResumeTemplateClassic({ resume }: { resume: ResumeDocument }) {
   const basics = resume.content.basics;
   return (
     <article className="resume-classic font-sans text-[11.5px] leading-[1.42]">
-      <header className="border-b border-[#141923] pb-2 text-center">
-        <h1 className="text-[25px] font-bold leading-none tracking-[0.18em]">{basics.name || "姓名"}</h1>
-        {basics.englishName ? <p className="mt-1 text-[11px]">{basics.englishName}</p> : null}
-        <p className="mt-2 text-[11.5px] leading-[1.45] text-[#303846]">
-          {[basics.phone, basics.email, basics.city, basics.linkedin, basics.github, basics.website]
-            .filter(Boolean)
-            .join(" | ")}
-        </p>
-        {(basics.targetRole || resume.targetRole) ? (
-          <p className="mt-1 text-[12px] font-semibold">{basics.targetRole || resume.targetRole}</p>
-        ) : null}
+      <header className="relative border-b border-[#141923] pb-2 text-center">
+        <div className={basics.photoDataUrl ? "pr-[92px]" : ""}>
+          <h1 className="text-[25px] font-bold leading-none tracking-[0.18em]">{basics.name || "姓名"}</h1>
+          {basics.englishName ? <p className="mt-1 text-[11px]">{basics.englishName}</p> : null}
+          <p className="mt-2 text-[11.5px] leading-[1.45] text-[#303846]">
+            {[basics.phone, basics.email, basics.city, basics.linkedin, basics.github, basics.website]
+              .filter(Boolean)
+              .join(" | ")}
+          </p>
+          {(basics.targetRole || resume.targetRole) ? (
+            <p className="mt-1 text-[12px] font-semibold">{basics.targetRole || resume.targetRole}</p>
+          ) : null}
+        </div>
+        <ResumePhoto src={basics.photoDataUrl} />
       </header>
 
       <ResumeSections resume={resume} tone="classic" />
@@ -48,7 +51,9 @@ function ResumeTemplateModern({ resume }: { resume: ResumeDocument }) {
   return (
     <article className="resume-modern font-sans text-[11.5px] leading-[1.42]">
       <header className="grid gap-3 border-b border-[#cfd4de] pb-3 sm:grid-cols-[1fr_auto]">
-        <div>
+        <div className="flex min-w-0 gap-4">
+          <ResumePhoto src={basics.photoDataUrl} inline />
+          <div className="min-w-0">
           <h1 className="text-[25px] font-bold leading-none tracking-tight text-[#20283a]">{basics.name || "姓名"}</h1>
           {basics.englishName ? <p className="mt-1 text-[11px] text-[#596273]">{basics.englishName}</p> : null}
           {(basics.targetRole || resume.targetRole) ? (
@@ -56,6 +61,7 @@ function ResumeTemplateModern({ resume }: { resume: ResumeDocument }) {
               {basics.targetRole || resume.targetRole}
             </p>
           ) : null}
+          </div>
         </div>
         <p className="max-w-[300px] whitespace-pre-line text-right text-[11.5px] leading-[1.45] text-[#4c5567]">
           {[basics.phone, basics.email, basics.city, basics.linkedin, basics.github, basics.website]
@@ -66,6 +72,20 @@ function ResumeTemplateModern({ resume }: { resume: ResumeDocument }) {
 
       <ResumeSections resume={resume} tone="modern" />
     </article>
+  );
+}
+
+function ResumePhoto({ src, inline = false }: { src: string; inline?: boolean }) {
+  if (!src) return null;
+  const className = inline
+    ? "h-[78px] w-[62px] shrink-0 overflow-hidden border border-[#d7dbe3] bg-white"
+    : "absolute right-0 top-0 h-[78px] w-[62px] overflow-hidden border border-[#d7dbe3] bg-white";
+
+  return (
+    <div className={className}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={src} alt="简历照片" className="h-full w-full object-cover" />
+    </div>
   );
 }
 
