@@ -1,9 +1,15 @@
 import { parse } from "papaparse";
+import { readSheet, type Row } from "read-excel-file/browser";
 import { normalizeJobCategories } from "@/lib/categories";
 import { splitToTags, isValidHttpUrl } from "@/lib/utils";
 import type { CsvImportPreviewRow } from "@/lib/types";
 
 type RawCsvRow = Record<string, string | undefined>;
+type RawImportRow = Record<string, string | undefined>;
+type NumberedRawRow = {
+  rowNumber: number;
+  row: RawImportRow;
+};
 
 const headerAliases = {
   company_name: ["公司名称"],
@@ -24,59 +30,104 @@ function pick(row: RawCsvRow, aliases: string[]) {
   return "";
 }
 
+export async function parseJobsImportFile(file: File) {
+  if (isExcelFile(file)) {
+    return parseJobsExcel(file);
+  }
+  return parseJobsCsv(file);
+}
+
 export function parseJobsCsv(file: File) {
   return new Promise<CsvImportPreviewRow[]>((resolve, reject) => {
     parse<RawCsvRow>(file, {
       header: true,
       skipEmptyLines: true,
       complete(result) {
-        const rows = result.data.map((row, index) => {
-          const company = pick(row, headerAliases.company_name);
-          const applyUrl = pick(row, headerAliases.apply_url);
-          const notes = [
-            pick(row, ["备注"]),
-            pick(row, ["备注1"]),
-            pick(row, ["备注2"]),
-          ]
-            .filter(Boolean)
-            .join("；");
-          const jobTitles = pick(row, headerAliases.job_titles) || null;
-          const normalizedCategories = normalizeJobCategories(jobTitles);
-          const preview: CsvImportPreviewRow = {
-            rowNumber: index + 2,
-            company_name: company,
-            start_date: pick(row, headerAliases.start_date) || null,
-            industry: pick(row, headerAliases.industry) || null,
-            batch_type: pick(row, headerAliases.batch_type) || null,
-            job_titles: jobTitles,
-            job_categories: normalizedCategories.categories,
-            locations: pick(row, headerAliases.locations) || null,
-            apply_url: applyUrl,
-            notes: notes || null,
-            tags: splitToTags(
-              pick(row, headerAliases.industry),
-              pick(row, headerAliases.batch_type),
-              pick(row, headerAliases.locations),
-              jobTitles ?? "",
-            ),
-            isValid: true,
-            errors: [],
-          };
-
-          if (!preview.company_name) preview.errors.push("缺少公司名称");
-          if (!preview.apply_url) preview.errors.push("缺少投递链接");
-          if (preview.apply_url && !isValidHttpUrl(preview.apply_url)) {
-            preview.errors.push("投递链接格式不正确");
-          }
-          preview.isValid = preview.errors.length === 0;
-          return preview;
-        });
-
-        resolve(rows);
+        resolve(
+          normalizeImportRows(
+            result.data.map((row, index) => ({
+              rowNumber: index + 2,
+              row,
+            })),
+          ),
+        );
       },
       error(error) {
         reject(error);
       },
     });
   });
+}
+
+async function parseJobsExcel(file: File) {
+  const rows: Row[] = await readSheet(file);
+  if (rows.length <= 1) return [];
+
+  const headers = rows[0].map((cell) => stringifyCell(cell).trim());
+  const numberedRows: NumberedRawRow[] = rows.slice(1).map((cells, index) => {
+    const row: RawImportRow = {};
+    headers.forEach((header, cellIndex) => {
+      if (!header) return;
+      row[header] = stringifyCell(cells[cellIndex]);
+    });
+    return {
+      rowNumber: index + 2,
+      row,
+    };
+  });
+
+  return normalizeImportRows(numberedRows);
+}
+
+function normalizeImportRows(rows: NumberedRawRow[]) {
+  return rows.map(({ row, rowNumber }) => {
+    const company = pick(row, headerAliases.company_name);
+    const applyUrl = pick(row, headerAliases.apply_url);
+    const industry = pick(row, headerAliases.industry);
+    const batchType = pick(row, headerAliases.batch_type);
+    const locations = pick(row, headerAliases.locations);
+    const notes = [
+      pick(row, ["备注"]),
+      pick(row, ["备注1"]),
+      pick(row, ["备注2"]),
+    ]
+      .filter(Boolean)
+      .join("；");
+    const jobTitles = pick(row, headerAliases.job_titles) || null;
+    const normalizedCategories = normalizeJobCategories(jobTitles);
+    const preview: CsvImportPreviewRow = {
+      rowNumber,
+      company_name: company,
+      start_date: pick(row, headerAliases.start_date) || null,
+      industry: industry || null,
+      batch_type: batchType || null,
+      job_titles: jobTitles,
+      job_categories: normalizedCategories.categories,
+      locations: locations || null,
+      apply_url: applyUrl,
+      notes: notes || null,
+      tags: splitToTags(industry, batchType, locations, jobTitles ?? ""),
+      isValid: true,
+      errors: [],
+    };
+
+    if (!preview.company_name) preview.errors.push("缺少公司名称");
+    if (!preview.apply_url) preview.errors.push("缺少投递链接");
+    if (preview.apply_url && !isValidHttpUrl(preview.apply_url)) {
+      preview.errors.push("投递链接格式不正确");
+    }
+    preview.isValid = preview.errors.length === 0;
+    return preview;
+  });
+}
+
+function isExcelFile(file: File) {
+  const name = file.name.toLowerCase();
+  return name.endsWith(".xlsx") || name.endsWith(".xls");
+}
+
+function stringifyCell(cell: unknown) {
+  if (cell === null || cell === undefined) return "";
+  if (cell instanceof Date) return cell.toISOString().slice(0, 10);
+  return String(cell);
 }

@@ -99,9 +99,6 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
         <div>
           <p className="page-kicker">进度管理</p>
           <h1 className="page-title">我的投递</h1>
-          <p className="page-subtitle">
-            所有已浏览和已投递记录集中在这里，轨道负责展示阶段，列表负责快速查找和操作。
-          </p>
         </div>
         <div className="liquid-panel p-4 md:p-5">
           <div className="grid grid-cols-3 gap-4">

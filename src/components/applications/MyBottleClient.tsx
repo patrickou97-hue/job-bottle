@@ -70,9 +70,6 @@ export function MyBottleClient({ loginNextPath = "/bottle" }: { loginNextPath?: 
         <div>
           <p className="page-kicker">季节容器</p>
           <h1 className="page-title">我的星瓶</h1>
-          <p className="page-subtitle">
-            每次打开官网投递后，记录会沉入瓶底。颜色和亮度跟随当前投递阶段变化。
-          </p>
         </div>
         <div className="liquid-panel p-4 md:p-5">
           <p className="text-sm leading-7 text-ink-secondary">

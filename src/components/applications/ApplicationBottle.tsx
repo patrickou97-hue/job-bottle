@@ -8,6 +8,7 @@ import { BottleStage } from "@/components/applications/BottleStage";
 import { useBottleStack } from "@/components/applications/useBottleStack";
 import { FiligreeDivider } from "@/components/ui/FiligreeDivider";
 import { Button } from "@/components/ui/Button";
+import { downloadBottleShareCard } from "@/components/applications/shareBottleCard";
 import { dismissBottleDrop, peekBottleDrop } from "@/lib/bottle-drop";
 import { formatDateTime } from "@/lib/utils";
 import type { ApplicationWithJob } from "@/lib/types";
@@ -44,6 +45,7 @@ export function ApplicationBottle({
   const [selected, setSelected] = useState<ApplicationWithJob | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [fallingId, setFallingId] = useState<string | null>(null);
+  const [shareState, setShareState] = useState<"idle" | "generating" | "done" | "error">("idle");
   const positions = useBottleStack(applications);
 
   const appliedCount = applications.filter((item) => item.status !== "opened").length;
@@ -90,6 +92,18 @@ export function ApplicationBottle({
     setFallingId(null);
   }
 
+  async function handleShareBottle() {
+    setShareState("generating");
+    try {
+      await downloadBottleShareCard({ applications, positions });
+      setShareState("done");
+      window.setTimeout(() => setShareState("idle"), 2400);
+    } catch {
+      setShareState("error");
+      window.setTimeout(() => setShareState("idle"), 3200);
+    }
+  }
+
   return (
     <section className="relative overflow-visible px-0 pb-4 pt-1">
       <div className="grid justify-items-center gap-10 lg:grid-cols-[minmax(320px,0.95fr)_minmax(300px,0.75fr)] lg:items-center lg:justify-items-stretch">
@@ -132,9 +146,19 @@ export function ApplicationBottle({
             <BottleStat label="Offer" value={offerCount} />
           </div>
 
-          <Button className="mt-5 w-full" disabled title="年报将在下一批次接入">
-            生成星图年报
+          <Button
+            className="mt-5 w-full"
+            disabled={shareState === "generating"}
+            onClick={() => void handleShareBottle()}
+          >
+            {shareState === "generating" ? "正在生成" : "分享我的星瓶"}
           </Button>
+          {shareState === "done" ? (
+            <p className="mt-2 text-center text-xs text-ink-muted">已生成 PNG 和 PDF</p>
+          ) : null}
+          {shareState === "error" ? (
+            <p className="mt-2 text-center text-xs text-red-200">生成失败，请稍后重试。</p>
+          ) : null}
 
           {applications.length > 0 && displayApp ? (
             <div className="mt-5 border-t border-white/[0.08] px-1 py-3">

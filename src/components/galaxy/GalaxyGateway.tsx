@@ -7,9 +7,6 @@ export function GalaxyGateway() {
         <div>
           <p className="page-kicker">探索入口</p>
           <h1 className="page-title">岗位星系</h1>
-          <p className="page-subtitle">
-          从地区星云或行业星云进入，把岗位作为可以观察和捕获的星体来探索。
-          </p>
         </div>
       </section>
       <section className="grid gap-6 lg:grid-cols-2">

@@ -97,9 +97,6 @@ export function GalaxyJobsClient({ kind, slug }: { kind: GalaxyKind; slug: strin
         <div>
           <p className="page-kicker">岗位星图</p>
           <h1 className="page-title">{group.label}</h1>
-          <p className="page-subtitle">
-            {loading ? "正在读取岗位" : `${jobs.length} 个岗位`}
-          </p>
         </div>
         <div className="liquid-panel p-5">
           <div className="font-display text-3xl font-semibold text-ink-primary tabular-nums">{jobs.length}</div>

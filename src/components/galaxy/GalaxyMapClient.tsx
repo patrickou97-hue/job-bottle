@@ -45,7 +45,6 @@ export function GalaxyMapClient({ kind }: { kind: GalaxyKind }) {
   );
   const stats = useMemo(() => buildGalaxyStats(jobs, capturedJobIds, kind), [capturedJobIds, jobs, kind]);
   const title = kind === "region" ? "地区星系" : "行业星系";
-  const body = kind === "region" ? "选择一个地区星云，进入对应岗位。" : "选择一个行业星云，进入对应岗位。";
 
   return (
     <div className="observatory-page space-y-8">
@@ -53,7 +52,6 @@ export function GalaxyMapClient({ kind }: { kind: GalaxyKind }) {
         <div>
           <p className="page-kicker">岗位星系</p>
           <h1 className="page-title">{title}</h1>
-          <p className="page-subtitle">{body}</p>
         </div>
       </section>
       {loading ? <div className="empty-state"><span className="loading-line">正在读取岗位数量</span></div> : null}

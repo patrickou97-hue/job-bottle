@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Upload } from "lucide-react";
-import { parseJobsCsv } from "@/lib/csv";
+import { parseJobsImportFile } from "@/lib/csv";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
@@ -48,9 +48,9 @@ export function CsvImportPanel() {
     if (!file) return;
     setMessage("");
     try {
-      setRows(await parseJobsCsv(file));
+      setRows(await parseJobsImportFile(file));
     } catch {
-      setMessage("CSV 解析失败，请检查文件格式。");
+      setMessage("文件解析失败，请检查 CSV 或 Excel 格式。");
     }
   }
 
@@ -94,9 +94,6 @@ export function CsvImportPanel() {
           <div>
             <p className="page-kicker">管理员</p>
             <h1 className="page-title">批量导入</h1>
-            <p className="page-subtitle">
-              请上传包含以下字段的 CSV 文件：公司名称、开启时间、所在行业、类型、招聘岗位、工作地点、投递链接、备注。
-            </p>
           </div>
           <Link href="/admin/jobs">
             <Button variant="secondary" className="gap-2">
@@ -118,11 +115,11 @@ export function CsvImportPanel() {
           <section className="liquid-panel p-5">
             <label className="pressable flex cursor-pointer flex-col items-center justify-center p-8 text-center transition hover:bg-white/[0.045]">
               <Upload aria-hidden="true" className="mb-3 size-8 text-nebula-blue" />
-              <span className="text-base font-semibold text-ink-primary">上传 CSV</span>
+              <span className="text-base font-semibold text-ink-primary">上传 CSV / Excel</span>
               <span className="mt-2 text-sm text-ink-muted">选择文件后将自动预览导入结果</span>
               <input
                 type="file"
-                accept=".csv,text/csv"
+                accept=".csv,text/csv,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
                 className="sr-only"
                 onChange={(event) => handleFile(event.target.files?.[0])}
               />

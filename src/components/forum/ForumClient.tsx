@@ -67,9 +67,6 @@ export function ForumClient() {
         <div>
           <p className="page-kicker">同路人讨论</p>
           <h1 className="page-title">讨论区</h1>
-          <p className="page-subtitle">
-            记录信息、经验和问题。帖子按频道收纳，展开后再处理评论与互动。
-          </p>
         </div>
         <div className="flex items-end justify-start md:justify-end">
           <Button onClick={() => setShowForm((v) => !v)}>

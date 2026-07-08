@@ -540,9 +540,6 @@ function JobRadarHeader({
       <div className="min-w-0">
         <p className="page-kicker">职位发现</p>
         <h1 className="page-title">岗位星图</h1>
-        <p className="page-subtitle">
-          用筛选和星图快速定位公司、岗位与投递状态，保留列表视图方便逐条阅读。
-        </p>
       </div>
 
       <div className="liquid-panel p-4 md:p-5">

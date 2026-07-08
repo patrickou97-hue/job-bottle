@@ -12,7 +12,7 @@ const adminActions = [
   {
     href: "/admin/import",
     title: "批量导入",
-    body: "上传 CSV，预览数据后写入岗位库。",
+    body: "上传 CSV 或 Excel，预览数据后写入岗位库。",
     icon: Database,
   },
 ];
@@ -25,7 +25,6 @@ export default function AdminPage() {
           <div>
             <p className="page-kicker">数据维护</p>
             <h1 className="page-title">管理后台</h1>
-            <p className="page-subtitle">维护岗位数据、导入批次和展示状态。</p>
           </div>
         </section>
 

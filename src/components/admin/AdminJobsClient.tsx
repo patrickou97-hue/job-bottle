@@ -127,7 +127,6 @@ export function AdminJobsClient() {
           <div>
             <p className="page-kicker">管理员</p>
             <h1 className="page-title">岗位管理</h1>
-            <p className="page-subtitle">搜索、编辑、上下架和维护岗位基础信息。</p>
           </div>
           <Link href="/admin/import">
             <Button className="gap-2">

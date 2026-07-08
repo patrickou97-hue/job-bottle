@@ -51,7 +51,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/ApplicationBottle.tsx",
-    mustInclude: ["2026 秋招季", "本季统计", "已收进", "FiligreeDivider", "生成星图年报"],
+    mustInclude: ["2026 秋招季", "本季统计", "已收进", "FiligreeDivider", "分享我的星瓶"],
     mustNotInclude: ["bg-white/[0.025]", "shadow-[0_28px_90px"],
     label: "星瓶页按 v4 季节容器布局呈现",
   },
