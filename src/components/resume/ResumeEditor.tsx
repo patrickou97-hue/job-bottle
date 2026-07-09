@@ -95,10 +95,10 @@ export function ResumeEditor({
             <TextField label="手机号" value={resume.content.basics.phone} onChange={(value) => patchBasics("phone", value)} />
             <TextField label="邮箱" value={resume.content.basics.email} onChange={(value) => patchBasics("email", value)} />
             <TextField label="所在城市" value={resume.content.basics.city} onChange={(value) => patchBasics("city", value)} />
-            <TextField label="求职方向" value={resume.content.basics.targetRole} onChange={(value) => patchBasics("targetRole", value)} />
-            <TextField label="LinkedIn" value={resume.content.basics.linkedin} onChange={(value) => patchBasics("linkedin", value)} />
-            <TextField label="GitHub" value={resume.content.basics.github} onChange={(value) => patchBasics("github", value)} />
-            <TextField label="个人网站" value={resume.content.basics.website} onChange={(value) => patchBasics("website", value)} />
+            <TextField label="求职方向（可选）" value={resume.content.basics.targetRole} onChange={(value) => patchBasics("targetRole", value)} />
+            <TextField label="LinkedIn（可选）" value={resume.content.basics.linkedin} onChange={(value) => patchBasics("linkedin", value)} />
+            <TextField label="GitHub（可选）" value={resume.content.basics.github} onChange={(value) => patchBasics("github", value)} />
+            <TextField label="个人网站（可选）" value={resume.content.basics.website} onChange={(value) => patchBasics("website", value)} />
           </FieldGrid>
         </section>
       ) : null}

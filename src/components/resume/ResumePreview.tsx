@@ -19,19 +19,24 @@ export function ResumePreview({ resume }: { resume: ResumeDocument }) {
 
 function ResumeTemplateCompact({ resume }: { resume: ResumeDocument }) {
   const basics = resume.content.basics;
+  const contactLine = [basics.phone, basics.email, basics.city].map(cleanText).filter(Boolean).join(" | ");
+  const targetLine = cleanText(basics.targetRole || resume.targetRole);
+  const linkLine = formatLinks(basics);
+
   return (
     <article className="resume-compact font-serif text-[13px] leading-[1.18]">
       <header className="relative pb-1 text-center">
         <div className={basics.photoDataUrl ? "px-[82px]" : ""}>
           <h1 className="text-[24px] font-bold leading-none tracking-[0.18em]">{basics.name || "姓名"}</h1>
           {basics.englishName ? <p className="mt-1 text-[12px]">{basics.englishName}</p> : null}
-          <p className="mt-2 text-[13px] leading-[1.22] text-[#111111]">
-            {[basics.phone, basics.email, basics.city]
-              .filter(Boolean)
-              .join(" | ")}
-          </p>
-          {(basics.targetRole || resume.targetRole) ? (
-            <p className="mt-1 text-[13px] font-semibold">{basics.targetRole || resume.targetRole}</p>
+          {contactLine ? (
+            <p className="mt-2 text-[13px] leading-[1.22] text-[#111111]">{contactLine}</p>
+          ) : null}
+          {targetLine ? (
+            <p className="mt-1 text-[13px] font-semibold">{targetLine}</p>
+          ) : null}
+          {linkLine ? (
+            <p className="mt-1 break-words text-[11.5px] leading-[1.2] text-[#222222]">{linkLine}</p>
           ) : null}
         </div>
         <ResumePhoto src={basics.photoDataUrl} />
@@ -226,4 +231,18 @@ function BulletList({ bullets }: { bullets: string[] }) {
       ))}
     </ul>
   );
+}
+
+function formatLinks(basics: ResumeDocument["content"]["basics"]) {
+  return [
+    basics.linkedin ? `LinkedIn：${cleanText(basics.linkedin)}` : "",
+    basics.github ? `GitHub：${cleanText(basics.github)}` : "",
+    basics.website ? `个人网站：${cleanText(basics.website)}` : "",
+  ]
+    .filter(Boolean)
+    .join(" | ");
+}
+
+function cleanText(value: string) {
+  return value.replace(/\s+/g, " ").trim();
 }

@@ -147,10 +147,28 @@ function renderHeader(state: LayoutState, resume: ResumeDocument) {
 
   setFont(state, 18, "bold");
   drawCentered(state, addNameSpacing(basics.name || "姓名"), headerTop + 22);
-  setFont(state, 11, "normal");
+  let y = headerTop + 44;
+
   const contact = [formatPhone(basics.phone), basics.email, basics.city].filter(Boolean).join(" | ");
-  drawCentered(state, contact, headerTop + 44);
-  state.y = headerTop + (hasPhoto ? 82 : 62);
+  if (contact) {
+    setFont(state, 11, "normal");
+    drawCentered(state, contact, y);
+    y += 14;
+  }
+
+  const target = cleanText(basics.targetRole || resume.targetRole);
+  if (target) {
+    setFont(state, 10.5, "bold");
+    drawCentered(state, target, y);
+    y += 13;
+  }
+
+  const links = formatHeaderLinks(basics);
+  if (links) {
+    y = drawCenteredWrapped(state, links, y, hasPhoto ? 410 : 500, 9.2, "normal") + 2;
+  }
+
+  state.y = Math.max(y + 6, headerTop + (hasPhoto ? 82 : 52));
 }
 
 function renderEducation(state: LayoutState, items: ResumeEducation[], options: PdfOptions) {
@@ -366,6 +384,24 @@ function drawCentered(state: LayoutState, text: string, y: number) {
   drawText(state, text, x, y);
 }
 
+function drawCenteredWrapped(
+  state: LayoutState,
+  text: string,
+  y: number,
+  maxWidth: number,
+  size: number,
+  weight: "bold" | "normal",
+) {
+  setFont(state, size, weight);
+  const lineHeight = size * 1.18;
+  let nextY = y;
+  wrapText(state, text, maxWidth, size, weight).forEach((line) => {
+    drawCentered(state, line, nextY);
+    nextY += lineHeight;
+  });
+  return nextY;
+}
+
 function drawRight(state: LayoutState, text: string, right: number, y: number) {
   drawText(state, text, right - state.pdf.getTextWidth(text), y);
 }
@@ -404,6 +440,16 @@ function formatPhone(phone: string) {
   const clean = cleanText(phone);
   if (!clean) return "";
   return clean.startsWith("+") ? clean : clean;
+}
+
+function formatHeaderLinks(basics: ResumeDocument["content"]["basics"]) {
+  return [
+    basics.linkedin ? `LinkedIn：${cleanText(basics.linkedin)}` : "",
+    basics.github ? `GitHub：${cleanText(basics.github)}` : "",
+    basics.website ? `个人网站：${cleanText(basics.website)}` : "",
+  ]
+    .filter(Boolean)
+    .join(" | ");
 }
 
 function formatRange(start: string, end: string, current = false) {
