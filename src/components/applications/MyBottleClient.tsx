@@ -3,15 +3,21 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { fetchMyApplications } from "@/lib/applications";
+import { fetchActiveJobs } from "@/lib/jobs";
 import { getCurrentUserOrNull } from "@/lib/auth";
+import { fetchMyResumes, isMissingResumeTableError } from "@/lib/resume-sync";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { track } from "@/lib/track";
 import { ApplicationBottle } from "@/components/applications/ApplicationBottle";
-import type { ApplicationWithJob } from "@/lib/types";
+import type { ApplicationWithJob, Job, Profile } from "@/lib/types";
+import type { ShareProfileSnapshot } from "@/components/applications/shareBottleCard";
 
 export function MyBottleClient({ loginNextPath = "/bottle" }: { loginNextPath?: string }) {
   const router = useRouter();
   const [applications, setApplications] = useState<ApplicationWithJob[]>([]);
+  const [profile, setProfile] = useState<ShareProfileSnapshot | null>(null);
+  const [recommendationCount, setRecommendationCount] = useState(0);
+  const [resumeCount, setResumeCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
   const [message, setMessage] = useState("");
@@ -32,8 +38,24 @@ export function MyBottleClient({ loginNextPath = "/bottle" }: { loginNextPath?: 
         return;
       }
       setRedirecting(false);
-      const rows = await fetchMyApplications(supabase, user.id);
+      const [rows, profileResult, resumesResult, jobsResult] = await Promise.all([
+        fetchMyApplications(supabase, user.id),
+        supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
+        fetchMyResumes(supabase).catch((error) => {
+          if (isMissingResumeTableError(error)) return [];
+          throw error;
+        }),
+        fetchActiveJobs(supabase).catch(() => []),
+      ]);
+      const profileRow = profileResult.data as Profile | null;
       setApplications(rows);
+      setProfile({
+        displayName: profileRow?.display_name ?? null,
+        preferredRegions: profileRow?.preferred_regions ?? [],
+        targetRoles: profileRow?.target_roles ?? [],
+      });
+      setResumeCount(resumesResult.length);
+      setRecommendationCount(countRecommendedJobs(jobsResult, profileRow));
       void track("bottle_view", { count: rows.length });
     } catch {
       setMessage("加载失败，请稍后再试。");
@@ -92,6 +114,9 @@ export function MyBottleClient({ loginNextPath = "/bottle" }: { loginNextPath?: 
         <div className="mx-auto max-w-5xl">
           <ApplicationBottle
             applications={applications}
+            profile={profile}
+            recommendationCount={recommendationCount}
+            resumeCount={resumeCount}
             onChanged={handleApplicationChanged}
             onDeleted={handleApplicationDeleted}
           />
@@ -99,4 +124,16 @@ export function MyBottleClient({ loginNextPath = "/bottle" }: { loginNextPath?: 
       )}
     </div>
   );
+}
+
+function countRecommendedJobs(jobs: Job[], profile: Profile | null) {
+  const regions = profile?.preferred_regions ?? [];
+  const roles = profile?.target_roles ?? [];
+  if (regions.length === 0 && roles.length === 0) return 0;
+
+  return jobs.filter((job) => {
+    const locationText = job.locations ?? "";
+    const roleText = [job.job_titles, job.company_name, job.industry, ...(job.job_categories ?? [])].join(" ");
+    return regions.some((region) => locationText.includes(region)) || roles.some((role) => roleText.includes(role));
+  }).length;
 }

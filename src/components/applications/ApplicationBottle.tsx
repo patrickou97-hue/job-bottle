@@ -8,7 +8,10 @@ import { BottleStage } from "@/components/applications/BottleStage";
 import { useBottleStack } from "@/components/applications/useBottleStack";
 import { FiligreeDivider } from "@/components/ui/FiligreeDivider";
 import { Button } from "@/components/ui/Button";
-import { downloadBottleShareCard } from "@/components/applications/shareBottleCard";
+import {
+  downloadBottleShareCard,
+  type ShareProfileSnapshot,
+} from "@/components/applications/shareBottleCard";
 import { dismissBottleDrop, peekBottleDrop } from "@/lib/bottle-drop";
 import { formatDateTime } from "@/lib/utils";
 import type { ApplicationWithJob } from "@/lib/types";
@@ -36,10 +39,16 @@ export function ApplicationBottle({
   applications,
   onChanged,
   onDeleted,
+  profile,
+  recommendationCount = 0,
+  resumeCount = 0,
 }: {
   applications: ApplicationWithJob[];
   onChanged: (application: ApplicationWithJob) => Promise<void> | void;
   onDeleted: (applicationId: string) => Promise<void> | void;
+  profile?: ShareProfileSnapshot | null;
+  recommendationCount?: number;
+  resumeCount?: number;
 }) {
   const router = useRouter();
   const [selected, setSelected] = useState<ApplicationWithJob | null>(null);
@@ -99,7 +108,14 @@ export function ApplicationBottle({
         document
           .querySelector<HTMLCanvasElement>("#application-bottle-target canvas")
           ?.toDataURL("image/png") ?? null;
-      await downloadBottleShareCard({ applications, positions, bottleSnapshotDataUrl });
+      await downloadBottleShareCard({
+        applications,
+        bottleSnapshotDataUrl,
+        positions,
+        profile,
+        recommendationCount,
+        resumeCount,
+      });
       setShareState("done");
       window.setTimeout(() => setShareState("idle"), 2400);
     } catch {
