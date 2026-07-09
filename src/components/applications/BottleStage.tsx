@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import type { PointerEvent } from "react";
 import { useEffect, useMemo, useRef } from "react";
 import { useReducedMotion } from "motion/react";
 import { BOTTLE_AREA, type BottleStackPosition } from "@/components/applications/bottleGeometry";
@@ -29,6 +30,8 @@ export function BottleStage({
   onHover: (applicationId: string | null) => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const shakeRef = useRef({ x: 0, y: 0, lastX: 0, lastY: 0, hasPointer: false });
+  const scheduleDrawRef = useRef<() => void>(() => undefined);
   const reducedMotion = useReducedMotion();
   const spawnX = BOTTLE_AREA.centerX * 100;
   const spawnY = BOTTLE_AREA.neckY * 100;
@@ -56,6 +59,12 @@ export function BottleStage({
       return rect;
     };
 
+    function scheduleDraw() {
+      if (!frame) frame = window.requestAnimationFrame(draw);
+    }
+
+    scheduleDrawRef.current = scheduleDraw;
+
     function draw(now: number) {
       const rect = resize();
       frame = 0;
@@ -76,14 +85,22 @@ export function BottleStage({
         const startX = (spawnX / 100) * rect.width;
         const startY = (spawnY / 100) * rect.height;
         const isFalling = application.id === fallingId && falling;
-        const x = isFalling ? startX + (targetX - startX) * eased : targetX;
-        const y = isFalling ? startY + (targetY - startY) * eased + bounce : targetY;
+        const depth = 0.46 + position.yPct / 180;
+        const shimmer = Math.sin(now / 320 + position.rotate) * Math.min(2.6, Math.abs(shakeRef.current.x) * 0.12);
+        const shakeX = reducedMotion ? 0 : shakeRef.current.x * depth + shimmer;
+        const shakeY = reducedMotion ? 0 : shakeRef.current.y * depth * 0.42;
+        const x = isFalling ? startX + (targetX - startX) * eased : targetX + shakeX;
+        const y = isFalling ? startY + (targetY - startY) * eased + bounce : targetY + shakeY;
         const scale = isFalling ? 0.72 + 0.28 * eased : 1;
         drawApplicationStar(ctx, application, position, x, y, scale);
       });
       ctx.restore();
 
+      shakeRef.current.x *= 0.86;
+      shakeRef.current.y *= 0.82;
       if (falling && elapsed < 1) {
+        frame = window.requestAnimationFrame(draw);
+      } else if (!reducedMotion && (Math.abs(shakeRef.current.x) > 0.16 || Math.abs(shakeRef.current.y) > 0.16)) {
         frame = window.requestAnimationFrame(draw);
       } else if (fallingId && !completed) {
         completed = true;
@@ -99,14 +116,39 @@ export function BottleStage({
 
     return () => {
       if (frame) window.cancelAnimationFrame(frame);
+      scheduleDrawRef.current = () => undefined;
       observer.disconnect();
     };
   }, [drawableApplications, fallingId, onFallComplete, positions, reducedMotion, spawnX, spawnY]);
+
+  function handlePointerMove(event: PointerEvent<HTMLDivElement>) {
+    if (reducedMotion) return;
+    const shake = shakeRef.current;
+    if (!shake.hasPointer) {
+      shake.lastX = event.clientX;
+      shake.lastY = event.clientY;
+      shake.hasPointer = true;
+      return;
+    }
+    const dx = event.clientX - shake.lastX;
+    const dy = event.clientY - shake.lastY;
+    shake.lastX = event.clientX;
+    shake.lastY = event.clientY;
+    shake.x = clamp(shake.x + dx * 0.34, -22, 22);
+    shake.y = clamp(shake.y + dy * 0.26, -18, 18);
+    scheduleDrawRef.current();
+  }
+
+  function handlePointerLeave() {
+    shakeRef.current.hasPointer = false;
+  }
 
   return (
     <div
       id="application-bottle-target"
       className="relative mx-auto aspect-[2/3] w-full max-w-[520px] overflow-hidden"
+      onPointerLeave={handlePointerLeave}
+      onPointerMove={handlePointerMove}
     >
       <canvas
         ref={canvasRef}
@@ -165,6 +207,10 @@ export function BottleStage({
       />
     </div>
   );
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
 }
 
 function drawBottleAtmosphere(context: CanvasRenderingContext2D, width: number, height: number) {

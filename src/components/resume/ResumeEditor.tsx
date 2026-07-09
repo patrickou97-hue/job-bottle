@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import {
-  RESUME_TEMPLATES,
   createBlankCustomSection,
   createBlankEducation,
   createBlankExperience,
@@ -91,12 +90,6 @@ export function ResumeEditor({
           />
           <FieldGrid>
             <TextField label="简历名称" value={resume.title} onChange={(value) => patchResume({ title: value })} />
-            <SelectField
-              label="模板"
-              value={resume.templateId}
-              onChange={(value) => patchResume({ templateId: value as ResumeDocument["templateId"] })}
-              options={RESUME_TEMPLATES.map((template) => ({ label: template.label, value: template.id }))}
-            />
             <TextField label="姓名" value={resume.content.basics.name} onChange={(value) => patchBasics("name", value)} />
             <TextField label="英文名" value={resume.content.basics.englishName} onChange={(value) => patchBasics("englishName", value)} />
             <TextField label="手机号" value={resume.content.basics.phone} onChange={(value) => patchBasics("phone", value)} />

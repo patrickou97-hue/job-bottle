@@ -55,20 +55,39 @@ function hasStoredBrowserSession() {
 export async function ensureProfile(
   supabase: SupabaseClient<Database>,
   user: User,
+  profileInput?: {
+    displayName?: string;
+    preferredRegions?: string[];
+    targetRoles?: string[];
+  },
 ) {
   const displayName =
-    user.user_metadata?.display_name ??
-    user.email?.split("@")[0] ??
-    "秋招用户";
+    profileInput?.displayName?.trim() ||
+    (user.user_metadata?.display_name ?? user.email?.split("@")[0] ?? "秋招用户");
+  const preferredRegions = profileInput?.preferredRegions ?? user.user_metadata?.preferred_regions ?? [];
+  const targetRoles = profileInput?.targetRoles ?? user.user_metadata?.target_roles ?? [];
 
   await supabase.from("profiles").upsert(
     {
       id: user.id,
       display_name: displayName,
+      preferred_regions: normalizeProfileTags(preferredRegions),
+      target_roles: normalizeProfileTags(targetRoles),
       role: "user",
     },
     { onConflict: "id", ignoreDuplicates: true },
   );
+
+  if (profileInput) {
+    await supabase
+      .from("profiles")
+      .update({
+        display_name: displayName,
+        preferred_regions: normalizeProfileTags(preferredRegions),
+        target_roles: normalizeProfileTags(targetRoles),
+      })
+      .eq("id", user.id);
+  }
 }
 
 export async function getCurrentUser(
@@ -120,4 +139,16 @@ export function translateAuthError(message?: string) {
   if (lower.includes("already registered")) return "这个邮箱已经注册，请直接登录。";
   if (lower.includes("rate limit")) return "操作太频繁，请稍后再试。";
   return "操作失败，请检查邮箱和密码。";
+}
+
+function normalizeProfileTags(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return Array.from(
+    new Set(
+      value
+        .map((item) => String(item).trim())
+        .filter(Boolean)
+        .slice(0, 12),
+    ),
+  );
 }

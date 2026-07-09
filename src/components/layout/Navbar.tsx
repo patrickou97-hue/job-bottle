@@ -110,14 +110,17 @@ export function Navbar() {
                   管理入口
                 </Link>
               ) : null}
-              <span className="status-pill inline-flex h-10 items-center gap-2 rounded-full px-3 text-sm text-ink-secondary">
+              <Link
+                href="/profile"
+                className="status-pill pressable inline-flex h-10 items-center gap-2 rounded-full px-3 text-sm text-ink-secondary transition hover:text-nebula-silver"
+              >
                 {profile.role === "admin" ? (
                   <Shield aria-hidden="true" className="size-4 text-nebula-blue" />
                 ) : (
                   <User aria-hidden="true" className="size-4 text-nebula-blue" />
                 )}
                 {profile.display_name || "个人中心"}
-              </span>
+              </Link>
               <button
                 type="button"
                 className="muted-button pressable inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm transition hover:bg-white/10"
@@ -163,6 +166,13 @@ export function Navbar() {
           <div className="mt-3">
             {profile ? (
               <div className="grid gap-2">
+                <Link
+                  href="/profile"
+                  className="muted-button rounded-full px-4 py-2 text-center text-sm"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  个人中心
+                </Link>
                 {profile.role === "admin" ? (
                   <Link
                     href="/admin"

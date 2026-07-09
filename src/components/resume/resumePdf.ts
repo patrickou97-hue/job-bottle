@@ -39,7 +39,6 @@ const FONT_FAMILY = "NotoSerifSC";
 const FONT_REGULAR = "/fonts/NotoSerifSC-Regular.ttf";
 const FONT_BOLD = "/fonts/NotoSerifSC-Bold.ttf";
 const BLACK = "#111111";
-const MUTED = "#222222";
 
 const COMPACT_OPTIONS: PdfOptions[] = [
   { bodySize: 10.1, bulletSize: 9.65, headingSize: 12.2, itemGap: 2.4, lineHeight: 1.15, sectionGap: 3.2 },
@@ -111,7 +110,7 @@ function renderResume(
     y: TOP,
   };
 
-  renderHeader(state, resume, options);
+  renderHeader(state, resume);
   renderEducation(state, resume.content.education, options);
   renderExperienceSection(state, "实习经历", resume.content.work, options);
   renderProjectSection(state, "项目经历", resume.content.projects, options);
@@ -124,7 +123,7 @@ function renderResume(
   return { page: state.page, y: state.y };
 }
 
-function renderHeader(state: LayoutState, resume: ResumeDocument, options: PdfOptions) {
+function renderHeader(state: LayoutState, resume: ResumeDocument) {
   const basics = resume.content.basics;
   const hasPhoto = Boolean(basics.photoDataUrl);
   const photoWidth = 58;

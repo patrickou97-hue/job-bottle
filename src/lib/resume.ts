@@ -1,4 +1,4 @@
-export type ResumeTemplateId = "classic" | "modern";
+export type ResumeTemplateId = "compact";
 
 export type ResumeBasics = {
   name: string;
@@ -86,8 +86,7 @@ export type ResumeDocument = {
 const STORAGE_KEY = "job_bottle_resumes_v1";
 
 export const RESUME_TEMPLATES: { id: ResumeTemplateId; label: string; description: string }[] = [
-  { id: "classic", label: "经典单栏", description: "金融、咨询、商科学生" },
-  { id: "modern", label: "现代简洁", description: "产品、互联网、数据分析" },
+  { id: "compact", label: "紧凑单栏", description: "正式中文简历，预览与 PDF 保持一致" },
 ];
 
 export function createId(prefix: string) {
@@ -105,7 +104,7 @@ export function createEmptyResume(): ResumeDocument {
     targetRole: "",
     jobTarget: "",
     linkedJobId: null,
-    templateId: "classic",
+    templateId: "compact",
     content: {
       basics: {
         name: "",
@@ -142,7 +141,7 @@ export function createSampleResume(): ResumeDocument {
     targetRole: "产品经理实习生",
     jobTarget: "互联网产品方向",
     linkedJobId: null,
-    templateId: "classic",
+    templateId: "compact",
     content: {
       basics: {
         name: "王小星",
@@ -333,7 +332,7 @@ function normalizeResumeDocument(value: unknown): ResumeDocument | null {
     targetRole: typeof resume.targetRole === "string" ? resume.targetRole : "",
     jobTarget: typeof resume.jobTarget === "string" ? resume.jobTarget : "",
     linkedJobId: typeof resume.linkedJobId === "string" ? resume.linkedJobId : null,
-    templateId: resume.templateId === "modern" ? "modern" : "classic",
+    templateId: "compact",
     content: {
       ...fallback.content,
       ...content,

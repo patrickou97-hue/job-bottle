@@ -13,6 +13,9 @@ import { ensureProfile, translateAuthError } from "@/lib/auth";
 const loginSchema = z.object({
   email: z.string().email("请输入有效邮箱。"),
   password: z.string().min(6, "密码至少需要 6 位。"),
+  displayName: z.string().max(24, "用户名不超过 24 个字。").optional(),
+  preferredRegions: z.string().max(80, "意向地区太长了。").optional(),
+  targetRoles: z.string().max(120, "意向岗位太长了。").optional(),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -29,7 +32,7 @@ export function LoginForm() {
     formState: { errors },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "" },
+    defaultValues: { email: "", password: "", displayName: "", preferredRegions: "", targetRoles: "" },
   });
 
   async function onSubmit(values: LoginFormValues) {
@@ -43,12 +46,28 @@ export function LoginForm() {
       }
       const supabase = createClient();
       if (mode === "register") {
+        const preferredRegions = splitProfileInput(values.preferredRegions);
+        const targetRoles = splitProfileInput(values.targetRoles);
+        const displayName = values.displayName?.trim();
         const { data, error } = await supabase.auth.signUp({
           email: values.email,
           password: values.password,
+          options: {
+            data: {
+              display_name: displayName || values.email.split("@")[0],
+              preferred_regions: preferredRegions,
+              target_roles: targetRoles,
+            },
+          },
         });
         if (error) throw error;
-        if (data.user) await ensureProfile(supabase, data.user);
+        if (data.user) {
+          await ensureProfile(supabase, data.user, {
+            displayName,
+            preferredRegions,
+            targetRoles,
+          });
+        }
         setMessage("注册成功。若系统要求邮箱验证，请先前往邮箱完成确认。");
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -82,6 +101,16 @@ export function LoginForm() {
       </p>
 
       <form className="mt-8 space-y-5" onSubmit={handleSubmit(onSubmit)}>
+        {isRegister ? (
+          <label className="block">
+            <span className="mb-2 block text-sm text-ink-secondary">用户名</span>
+            <Input type="text" autoComplete="nickname" {...register("displayName")} />
+            {errors.displayName ? (
+              <span className="mt-2 block text-xs text-red-200">{errors.displayName.message}</span>
+            ) : null}
+          </label>
+        ) : null}
+
         <label className="block">
           <span className="mb-2 block text-sm text-ink-secondary">邮箱</span>
           <Input type="email" autoComplete="email" {...register("email")} />
@@ -89,6 +118,25 @@ export function LoginForm() {
             <span className="mt-2 block text-xs text-red-200">{errors.email.message}</span>
           ) : null}
         </label>
+
+        {isRegister ? (
+          <div className="grid gap-5 sm:grid-cols-2">
+            <label className="block">
+              <span className="mb-2 block text-sm text-ink-secondary">意向地区</span>
+              <Input type="text" placeholder="上海、北京、深圳" {...register("preferredRegions")} />
+              {errors.preferredRegions ? (
+                <span className="mt-2 block text-xs text-red-200">{errors.preferredRegions.message}</span>
+              ) : null}
+            </label>
+            <label className="block">
+              <span className="mb-2 block text-sm text-ink-secondary">意向岗位</span>
+              <Input type="text" placeholder="产品、数据分析、投研" {...register("targetRoles")} />
+              {errors.targetRoles ? (
+                <span className="mt-2 block text-xs text-red-200">{errors.targetRoles.message}</span>
+              ) : null}
+            </label>
+          </div>
+        ) : null}
 
         <label className="block">
           <span className="mb-2 block text-sm text-ink-secondary">密码</span>
@@ -122,5 +170,17 @@ export function LoginForm() {
         {isRegister ? "已有账号？去登录" : "还没有账号？去注册"}
       </button>
     </div>
+  );
+}
+
+function splitProfileInput(value?: string) {
+  return Array.from(
+    new Set(
+      (value ?? "")
+        .split(/[、,，/\s]+/)
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .slice(0, 12),
+    ),
   );
 }

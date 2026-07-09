@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Upload } from "lucide-react";
-import { parseJobsImportFile } from "@/lib/csv";
+import { getJobImportFingerprint, parseJobsImportFile } from "@/lib/csv";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
@@ -75,11 +75,38 @@ export function CsvImportPanel() {
         tags: row.tags,
         is_active: true,
       }));
-      if (payload.length > 0) {
-        const { error } = await createClient().from("jobs").insert(payload);
+      const supabase = createClient();
+      const { data: existingJobs, error: existingError } = await supabase
+        .from("jobs")
+        .select("company_name,start_date,industry,batch_type,job_titles,job_categories,locations,apply_url,notes,tags,is_active");
+      if (existingError) throw existingError;
+
+      const existingFingerprints = new Set(
+        (existingJobs ?? []).map((job) =>
+          getJobImportFingerprint({
+            apply_url: job.apply_url,
+            batch_type: job.batch_type,
+            company_name: job.company_name,
+            industry: job.industry,
+            is_active: job.is_active,
+            job_categories: job.job_categories,
+            job_titles: job.job_titles,
+            locations: job.locations,
+            notes: job.notes,
+            start_date: job.start_date,
+            tags: job.tags,
+          }),
+        ),
+      );
+      const dedupedPayload = payload.filter((row) => !existingFingerprints.has(getJobImportFingerprint(row)));
+
+      if (dedupedPayload.length > 0) {
+        const { error } = await supabase.from("jobs").insert(dedupedPayload);
         if (error) throw error;
       }
-      setMessage(`导入完成：成功 ${payload.length} 条，跳过 ${invalidRows.length} 条。`);
+      setMessage(
+        `导入完成：成功 ${dedupedPayload.length} 条，跳过 ${invalidRows.length + payload.length - dedupedPayload.length} 条重复或无效数据。`,
+      );
     } catch {
       setMessage("导入失败，请确认管理员权限或检查数据。");
     } finally {
@@ -176,6 +203,8 @@ export function CsvImportPanel() {
                         <td className="px-4 py-3">
                           {row.isValid ? (
                             <span className="text-nebula-silver">可导入</span>
+                          ) : row.duplicateOfRowNumber ? (
+                            <span className="text-ink-muted">重复</span>
                           ) : (
                             <span className="text-red-200">已跳过</span>
                           )}

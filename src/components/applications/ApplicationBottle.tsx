@@ -95,7 +95,11 @@ export function ApplicationBottle({
   async function handleShareBottle() {
     setShareState("generating");
     try {
-      await downloadBottleShareCard({ applications, positions });
+      const bottleSnapshotDataUrl =
+        document
+          .querySelector<HTMLCanvasElement>("#application-bottle-target canvas")
+          ?.toDataURL("image/png") ?? null;
+      await downloadBottleShareCard({ applications, positions, bottleSnapshotDataUrl });
       setShareState("done");
       window.setTimeout(() => setShareState("idle"), 2400);
     } catch {

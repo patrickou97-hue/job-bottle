@@ -80,6 +80,8 @@ async function parseJobsExcel(file: File) {
 }
 
 function normalizeImportRows(rows: NumberedRawRow[]) {
+  const seen = new Map<string, number>();
+
   return rows.map(({ row, rowNumber }) => {
     const company = pick(row, headerAliases.company_name);
     const applyUrl = pick(row, headerAliases.apply_url);
@@ -116,9 +118,62 @@ function normalizeImportRows(rows: NumberedRawRow[]) {
     if (preview.apply_url && !isValidHttpUrl(preview.apply_url)) {
       preview.errors.push("投递链接格式不正确");
     }
+    const fingerprint = getJobImportFingerprint(preview);
+    const duplicateOf = seen.get(fingerprint);
+    if (duplicateOf) {
+      preview.duplicateOfRowNumber = duplicateOf;
+      preview.errors.push(`与第 ${duplicateOf} 行完全重复`);
+    } else {
+      seen.set(fingerprint, rowNumber);
+    }
     preview.isValid = preview.errors.length === 0;
     return preview;
   });
+}
+
+export function getJobImportFingerprint(row: {
+  apply_url: string;
+  batch_type: string | null;
+  company_name: string;
+  industry: string | null;
+  is_active?: boolean;
+  job_categories?: string[];
+  job_titles: string | null;
+  locations: string | null;
+  notes: string | null;
+  start_date: string | null;
+  tags?: string[];
+}) {
+  return [
+    row.company_name,
+    row.start_date,
+    row.industry,
+    row.batch_type,
+    row.job_titles,
+    normalizeList(row.job_categories),
+    row.locations,
+    normalizeUrl(row.apply_url),
+    row.notes,
+    normalizeList(row.tags),
+    row.is_active === false ? "inactive" : "active",
+  ]
+    .map((value) => normalizeFingerprintValue(value))
+    .join("||");
+}
+
+function normalizeList(value: string[] | undefined) {
+  return [...(value ?? [])].map((item) => item.trim()).filter(Boolean).sort().join("、");
+}
+
+function normalizeUrl(value: string) {
+  return value.trim().replace(/\/+$/, "");
+}
+
+function normalizeFingerprintValue(value: unknown) {
+  return String(value ?? "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
 }
 
 function isExcelFile(file: File) {

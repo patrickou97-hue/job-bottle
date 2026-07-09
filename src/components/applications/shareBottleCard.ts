@@ -12,11 +12,13 @@ const SITE_URL = "https://job-bottle.vercel.app/";
 
 type ShareBottleOptions = {
   applications: ApplicationWithJob[];
+  bottleSnapshotDataUrl?: string | null;
   positions: Map<string, BottleStackPosition>;
 };
 
 export async function downloadBottleShareCard({
   applications,
+  bottleSnapshotDataUrl,
   positions,
 }: ShareBottleOptions) {
   const canvas = document.createElement("canvas");
@@ -25,7 +27,7 @@ export async function downloadBottleShareCard({
   const context = canvas.getContext("2d");
   if (!context) throw new Error("无法生成分享图，请稍后重试。");
 
-  const [bottleImage, qrImage] = await Promise.all([
+  const [bottleImage, qrImage, logoImage, bottleSnapshot] = await Promise.all([
     loadImage(`${window.location.origin}/assets/star-bottle-image2.png`),
     loadImage(
       await QRCode.toDataURL(SITE_URL, {
@@ -37,12 +39,14 @@ export async function downloadBottleShareCard({
         },
       }),
     ),
+    loadImage(`${window.location.origin}/brand/shi-xing-wordmark.png`).catch(() => null),
+    bottleSnapshotDataUrl ? loadImage(bottleSnapshotDataUrl).catch(() => null) : Promise.resolve(null),
   ]);
 
   drawShareBackground(context);
-  drawShareHeader(context, applications.length);
-  drawBottleSnapshot(context, applications, positions, bottleImage);
-  drawOrbitSnapshot(context, applications);
+  drawShareHeader(context, applications.length, logoImage);
+  drawBottleSnapshot(context, applications, positions, bottleImage, bottleSnapshot);
+  drawCompanyList(context, applications);
   drawShareFooter(context, qrImage);
 
   const pngBlob = await canvasToBlob(canvas, "image/png");
@@ -62,42 +66,74 @@ export async function downloadBottleShareCard({
 
 function drawShareBackground(context: CanvasRenderingContext2D) {
   const background = context.createLinearGradient(0, 0, CARD_WIDTH, CARD_HEIGHT);
-  background.addColorStop(0, "#071022");
-  background.addColorStop(0.38, "#162444");
-  background.addColorStop(0.72, "#313B59");
-  background.addColorStop(1, "#69648C");
+  background.addColorStop(0, "#050A18");
+  background.addColorStop(0.34, "#111A35");
+  background.addColorStop(0.7, "#253254");
+  background.addColorStop(1, "#12192F");
   context.fillStyle = background;
   context.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
 
-  const nebula = context.createRadialGradient(920, 620, 20, 920, 620, 680);
-  nebula.addColorStop(0, "rgba(217,173,169,0.22)");
-  nebula.addColorStop(0.38, "rgba(105,100,140,0.22)");
+  const nebula = context.createRadialGradient(910, 520, 20, 910, 520, 720);
+  nebula.addColorStop(0, "rgba(242,209,109,0.2)");
+  nebula.addColorStop(0.32, "rgba(217,173,169,0.18)");
+  nebula.addColorStop(0.62, "rgba(105,100,140,0.2)");
   nebula.addColorStop(1, "rgba(12,18,36,0)");
   context.fillStyle = nebula;
   context.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
 
-  for (let index = 0; index < 180; index += 1) {
-    const x = (index * 137.7) % CARD_WIDTH;
-    const y = (index * 251.3) % CARD_HEIGHT;
-    const alpha = 0.18 + ((index * 17) % 45) / 100;
+  const pathGlow = context.createLinearGradient(160, 220, 1060, 1160);
+  pathGlow.addColorStop(0, "rgba(216,232,255,0)");
+  pathGlow.addColorStop(0.46, "rgba(216,232,255,0.08)");
+  pathGlow.addColorStop(1, "rgba(242,209,109,0)");
+  context.strokeStyle = pathGlow;
+  context.lineWidth = 58;
+  context.beginPath();
+  context.moveTo(60, 940);
+  context.bezierCurveTo(260, 660, 520, 820, 740, 520);
+  context.bezierCurveTo(880, 330, 980, 250, 1160, 220);
+  context.stroke();
+
+  for (let index = 0; index < 260; index += 1) {
+    const x = (index * 137.7 + (index % 5) * 23) % CARD_WIDTH;
+    const y = (index * 251.3 + (index % 7) * 19) % CARD_HEIGHT;
+    const alpha = 0.12 + ((index * 17) % 44) / 100;
     context.fillStyle = `rgba(242,229,189,${alpha})`;
     context.beginPath();
-    context.arc(x, y, index % 9 === 0 ? 2.1 : 1.15, 0, Math.PI * 2);
+    context.arc(x, y, index % 11 === 0 ? 2.2 : 1.05, 0, Math.PI * 2);
     context.fill();
   }
+
+  context.strokeStyle = "rgba(242,209,109,0.4)";
+  context.lineWidth = 1.4;
+  context.beginPath();
+  context.moveTo(CARD_PADDING, 232);
+  context.lineTo(CARD_WIDTH - CARD_PADDING, 232);
+  context.stroke();
 }
 
-function drawShareHeader(context: CanvasRenderingContext2D, total: number) {
+function drawShareHeader(context: CanvasRenderingContext2D, total: number, logoImage: HTMLImageElement | null) {
+  if (logoImage) {
+    context.drawImage(logoImage, CARD_PADDING, 70, 168, 58);
+  } else {
+    context.fillStyle = "#F7F2FF";
+    context.font = "800 42px sans-serif";
+    context.fillText("拾星", CARD_PADDING, 118);
+  }
+
   context.fillStyle = "#F7F2FF";
-  context.font = "700 58px sans-serif";
-  context.fillText("我的秋招星瓶", CARD_PADDING, 132);
+  context.font = "700 64px sans-serif";
+  context.fillText("我的秋招星瓶", CARD_PADDING, 182);
 
-  context.fillStyle = "rgba(247,242,255,0.72)";
-  context.font = "500 24px sans-serif";
-  context.fillText(`已收进 ${total} 颗星`, CARD_PADDING, 178);
+  context.fillStyle = "rgba(247,242,255,0.7)";
+  context.font = "500 25px sans-serif";
+  context.fillText(`已收进 ${total} 颗星，正在把机会装进自己的轨道`, CARD_PADDING, 224);
 
-  context.fillStyle = "rgba(242,209,109,0.72)";
-  context.fillRect(CARD_PADDING, 216, CARD_WIDTH - CARD_PADDING * 2, 1);
+  context.fillStyle = "rgba(242,209,109,0.92)";
+  roundedRect(context, CARD_WIDTH - CARD_PADDING - 230, 86, 230, 54, 27);
+  context.fill();
+  context.fillStyle = "#10172B";
+  context.font = "700 22px sans-serif";
+  context.fillText("Job Bottle", CARD_WIDTH - CARD_PADDING - 172, 120);
 }
 
 function drawBottleSnapshot(
@@ -105,93 +141,84 @@ function drawBottleSnapshot(
   applications: ApplicationWithJob[],
   positions: Map<string, BottleStackPosition>,
   bottleImage: HTMLImageElement,
+  bottleSnapshot: HTMLImageElement | null,
 ) {
-  const x = 76;
-  const y = 280;
-  const width = 520;
-  const height = 780;
+  const x = 88;
+  const y = 290;
+  const width = 560;
+  const height = 820;
 
   const glow = context.createRadialGradient(x + width * 0.5, y + height * 0.62, 20, x + width * 0.5, y + height * 0.62, 330);
-  glow.addColorStop(0, "rgba(140,195,255,0.2)");
+  glow.addColorStop(0, "rgba(216,232,255,0.22)");
+  glow.addColorStop(0.36, "rgba(242,209,109,0.08)");
   glow.addColorStop(1, "rgba(140,195,255,0)");
   context.fillStyle = glow;
   context.fillRect(x - 40, y - 40, width + 80, height + 80);
 
-  applications.forEach((application) => {
-    const position = positions.get(application.id);
-    if (!position) return;
-    const starX = x + (position.xPct / 100) * width;
-    const starY = y + (position.yPct / 100) * height;
-    drawShareStar(context, starX, starY, Math.max(14, position.size * 1.35), application.status);
-  });
+  if (bottleSnapshot) {
+    context.save();
+    roundedRect(context, x - 18, y - 20, width + 36, height + 44, 52);
+    context.clip();
+    context.drawImage(bottleSnapshot, x, y, width, height);
+    context.restore();
+  } else {
+    applications.forEach((application) => {
+      const position = positions.get(application.id);
+      if (!position) return;
+      const starX = x + (position.xPct / 100) * width;
+      const starY = y + (position.yPct / 100) * height;
+      drawShareStar(context, starX, starY, Math.max(14, position.size * 1.35), application.status);
+    });
 
-  context.save();
-  context.globalAlpha = 0.94;
-  context.globalCompositeOperation = "screen";
-  context.drawImage(bottleImage, x, y, width, height);
-  context.restore();
+    context.save();
+    context.globalAlpha = 0.94;
+    context.globalCompositeOperation = "screen";
+    context.drawImage(bottleImage, x, y, width, height);
+    context.restore();
+  }
 
   context.fillStyle = "rgba(247,242,255,0.78)";
-  context.font = "600 28px sans-serif";
-  context.fillText("星瓶", x + 28, y + height + 48);
+  context.font = "700 30px sans-serif";
+  context.fillText("轨星瓶", x + 34, y + height + 52);
+  context.fillStyle = "rgba(247,242,255,0.54)";
+  context.font = "500 20px sans-serif";
+  context.fillText("每一颗星，都是一次投递机会", x + 34, y + height + 86);
 }
 
-function drawOrbitSnapshot(context: CanvasRenderingContext2D, applications: ApplicationWithJob[]) {
-  const x = 632;
-  const y = 312;
-  const size = 452;
-  const centerX = x + size / 2;
-  const centerY = y + size / 2;
-  const radii = [190, 146, 104, 64];
+function drawCompanyList(context: CanvasRenderingContext2D, applications: ApplicationWithJob[]) {
+  const x = 700;
+  const y = 332;
+  const width = 392;
+  const rowHeight = 54;
+  const companies = Array.from(new Set(applications.map((item) => item.job.company_name).filter(Boolean))).slice(0, 12);
 
-  context.fillStyle = "rgba(6,13,29,0.22)";
-  roundedRect(context, x - 8, y - 8, size + 16, size + 16, 42);
+  context.fillStyle = "rgba(5,10,24,0.38)";
+  roundedRect(context, x - 28, y - 56, width + 56, 760, 44);
   context.fill();
 
-  radii.forEach((radius, index) => {
-    context.strokeStyle = `rgba(242,229,189,${0.14 - index * 0.02})`;
-    context.lineWidth = 1;
-    context.setLineDash([5, 8]);
-    context.beginPath();
-    context.arc(centerX, centerY, radius, 0, Math.PI * 2);
-    context.stroke();
-  });
-  context.setLineDash([]);
-
-  [40, 98, 156].forEach((radius, index) => {
-    context.strokeStyle = `rgba(242,209,109,${0.22 - index * 0.055})`;
-    context.lineWidth = 2;
-    context.beginPath();
-    context.arc(centerX, centerY, radius, 0, Math.PI * 2);
-    context.stroke();
-  });
-
-  context.fillStyle = "#F2E5BD";
-  context.beginPath();
-  context.arc(centerX, centerY, 8, 0, Math.PI * 2);
-  context.fill();
-
-  const visible = applications.slice(0, 18);
-  visible.forEach((application, index) => {
-    const ringIndex = getShareOrbitRing(application.status);
-    const radius = radii[ringIndex];
-    const totalOnRing = visible.filter((item) => getShareOrbitRing(item.status) === ringIndex).length;
-    const indexOnRing = visible
-      .slice(0, index)
-      .filter((item) => getShareOrbitRing(item.status) === ringIndex).length;
-    const angle = -Math.PI / 2 + (indexOnRing / Math.max(1, totalOnRing)) * Math.PI * 2 + ringIndex * 0.36;
-    const starX = centerX + Math.cos(angle) * radius;
-    const starY = centerY + Math.sin(angle) * radius;
-    drawSharePlanet(context, starX, starY, application.status);
-  });
-
-  context.fillStyle = "rgba(247,242,255,0.78)";
-  context.font = "600 28px sans-serif";
-  context.fillText("投递轨道", x + 8, y + size + 58);
-
+  context.fillStyle = "#F7F2FF";
+  context.font = "700 34px sans-serif";
+  context.fillText("投递企业", x, y);
   context.fillStyle = "rgba(247,242,255,0.58)";
   context.font = "500 20px sans-serif";
-  context.fillText(`投递中 ${applications.filter((item) => !["rejected", "withdrawn"].includes(item.status)).length}`, x + 8, y + size + 92);
+  context.fillText("只展示名称，适合分享", x, y + 34);
+
+  companies.forEach((company, index) => {
+    const top = y + 82 + index * rowHeight;
+    context.fillStyle = index % 2 === 0 ? "rgba(255,255,255,0.055)" : "rgba(255,255,255,0.025)";
+    roundedRect(context, x, top - 30, width, 40, 20);
+    context.fill();
+    drawShareStar(context, x + 22, top - 10, 20, applications[index]?.status ?? "opened");
+    context.fillStyle = "#F7F2FF";
+    context.font = "600 22px sans-serif";
+    context.fillText(truncateText(context, company, width - 72), x + 52, top - 2);
+  });
+
+  if (applications.length > companies.length) {
+    context.fillStyle = "rgba(242,209,109,0.78)";
+    context.font = "600 20px sans-serif";
+    context.fillText(`还有 ${applications.length - companies.length} 个机会已收入星瓶`, x, y + 82 + companies.length * rowHeight + 22);
+  }
 }
 
 function drawShareFooter(context: CanvasRenderingContext2D, qrImage: HTMLImageElement) {
@@ -241,28 +268,6 @@ function drawShareStar(
   context.restore();
 }
 
-function drawSharePlanet(
-  context: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  status: ApplicationStatus,
-) {
-  const color = getShareColor(status);
-  const radius = status === "offer" ? 18 : 14;
-  const gradient = context.createRadialGradient(x - radius * 0.42, y - radius * 0.5, 2, x, y, radius);
-  gradient.addColorStop(0, color.light);
-  gradient.addColorStop(0.48, color.fill);
-  gradient.addColorStop(1, "#060B18");
-  context.fillStyle = gradient;
-  context.beginPath();
-  context.arc(x, y, radius, 0, Math.PI * 2);
-  context.fill();
-  context.fillStyle = color.light;
-  context.beginPath();
-  context.arc(x + radius * 0.35, y - radius * 0.42, 3.6, 0, Math.PI * 2);
-  context.fill();
-}
-
 function getShareColor(status: ApplicationStatus) {
   const colors: Record<ApplicationStatus, {
     fill: string;
@@ -281,13 +286,6 @@ function getShareColor(status: ApplicationStatus) {
     withdrawn: { fill: "#596275", light: "#AAB5C8", halo: "rgba(89,98,117,0.18)", stroke: "rgba(170,181,200,0.38)" },
   };
   return colors[status];
-}
-
-function getShareOrbitRing(status: ApplicationStatus) {
-  if (status === "offer") return 3;
-  if (["first_round", "second_round", "final_round"].includes(status)) return 2;
-  if (["applied", "written_test"].includes(status)) return 1;
-  return 0;
 }
 
 function drawStarPath(context: CanvasRenderingContext2D, outerRadius: number, innerRadius: number) {
@@ -318,6 +316,15 @@ function roundedRect(
   context.arcTo(x, y + height, x, y, radius);
   context.arcTo(x, y, x + width, y, radius);
   context.closePath();
+}
+
+function truncateText(context: CanvasRenderingContext2D, text: string, maxWidth: number) {
+  if (context.measureText(text).width <= maxWidth) return text;
+  let next = text;
+  while (next.length > 1 && context.measureText(`${next}...`).width > maxWidth) {
+    next = next.slice(0, -1);
+  }
+  return `${next}...`;
 }
 
 function loadImage(src: string) {

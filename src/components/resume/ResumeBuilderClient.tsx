@@ -306,7 +306,7 @@ export function ResumeBuilderClient() {
               <div>
                 <h2 className="section-title">实时预览</h2>
                 <p className="mt-1 text-xs text-ink-muted">
-                  A4 白底预览，打印时只导出简历内容
+                  紧凑白底预览，下载时生成可复制文字的正式 PDF
                 </p>
               </div>
               <ResumePdfExportButton resume={selectedResume} />

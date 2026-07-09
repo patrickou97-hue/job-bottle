@@ -153,7 +153,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/lib/resume.ts",
-    mustInclude: ["ResumeDocument", "ResumeContent", "createSampleResume", "loadLocalResumes", "linkedJobId", "photoDataUrl", "classic", "modern"],
+    mustInclude: ["ResumeDocument", "ResumeContent", "createSampleResume", "loadLocalResumes", "linkedJobId", "photoDataUrl", "compact", "紧凑单栏"],
     mustNotInclude: [],
     label: "简历制作器定义结构化简历模型和本地持久化",
   },

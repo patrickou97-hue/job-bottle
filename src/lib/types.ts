@@ -6,6 +6,8 @@ export type ProfileRole = (typeof PROFILE_ROLES)[number];
 export type Profile = {
   id: string;
   display_name: string | null;
+  preferred_regions: string[];
+  target_roles: string[];
   role: ProfileRole;
   created_at: string;
   updated_at: string;
@@ -89,6 +91,7 @@ export type CsvImportPreviewRow = {
   tags: string[];
   isValid: boolean;
   errors: string[];
+  duplicateOfRowNumber?: number;
 };
 
 export type ForumPost = {
@@ -140,7 +143,7 @@ export type ResumeRow = {
   target_role: string | null;
   job_target: string | null;
   linked_job_id: string | null;
-  template_id: "classic" | "modern";
+  template_id: "compact" | "classic" | "modern";
   content_json: Record<string, unknown>;
   created_at: string;
   updated_at: string;
@@ -175,12 +178,16 @@ export type Database = {
         Insert: {
           id: string;
           display_name?: string | null;
+          preferred_regions?: string[];
+          target_roles?: string[];
           role?: ProfileRole;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           display_name?: string | null;
+          preferred_regions?: string[];
+          target_roles?: string[];
           role?: ProfileRole;
           updated_at?: string;
         };
@@ -254,7 +261,7 @@ export type Database = {
           target_role?: string | null;
           job_target?: string | null;
           linked_job_id?: string | null;
-          template_id?: "classic" | "modern";
+          template_id?: "compact" | "classic" | "modern";
           content_json?: Record<string, unknown>;
           created_at?: string;
           updated_at?: string;
@@ -264,7 +271,7 @@ export type Database = {
           target_role?: string | null;
           job_target?: string | null;
           linked_job_id?: string | null;
-          template_id?: "classic" | "modern";
+          template_id?: "compact" | "classic" | "modern";
           content_json?: Record<string, unknown>;
           updated_at?: string;
         };
