@@ -15,7 +15,6 @@ type ShareBottleOptions = {
   bottleSnapshotDataUrl?: string | null;
   positions: Map<string, BottleStackPosition>;
   profile?: ShareProfileSnapshot | null;
-  recommendationCount?: number;
   resumeCount?: number;
 };
 
@@ -30,7 +29,6 @@ export async function downloadBottleShareCard({
   bottleSnapshotDataUrl,
   positions,
   profile,
-  recommendationCount = 0,
   resumeCount = 0,
 }: ShareBottleOptions) {
   const canvas = document.createElement("canvas");
@@ -61,7 +59,6 @@ export async function downloadBottleShareCard({
   drawShareStory(context, {
     applications,
     profile: profile ?? null,
-    recommendationCount,
     resumeCount,
   });
   drawShareFooter(context, qrImage);
@@ -218,10 +215,10 @@ function drawBottleSnapshot(
 
   context.fillStyle = "rgba(248,241,223,0.76)";
   context.font = "700 28px sans-serif";
-  context.fillText("轨星瓶", x + 42, y + height + 54);
+  context.fillText("星瓶", x + 42, y + height + 54);
   context.fillStyle = "rgba(248,241,223,0.48)";
   context.font = "500 20px sans-serif";
-  context.fillText("每一颗星，都是一次秋招机会", x + 42, y + height + 88);
+  context.fillText("收录明日的坐标", x + 42, y + height + 88);
 }
 
 function drawShareStory(
@@ -229,12 +226,10 @@ function drawShareStory(
   {
     applications,
     profile,
-    recommendationCount,
     resumeCount,
   }: {
     applications: ApplicationWithJob[];
     profile: ShareProfileSnapshot | null;
-    recommendationCount: number;
     resumeCount: number;
   },
 ) {
@@ -248,34 +243,27 @@ function drawShareStory(
   context.fillStyle = "rgba(244,232,198,0.78)";
   context.font = "700 30px sans-serif";
   context.fillText("秋招线索", x, y);
-  context.fillStyle = "rgba(248,241,223,0.5)";
-  context.font = "500 19px sans-serif";
-  context.fillText("公开分享仅展示方向与企业名称", x, y + 34);
 
   drawShareMetric(context, x, y + 92, "意向地区", regions.length ? regions.join(" / ") : "尚未点亮");
   drawShareMetric(context, x, y + 174, "意向岗位", roles.length ? roles.join(" / ") : "尚未点亮");
-  drawShareMetric(context, x, y + 256, "简历版本", resumeCount > 0 ? `${resumeCount} 份` : "尚未点亮");
-  drawShareMetric(context, x, y + 338, "推荐机会", recommendationCount > 0 ? `${recommendationCount} 个` : "尚未点亮");
+  drawShareMetric(context, x, y + 256, "独特简历", resumeCount > 0 ? `${resumeCount} 份` : "尚未点亮");
 
   context.fillStyle = "rgba(244,232,198,0.78)";
   context.font = "700 28px sans-serif";
-  context.fillText("投递企业", x, y + 472);
-  context.fillStyle = "rgba(248,241,223,0.5)";
-  context.font = "500 18px sans-serif";
-  context.fillText("只展示名称，不包含隐私字段", x, y + 502);
+  context.fillText("投递企业", x, y + 430);
 
   if (companies.length === 0) {
     context.fillStyle = "rgba(248,241,223,0.58)";
     context.font = "600 23px sans-serif";
-    context.fillText("还没有点亮岗位星", x, y + 568);
+    context.fillText("还没有点亮岗位星", x, y + 504);
     context.fillStyle = "rgba(248,241,223,0.42)";
     context.font = "500 18px sans-serif";
-    context.fillText("去探索星海，收进第一颗机会。", x, y + 604);
+    context.fillText("去探索星海，收进第一颗机会。", x, y + 540);
     return;
   }
 
   companies.forEach((company, index) => {
-    const top = y + 560 + index * 48;
+    const top = y + 500 + index * 48;
     drawShareStar(context, x + 14, top - 8, 16, applications[index]?.status ?? "opened");
     context.fillStyle = "rgba(248,241,223,0.86)";
     context.font = "600 22px sans-serif";
@@ -285,7 +273,7 @@ function drawShareStory(
   if (applications.length > companies.length) {
     context.fillStyle = "rgba(227,197,137,0.78)";
     context.font = "600 18px sans-serif";
-    context.fillText(`还有 ${applications.length - companies.length} 个机会在瓶中`, x, y + 560 + companies.length * 48 + 12);
+    context.fillText(`还有 ${applications.length - companies.length} 个机会在瓶中`, x, y + 500 + companies.length * 48 + 12);
   }
 }
 
@@ -312,12 +300,12 @@ function drawShareMetric(
 }
 
 function drawShareFooter(context: CanvasRenderingContext2D, qrImage: HTMLImageElement) {
-  const qrSize = 210;
-  const qrX = CARD_WIDTH - CARD_PADDING - qrSize;
-  const qrY = 1268;
+  const qrSize = 188;
+  const qrX = CARD_WIDTH - CARD_PADDING - qrSize - 34;
+  const qrY = 1278;
 
   context.fillStyle = "rgba(244,232,198,0.96)";
-  roundedRect(context, CARD_PADDING, qrY - 34, CARD_WIDTH - CARD_PADDING * 2, qrSize + 68, 32);
+  roundedRect(context, CARD_PADDING, qrY - 40, CARD_WIDTH - CARD_PADDING * 2, qrSize + 80, 32);
   context.fill();
 
   context.fillStyle = "#111827";
@@ -331,7 +319,7 @@ function drawShareFooter(context: CanvasRenderingContext2D, qrImage: HTMLImageEl
   context.fillText("拾星 Job Bottle", CARD_PADDING + 36, qrY + 156);
 
   context.fillStyle = "#F4E8C6";
-  roundedRect(context, qrX - 10, qrY - 10, qrSize + 20, qrSize + 20, 26);
+  roundedRect(context, qrX - 14, qrY - 14, qrSize + 28, qrSize + 28, 26);
   context.fill();
   context.drawImage(qrImage, qrX, qrY, qrSize, qrSize);
 }

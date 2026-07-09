@@ -373,6 +373,15 @@ export type Database = {
         Args: Record<string, never>;
         Returns: boolean;
       };
+      merge_duplicate_jobs: {
+        Args: Record<string, never>;
+        Returns: {
+          groups_merged: number;
+          jobs_removed: number;
+          applications_moved: number;
+          applications_removed: number;
+        }[];
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

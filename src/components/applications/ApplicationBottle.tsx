@@ -40,14 +40,12 @@ export function ApplicationBottle({
   onChanged,
   onDeleted,
   profile,
-  recommendationCount = 0,
   resumeCount = 0,
 }: {
   applications: ApplicationWithJob[];
   onChanged: (application: ApplicationWithJob) => Promise<void> | void;
   onDeleted: (applicationId: string) => Promise<void> | void;
   profile?: ShareProfileSnapshot | null;
-  recommendationCount?: number;
   resumeCount?: number;
 }) {
   const router = useRouter();
@@ -113,7 +111,6 @@ export function ApplicationBottle({
         bottleSnapshotDataUrl,
         positions,
         profile,
-        recommendationCount,
         resumeCount,
       });
       setShareState("done");

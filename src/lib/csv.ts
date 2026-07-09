@@ -1,6 +1,7 @@
 import { parse } from "papaparse";
 import { readSheet, type Row } from "read-excel-file/browser";
 import { normalizeJobCategories } from "@/lib/categories";
+import { getJobMergeFingerprint } from "@/lib/job-dedupe";
 import { splitToTags, isValidHttpUrl } from "@/lib/utils";
 import type { CsvImportPreviewRow } from "@/lib/types";
 
@@ -118,11 +119,11 @@ function normalizeImportRows(rows: NumberedRawRow[]) {
     if (preview.apply_url && !isValidHttpUrl(preview.apply_url)) {
       preview.errors.push("投递链接格式不正确");
     }
-    const fingerprint = getJobImportFingerprint(preview);
+    const fingerprint = getJobMergeFingerprint(preview);
     const duplicateOf = seen.get(fingerprint);
     if (duplicateOf) {
       preview.duplicateOfRowNumber = duplicateOf;
-      preview.errors.push(`与第 ${duplicateOf} 行完全重复`);
+      preview.errors.push(`与第 ${duplicateOf} 行岗位信息重复`);
     } else {
       seen.set(fingerprint, rowNumber);
     }

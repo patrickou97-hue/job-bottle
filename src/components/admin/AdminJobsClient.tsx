@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, Upload } from "lucide-react";
+import { GitMerge, Search, Upload } from "lucide-react";
 import { fetchAllJobsForAdmin } from "@/lib/jobs";
 import { getCurrentUserOrNull } from "@/lib/auth";
+import { findDuplicateJobGroups, mergeDuplicateJobs } from "@/lib/job-dedupe";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -18,6 +19,7 @@ export function AdminJobsClient() {
   const [keyword, setKeyword] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [merging, setMerging] = useState(false);
   const [message, setMessage] = useState("");
 
   async function loadData() {
@@ -74,6 +76,8 @@ export function AdminJobsClient() {
     );
   }, [jobs, keyword]);
 
+  const duplicateGroups = useMemo(() => findDuplicateJobGroups(jobs), [jobs]);
+
   async function saveJob(payload: Omit<Job, "id" | "created_at" | "updated_at">, id?: string) {
     if (!isSupabaseConfigured()) {
       setMessage("请先配置数据库环境变量。");
@@ -120,6 +124,28 @@ export function AdminJobsClient() {
     await loadData();
   }
 
+  async function handleMergeDuplicates() {
+    if (!isSupabaseConfigured()) {
+      setMessage("请先配置数据库环境变量。");
+      return;
+    }
+    setMerging(true);
+    setMessage("");
+    try {
+      const result = await mergeDuplicateJobs(createClient());
+      setMessage(
+        result.jobs_removed > 0
+          ? `已合并 ${result.groups_merged} 组重复岗位，移除 ${result.jobs_removed} 条重复岗位，并整理 ${result.applications_moved + result.applications_removed} 条投递记录。`
+          : "没有发现需要合并的重复岗位。",
+      );
+      await loadData();
+    } catch {
+      setMessage("合并失败，请确认管理员权限或稍后再试。");
+    } finally {
+      setMerging(false);
+    }
+  }
+
   return (
     <div className="observatory-page space-y-8">
       <section className="page-hero">
@@ -128,12 +154,28 @@ export function AdminJobsClient() {
             <p className="page-kicker">管理员</p>
             <h1 className="page-title">岗位管理</h1>
           </div>
-          <Link href="/admin/import">
-            <Button className="gap-2">
-              <Upload aria-hidden="true" className="size-4" />
-              批量导入
+          <div className="flex flex-wrap gap-3">
+            <Button
+              variant="secondary"
+              className="gap-2"
+              disabled={!isAdmin || duplicateGroups.length === 0 || merging}
+              onClick={handleMergeDuplicates}
+              title={
+                duplicateGroups.length > 0
+                  ? `发现 ${duplicateGroups.length} 组重复岗位`
+                  : "当前没有发现重复岗位"
+              }
+            >
+              <GitMerge aria-hidden="true" className="size-4" />
+              {merging ? "正在合并" : "合并重复岗位"}
             </Button>
-          </Link>
+            <Link href="/admin/import">
+              <Button className="gap-2">
+                <Upload aria-hidden="true" className="size-4" />
+                批量导入
+              </Button>
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -148,6 +190,12 @@ export function AdminJobsClient() {
           <AdminJobForm job={editing} onSubmit={saveJob} onCancel={() => setEditing(null)} />
 
           <section className="liquid-panel p-4">
+            {duplicateGroups.length > 0 ? (
+              <div className="mb-4 rounded-[20px] border border-amber-200/20 bg-amber-200/[0.07] px-4 py-3 text-sm text-amber-50/85">
+                发现 {duplicateGroups.length} 组疑似重复岗位。系统会按公司、投递链接、岗位、地点和批次合并，
+                保留最近更新且仍在开放的岗位。
+              </div>
+            ) : null}
             <div className="relative">
               <Search
                 aria-hidden="true"

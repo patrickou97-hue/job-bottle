@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Upload } from "lucide-react";
-import { getJobImportFingerprint, parseJobsImportFile } from "@/lib/csv";
+import { parseJobsImportFile } from "@/lib/csv";
 import { getCurrentUserOrNull } from "@/lib/auth";
+import { getJobMergeFingerprint } from "@/lib/job-dedupe";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import type { CsvImportPreviewRow } from "@/lib/types";
@@ -78,27 +79,21 @@ export function CsvImportPanel() {
       const supabase = createClient();
       const { data: existingJobs, error: existingError } = await supabase
         .from("jobs")
-        .select("company_name,start_date,industry,batch_type,job_titles,job_categories,locations,apply_url,notes,tags,is_active");
+        .select("company_name,batch_type,job_titles,locations,apply_url");
       if (existingError) throw existingError;
 
       const existingFingerprints = new Set(
         (existingJobs ?? []).map((job) =>
-          getJobImportFingerprint({
+          getJobMergeFingerprint({
             apply_url: job.apply_url,
             batch_type: job.batch_type,
             company_name: job.company_name,
-            industry: job.industry,
-            is_active: job.is_active,
-            job_categories: job.job_categories,
             job_titles: job.job_titles,
             locations: job.locations,
-            notes: job.notes,
-            start_date: job.start_date,
-            tags: job.tags,
           }),
         ),
       );
-      const dedupedPayload = payload.filter((row) => !existingFingerprints.has(getJobImportFingerprint(row)));
+      const dedupedPayload = payload.filter((row) => !existingFingerprints.has(getJobMergeFingerprint(row)));
 
       if (dedupedPayload.length > 0) {
         const { error } = await supabase.from("jobs").insert(dedupedPayload);

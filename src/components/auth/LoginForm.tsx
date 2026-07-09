@@ -3,12 +3,18 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { ensureProfile, translateAuthError } from "@/lib/auth";
+import {
+  PROFILE_REGION_OPTIONS,
+  PROFILE_ROLE_OPTIONS,
+  toggleProfileOption,
+} from "@/lib/profile-options";
+import { cn } from "@/lib/utils";
 
 const loginSchema = z.object({
   email: z.string().email("请输入有效邮箱。"),
@@ -33,6 +39,8 @@ export function LoginForm() {
   const {
     register,
     handleSubmit,
+    setValue,
+    control,
     formState: { errors },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -113,6 +121,8 @@ export function LoginForm() {
   }
 
   const isRegister = mode === "register";
+  const selectedRegions = splitProfileInput(useWatch({ control, name: "preferredRegions" }));
+  const selectedRoles = splitProfileInput(useWatch({ control, name: "targetRoles" }));
 
   return (
     <div className="liquid-panel mx-auto w-full max-w-md p-6 sm:p-8">
@@ -177,14 +187,34 @@ export function LoginForm() {
             </label>
             <label className="block">
               <span className="mb-2 block text-sm text-ink-secondary">意向地区</span>
-              <Input type="text" placeholder="上海、北京、深圳" {...register("preferredRegions")} />
+              <input type="hidden" {...register("preferredRegions")} />
+              <LoginOptionGrid
+                options={PROFILE_REGION_OPTIONS}
+                selected={selectedRegions}
+                onToggle={(option) =>
+                  setValue("preferredRegions", toggleProfileOption(selectedRegions, option).join("、"), {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
+              />
               {errors.preferredRegions ? (
                 <span className="mt-2 block text-xs text-red-200">{errors.preferredRegions.message}</span>
               ) : null}
             </label>
             <label className="block">
               <span className="mb-2 block text-sm text-ink-secondary">意向岗位</span>
-              <Input type="text" placeholder="产品、数据分析、投研" {...register("targetRoles")} />
+              <input type="hidden" {...register("targetRoles")} />
+              <LoginOptionGrid
+                options={PROFILE_ROLE_OPTIONS}
+                selected={selectedRoles}
+                onToggle={(option) =>
+                  setValue("targetRoles", toggleProfileOption(selectedRoles, option).join("、"), {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
+              />
               {errors.targetRoles ? (
                 <span className="mt-2 block text-xs text-red-200">{errors.targetRoles.message}</span>
               ) : null}
@@ -236,5 +266,39 @@ function splitProfileInput(value?: string) {
         .filter(Boolean)
         .slice(0, 12),
     ),
+  );
+}
+
+function LoginOptionGrid({
+  onToggle,
+  options,
+  selected,
+}: {
+  onToggle: (option: string) => void;
+  options: readonly string[];
+  selected: string[];
+}) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((option) => {
+        const active = selected.includes(option);
+        return (
+          <button
+            key={option}
+            type="button"
+            className={cn(
+              "pressable rounded-full px-3 py-1.5 text-xs font-medium transition",
+              active
+                ? "bg-[#f4e8c6] text-[#111827]"
+                : "status-pill text-ink-secondary hover:text-ink-primary",
+            )}
+            aria-pressed={active}
+            onClick={() => onToggle(option)}
+          >
+            {option}
+          </button>
+        );
+      })}
+    </div>
   );
 }

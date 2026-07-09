@@ -29,6 +29,11 @@ import {
   parsePreferenceInput,
   updateMyProfilePreferences,
 } from "@/lib/profile";
+import {
+  PROFILE_REGION_OPTIONS,
+  PROFILE_ROLE_OPTIONS,
+  toggleProfileOption,
+} from "@/lib/profile-options";
 import type { ResumeDocument } from "@/lib/resume";
 import { fetchMyResumes, isMissingResumeTableError } from "@/lib/resume-sync";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
@@ -333,19 +338,23 @@ export function ProfileClient() {
           <SectionLead eyebrow="Preference" title="求职偏好" dark />
           <div className="mt-5 grid gap-4">
             <ProfileField label="意向地区" icon={<MapPin aria-hidden="true" className="size-4" />}>
-              <Input
-                className="border-[#111827]/25 text-[#111827] placeholder:text-[#111827]/38 focus:border-[#111827]/70"
-                value={preferredRegions}
-                onChange={(event) => setPreferredRegions(event.target.value)}
-                placeholder="上海、北京、深圳"
+              <OptionGrid
+                dark
+                options={PROFILE_REGION_OPTIONS}
+                selected={regionTags}
+                onToggle={(option) =>
+                  setPreferredRegions(formatPreferenceInput(toggleProfileOption(regionTags, option)))
+                }
               />
             </ProfileField>
             <ProfileField label="意向岗位" icon={<Target aria-hidden="true" className="size-4" />}>
-              <Input
-                className="border-[#111827]/25 text-[#111827] placeholder:text-[#111827]/38 focus:border-[#111827]/70"
-                value={targetRoles}
-                onChange={(event) => setTargetRoles(event.target.value)}
-                placeholder="金融、咨询、商业分析"
+              <OptionGrid
+                dark
+                options={PROFILE_ROLE_OPTIONS}
+                selected={targetRoleTags}
+                onToggle={(option) =>
+                  setTargetRoles(formatPreferenceInput(toggleProfileOption(targetRoleTags, option)))
+                }
               />
             </ProfileField>
           </div>
@@ -530,6 +539,46 @@ function TagGroup({ dark = false, empty, values }: { dark?: boolean; empty: stri
       {value}
     </span>
   ));
+}
+
+function OptionGrid({
+  dark = false,
+  onToggle,
+  options,
+  selected,
+}: {
+  dark?: boolean;
+  onToggle: (option: string) => void;
+  options: readonly string[];
+  selected: string[];
+}) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((option) => {
+        const active = selected.includes(option);
+        return (
+          <button
+            key={option}
+            type="button"
+            className={cn(
+              "pressable rounded-full px-3 py-1.5 text-xs font-medium transition",
+              dark
+                ? active
+                  ? "bg-[#111827] text-[#f4e8c6]"
+                  : "bg-[#111827]/8 text-[#111827]/62 hover:bg-[#111827]/14"
+                : active
+                  ? "bg-[#f4e8c6] text-[#111827]"
+                  : "status-pill text-ink-secondary hover:text-ink-primary",
+            )}
+            aria-pressed={active}
+            onClick={() => onToggle(option)}
+          >
+            {option}
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 function InfoLine({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
