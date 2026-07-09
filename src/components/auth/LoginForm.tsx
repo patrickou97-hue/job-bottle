@@ -14,6 +14,10 @@ const loginSchema = z.object({
   email: z.string().email("请输入有效邮箱。"),
   password: z.string().min(6, "密码至少需要 6 位。"),
   displayName: z.string().max(24, "用户名不超过 24 个字。").optional(),
+  city: z.string().max(30, "城市不超过 30 个字。").optional(),
+  school: z.string().max(40, "学校不超过 40 个字。").optional(),
+  major: z.string().max(40, "专业不超过 40 个字。").optional(),
+  graduationYear: z.string().max(12, "毕业年份不超过 12 个字。").optional(),
   preferredRegions: z.string().max(80, "意向地区太长了。").optional(),
   targetRoles: z.string().max(120, "意向岗位太长了。").optional(),
 });
@@ -32,7 +36,17 @@ export function LoginForm() {
     formState: { errors },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "", displayName: "", preferredRegions: "", targetRoles: "" },
+    defaultValues: {
+      email: "",
+      password: "",
+      displayName: "",
+      city: "",
+      school: "",
+      major: "",
+      graduationYear: "",
+      preferredRegions: "",
+      targetRoles: "",
+    },
   });
 
   async function onSubmit(values: LoginFormValues) {
@@ -49,12 +63,20 @@ export function LoginForm() {
         const preferredRegions = splitProfileInput(values.preferredRegions);
         const targetRoles = splitProfileInput(values.targetRoles);
         const displayName = values.displayName?.trim();
+        const city = values.city?.trim() ?? "";
+        const school = values.school?.trim() ?? "";
+        const major = values.major?.trim() ?? "";
+        const graduationYear = values.graduationYear?.trim() ?? "";
         const { data, error } = await supabase.auth.signUp({
           email: values.email,
           password: values.password,
           options: {
             data: {
               display_name: displayName || values.email.split("@")[0],
+              city,
+              school,
+              major,
+              graduation_year: graduationYear,
               preferred_regions: preferredRegions,
               target_roles: targetRoles,
             },
@@ -63,8 +85,12 @@ export function LoginForm() {
         if (error) throw error;
         if (data.user) {
           await ensureProfile(supabase, data.user, {
+            city,
             displayName,
+            graduationYear,
+            major,
             preferredRegions,
+            school,
             targetRoles,
           });
         }
@@ -121,6 +147,34 @@ export function LoginForm() {
 
         {isRegister ? (
           <div className="grid gap-5 sm:grid-cols-2">
+            <label className="block">
+              <span className="mb-2 block text-sm text-ink-secondary">所在城市</span>
+              <Input type="text" placeholder="成都" {...register("city")} />
+              {errors.city ? (
+                <span className="mt-2 block text-xs text-red-200">{errors.city.message}</span>
+              ) : null}
+            </label>
+            <label className="block">
+              <span className="mb-2 block text-sm text-ink-secondary">毕业年份</span>
+              <Input type="text" placeholder="2027" {...register("graduationYear")} />
+              {errors.graduationYear ? (
+                <span className="mt-2 block text-xs text-red-200">{errors.graduationYear.message}</span>
+              ) : null}
+            </label>
+            <label className="block">
+              <span className="mb-2 block text-sm text-ink-secondary">学校</span>
+              <Input type="text" placeholder="西南财经大学" {...register("school")} />
+              {errors.school ? (
+                <span className="mt-2 block text-xs text-red-200">{errors.school.message}</span>
+              ) : null}
+            </label>
+            <label className="block">
+              <span className="mb-2 block text-sm text-ink-secondary">专业</span>
+              <Input type="text" placeholder="金融学" {...register("major")} />
+              {errors.major ? (
+                <span className="mt-2 block text-xs text-red-200">{errors.major.message}</span>
+              ) : null}
+            </label>
             <label className="block">
               <span className="mb-2 block text-sm text-ink-secondary">意向地区</span>
               <Input type="text" placeholder="上海、北京、深圳" {...register("preferredRegions")} />

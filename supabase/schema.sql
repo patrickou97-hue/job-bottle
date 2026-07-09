@@ -3,6 +3,11 @@ create extension if not exists "pgcrypto";
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   display_name text,
+  phone text,
+  city text,
+  school text,
+  major text,
+  graduation_year text,
   preferred_regions text[] not null default '{}',
   target_roles text[] not null default '{}',
   role text not null default 'user',
@@ -111,10 +116,26 @@ $$ language sql security definer set search_path = public;
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id, display_name, preferred_regions, target_roles, role)
+  insert into public.profiles (
+    id,
+    display_name,
+    phone,
+    city,
+    school,
+    major,
+    graduation_year,
+    preferred_regions,
+    target_roles,
+    role
+  )
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'display_name', split_part(new.email, '@', 1), '秋招用户'),
+    nullif(new.raw_user_meta_data->>'phone', ''),
+    nullif(new.raw_user_meta_data->>'city', ''),
+    nullif(new.raw_user_meta_data->>'school', ''),
+    nullif(new.raw_user_meta_data->>'major', ''),
+    nullif(new.raw_user_meta_data->>'graduation_year', ''),
     coalesce(
       array(select jsonb_array_elements_text(coalesce(new.raw_user_meta_data->'preferred_regions', '[]'::jsonb))),
       '{}'

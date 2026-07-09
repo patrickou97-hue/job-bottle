@@ -4,8 +4,13 @@ import type { Database, Profile } from "@/lib/types";
 type ProfileClient = SupabaseClient<Database>;
 
 export type ProfilePreferencesInput = {
+  city: string;
   displayName: string;
+  graduationYear: string;
+  major: string;
+  phone: string;
   preferredRegions: string[];
+  school: string;
   targetRoles: string[];
 };
 
@@ -18,6 +23,11 @@ export async function updateMyProfilePreferences(
     .from("profiles")
     .update({
       display_name: input.displayName.trim() || "秋招用户",
+      phone: normalizeOptionalText(input.phone),
+      city: normalizeOptionalText(input.city),
+      school: normalizeOptionalText(input.school),
+      major: normalizeOptionalText(input.major),
+      graduation_year: normalizeOptionalText(input.graduationYear),
       preferred_regions: normalizePreferenceList(input.preferredRegions),
       target_roles: normalizePreferenceList(input.targetRoles),
     })
@@ -46,4 +56,8 @@ export function parsePreferenceInput(value: string) {
 
 export function formatPreferenceInput(values: string[] | null | undefined) {
   return (values ?? []).join("、");
+}
+
+function normalizeOptionalText(value: string) {
+  return value.trim() || null;
 }

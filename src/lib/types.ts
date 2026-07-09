@@ -6,6 +6,11 @@ export type ProfileRole = (typeof PROFILE_ROLES)[number];
 export type Profile = {
   id: string;
   display_name: string | null;
+  phone: string | null;
+  city: string | null;
+  school: string | null;
+  major: string | null;
+  graduation_year: string | null;
   preferred_regions: string[];
   target_roles: string[];
   role: ProfileRole;
@@ -178,6 +183,11 @@ export type Database = {
         Insert: {
           id: string;
           display_name?: string | null;
+          phone?: string | null;
+          city?: string | null;
+          school?: string | null;
+          major?: string | null;
+          graduation_year?: string | null;
           preferred_regions?: string[];
           target_roles?: string[];
           role?: ProfileRole;
@@ -186,6 +196,11 @@ export type Database = {
         };
         Update: {
           display_name?: string | null;
+          phone?: string | null;
+          city?: string | null;
+          school?: string | null;
+          major?: string | null;
+          graduation_year?: string | null;
           preferred_regions?: string[];
           target_roles?: string[];
           role?: ProfileRole;

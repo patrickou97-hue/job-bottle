@@ -81,8 +81,8 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/galaxy/SpaceHome.tsx",
-    mustInclude: ["MOBILE_PLANET_LAYOUT", "OrbitLines", "PlanetTransitionOverlay", "window.setTimeout", "encodeURIComponent(planet.href)", "/brand/shi-xing-wordmark.png", "desktopOrbitScale", "mobileOrbitScale", "planetScale={0.82}", "<CorePlanet compact />", "href: user ? '/my' : '/login'"],
-    mustNotInclude: ["router.push(planet.href)", "href: user ? '/my-applications' : '/login'", "bg-white", "rounded-2xl", "<PlanetLabel"],
+    mustInclude: ["MOBILE_PLANET_LAYOUT", "OrbitLines", "PlanetTransitionOverlay", "window.setTimeout", "encodeURIComponent(planet.href)", "/brand/shi-xing-wordmark.png", "desktopOrbitScale", "mobileOrbitScale", "planetScale={0.82}", "<CorePlanet compact />", "href: user ? '/profile' : '/login'"],
+    mustNotInclude: ["router.push(planet.href)", "href: user ? '/my' : '/login'", "href: user ? '/my-applications' : '/login'", "bg-white", "rounded-2xl", "<PlanetLabel"],
     label: "主页保留拾星字标、桌面/移动端运行星系和行星进入转场",
   },
   {
@@ -364,6 +364,12 @@ const SOURCE_INVARIANTS = [
     label: "旧 /my-bottle 重定向至 /bottle",
   },
   {
+    file: "src/app/profile/page.tsx",
+    mustInclude: ["ProfileClient", "UserShell"],
+    mustNotInclude: ["MyApplicationsClient"],
+    label: "个人中心独立于我的星图并使用个人资料管理页面",
+  },
+  {
     file: "src/lib/track.ts",
     mustInclude: ["track", "events", "Analytics must never block product actions"],
     mustNotInclude: ["throw", "console.info"],
@@ -414,6 +420,7 @@ const REQUIRED_TEXT = {
   "/": ["拾星"],
   "/explore": ["岗位星图", "筛选", "排序方式", "最新开启"],
   "/my": ["我的投递"],
+  "/profile": ["个人中心", "用户管理"],
   "/bottle": ["我的星瓶", "季节容器"],
   "/resume": ["简历制作"],
   "/galaxy": ["岗位星系", "地区星系", "行业星系"],

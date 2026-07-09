@@ -56,8 +56,13 @@ export async function ensureProfile(
   supabase: SupabaseClient<Database>,
   user: User,
   profileInput?: {
+    city?: string;
     displayName?: string;
+    graduationYear?: string;
+    major?: string;
+    phone?: string;
     preferredRegions?: string[];
+    school?: string;
     targetRoles?: string[];
   },
 ) {
@@ -71,6 +76,11 @@ export async function ensureProfile(
     {
       id: user.id,
       display_name: displayName,
+      phone: normalizeProfileText(profileInput?.phone ?? user.user_metadata?.phone),
+      city: normalizeProfileText(profileInput?.city ?? user.user_metadata?.city),
+      school: normalizeProfileText(profileInput?.school ?? user.user_metadata?.school),
+      major: normalizeProfileText(profileInput?.major ?? user.user_metadata?.major),
+      graduation_year: normalizeProfileText(profileInput?.graduationYear ?? user.user_metadata?.graduation_year),
       preferred_regions: normalizeProfileTags(preferredRegions),
       target_roles: normalizeProfileTags(targetRoles),
       role: "user",
@@ -83,6 +93,11 @@ export async function ensureProfile(
       .from("profiles")
       .update({
         display_name: displayName,
+        phone: normalizeProfileText(profileInput.phone),
+        city: normalizeProfileText(profileInput.city),
+        school: normalizeProfileText(profileInput.school),
+        major: normalizeProfileText(profileInput.major),
+        graduation_year: normalizeProfileText(profileInput.graduationYear),
         preferred_regions: normalizeProfileTags(preferredRegions),
         target_roles: normalizeProfileTags(targetRoles),
       })
@@ -151,4 +166,8 @@ function normalizeProfileTags(value: unknown) {
         .slice(0, 12),
     ),
   );
+}
+
+function normalizeProfileText(value: unknown) {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
 }

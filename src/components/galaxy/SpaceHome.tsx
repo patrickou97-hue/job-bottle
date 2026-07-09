@@ -96,8 +96,8 @@ export function SpaceHome() {
     const authPlanet: PlanetRoute = {
       id: 'auth',
       label: user ? '个人中心' : '登录',
-      description: user ? '查看你的投递记录和星瓶' : '登录后保存投递记录',
-      href: user ? '/my' : '/login',
+      description: user ? '管理资料、简历和求职偏好' : '登录后保存投递记录',
+      href: user ? '/profile' : '/login',
       orbitRadius: 990,
       orbitDuration: 120,
       initialAngle: 38,
@@ -182,8 +182,8 @@ export function SpaceHome() {
           enterPlanet({
             id: 'auth',
             label: user ? '个人中心' : '登录',
-            description: user ? '查看你的投递记录和星瓶' : '登录后保存投递记录',
-            href: user ? '/my' : '/login',
+            description: user ? '管理资料、简历和求职偏好' : '登录后保存投递记录',
+            href: user ? '/profile' : '/login',
             orbitRadius: 0,
             orbitDuration: 150,
             initialAngle: 0,

@@ -15,6 +15,7 @@ const navItems = [
   { href: "/my", label: "我的星图" },
   { href: "/bottle", label: "我的星瓶" },
   { href: "/resume", label: "简历制作" },
+  { href: "/profile", label: "个人中心" },
   { href: "/forum", label: "讨论区" },
 ];
 
