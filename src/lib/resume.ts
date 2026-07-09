@@ -1,4 +1,4 @@
-export type ResumeTemplateId = "compact";
+export type ResumeTemplateId = "compact" | "classic" | "modern";
 
 export type ResumeBasics = {
   name: string;
@@ -86,8 +86,14 @@ export type ResumeDocument = {
 const STORAGE_KEY = "job_bottle_resumes_v1";
 
 export const RESUME_TEMPLATES: { id: ResumeTemplateId; label: string; description: string }[] = [
-  { id: "compact", label: "紧凑单栏", description: "正式中文简历，预览与 PDF 保持一致" },
+  { id: "compact", label: "紧凑单栏", description: "中文秋招一页版，适合金融、咨询、商科投递" },
+  { id: "classic", label: "经典商科", description: "参考 LaTeX 简历的强分隔标题，重点突出学校与经历" },
+  { id: "modern", label: "现代 ATS", description: "更轻的标题层级与左对齐信息，适合产品、数据、互联网岗位" },
 ];
+
+export function getResumeTemplateMeta(templateId: ResumeTemplateId) {
+  return RESUME_TEMPLATES.find((template) => template.id === templateId) ?? RESUME_TEMPLATES[0];
+}
 
 export function createId(prefix: string) {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -332,7 +338,7 @@ function normalizeResumeDocument(value: unknown): ResumeDocument | null {
     targetRole: typeof resume.targetRole === "string" ? resume.targetRole : "",
     jobTarget: typeof resume.jobTarget === "string" ? resume.jobTarget : "",
     linkedJobId: typeof resume.linkedJobId === "string" ? resume.linkedJobId : null,
-    templateId: "compact",
+    templateId: normalizeTemplateId(resume.templateId),
     content: {
       ...fallback.content,
       ...content,
@@ -351,4 +357,8 @@ function normalizeResumeDocument(value: unknown): ResumeDocument | null {
       customSections: Array.isArray(content.customSections) ? content.customSections : [],
     },
   };
+}
+
+function normalizeTemplateId(value: unknown): ResumeTemplateId {
+  return value === "compact" || value === "classic" || value === "modern" ? value : "compact";
 }

@@ -10,6 +10,7 @@ import { getCurrentUserOrNull } from "@/lib/auth";
 import {
   createEmptyResume,
   createSampleResume,
+  getResumeTemplateMeta,
   loadLocalResumes,
   saveLocalResumes,
   type ResumeDocument,
@@ -257,6 +258,9 @@ export function ResumeBuilderClient() {
                 <span className="mt-1 block text-xs text-ink-muted">
                   {resume.targetRole || resume.content.basics.targetRole || "未设置方向"}
                 </span>
+                <span className="mt-2 inline-flex rounded-full bg-white/[0.055] px-2 py-1 text-[11px] text-ink-muted">
+                  {getResumeTemplateMeta(resume.templateId).label}
+                </span>
               </button>
             ))}
           </div>
@@ -306,7 +310,7 @@ export function ResumeBuilderClient() {
               <div>
                 <h2 className="section-title">实时预览</h2>
                 <p className="mt-1 text-xs text-ink-muted">
-                  紧凑白底预览，下载时生成可复制文字的正式 PDF
+                  {getResumeTemplateMeta(selectedResume.templateId).label}，下载时生成可复制文字的正式 PDF
                 </p>
               </div>
               <ResumePdfExportButton resume={selectedResume} />

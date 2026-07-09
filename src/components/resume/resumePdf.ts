@@ -5,6 +5,7 @@ import type {
   ResumeExperience,
   ResumeProject,
   ResumeSkillGroup,
+  ResumeTemplateId,
 } from "@/lib/resume";
 
 type JsPdf = import("jspdf").jsPDF;
@@ -16,6 +17,7 @@ type PdfOptions = {
   itemGap: number;
   lineHeight: number;
   sectionGap: number;
+  templateId: ResumeTemplateId;
 };
 
 type LayoutState = {
@@ -26,6 +28,7 @@ type LayoutState = {
   page: number;
   pdf: JsPdf;
   right: number;
+  templateId: ResumeTemplateId;
   top: number;
   y: number;
 };
@@ -41,10 +44,10 @@ const FONT_BOLD = "/fonts/NotoSerifSC-Bold.ttf";
 const BLACK = "#111111";
 
 const COMPACT_OPTIONS: PdfOptions[] = [
-  { bodySize: 10.1, bulletSize: 9.65, headingSize: 12.2, itemGap: 2.4, lineHeight: 1.15, sectionGap: 3.2 },
-  { bodySize: 9.7, bulletSize: 9.25, headingSize: 11.8, itemGap: 2.1, lineHeight: 1.12, sectionGap: 2.8 },
-  { bodySize: 9.25, bulletSize: 8.85, headingSize: 11.4, itemGap: 1.8, lineHeight: 1.08, sectionGap: 2.4 },
-  { bodySize: 8.85, bulletSize: 8.45, headingSize: 11, itemGap: 1.5, lineHeight: 1.05, sectionGap: 2 },
+  { templateId: "compact", bodySize: 10.1, bulletSize: 9.65, headingSize: 12.2, itemGap: 2.4, lineHeight: 1.15, sectionGap: 3.2 },
+  { templateId: "compact", bodySize: 9.7, bulletSize: 9.25, headingSize: 11.8, itemGap: 2.1, lineHeight: 1.12, sectionGap: 2.8 },
+  { templateId: "compact", bodySize: 9.25, bulletSize: 8.85, headingSize: 11.4, itemGap: 1.8, lineHeight: 1.08, sectionGap: 2.4 },
+  { templateId: "compact", bodySize: 8.85, bulletSize: 8.45, headingSize: 11, itemGap: 1.5, lineHeight: 1.05, sectionGap: 2 },
 ];
 
 let fontCache: Promise<{ bold: string; regular: string }> | null = null;
@@ -64,13 +67,14 @@ async function chooseOptions(
   jsPDF: typeof import("jspdf").jsPDF,
   fonts: { bold: string; regular: string },
 ) {
-  for (const options of COMPACT_OPTIONS) {
+  const optionSet = getTemplateOptions(resume.templateId);
+  for (const options of optionSet) {
     const pdf = createPdf(jsPDF, fonts);
     const result = renderResume(pdf, resume, options, { allowPageBreaks: false, draw: false });
     if (result.page === 1 && result.y <= PAGE_HEIGHT - BOTTOM) return options;
   }
 
-  return COMPACT_OPTIONS[COMPACT_OPTIONS.length - 1];
+  return optionSet[optionSet.length - 1];
 }
 
 function createPdf(
@@ -106,11 +110,12 @@ function renderResume(
     page: 1,
     pdf,
     right: PAGE_WIDTH - MARGIN_X,
+    templateId: options.templateId,
     top: TOP,
     y: TOP,
   };
 
-  renderHeader(state, resume);
+  renderHeader(state, resume, options);
   renderEducation(state, resume.content.education, options);
   renderExperienceSection(state, "实习经历", resume.content.work, options);
   renderProjectSection(state, "项目经历", resume.content.projects, options);
@@ -123,12 +128,13 @@ function renderResume(
   return { page: state.page, y: state.y };
 }
 
-function renderHeader(state: LayoutState, resume: ResumeDocument) {
+function renderHeader(state: LayoutState, resume: ResumeDocument, options: PdfOptions) {
   const basics = resume.content.basics;
   const hasPhoto = Boolean(basics.photoDataUrl);
   const photoWidth = 58;
   const photoHeight = 72;
   const headerTop = state.y;
+  const isModern = options.templateId === "modern";
 
   if (hasPhoto && state.draw) {
     try {
@@ -145,7 +151,47 @@ function renderHeader(state: LayoutState, resume: ResumeDocument) {
     }
   }
 
-  setFont(state, 18, "bold");
+  if (isModern) {
+    let y = headerTop + 23;
+    setFont(state, 19, "bold", "#172033");
+    drawText(state, basics.name || "姓名", state.left, y);
+    y += 14;
+
+    if (basics.englishName) {
+      setFont(state, 9.5, "normal", "#374151");
+      drawText(state, basics.englishName, state.left, y);
+      y += 11;
+    }
+
+    const target = cleanText(basics.targetRole || resume.targetRole);
+    if (target) {
+      setFont(state, 10.1, "bold", "#172033");
+      drawText(state, target, state.left, y);
+      y += 12;
+    }
+
+    const contact = [formatPhone(basics.phone), basics.email, basics.city].filter(Boolean).join(" | ");
+    if (contact) {
+      setFont(state, 9.5, "normal");
+      drawText(state, contact, state.left, y);
+      y += 11;
+    }
+
+    const links = formatHeaderLinks(basics);
+    if (links) {
+      y = drawWrappedAt(state, links, state.left, y, hasPhoto ? 390 : 505, 8.7, "normal") + 1;
+    }
+
+    if (state.draw) {
+      state.pdf.setDrawColor(42, 52, 67);
+      state.pdf.setLineWidth(0.8);
+      state.pdf.line(state.left, y + 4, state.right, y + 4);
+    }
+    state.y = Math.max(y + 15, headerTop + (hasPhoto ? 78 : 58));
+    return;
+  }
+
+  setFont(state, options.templateId === "classic" ? 18.6 : 18, "bold");
   drawCentered(state, addNameSpacing(basics.name || "姓名"), headerTop + 22);
   let y = headerTop + 44;
 
@@ -268,11 +314,23 @@ function sectionTitle(state: LayoutState, title: string, options: PdfOptions) {
   state.y += options.sectionGap;
   ensureSpace(state, options.headingSize + 5);
   setFont(state, options.headingSize, "bold");
+
+  if (options.templateId === "modern") {
+    drawText(state, title, state.left, state.y);
+    if (state.draw) {
+      state.pdf.setDrawColor(207, 214, 223);
+      state.pdf.setLineWidth(0.7);
+      state.pdf.line(state.left, state.y + 4.2, state.right, state.y + 4.2);
+    }
+    state.y += options.headingSize * 1.08;
+    return;
+  }
+
   drawText(state, title, state.left, state.y);
   const titleWidth = state.pdf.getTextWidth(title);
   if (state.draw) {
     state.pdf.setDrawColor(0, 0, 0);
-    state.pdf.setLineWidth(0.7);
+    state.pdf.setLineWidth(options.templateId === "classic" ? 1 : 0.7);
     state.pdf.line(state.left + titleWidth + 5, state.y - 3.5, state.right, state.y - 3.5);
   }
   state.y += options.headingSize * 1.02;
@@ -402,6 +460,25 @@ function drawCenteredWrapped(
   return nextY;
 }
 
+function drawWrappedAt(
+  state: LayoutState,
+  text: string,
+  x: number,
+  y: number,
+  maxWidth: number,
+  size: number,
+  weight: "bold" | "normal",
+) {
+  setFont(state, size, weight);
+  const lineHeight = size * 1.18;
+  let nextY = y;
+  wrapText(state, text, maxWidth, size, weight).forEach((line) => {
+    drawText(state, line, x, nextY);
+    nextY += lineHeight;
+  });
+  return nextY;
+}
+
 function drawRight(state: LayoutState, text: string, right: number, y: number) {
   drawText(state, text, right - state.pdf.getTextWidth(text), y);
 }
@@ -474,4 +551,30 @@ function cleanText(value: string) {
 
 function sanitizeFileName(value: string) {
   return cleanText(value).replace(/[\\/:*?"<>|]/g, "-") || "Resume";
+}
+
+function getTemplateOptions(templateId: ResumeTemplateId) {
+  if (templateId === "classic") {
+    return COMPACT_OPTIONS.map((options) => ({
+      ...options,
+      templateId,
+      bodySize: options.bodySize + 0.1,
+      headingSize: options.headingSize + 0.35,
+      sectionGap: options.sectionGap + 0.15,
+    }));
+  }
+
+  if (templateId === "modern") {
+    return COMPACT_OPTIONS.map((options) => ({
+      ...options,
+      templateId,
+      bodySize: options.bodySize - 0.05,
+      bulletSize: options.bulletSize - 0.05,
+      headingSize: options.headingSize - 0.6,
+      itemGap: options.itemGap + 0.15,
+      sectionGap: options.sectionGap + 0.45,
+    }));
+  }
+
+  return COMPACT_OPTIONS;
 }

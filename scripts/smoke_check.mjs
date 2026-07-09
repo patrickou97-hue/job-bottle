@@ -153,9 +153,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/lib/resume.ts",
-    mustInclude: ["ResumeDocument", "ResumeContent", "createSampleResume", "loadLocalResumes", "linkedJobId", "photoDataUrl", "compact", "紧凑单栏"],
+    mustInclude: ["ResumeDocument", "ResumeContent", "createSampleResume", "loadLocalResumes", "linkedJobId", "photoDataUrl", "compact", "classic", "modern", "紧凑单栏", "经典商科", "现代 ATS"],
     mustNotInclude: [],
-    label: "简历制作器定义结构化简历模型和本地持久化",
+    label: "简历制作器定义结构化简历模型、多模板和本地持久化",
   },
   {
     file: "src/components/resume/ResumeBuilderClient.tsx",
@@ -165,9 +165,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/resume/ResumeEditor.tsx",
-    mustInclude: ["PhotoField", "cropPhotoToPortrait", "上传照片", "AI 优化即将上线"],
+    mustInclude: ["PhotoField", "cropPhotoToPortrait", "上传照片", "AI 优化即将上线", "模板风格", "RESUME_TEMPLATES"],
     mustNotInclude: [],
-    label: "简历编辑器提供照片上传自动裁剪和 AI 能力预留入口",
+    label: "简历编辑器提供照片上传、模板切换和 AI 能力预留入口",
   },
   {
     file: "src/components/resume/ResumePdfExportButton.tsx",
@@ -177,9 +177,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/resume/resumePdf.ts",
-    mustInclude: ["jsPDF", "NotoSerifSC-Regular.ttf", "NotoSerifSC-Bold.ttf", "format: \"letter\"", "exportResumeToPdf", "addFileToVFS"],
+    mustInclude: ["jsPDF", "NotoSerifSC-Regular.ttf", "NotoSerifSC-Bold.ttf", "format: \"letter\"", "exportResumeToPdf", "addFileToVFS", "getTemplateOptions", "modern", "classic"],
     mustNotInclude: ["html2canvas", "window.print"],
-    label: "简历 PDF 矢量排版器嵌入中文字体并输出 Letter 页面",
+    label: "简历 PDF 矢量排版器嵌入中文字体并按模板输出 Letter 页面",
   },
   {
     file: "src/lib/resume-sync.ts",

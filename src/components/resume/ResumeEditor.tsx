@@ -10,6 +10,7 @@ import {
   createBlankExperience,
   createBlankProject,
   createBlankSkillGroup,
+  RESUME_TEMPLATES,
   touchResume,
   type ResumeContent,
   type ResumeDocument,
@@ -202,6 +203,15 @@ export function ResumeEditor({
           <FieldGrid>
             <TextField label="目标岗位" value={resume.targetRole} onChange={(value) => patchResume({ targetRole: value })} />
             <TextField label="岗位版本说明" value={resume.jobTarget} onChange={(value) => patchResume({ jobTarget: value })} />
+            <SelectField
+              label="模板风格"
+              value={resume.templateId}
+              onChange={(value) => patchResume({ templateId: value as ResumeDocument["templateId"] })}
+              options={RESUME_TEMPLATES.map((template) => ({
+                label: `${template.label}｜${template.description}`,
+                value: template.id,
+              }))}
+            />
             <SelectField
               label="绑定岗位"
               value={resume.linkedJobId ?? ""}

@@ -29,7 +29,7 @@ function normalizeContent(value: unknown): ResumeContent {
 }
 
 function normalizeTemplateId(value: string): ResumeTemplateId {
-  return value === "compact" || value === "classic" || value === "modern" ? "compact" : "compact";
+  return value === "compact" || value === "classic" || value === "modern" ? value : "compact";
 }
 
 export function isMissingResumeTableError(error: unknown) {

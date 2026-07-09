@@ -4,31 +4,55 @@ import type {
   ResumeExperience,
   ResumeProject,
   ResumeSkillGroup,
+  ResumeTemplateId,
 } from "@/lib/resume";
 
 export function ResumePreview({ resume }: { resume: ResumeDocument }) {
+  const paperClass =
+    resume.templateId === "modern"
+      ? "px-[52px] py-[42px]"
+      : resume.templateId === "classic"
+        ? "px-[50px] py-[40px]"
+        : "px-[48px] py-[38px]";
+
   return (
     <div
       id="resume-print-area"
-      className="resume-paper mx-auto min-h-[1056px] w-full max-w-[816px] bg-white px-[48px] py-[38px] text-[#111111] shadow-[0_24px_90px_rgba(0,0,0,0.28)]"
+      className={`resume-paper mx-auto min-h-[1056px] w-full max-w-[816px] bg-white text-[#111111] shadow-[0_24px_90px_rgba(0,0,0,0.28)] ${paperClass}`}
     >
-      <ResumeTemplateCompact resume={resume} />
+      <ResumeTemplate resume={resume} />
     </div>
   );
 }
 
-function ResumeTemplateCompact({ resume }: { resume: ResumeDocument }) {
+function ResumeTemplate({ resume }: { resume: ResumeDocument }) {
   const basics = resume.content.basics;
   const contactLine = [basics.phone, basics.email, basics.city].map(cleanText).filter(Boolean).join(" | ");
   const targetLine = cleanText(basics.targetRole || resume.targetRole);
   const linkLine = formatLinks(basics);
+  const isModern = resume.templateId === "modern";
+  const isClassic = resume.templateId === "classic";
 
   return (
     <article className="resume-compact font-serif text-[13px] leading-[1.18]">
-      <header className="relative pb-1 text-center">
+      <header className={`relative ${isModern ? "border-b border-[#2a3443] pb-3 text-left" : "pb-1 text-center"}`}>
         <div className={basics.photoDataUrl ? "px-[82px]" : ""}>
-          <h1 className="text-[24px] font-bold leading-none tracking-[0.18em]">{basics.name || "姓名"}</h1>
-          {basics.englishName ? <p className="mt-1 text-[12px]">{basics.englishName}</p> : null}
+          <h1
+            className={
+              isModern
+                ? "text-[25px] font-bold leading-none tracking-[0.08em] text-[#172033]"
+                : isClassic
+                  ? "text-[25px] font-bold leading-none tracking-[0.2em]"
+                  : "text-[24px] font-bold leading-none tracking-[0.18em]"
+            }
+          >
+            {basics.name || "姓名"}
+          </h1>
+          {basics.englishName ? (
+            <p className={`mt-1 text-[12px] ${isModern ? "tracking-[0.08em] text-[#374151]" : ""}`}>
+              {basics.englishName}
+            </p>
+          ) : null}
           {contactLine ? (
             <p className="mt-2 text-[13px] leading-[1.22] text-[#111111]">{contactLine}</p>
           ) : null}
@@ -41,7 +65,7 @@ function ResumeTemplateCompact({ resume }: { resume: ResumeDocument }) {
         </div>
         <ResumePhoto src={basics.photoDataUrl} />
       </header>
-      <ResumeSections resume={resume} />
+      <ResumeSections resume={resume} templateId={resume.templateId} />
     </article>
   );
 }
@@ -57,13 +81,13 @@ function ResumePhoto({ src }: { src: string }) {
   );
 }
 
-function ResumeSections({ resume }: { resume: ResumeDocument }) {
-  const sectionClass = "mt-[10px]";
+function ResumeSections({ resume, templateId }: { resume: ResumeDocument; templateId: ResumeTemplateId }) {
+  const sectionClass = templateId === "modern" ? "mt-[12px]" : "mt-[10px]";
   return (
     <div>
       {resume.content.education.length > 0 ? (
         <section className={sectionClass}>
-          <SectionTitle title="教育背景" />
+          <SectionTitle templateId={templateId} title="教育背景" />
           {resume.content.education.map((item) => (
             <div key={item.id} className="mt-[5px]">
               <ResumeRow
@@ -90,7 +114,7 @@ function ResumeSections({ resume }: { resume: ResumeDocument }) {
 
       {resume.content.work.length > 0 ? (
         <section className={sectionClass}>
-          <SectionTitle title="实习经历" />
+          <SectionTitle templateId={templateId} title="实习经历" />
           {resume.content.work.map((item) => (
             <ExperienceBlock key={item.id} item={item} />
           ))}
@@ -99,7 +123,7 @@ function ResumeSections({ resume }: { resume: ResumeDocument }) {
 
       {resume.content.projects.length > 0 ? (
         <section className={sectionClass}>
-          <SectionTitle title="项目经历" />
+          <SectionTitle templateId={templateId} title="项目经历" />
           {resume.content.projects.map((item) => (
             <ProjectBlock key={item.id} item={item} />
           ))}
@@ -108,7 +132,7 @@ function ResumeSections({ resume }: { resume: ResumeDocument }) {
 
       {resume.content.skills.length > 0 ? (
         <section className={sectionClass}>
-          <SectionTitle title="技能/兴趣" />
+          <SectionTitle templateId={templateId} title="技能/兴趣" />
           {resume.content.languages
             .flatMap((section) => section.bullets)
             .map((line) => line.trim())
@@ -124,12 +148,12 @@ function ResumeSections({ resume }: { resume: ResumeDocument }) {
         </section>
       ) : null}
 
-      <CustomSections sections={resume.content.campus} title="校园经历" sectionClass={sectionClass} />
-      <CustomSections sections={resume.content.awards} title="获奖经历" sectionClass={sectionClass} />
-      <CustomSections sections={resume.content.certifications} title="证书" sectionClass={sectionClass} />
+      <CustomSections sections={resume.content.campus} title="校园经历" sectionClass={sectionClass} templateId={templateId} />
+      <CustomSections sections={resume.content.awards} title="获奖经历" sectionClass={sectionClass} templateId={templateId} />
+      <CustomSections sections={resume.content.certifications} title="证书" sectionClass={sectionClass} templateId={templateId} />
       {resume.content.customSections.map((section) => (
         <section key={section.id} className={sectionClass}>
-          <SectionTitle title={section.title || "自定义模块"} />
+          <SectionTitle templateId={templateId} title={section.title || "自定义模块"} />
           <BulletList bullets={section.bullets} />
         </section>
       ))}
@@ -137,11 +161,19 @@ function ResumeSections({ resume }: { resume: ResumeDocument }) {
   );
 }
 
-function SectionTitle({ title }: { title: string }) {
+function SectionTitle({ templateId, title }: { templateId: ResumeTemplateId; title: string }) {
+  if (templateId === "modern") {
+    return (
+      <h2 className="mb-[5px] border-b border-[#cfd6df] pb-[3px] text-[13px] font-bold leading-[1.1] tracking-[0.16em] text-[#172033]">
+        {title}
+      </h2>
+    );
+  }
+
   return (
-    <h2 className="mt-[2px] flex items-center gap-[6px] pb-0 text-[16px] font-bold leading-[1.1] tracking-normal text-[#111111]">
+    <h2 className={`mt-[2px] flex items-center gap-[6px] pb-0 font-bold leading-[1.1] tracking-normal text-[#111111] ${templateId === "classic" ? "text-[16.5px]" : "text-[16px]"}`}>
       <span>{title}</span>
-      <span className="h-px flex-1 bg-[#111111]" />
+      <span className={`flex-1 bg-[#111111] ${templateId === "classic" ? "h-[1.5px]" : "h-px"}`} />
     </h2>
   );
 }
@@ -200,15 +232,17 @@ function CustomSections({
   sections,
   title,
   sectionClass,
+  templateId,
 }: {
   sections: ResumeCustomSection[];
   title: string;
   sectionClass: string;
+  templateId: ResumeTemplateId;
 }) {
   if (sections.length === 0) return null;
   return (
     <section className={sectionClass}>
-      <SectionTitle title={title} />
+      <SectionTitle templateId={templateId} title={title} />
       {sections.map((section) => (
         <div key={section.id} className="mt-[5px]">
           {section.title && section.title !== title ? (
