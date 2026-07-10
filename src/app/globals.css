@@ -80,9 +80,9 @@ select {
 
 .glass-panel {
   border: 0;
-  background: var(--surface-core);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.055), 0 24px 70px rgba(0, 0, 0, 0.18);
-  backdrop-filter: blur(18px) saturate(1.15);
+  background: rgba(7, 14, 31, 0.78);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
+  backdrop-filter: none;
 }
 
 .glass-panel:hover {
@@ -91,9 +91,9 @@ select {
 
 .night-card {
   border: 0;
-  background: var(--surface-core);
+  background: rgba(7, 14, 31, 0.7);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
-  backdrop-filter: blur(18px) saturate(1.08);
+  backdrop-filter: none;
 }
 
 .star-border {
@@ -136,7 +136,7 @@ select {
 
 .status-pill {
   border: 0;
-  background: linear-gradient(180deg, rgba(236, 244, 255, 0.095), rgba(180, 188, 224, 0.04));
+  background: rgba(232, 238, 255, 0.065);
   color: var(--light-silver);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.055);
 }
@@ -337,13 +337,13 @@ select {
 }
 
 .data-row {
-  min-height: 64px;
+  min-height: 72px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   transition: background 220ms var(--ease-snap), transform 220ms var(--ease-snap);
 }
 
 .data-row:hover {
-  background: var(--surface-hover-bg);
+  background: rgba(232, 238, 255, 0.035);
 }
 
 .data-row.selected {
@@ -359,7 +359,7 @@ select {
 .page-hero {
   display: grid;
   gap: 1rem;
-  padding: 0.5rem 0.25rem 1.75rem;
+  padding: 0.5rem 0 1.75rem;
 }
 
 .page-kicker {
@@ -407,24 +407,15 @@ select {
 
 .liquid-panel {
   position: relative;
-  border-radius: 2rem;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.012)),
-    rgba(6, 12, 29, 0.48);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 32px 90px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(18px) saturate(1.12);
+  border-top: 1px solid rgba(232, 238, 255, 0.11);
+  border-radius: 14px;
+  background: rgba(7, 14, 31, 0.84);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+  backdrop-filter: none;
 }
 
 .liquid-panel::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  border-radius: inherit;
-  background:
-    radial-gradient(circle at 18% 0%, rgba(236, 244, 255, 0.12), transparent 18rem),
-    radial-gradient(circle at 88% 12%, rgba(143, 134, 240, 0.08), transparent 20rem);
-  opacity: 0.78;
+  content: none;
 }
 
 .liquid-panel > * {
@@ -532,6 +523,31 @@ select {
   color: var(--light-silver);
 }
 
+.filter-rail {
+  border-top: 1px solid rgba(232, 238, 255, 0.13);
+  border-bottom: 1px solid rgba(232, 238, 255, 0.07);
+  background: rgba(7, 14, 31, 0.58);
+}
+
+.progress-summary {
+  border-left: 2px solid rgba(242, 209, 109, 0.52);
+  background: transparent;
+}
+
+.job-row-action {
+  border: 1px solid rgba(232, 238, 255, 0.12);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  background: transparent;
+  transition: color 180ms var(--ease-snap), border-color 180ms var(--ease-snap), background 180ms var(--ease-snap), transform 180ms var(--ease-snap);
+}
+
+.job-row-action:hover {
+  border-color: rgba(242, 209, 109, 0.46);
+  background: rgba(242, 209, 109, 0.07);
+  color: var(--light-ice);
+}
+
 .pressable:active {
   transform: scale(0.98);
 }
@@ -607,6 +623,7 @@ select {
 .resume-paper {
   color: #151822;
   font-family: "Noto Serif SC Local", "Songti SC", "STSong", "SimSun", serif;
+  letter-spacing: normal;
   print-color-adjust: exact;
   -webkit-print-color-adjust: exact;
 }

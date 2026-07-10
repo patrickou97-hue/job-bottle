@@ -6,6 +6,7 @@ import type {
   ResumeSkillGroup,
   ResumeTemplateId,
 } from "@/lib/resume";
+import { getResumeTargetLine } from "@/lib/resume";
 
 export function ResumePreview({ resume }: { resume: ResumeDocument }) {
   const paperClass =
@@ -18,7 +19,7 @@ export function ResumePreview({ resume }: { resume: ResumeDocument }) {
   return (
     <div
       id="resume-print-area"
-      className={`resume-paper mx-auto min-h-[1056px] w-full max-w-[816px] bg-white text-[#111111] shadow-[0_24px_90px_rgba(0,0,0,0.28)] ${paperClass}`}
+      className={`resume-paper mx-auto min-h-[1123px] w-full max-w-[794px] bg-white text-[#111111] shadow-[0_24px_90px_rgba(0,0,0,0.28)] ${paperClass}`}
     >
       <ResumeTemplate resume={resume} />
     </div>
@@ -28,25 +29,25 @@ export function ResumePreview({ resume }: { resume: ResumeDocument }) {
 function ResumeTemplate({ resume }: { resume: ResumeDocument }) {
   const basics = resume.content.basics;
   const contactLine = [basics.phone, basics.email, basics.city].map(cleanText).filter(Boolean).join(" | ");
-  const targetLine = cleanText(basics.targetRole || resume.targetRole);
+  const targetLine = getResumeTargetLine(resume);
   const linkLine = formatLinks(basics);
   const isModern = resume.templateId === "modern";
   const isClassic = resume.templateId === "classic";
 
   return (
-    <article className="resume-compact font-serif text-[13px] leading-[1.18]">
+    <article className="resume-compact text-[13px] leading-[1.18]">
       <header className={`relative ${isModern ? "border-b border-[#2a3443] pb-3 text-left" : "pb-1 text-center"}`}>
         <div className={basics.photoDataUrl ? "px-[82px]" : ""}>
           <h1
             className={
               isModern
-                ? "text-[25px] font-bold leading-none tracking-[0.08em] text-[#172033]"
+                ? "text-[25px] font-bold leading-none text-[#172033]"
                 : isClassic
-                  ? "text-[25px] font-bold leading-none tracking-[0.2em]"
-                  : "text-[24px] font-bold leading-none tracking-[0.18em]"
+                  ? "text-[25px] font-bold leading-none"
+                  : "text-[24px] font-bold leading-none"
             }
           >
-            {basics.name || "姓名"}
+            {addNameSpacing(basics.name || "姓名")}
           </h1>
           {basics.englishName ? (
             <p className={`mt-1 text-[12px] ${isModern ? "tracking-[0.08em] text-[#374151]" : ""}`}>
@@ -82,7 +83,7 @@ function ResumePhoto({ src }: { src: string }) {
 }
 
 function ResumeSections({ resume, templateId }: { resume: ResumeDocument; templateId: ResumeTemplateId }) {
-  const sectionClass = templateId === "modern" ? "mt-[12px]" : "mt-[10px]";
+  const sectionClass = templateId === "modern" ? "mt-[13px]" : "mt-[12px]";
   return (
     <div>
       {resume.content.education.length > 0 ? (
@@ -164,14 +165,14 @@ function ResumeSections({ resume, templateId }: { resume: ResumeDocument; templa
 function SectionTitle({ templateId, title }: { templateId: ResumeTemplateId; title: string }) {
   if (templateId === "modern") {
     return (
-      <h2 className="mb-[5px] border-b border-[#cfd6df] pb-[3px] text-[13px] font-bold leading-[1.1] tracking-[0.16em] text-[#172033]">
+      <h2 className="mb-[7px] border-b border-[#cfd6df] pb-[4px] text-[13px] font-bold leading-[1.1] tracking-normal text-[#172033]">
         {title}
       </h2>
     );
   }
 
   return (
-    <h2 className={`mt-[2px] flex items-center gap-[6px] pb-0 font-bold leading-[1.1] tracking-normal text-[#111111] ${templateId === "classic" ? "text-[16.5px]" : "text-[16px]"}`}>
+    <h2 className={`mt-[2px] flex items-center gap-[6px] pb-[6px] font-bold leading-[1.1] tracking-normal text-[#111111] ${templateId === "classic" ? "text-[16.5px]" : "text-[16px]"}`}>
       <span>{title}</span>
       <span className={`flex-1 bg-[#111111] ${templateId === "classic" ? "h-[1.5px]" : "h-px"}`} />
     </h2>
@@ -279,4 +280,9 @@ function formatLinks(basics: ResumeDocument["content"]["basics"]) {
 
 function cleanText(value: string) {
   return value.replace(/\s+/g, " ").trim();
+}
+
+function addNameSpacing(name: string) {
+  const clean = cleanText(name);
+  return /^[\u4e00-\u9fff]{2,4}$/.test(clean) ? Array.from(clean).join("  ") : clean;
 }

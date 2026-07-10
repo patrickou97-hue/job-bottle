@@ -4,18 +4,14 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { fetchMyApplications } from "@/lib/applications";
 import { getCurrentUserOrNull } from "@/lib/auth";
-import { fetchMyResumes, isMissingResumeTableError } from "@/lib/resume-sync";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { track } from "@/lib/track";
 import { ApplicationBottle } from "@/components/applications/ApplicationBottle";
-import type { ApplicationWithJob, Profile } from "@/lib/types";
-import type { ShareProfileSnapshot } from "@/components/applications/shareBottleCard";
+import type { ApplicationWithJob } from "@/lib/types";
 
 export function MyBottleClient({ loginNextPath = "/bottle" }: { loginNextPath?: string }) {
   const router = useRouter();
   const [applications, setApplications] = useState<ApplicationWithJob[]>([]);
-  const [profile, setProfile] = useState<ShareProfileSnapshot | null>(null);
-  const [resumeCount, setResumeCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
   const [message, setMessage] = useState("");
@@ -36,22 +32,8 @@ export function MyBottleClient({ loginNextPath = "/bottle" }: { loginNextPath?: 
         return;
       }
       setRedirecting(false);
-      const [rows, profileResult, resumesResult] = await Promise.all([
-        fetchMyApplications(supabase, user.id),
-        supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
-        fetchMyResumes(supabase).catch((error) => {
-          if (isMissingResumeTableError(error)) return [];
-          throw error;
-        }),
-      ]);
-      const profileRow = profileResult.data as Profile | null;
+      const rows = await fetchMyApplications(supabase, user.id);
       setApplications(rows);
-      setProfile({
-        displayName: profileRow?.display_name ?? null,
-        preferredRegions: profileRow?.preferred_regions ?? [],
-        targetRoles: profileRow?.target_roles ?? [],
-      });
-      setResumeCount(resumesResult.length);
       void track("bottle_view", { count: rows.length });
     } catch {
       setMessage("加载失败，请稍后再试。");
@@ -110,8 +92,6 @@ export function MyBottleClient({ loginNextPath = "/bottle" }: { loginNextPath?: 
         <div className="mx-auto max-w-5xl">
           <ApplicationBottle
             applications={applications}
-            profile={profile}
-            resumeCount={resumeCount}
             onChanged={handleApplicationChanged}
             onDeleted={handleApplicationDeleted}
           />

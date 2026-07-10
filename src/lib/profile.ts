@@ -39,6 +39,20 @@ export async function updateMyProfilePreferences(
   return data as Profile;
 }
 
+export function isProfileSchemaError(error: unknown) {
+  const code = typeof error === "object" && error ? String("code" in error ? error.code : "") : "";
+  const message = typeof error === "object" && error ? String("message" in error ? error.message : "") : "";
+
+  return (
+    code === "PGRST204" ||
+    code === "42703" ||
+    message.includes("Could not find the") ||
+    message.includes("preferred_regions") ||
+    message.includes("target_roles") ||
+    message.includes("graduation_year")
+  );
+}
+
 export function normalizePreferenceList(values: string[]) {
   return Array.from(
     new Set(

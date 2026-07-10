@@ -177,9 +177,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/resume/resumePdf.ts",
-    mustInclude: ["jsPDF", "NotoSerifSC-Regular.ttf", "NotoSerifSC-Bold.ttf", "format: \"letter\"", "exportResumeToPdf", "addFileToVFS", "getTemplateOptions", "modern", "classic"],
+    mustInclude: ["jsPDF", "NotoSerifSC-Regular.ttf", "NotoSerifSC-Bold.ttf", "format: \"a4\"", "exportResumeToPdf", "addFileToVFS", "getTemplateOptions", "modern", "classic"],
     mustNotInclude: ["html2canvas", "window.print"],
-    label: "简历 PDF 矢量排版器嵌入中文字体并按模板输出 Letter 页面",
+    label: "简历 PDF 矢量排版器嵌入中文字体并按模板输出 A4 页面",
   },
   {
     file: "src/lib/resume-sync.ts",

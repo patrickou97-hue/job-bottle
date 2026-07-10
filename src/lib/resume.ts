@@ -102,10 +102,36 @@ export function createId(prefix: string) {
   return `${prefix}_${Date.now()}_${Math.round(Math.random() * 100_000)}`;
 }
 
+export function createResumeId() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+
+  // The resumes table uses a UUID primary key. Keep the local fallback UUID-shaped
+  // as well so a resume created before the browser crypto API is ready can sync.
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (character) => {
+    const value = Math.floor(Math.random() * 16);
+    return (character === "x" ? value : (value & 0x3) | 0x8).toString(16);
+  });
+}
+
+export function isResumeId(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+export function getResumeTargetLine(resume: ResumeDocument) {
+  const candidates = [resume.content.basics.targetRole, resume.targetRole]
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const target = candidates[0] ?? "";
+
+  return /^(通用|通用版|用于通用匹配)$/.test(target) ? "" : target;
+}
+
 export function createEmptyResume(): ResumeDocument {
   const now = new Date().toISOString();
   return {
-    id: createId("resume"),
+    id: createResumeId(),
     title: "未命名简历",
     targetRole: "",
     jobTarget: "",
@@ -142,8 +168,8 @@ export function createEmptyResume(): ResumeDocument {
 export function createSampleResume(): ResumeDocument {
   const now = new Date().toISOString();
   return {
-    id: createId("resume"),
-    title: "秋招通用版",
+    id: createResumeId(),
+    title: "示例简历",
     targetRole: "产品经理实习生",
     jobTarget: "互联网产品方向",
     linkedJobId: null,
@@ -333,7 +359,7 @@ function normalizeResumeDocument(value: unknown): ResumeDocument | null {
   return {
     ...fallback,
     ...resume,
-    id: typeof resume.id === "string" ? resume.id : fallback.id,
+    id: typeof resume.id === "string" && isResumeId(resume.id) ? resume.id : fallback.id,
     title: typeof resume.title === "string" ? resume.title : fallback.title,
     targetRole: typeof resume.targetRole === "string" ? resume.targetRole : "",
     jobTarget: typeof resume.jobTarget === "string" ? resume.jobTarget : "",

@@ -100,7 +100,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
           <p className="page-kicker">进度管理</p>
           <h1 className="page-title">我的投递</h1>
         </div>
-        <div className="liquid-panel p-4 md:p-5">
+        <div className="progress-summary p-4 md:p-5">
           <div className="grid grid-cols-3 gap-4">
             <StatBlock value={applications.length} label="全部记录" />
             <StatBlock value={applications.filter((item) => item.status !== "rejected" && item.status !== "withdrawn").length} label="投递中" />
@@ -109,7 +109,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
         </div>
       </section>
 
-      <section className="liquid-panel p-4">
+      <section className="filter-rail p-4">
         <div className="grid gap-4 md:grid-cols-[1fr_220px_auto]">
           <div className="relative">
             <Search

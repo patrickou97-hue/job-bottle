@@ -6,11 +6,13 @@ import type { Job } from "@/lib/types";
 
 export function AdminJobTable({
   jobs,
+  duplicateJobIds,
   onEdit,
   onDelete,
   onToggleActive,
 }: {
   jobs: Job[];
+  duplicateJobIds?: Set<string>;
   onEdit: (job: Job) => void;
   onDelete: (job: Job) => Promise<void>;
   onToggleActive: (job: Job) => Promise<void>;
@@ -45,10 +47,17 @@ export function AdminJobTable({
             {jobs.map((job) => (
               <tr
                 key={job.id}
-                className="border-b border-white/5 text-ink-secondary transition hover:bg-nebula-blue/5"
+                className={`border-b border-white/5 text-ink-secondary transition hover:bg-nebula-blue/5 ${
+                  duplicateJobIds?.has(job.id) ? "bg-amber-100/[0.035]" : ""
+                }`}
               >
                 <td className="px-4 py-4 font-medium text-ink-primary">
-                  {job.company_name}
+                  <span className="inline-flex items-center gap-2">
+                    {job.company_name}
+                    {duplicateJobIds?.has(job.id) ? (
+                      <span className="rounded-full bg-amber-100/[0.1] px-2 py-0.5 text-[10px] font-medium text-amber-100/85">疑似重复</span>
+                    ) : null}
+                  </span>
                 </td>
                 <td className="max-w-[280px] px-4 py-4">
                   <span className="line-clamp-2">{job.job_titles || "暂无"}</span>

@@ -26,6 +26,7 @@ import { ensureProfile, getCurrentUserOrNull } from "@/lib/auth";
 import { fetchActiveJobs } from "@/lib/jobs";
 import {
   formatPreferenceInput,
+  isProfileSchemaError,
   parsePreferenceInput,
   updateMyProfilePreferences,
 } from "@/lib/profile";
@@ -34,7 +35,7 @@ import {
   PROFILE_ROLE_OPTIONS,
   toggleProfileOption,
 } from "@/lib/profile-options";
-import type { ResumeDocument } from "@/lib/resume";
+import { getResumeTargetLine, type ResumeDocument } from "@/lib/resume";
 import { fetchMyResumes, isMissingResumeTableError } from "@/lib/resume-sync";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import type { ApplicationWithJob, Job, Profile } from "@/lib/types";
@@ -113,8 +114,13 @@ export function ProfileClient() {
       setMessage("");
     }
 
-    void loadProfile().catch(() => {
-      if (mounted) setMessage("读取个人中心失败，请稍后再试。");
+    void loadProfile().catch((error) => {
+      if (!mounted) return;
+      setMessage(
+        isProfileSchemaError(error)
+          ? "云端个人资料尚未升级。请在 Supabase SQL Editor 运行 20260710120000_profile_resume_cloud_repair.sql。"
+          : "读取个人中心失败，请稍后再试。",
+      );
     });
     return () => {
       mounted = false;
@@ -204,8 +210,12 @@ export function ProfileClient() {
       setPreferredRegions(formatPreferenceInput(next.preferred_regions));
       setTargetRoles(formatPreferenceInput(next.target_roles));
       setMessage("已保存个人资料。");
-    } catch {
-      setMessage("保存失败，请确认数据库迁移已应用或稍后再试。");
+    } catch (error) {
+      setMessage(
+        isProfileSchemaError(error)
+          ? "云端个人资料尚未升级。请在 Supabase SQL Editor 运行 20260710120000_profile_resume_cloud_repair.sql。"
+          : "保存失败，请确认当前账号有 profiles 更新权限或稍后再试。",
+      );
     } finally {
       setBusy(false);
     }
@@ -370,7 +380,7 @@ export function ProfileClient() {
       </section>
 
       <section className="grid gap-5 lg:grid-cols-3">
-        <article className="rounded-[1.5rem] border border-white/[0.08] p-5">
+        <article className="border-t border-white/[0.12] pt-5">
           <SectionLead eyebrow="Basics" title="基本信息" />
           <div className="mt-5 grid gap-4">
             <ProfileField label="用户名" icon={<UserRound aria-hidden="true" className="size-4" />}>
@@ -396,16 +406,16 @@ export function ProfileClient() {
           </div>
         </article>
 
-        <article className="rounded-[1.5rem] border border-white/[0.08] p-5">
+        <article className="border-t border-white/[0.12] pt-5">
           <SectionLead eyebrow="Resume" title="简历版本" />
           <div className="mt-5 space-y-3">
             {resumes.length > 0 ? (
               resumes.slice(0, 3).map((resume) => (
                 <Link key={resume.id} href="/resume" className="group block border-b border-white/[0.08] pb-3 last:border-b-0">
                   <p className="truncate text-sm font-semibold text-ink-primary">{resume.title || "未命名简历"}</p>
-                  <p className="mt-1 truncate text-xs text-ink-muted">
-                    {resume.targetRole || resume.content.basics.targetRole || "用于通用匹配"}
-                  </p>
+                  {getResumeTargetLine(resume) ? (
+                    <p className="mt-1 truncate text-xs text-ink-muted">{getResumeTargetLine(resume)}</p>
+                  ) : null}
                 </Link>
               ))
             ) : (
@@ -418,7 +428,7 @@ export function ProfileClient() {
           </Link>
         </article>
 
-        <article className="rounded-[1.5rem] border border-white/[0.08] p-5">
+        <article className="border-t border-white/[0.12] pt-5">
           <SectionLead eyebrow="Next" title="为你推荐" />
           <div className="mt-5 space-y-3">
             {recommendedJobs.length > 0 ? (
@@ -440,7 +450,7 @@ export function ProfileClient() {
       </section>
 
       <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
-        <article className="rounded-[1.5rem] border border-white/[0.08] p-5">
+        <article className="border-t border-white/[0.12] pt-5">
           <SectionLead eyebrow="Guide" title="使用教程" />
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             <GuideLink href="/explore" step="01" title="探索岗位" />
@@ -450,7 +460,7 @@ export function ProfileClient() {
           </div>
         </article>
 
-        <article className="rounded-[1.5rem] border border-white/[0.08] p-5">
+        <article className="border-t border-white/[0.12] pt-5">
           <SectionLead eyebrow="Account" title="账号与反馈" />
           <div className="mt-5 space-y-4">
             <InfoLine icon={<Mail aria-hidden="true" className="size-4" />} label="登录邮箱" value={userEmail || "未读取"} />

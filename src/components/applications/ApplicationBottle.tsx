@@ -10,7 +10,6 @@ import { FiligreeDivider } from "@/components/ui/FiligreeDivider";
 import { Button } from "@/components/ui/Button";
 import {
   downloadBottleShareCard,
-  type ShareProfileSnapshot,
 } from "@/components/applications/shareBottleCard";
 import { dismissBottleDrop, peekBottleDrop } from "@/lib/bottle-drop";
 import { formatDateTime } from "@/lib/utils";
@@ -39,14 +38,10 @@ export function ApplicationBottle({
   applications,
   onChanged,
   onDeleted,
-  profile,
-  resumeCount = 0,
 }: {
   applications: ApplicationWithJob[];
   onChanged: (application: ApplicationWithJob) => Promise<void> | void;
   onDeleted: (applicationId: string) => Promise<void> | void;
-  profile?: ShareProfileSnapshot | null;
-  resumeCount?: number;
 }) {
   const router = useRouter();
   const [selected, setSelected] = useState<ApplicationWithJob | null>(null);
@@ -110,8 +105,6 @@ export function ApplicationBottle({
         applications,
         bottleSnapshotDataUrl,
         positions,
-        profile,
-        resumeCount,
       });
       setShareState("done");
       window.setTimeout(() => setShareState("idle"), 2400);

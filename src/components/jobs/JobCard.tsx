@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ExternalLink } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { StatusPill } from "@/components/applications/StatusPill";
 import { cn } from "@/lib/utils";
 import type { Job, UserApplication } from "@/lib/types";
@@ -67,7 +67,7 @@ export function JobCard({
           >
             {job.company_name}
           </Link>
-          <span className="hidden truncate text-xs text-[color:var(--text-muted)] md:inline">
+          <span className="truncate text-xs text-[color:var(--text-muted)]">
             {job.job_titles || "岗位待补充"}
           </span>
         </div>
@@ -86,20 +86,27 @@ export function JobCard({
       {application ? (
         <button
           type="button"
-          className="pressable inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs text-[color:var(--light-silver)] transition hover:bg-[color:var(--surface-hover-bg)]"
+          className="job-row-action pressable inline-flex shrink-0 items-center gap-1.5 px-3 py-2 text-xs"
           onClick={(e) => {
             e.stopPropagation();
             onOpenProgress?.(job);
           }}
         >
           <StatusPill status={application.status} />
-          <span className="hidden sm:inline">查看进度</span>
+          <span className="hidden sm:inline">更新进度</span>
         </button>
       ) : (
-        <span className="text-action shrink-0 text-xs group-hover:text-[color:var(--light-silver)]">
-          <ExternalLink aria-hidden="true" className="size-4" />
-          <span className="hidden sm:inline">去官网投递</span>
-        </span>
+        <button
+          type="button"
+          className="job-row-action pressable inline-flex shrink-0 items-center gap-1.5 px-3 py-2 text-xs"
+          onClick={(event) => {
+            event.stopPropagation();
+            void onApply(job);
+          }}
+        >
+          <ArrowUpRight aria-hidden="true" className="size-4" />
+          <span className="hidden sm:inline">开始投递</span>
+        </button>
       )}
     </div>
   );

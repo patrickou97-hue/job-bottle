@@ -7,6 +7,7 @@ import type {
   ResumeSkillGroup,
   ResumeTemplateId,
 } from "@/lib/resume";
+import { getResumeTargetLine } from "@/lib/resume";
 
 type JsPdf = import("jspdf").jsPDF;
 
@@ -33,11 +34,11 @@ type LayoutState = {
   y: number;
 };
 
-const PAGE_WIDTH = 612;
-const PAGE_HEIGHT = 792;
-const MARGIN_X = 36;
-const TOP = 28;
-const BOTTOM = 30;
+const PAGE_WIDTH = 595.28;
+const PAGE_HEIGHT = 841.89;
+const MARGIN_X = 39;
+const TOP = 34;
+const BOTTOM = 34;
 const FONT_FAMILY = "NotoSerifSC";
 const FONT_REGULAR = "/fonts/NotoSerifSC-Regular.ttf";
 const FONT_BOLD = "/fonts/NotoSerifSC-Bold.ttf";
@@ -83,7 +84,7 @@ function createPdf(
 ) {
   const pdf = new jsPDF({
     compress: true,
-    format: "letter",
+    format: "a4",
     orientation: "portrait",
     unit: "pt",
   });
@@ -163,7 +164,7 @@ function renderHeader(state: LayoutState, resume: ResumeDocument, options: PdfOp
       y += 11;
     }
 
-    const target = cleanText(basics.targetRole || resume.targetRole);
+    const target = getResumeTargetLine(resume);
     if (target) {
       setFont(state, 10.1, "bold", "#172033");
       drawText(state, target, state.left, y);
@@ -202,7 +203,7 @@ function renderHeader(state: LayoutState, resume: ResumeDocument, options: PdfOp
     y += 14;
   }
 
-  const target = cleanText(basics.targetRole || resume.targetRole);
+  const target = getResumeTargetLine(resume);
   if (target) {
     setFont(state, 10.5, "bold");
     drawCentered(state, target, y);
@@ -333,7 +334,9 @@ function sectionTitle(state: LayoutState, title: string, options: PdfOptions) {
     state.pdf.setLineWidth(options.templateId === "classic" ? 1 : 0.7);
     state.pdf.line(state.left + titleWidth + 5, state.y - 3.5, state.right, state.y - 3.5);
   }
-  state.y += options.headingSize * 1.02;
+  // Reserve a full text-line after the rule. Without this clearance, the first
+  // education or experience row visually collides with the section heading.
+  state.y += options.headingSize * 1.38 + 1;
 }
 
 function row(

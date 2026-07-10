@@ -11,6 +11,7 @@ import {
   createEmptyResume,
   createSampleResume,
   getResumeTemplateMeta,
+  getResumeTargetLine,
   loadLocalResumes,
   saveLocalResumes,
   type ResumeDocument,
@@ -74,10 +75,10 @@ export function ResumeBuilderClient() {
       } catch (error) {
         if (isMissingResumeTableError(error)) {
           setStorageMode("local");
-          setSaveState("云端未启用，已保存到本地");
+          setSaveState("云端简历库未升级，已保存到本地");
           return;
         }
-        setSaveState("同步失败，已保存到本地");
+        setSaveState("云端同步失败，已保存到本地");
       }
     }, 700);
 
@@ -105,11 +106,11 @@ export function ResumeBuilderClient() {
       if (cloudResumesResult.status === "rejected") {
         if (isMissingResumeTableError(cloudResumesResult.reason)) {
           setStorageMode("local");
-          setSaveState("云端未启用，已保存到本地");
+          setSaveState("云端简历库未升级，已保存到本地");
           return;
         }
         setStorageMode("local");
-        setSaveState("同步失败，已保存到本地");
+        setSaveState("云端同步失败，已保存到本地");
         return;
       }
 
@@ -191,7 +192,7 @@ export function ResumeBuilderClient() {
       void deleteMyResume(supabase, id).catch((error) => {
         if (isMissingResumeTableError(error)) {
           setStorageMode("local");
-          setSaveState("云端未启用，已保存到本地");
+          setSaveState("云端简历库未升级，已保存到本地");
           return;
         }
         setSaveState("删除同步失败，本地已删除");
@@ -255,9 +256,9 @@ export function ResumeBuilderClient() {
                   <FileText aria-hidden="true" className="size-4 text-nebula-blue" />
                   {resume.title || "未命名简历"}
                 </span>
-                <span className="mt-1 block text-xs text-ink-muted">
-                  {resume.targetRole || resume.content.basics.targetRole || "未设置方向"}
-                </span>
+                {getResumeTargetLine(resume) ? (
+                  <span className="mt-1 block text-xs text-ink-muted">{getResumeTargetLine(resume)}</span>
+                ) : null}
                 <span className="mt-2 inline-flex rounded-full bg-white/[0.055] px-2 py-1 text-[11px] text-ink-muted">
                   {getResumeTemplateMeta(resume.templateId).label}
                 </span>

@@ -72,7 +72,7 @@ export async function ensureProfile(
   const preferredRegions = profileInput?.preferredRegions ?? user.user_metadata?.preferred_regions ?? [];
   const targetRoles = profileInput?.targetRoles ?? user.user_metadata?.target_roles ?? [];
 
-  await supabase.from("profiles").upsert(
+  const { error: createProfileError } = await supabase.from("profiles").upsert(
     {
       id: user.id,
       display_name: displayName,
@@ -87,9 +87,10 @@ export async function ensureProfile(
     },
     { onConflict: "id", ignoreDuplicates: true },
   );
+  if (createProfileError) throw createProfileError;
 
   if (profileInput) {
-    await supabase
+    const { error: updateProfileError } = await supabase
       .from("profiles")
       .update({
         display_name: displayName,
@@ -102,6 +103,7 @@ export async function ensureProfile(
         target_roles: normalizeProfileTags(targetRoles),
       })
       .eq("id", user.id);
+    if (updateProfileError) throw updateProfileError;
   }
 }
 

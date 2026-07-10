@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { GitMerge, Search, Upload } from "lucide-react";
+import { Filter, Search, Upload } from "lucide-react";
 import { fetchAllJobsForAdmin } from "@/lib/jobs";
 import { getCurrentUserOrNull } from "@/lib/auth";
-import { findDuplicateJobGroups, mergeDuplicateJobs } from "@/lib/job-dedupe";
+import { findDuplicateJobGroups } from "@/lib/job-dedupe";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -19,7 +19,7 @@ export function AdminJobsClient() {
   const [keyword, setKeyword] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [merging, setMerging] = useState(false);
+  const [duplicateOnly, setDuplicateOnly] = useState(false);
   const [message, setMessage] = useState("");
 
   async function loadData() {
@@ -77,6 +77,15 @@ export function AdminJobsClient() {
   }, [jobs, keyword]);
 
   const duplicateGroups = useMemo(() => findDuplicateJobGroups(jobs), [jobs]);
+  const duplicateJobIds = useMemo(
+    () => new Set(duplicateGroups.flatMap((group) => group.jobs.map((job) => job.id))),
+    [duplicateGroups],
+  );
+
+  const visibleJobs = useMemo(
+    () => (duplicateOnly ? filtered.filter((job) => duplicateJobIds.has(job.id)) : filtered),
+    [duplicateJobIds, duplicateOnly, filtered],
+  );
 
   async function saveJob(payload: Omit<Job, "id" | "created_at" | "updated_at">, id?: string) {
     if (!isSupabaseConfigured()) {
@@ -124,28 +133,6 @@ export function AdminJobsClient() {
     await loadData();
   }
 
-  async function handleMergeDuplicates() {
-    if (!isSupabaseConfigured()) {
-      setMessage("请先配置数据库环境变量。");
-      return;
-    }
-    setMerging(true);
-    setMessage("");
-    try {
-      const result = await mergeDuplicateJobs(createClient());
-      setMessage(
-        result.jobs_removed > 0
-          ? `已合并 ${result.groups_merged} 组重复岗位，移除 ${result.jobs_removed} 条重复岗位，并整理 ${result.applications_moved + result.applications_removed} 条投递记录。`
-          : "没有发现需要合并的重复岗位。",
-      );
-      await loadData();
-    } catch {
-      setMessage("合并失败，请确认管理员权限或稍后再试。");
-    } finally {
-      setMerging(false);
-    }
-  }
-
   return (
     <div className="observatory-page space-y-8">
       <section className="page-hero">
@@ -156,18 +143,18 @@ export function AdminJobsClient() {
           </div>
           <div className="flex flex-wrap gap-3">
             <Button
-              variant="secondary"
+              variant={duplicateOnly ? "primary" : "secondary"}
               className="gap-2"
-              disabled={!isAdmin || duplicateGroups.length === 0 || merging}
-              onClick={handleMergeDuplicates}
+              disabled={!isAdmin || duplicateGroups.length === 0}
+              onClick={() => setDuplicateOnly((current) => !current)}
               title={
                 duplicateGroups.length > 0
-                  ? `发现 ${duplicateGroups.length} 组重复岗位`
+                  ? `仅查看 ${duplicateGroups.length} 组重复岗位`
                   : "当前没有发现重复岗位"
               }
             >
-              <GitMerge aria-hidden="true" className="size-4" />
-              {merging ? "正在合并" : "合并重复岗位"}
+              <Filter aria-hidden="true" className="size-4" />
+              {duplicateOnly ? "显示全部岗位" : "筛选重复岗位"}
             </Button>
             <Link href="/admin/import">
               <Button className="gap-2">
@@ -191,9 +178,8 @@ export function AdminJobsClient() {
 
           <section className="liquid-panel p-4">
             {duplicateGroups.length > 0 ? (
-              <div className="mb-4 rounded-[20px] border border-amber-200/20 bg-amber-200/[0.07] px-4 py-3 text-sm text-amber-50/85">
-                发现 {duplicateGroups.length} 组疑似重复岗位。系统会按公司、投递链接、岗位、地点和批次合并，
-                保留最近更新且仍在开放的岗位。
+              <div className="mb-5 border-l-2 border-amber-200/55 px-4 py-1 text-sm leading-6 text-amber-50/85">
+                发现 {duplicateGroups.length} 组疑似重复岗位。当前筛选不会删除数据，你可以逐条核验并保留一条。
               </div>
             ) : null}
             <div className="relative">
@@ -210,13 +196,44 @@ export function AdminJobsClient() {
             </div>
           </section>
 
+          {duplicateOnly && duplicateGroups.length > 0 ? (
+            <section className="space-y-3 border-t border-white/[0.09] pt-5">
+              <div className="flex items-end justify-between gap-4">
+                <div>
+                  <p className="page-kicker">重复核验</p>
+                  <h2 className="section-title mt-1">疑似重复岗位</h2>
+                </div>
+                <span className="section-meta">按公司、链接、岗位、地点和批次识别</span>
+              </div>
+              <div className="divide-y divide-white/[0.07]">
+                {duplicateGroups.map((group, index) => (
+                  <div key={group.fingerprint} className="grid gap-3 py-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-ink-primary">
+                        {group.jobs[0]?.company_name || "未命名公司"}
+                        <span className="ml-2 text-xs font-normal text-ink-muted">第 {index + 1} 组，共 {group.jobs.length} 条</span>
+                      </p>
+                      <p className="mt-1 truncate text-xs text-ink-muted">
+                        {group.jobs.map((job) => job.job_titles || "岗位待补充").join(" / ")}
+                      </p>
+                    </div>
+                    <Button variant="secondary" className="h-9" onClick={() => setEditing(group.jobs[0])}>
+                      查看保留建议
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
           {loading ? (
             <div className="empty-state">
               <span className="loading-line">正在读取岗位</span>
             </div>
           ) : (
             <AdminJobTable
-              jobs={filtered}
+              jobs={visibleJobs}
+              duplicateJobIds={duplicateJobIds}
               onEdit={setEditing}
               onDelete={deleteJob}
               onToggleActive={toggleActive}
