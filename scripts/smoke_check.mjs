@@ -153,7 +153,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/lib/resume.ts",
-    mustInclude: ["ResumeDocument", "ResumeContent", "createSampleResume", "loadLocalResumes", "linkedJobId", "photoDataUrl", "compact", "classic", "modern", "紧凑单栏", "经典商科", "现代 ATS"],
+    mustInclude: ["ResumeDocument", "ResumeContent", "createSampleResume", "loadLocalResumes", "linkedJobId", "photoDataUrl", "compact", "classic", "modern", "紧凑单栏", "经典商科", "现代 ATS", "createResumeId", "isResumeId", "getResumeTargetLine"],
     mustNotInclude: [],
     label: "简历制作器定义结构化简历模型、多模板和本地持久化",
   },
@@ -177,7 +177,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/resume/resumePdf.ts",
-    mustInclude: ["jsPDF", "NotoSerifSC-Regular.ttf", "NotoSerifSC-Bold.ttf", "format: \"a4\"", "exportResumeToPdf", "addFileToVFS", "getTemplateOptions", "modern", "classic"],
+    mustInclude: ["jsPDF", "NotoSerifSC-Regular.ttf", "NotoSerifSC-Bold.ttf", "format: \"a4\"", "PAGE_WIDTH = 595.28", "PAGE_HEIGHT = 841.89", "exportResumeToPdf", "addFileToVFS", "getTemplateOptions", "getResumeTargetLine", "modern", "classic"],
     mustNotInclude: ["html2canvas", "window.print"],
     label: "简历 PDF 矢量排版器嵌入中文字体并按模板输出 A4 页面",
   },
@@ -186,6 +186,24 @@ const SOURCE_INVARIANTS = [
     mustInclude: ["fetchMyResumes", "upsertMyResume", "deleteMyResume", "content_json", "isMissingResumeTableError"],
     mustNotInclude: ["service_role"],
     label: "简历同步层映射 resumes 表并兼容未运行迁移的本地回退",
+  },
+  {
+    file: "supabase/migrations/20260710120000_profile_resume_cloud_repair.sql",
+    mustInclude: ["create table if not exists public.resumes", "preferred_regions", "target_roles", "resumes_select_own", "resumes_update_own", "grant select, insert, update, delete on public.resumes to authenticated"],
+    mustNotInclude: ["service_role"],
+    label: "云端资料和简历修复迁移补齐 owner-only RLS 与必要字段",
+  },
+  {
+    file: "src/components/applications/shareBottleCard.ts",
+    mustInclude: ["context.drawImage(bottleImage", "已收到 Offer", "已进面", "companies.slice(0, 5)", "context.fillText(\"……\"", "const qrSize = 170"],
+    mustNotInclude: ["意向地区", "意向岗位", "独特简历", "推荐机会"],
+    label: "分享海报始终绘制瓶身、使用阶段统计、前五企业和安全二维码",
+  },
+  {
+    file: "src/components/admin/AdminJobsClient.tsx",
+    mustInclude: ["duplicateOnly", "duplicateGroups", "duplicateJobIds", "筛选重复岗位", "疑似重复岗位"],
+    mustNotInclude: ["handleMergeDuplicates", "合并失败，请确认管理员权限或稍后再试。"],
+    label: "管理员可独立筛选和核验重复岗位，不依赖未部署的合并 RPC",
   },
   {
     file: "supabase/migrations/20260708090000_resumes.sql",
