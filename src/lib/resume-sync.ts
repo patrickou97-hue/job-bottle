@@ -8,6 +8,7 @@ import {
 import type { Database, ResumeRow } from "@/lib/types";
 
 type ResumeClient = SupabaseClient<Database>;
+const TEMPLATE_META_KEY = "__job_bottle_template_id";
 
 function normalizeContent(value: unknown): ResumeContent {
   const fallback = createEmptyResume().content;
@@ -28,10 +29,23 @@ function normalizeContent(value: unknown): ResumeContent {
   };
 }
 
-function normalizeTemplateId(value: string): ResumeTemplateId {
+function normalizeTemplateId(value: unknown): ResumeTemplateId {
   return value === "compact" || value === "classic" || value === "modern" || value === "minimal" || value === "executive"
     ? value
     : "compact";
+}
+
+function getStoredTemplateId(value: unknown) {
+  if (!value || typeof value !== "object") return null;
+  const templateId = (value as Record<string, unknown>)[TEMPLATE_META_KEY];
+  return typeof templateId === "string" ? templateId : null;
+}
+
+function contentForStorage(content: ResumeContent, templateId: ResumeTemplateId) {
+  return {
+    ...content,
+    [TEMPLATE_META_KEY]: templateId,
+  };
 }
 
 export function isMissingResumeTableError(error: unknown) {
@@ -63,7 +77,7 @@ export function resumeRowToDocument(row: ResumeRow): ResumeDocument {
     targetRole: row.target_role ?? "",
     jobTarget: row.job_target ?? "",
     linkedJobId: row.linked_job_id,
-    templateId: normalizeTemplateId(row.template_id),
+    templateId: normalizeTemplateId(getStoredTemplateId(row.content_json) ?? row.template_id),
     content: normalizeContent(row.content_json),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -94,18 +108,30 @@ export async function upsertMyResume(
     job_target: resume.jobTarget || null,
     linked_job_id: resume.linkedJobId,
     template_id: resume.templateId,
-    content_json: resume.content as unknown as Record<string, unknown>,
+    content_json: contentForStorage(resume.content, resume.templateId),
     created_at: resume.createdAt,
     updated_at: resume.updatedAt || now,
   };
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("resumes")
     .upsert(payload, { onConflict: "id" })
     .select("*")
     .single();
 
+  // Older hosted projects may still have the three-template check constraint.
+  // Keep the selected template inside content_json and retry with the stable
+  // compact value so switching layouts never prevents a cloud save.
+  if (error && isResumeTemplateConstraintError(error) && (resume.templateId === "minimal" || resume.templateId === "executive")) {
+    ({ data, error } = await supabase
+      .from("resumes")
+      .upsert({ ...payload, template_id: "compact" }, { onConflict: "id" })
+      .select("*")
+      .single());
+  }
+
   if (error) throw error;
+  if (!data) throw new Error("简历云端保存未返回结果，请稍后重试。");
   return resumeRowToDocument(data);
 }
 

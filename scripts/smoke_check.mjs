@@ -189,7 +189,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/lib/resume-sync.ts",
-    mustInclude: ["fetchMyResumes", "upsertMyResume", "deleteMyResume", "content_json", "isMissingResumeTableError", "isResumeTemplateConstraintError"],
+    mustInclude: ["fetchMyResumes", "upsertMyResume", "deleteMyResume", "content_json", "__job_bottle_template_id", "isMissingResumeTableError", "isResumeTemplateConstraintError"],
     mustNotInclude: ["service_role"],
     label: "简历同步层映射 resumes 表并兼容未运行迁移的本地回退",
   },
