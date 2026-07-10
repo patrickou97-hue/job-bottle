@@ -95,8 +95,8 @@ export function SpaceHome() {
   const planets = useMemo(() => {
     const authPlanet: PlanetRoute = {
       id: 'auth',
-      label: user ? '个人中心' : '登录',
-      description: user ? '管理资料、简历和求职偏好' : '登录后保存投递记录',
+      label: user ? '资料' : '登录',
+      description: user ? '查看资料与简历' : '登录后保存投递记录',
       href: user ? '/profile' : '/login',
       orbitRadius: 990,
       orbitDuration: 120,
@@ -181,8 +181,8 @@ export function SpaceHome() {
         onClick={() =>
           enterPlanet({
             id: 'auth',
-            label: user ? '个人中心' : '登录',
-            description: user ? '管理资料、简历和求职偏好' : '登录后保存投递记录',
+            label: user ? '资料' : '登录',
+            description: user ? '查看资料与简历' : '登录后保存投递记录',
             href: user ? '/profile' : '/login',
             orbitRadius: 0,
             orbitDuration: 150,
@@ -198,7 +198,7 @@ export function SpaceHome() {
           transition: 'color 180ms ease, opacity 180ms ease',
         }}
       >
-        {user ? '个人中心' : '登录'}
+        {user ? '资料' : '登录'}
       </button>
 
       <section className="absolute inset-0 z-10 hidden items-center justify-center md:flex">

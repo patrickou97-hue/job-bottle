@@ -47,7 +47,6 @@ export function ProfileClient() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState("");
-  const [role, setRole] = useState<Profile["role"]>("user");
   const [jobs, setJobs] = useState<Job[]>([]);
   const [applications, setApplications] = useState<ApplicationWithJob[]>([]);
   const [resumes, setResumes] = useState<ResumeDocument[]>([]);
@@ -62,7 +61,7 @@ export function ProfileClient() {
   const [feedbackType, setFeedbackType] = useState(FEEDBACK_TYPES[0]);
   const [feedbackText, setFeedbackText] = useState("");
   const [message, setMessage] = useState(() =>
-    isSupabaseConfigured() ? "正在读取个人中心" : "请先配置数据库环境变量。",
+    isSupabaseConfigured() ? "正在读取资料" : "请先配置数据库环境变量。",
   );
   const [busy, setBusy] = useState(false);
 
@@ -75,7 +74,7 @@ export function ProfileClient() {
       const user = await getCurrentUserOrNull(supabase);
       if (!mounted) return;
       if (!user) {
-        setMessage("登录后可以进入个人中心。");
+        setMessage("登录后可以查看资料。");
         return;
       }
 
@@ -92,7 +91,6 @@ export function ProfileClient() {
         profileResult.status === "fulfilled" ? (profileResult.value.data as Profile | null) : null;
       setUserId(user.id);
       setUserEmail(user.email ?? "");
-      setRole(nextProfile?.role ?? "user");
       setJobs(jobsResult.status === "fulfilled" ? jobsResult.value : []);
       setApplications(applicationsResult.status === "fulfilled" ? applicationsResult.value : []);
       setResumes(
@@ -118,7 +116,7 @@ export function ProfileClient() {
       setMessage(
         isProfileSchemaError(error)
           ? "云端个人资料尚未升级。请在 Supabase SQL Editor 运行 20260710120000_profile_resume_cloud_repair.sql。"
-          : "读取个人中心失败，请稍后再试。",
+          : "读取资料失败，请稍后再试。",
       );
     });
     return () => {
@@ -232,17 +230,15 @@ export function ProfileClient() {
       <div className="observatory-page space-y-8">
         <section className="page-hero">
           <div>
-            <p className="page-kicker">求职资料</p>
-            <h1 className="page-title">求职资产中心</h1>
-            <p className="page-subtitle mt-4">登录后管理偏好、简历版本、投递资料和推荐岗位。</p>
+            <h1 className="page-title">我的资料</h1>
           </div>
         </section>
         {message ? <div className="info-banner text-sm">{message}</div> : null}
         <section className="empty-state liquid-panel">
           <div>
             <h2>需要先登录</h2>
-            <p>你的星图、简历版本和求职偏好会绑定到账号。</p>
-            <Link href="/login?next=/profile" className="gold-button mt-4 inline-flex rounded-full px-4 py-2 text-sm font-medium">
+            <p>登录后保存资料、简历和投递记录。</p>
+            <Link href="/login?next=/profile" className="gold-button mt-4 inline-flex rounded-lg px-4 py-2 text-sm font-medium">
               去登录
             </Link>
           </div>
@@ -255,17 +251,16 @@ export function ProfileClient() {
     <div className="observatory-page space-y-7">
       <section className="page-hero">
         <div>
-          <p className="page-kicker">{role === "admin" ? "管理员账号" : "求职用户"}</p>
-          <h1 className="page-title">求职资产中心</h1>
+          <h1 className="page-title">我的资料</h1>
           <p className="page-subtitle mt-4">{statusLine}</p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Button onClick={() => void handleSave()} disabled={busy}>
               <Save aria-hidden="true" className="size-4" />
               保存资料
             </Button>
-            <Link href="/my" className="muted-button pressable inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm">
+            <Link href="/my" className="muted-button pressable inline-flex h-10 items-center gap-2 rounded-lg px-4 text-sm">
               <Compass aria-hidden="true" className="size-4" />
-              打开投递工作台
+              打开投递
             </Link>
           </div>
         </div>
@@ -273,15 +268,15 @@ export function ProfileClient() {
           <ProfileStat value={`${completionPercent}%`} label="资料完整度" />
           <ProfileStat value={String(resumes.length)} label="简历版本" />
           <ProfileStat value={String(appliedCount)} label="已投递" />
-          <ProfileStat value={String(recommendedJobs.length)} label="推荐岗位" />
+          <ProfileStat value={String(recommendedJobs.length)} label="匹配岗位" />
           {missingLabels.length > 0 ? <p className="col-span-2 text-xs leading-5 text-ink-muted md:col-span-4">待补充：{missingLabels.slice(0, 4).join("、")}</p> : null}
         </div>
       </section>
 
       {message ? <div className="info-banner text-sm">{message}</div> : null}
 
-      <section className="grid gap-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(340px,0.95fr)]">
-        <article className="relative overflow-hidden rounded-lg bg-[rgba(8,13,27,0.7)] p-5 shadow-[inset_0_1px_0_rgba(244,232,198,0.07)] sm:p-6">
+      <section className="grid gap-8 border-y border-white/[0.1] py-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(340px,0.95fr)]">
+        <article className="min-w-0">
           <div className="flex items-start justify-between gap-4">
             <SectionLead title="投递资产" />
             <Link href="/my" className="text-action text-sm">
@@ -289,9 +284,8 @@ export function ProfileClient() {
               <ArrowRight aria-hidden="true" className="size-4" />
             </Link>
           </div>
-          <div className="mt-5 grid gap-5 md:grid-cols-[220px_minmax(0,1fr)] md:items-center">
-            <div className="relative mx-auto h-72 w-48">
-              <div className="absolute inset-x-8 bottom-8 h-44 rounded-[44%] bg-[#f4e8c6]/8 blur-2xl" />
+          <div className="mt-5 grid gap-5 md:grid-cols-[152px_minmax(0,1fr)] md:items-center">
+            <div className="relative mx-auto h-48 w-36">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/assets/star-bottle-image2.png" alt="星瓶" className="relative h-full w-full object-contain opacity-90" />
             </div>
@@ -299,7 +293,7 @@ export function ProfileClient() {
               <p className="text-sm leading-7 text-ink-secondary">
                 {applications.length > 0
                   ? `你已经收进 ${applications.length} 个机会，其中 ${appliedCount} 个进入投递或后续阶段。`
-                  : "还没有点亮岗位星。先去探索星海，收进第一颗机会。"}
+                  : "还没有保存岗位。先从岗位池添加一条记录。"}
               </p>
               <div className="mt-5 grid grid-cols-3 gap-3">
                 <BottleFact label="保存机会" value={formatLit(applications.length)} />
@@ -307,23 +301,22 @@ export function ProfileClient() {
                 <BottleFact label="待跟进" value={formatLit(pendingCount)} />
               </div>
               <div className="mt-5 flex flex-wrap gap-3">
-                <Link href="/explore" className="gold-button inline-flex h-10 items-center rounded-full px-4 text-sm font-medium">
-                  探索岗位
+                <Link href="/explore" className="gold-button inline-flex h-10 items-center rounded-lg px-4 text-sm font-medium">
+                  去岗位池
                 </Link>
-                <Link href="/bottle" className="muted-button pressable inline-flex h-10 items-center rounded-full px-4 text-sm">
-                  生成分享海报
+                <Link href="/bottle" className="muted-button pressable inline-flex h-10 items-center rounded-lg px-4 text-sm">
+                  查看星瓶
                 </Link>
               </div>
             </div>
           </div>
         </article>
 
-        <article className="rounded-lg bg-[#f4e8c6] p-5 text-[#111827] shadow-[0_24px_80px_rgba(0,0,0,0.18)] sm:p-6">
-          <SectionLead title="求职偏好" dark />
+        <article className="border-t border-white/[0.08] pt-5 lg:border-l lg:border-t-0 lg:pl-8">
+          <SectionLead title="求职偏好" />
           <div className="mt-5 grid gap-4">
             <ProfileField label="意向地区" icon={<MapPin aria-hidden="true" className="size-4" />}>
               <OptionGrid
-                dark
                 options={PROFILE_REGION_OPTIONS}
                 selected={regionTags}
                 onToggle={(option) =>
@@ -333,7 +326,6 @@ export function ProfileClient() {
             </ProfileField>
             <ProfileField label="意向岗位" icon={<Target aria-hidden="true" className="size-4" />}>
               <OptionGrid
-                dark
                 options={PROFILE_ROLE_OPTIONS}
                 selected={targetRoleTags}
                 onToggle={(option) =>
@@ -343,8 +335,8 @@ export function ProfileClient() {
             </ProfileField>
           </div>
           <div className="mt-5 flex flex-wrap gap-2">
-            <TagGroup values={regionTags} empty="意向地区尚未点亮" dark />
-            <TagGroup values={targetRoleTags} empty="意向岗位尚未点亮" dark />
+            <TagGroup values={regionTags} empty="未选择地区" />
+            <TagGroup values={targetRoleTags} empty="未选择岗位" />
           </div>
           <Button className="mt-5" onClick={() => void handleSave()} disabled={busy}>
             <Save aria-hidden="true" className="size-4" />
@@ -393,17 +385,17 @@ export function ProfileClient() {
                 </Link>
               ))
             ) : (
-              <p className="text-sm leading-6 text-ink-muted">还没有准备简历版本，建议先做一份通用版。</p>
+              <p className="text-sm leading-6 text-ink-muted">还没有简历。先建立一份通用版。</p>
             )}
           </div>
           <Link href="/resume" className="text-action mt-5 text-sm">
-            上传 / 管理简历
+            管理简历
             <ArrowRight aria-hidden="true" className="size-4" />
           </Link>
         </article>
 
         <article className="border-t border-white/[0.12] pt-5">
-          <SectionLead title="为你推荐" />
+          <SectionLead title="匹配岗位" />
           <div className="mt-5 space-y-3">
             {recommendedJobs.length > 0 ? (
               recommendedJobs.map((job) => (
@@ -413,11 +405,11 @@ export function ProfileClient() {
                 </Link>
               ))
             ) : (
-              <p className="text-sm leading-6 text-ink-muted">填写偏好后，这里会点亮更接近你的机会。</p>
+            <p className="text-sm leading-6 text-ink-muted">保存地区或岗位后，这里会显示匹配结果。</p>
             )}
           </div>
           <Link href="/explore" className="text-action mt-5 text-sm">
-            去探索星海
+            打开岗位池
             <ArrowRight aria-hidden="true" className="size-4" />
           </Link>
         </article>
@@ -429,8 +421,8 @@ export function ProfileClient() {
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             <GuideLink href="/explore" title="浏览岗位池" />
             <GuideLink href="/my" title="处理投递进度" />
-            <GuideLink href="/resume" title="管理简历与材料" />
-            <GuideLink href="/bottle" title="回顾我的星瓶" />
+            <GuideLink href="/resume" title="管理简历" />
+            <GuideLink href="/guide" title="查看秋招流程" />
           </div>
         </article>
 
@@ -456,13 +448,13 @@ export function ProfileClient() {
               />
             </ProfileField>
             <div className="flex flex-wrap gap-3">
-              <a href={feedbackMailto} className="gold-button inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm font-medium">
+              <a href={feedbackMailto} className="gold-button inline-flex h-10 items-center gap-2 rounded-lg px-4 text-sm font-medium">
                 <Mail aria-hidden="true" className="size-4" />
                 发送反馈
               </a>
               <button
                 type="button"
-                className="muted-button pressable inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm text-red-100"
+                className="muted-button pressable inline-flex h-10 items-center gap-2 rounded-lg px-4 text-sm text-red-100"
                 onClick={() => void handleLogout()}
               >
                 <LogOut aria-hidden="true" className="size-4" />
@@ -609,9 +601,9 @@ function buildStatusLine({
   const role = targetRoleTags.length > 0 ? targetRoleTags.slice(0, 3).join("、") : "秋招";
   const region = regionTags.length > 0 ? `，优先关注 ${regionTags.slice(0, 3).join("、")}` : "";
   const majorText = major.trim() ? `，${major.trim()}背景` : "";
-  return `正在寻找 ${year} 届 ${role} 机会${region}${majorText}。`;
+  return `${year} 届 · ${role}${region}${majorText}`;
 }
 
 function formatLit(value: number) {
-  return value > 0 ? String(value) : "未点亮";
+  return String(value);
 }

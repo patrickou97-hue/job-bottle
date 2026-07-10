@@ -218,8 +218,7 @@ export function ResumeBuilderClient() {
       <div className="observatory-page space-y-8">
         <section className="page-hero">
           <div>
-            <p className="page-kicker">求职材料</p>
-            <h1 className="page-title">简历与材料</h1>
+            <h1 className="page-title">简历</h1>
           </div>
         </section>
         <div className="empty-state">
@@ -233,9 +232,7 @@ export function ResumeBuilderClient() {
     <div className="observatory-page space-y-8">
       <section className="page-hero">
         <div>
-          <p className="page-kicker">求职材料</p>
-          <h1 className="page-title">简历与材料</h1>
-          <p className="page-subtitle mt-4">为通用方向保留版本，并在目标岗位确定后绑定对应简历。</p>
+          <h1 className="page-title">简历</h1>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <span className="status-pill rounded-full px-3 py-2 text-sm text-ink-secondary">
@@ -250,7 +247,7 @@ export function ResumeBuilderClient() {
 
       <ResumeTemplatePicker selectedTemplateId={selectedResume.templateId} onChange={updateTemplate} />
 
-      <section className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
+      <section className="grid gap-6 xl:grid-cols-[240px_minmax(0,1fr)]">
         <aside className="space-y-3 xl:sticky xl:top-24 xl:self-start">
           <div className="flex items-center justify-between">
             <h2 className="section-title">我的简历</h2>
@@ -261,7 +258,7 @@ export function ResumeBuilderClient() {
               <button
                 key={resume.id}
                 type="button"
-                className={`w-full rounded-[22px] px-4 py-3 text-left transition ${
+                className={`w-full rounded-lg px-4 py-3 text-left transition ${
                   selectedResume.id === resume.id
                     ? "bg-white/[0.075] text-ink-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]"
                     : "text-ink-secondary hover:bg-white/[0.045]"
@@ -284,8 +281,8 @@ export function ResumeBuilderClient() {
           </div>
         </aside>
 
-        <div className="grid gap-6 2xl:grid-cols-[minmax(420px,0.88fr)_minmax(560px,1fr)]">
-          <section className="liquid-panel min-w-0 p-5">
+        <div className="grid gap-8 xl:grid-cols-[minmax(360px,0.82fr)_minmax(520px,1fr)] xl:items-start">
+          <section className="min-w-0 border-t border-white/[0.1] pt-5">
             <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="section-title">编辑内容</h2>
@@ -323,12 +320,12 @@ export function ResumeBuilderClient() {
             />
           </section>
 
-          <section className="min-w-0">
+          <section className="min-w-0 xl:sticky xl:top-20">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="section-title">实时预览</h2>
                 <p className="mt-1 text-xs text-ink-muted">
-                  {getResumeTemplateMeta(selectedResume.templateId).label}，下载时生成可复制文字的正式 PDF
+                  {getResumeTemplateMeta(selectedResume.templateId).label}。预览与导出使用相同的版式规则。
                 </p>
               </div>
               <ResumePdfExportButton resume={selectedResume} />

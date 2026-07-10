@@ -159,7 +159,7 @@ export function ProgressDrawer({
   const categories = job.job_categories?.length ? job.job_categories.join("、") : job.job_titles || "岗位类别待补充";
 
   return (
-    <Drawer open={open} title="投递轨道" onClose={onClose}>
+    <Drawer open={open} title="投递" onClose={onClose}>
       <div className="space-y-8">
         <header className="flex items-start gap-4">
           <CompanyBadge companyName={job.company_name} logoUrl={job.logo_url} size="lg" />

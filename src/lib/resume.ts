@@ -1,4 +1,12 @@
-export type ResumeTemplateId = "compact" | "classic" | "modern" | "english_classic" | "english_modern";
+export type ResumeTemplateId =
+  | "compact"
+  | "classic"
+  | "modern"
+  | "consulting"
+  | "technical"
+  | "academic"
+  | "english_classic"
+  | "english_modern";
 
 export type ResumeBasics = {
   name: string;
@@ -89,9 +97,33 @@ export const RESUME_TEMPLATES: { id: ResumeTemplateId; label: string }[] = [
   { id: "compact", label: "紧凑中文" },
   { id: "classic", label: "经典商科" },
   { id: "modern", label: "现代单栏" },
+  { id: "consulting", label: "咨询投研" },
+  { id: "technical", label: "技术简洁" },
+  { id: "academic", label: "学术研究" },
   { id: "english_classic", label: "English Classic" },
   { id: "english_modern", label: "English Modern" },
 ];
+
+export type ResumeTemplateStyle = {
+  accent: string;
+  header: "center" | "left";
+  photo: boolean;
+  section: "accent" | "strong" | "subtle";
+};
+
+export function getResumeTemplateStyle(templateId: ResumeTemplateId): ResumeTemplateStyle {
+  const styles: Record<ResumeTemplateId, ResumeTemplateStyle> = {
+    compact: { accent: "#111111", header: "center", photo: true, section: "subtle" },
+    classic: { accent: "#111111", header: "center", photo: true, section: "strong" },
+    modern: { accent: "#203a5f", header: "left", photo: true, section: "accent" },
+    consulting: { accent: "#252a33", header: "center", photo: false, section: "strong" },
+    technical: { accent: "#155e75", header: "left", photo: false, section: "accent" },
+    academic: { accent: "#4b5563", header: "center", photo: false, section: "subtle" },
+    english_classic: { accent: "#111111", header: "center", photo: false, section: "strong" },
+    english_modern: { accent: "#203a5f", header: "left", photo: false, section: "accent" },
+  };
+  return styles[templateId];
+}
 
 export function getResumeTemplateMeta(templateId: ResumeTemplateId) {
   return RESUME_TEMPLATES.find((template) => template.id === templateId) ?? RESUME_TEMPLATES[0];

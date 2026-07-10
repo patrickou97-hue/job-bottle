@@ -3,7 +3,7 @@ import { PageShell } from "@/components/layout/PageShell";
 
 export default function GalaxyPage() {
   return (
-    <PageShell>
+    <PageShell variant="scene">
       <GalaxyGateway />
     </PageShell>
   );

@@ -3,7 +3,7 @@ import { PageShell } from "@/components/layout/PageShell";
 
 export default function BottlePage() {
   return (
-    <PageShell>
+    <PageShell variant="scene">
       <MyBottleClient loginNextPath="/bottle" />
     </PageShell>
   );

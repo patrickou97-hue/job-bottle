@@ -15,8 +15,8 @@ export type PlanetRoute = {
 export const PLANET_ROUTES: PlanetRoute[] = [
   {
     id: 'jobs',
-    label: '岗位星图',
-    description: '浏览和筛选当前开放岗位',
+    label: '岗位池',
+    description: '浏览、筛选和收录岗位',
     href: '/explore',
     orbitRadius: 420,
     orbitDuration: 104,
@@ -26,8 +26,8 @@ export const PLANET_ROUTES: PlanetRoute[] = [
   },
   {
     id: 'applications',
-    label: '我的投递',
-    description: '管理所有岗位投递进度',
+    label: '投递',
+    description: '更新投递记录和进度',
     href: '/my',
     orbitRadius: 610,
     orbitDuration: 124,
@@ -38,8 +38,8 @@ export const PLANET_ROUTES: PlanetRoute[] = [
   },
   {
     id: 'bottle',
-    label: '我的星瓶',
-    description: '查看已投递岗位星星',
+    label: '星瓶',
+    description: '查看投递记录',
     href: '/bottle',
     orbitRadius: 610,
     orbitDuration: 114,
@@ -50,8 +50,8 @@ export const PLANET_ROUTES: PlanetRoute[] = [
   },
   {
     id: 'resume',
-    label: '简历制作',
-    description: '编辑简历并导出 PDF',
+    label: '简历',
+    description: '编辑、预览并导出 PDF',
     href: '/resume',
     orbitRadius: 800,
     orbitDuration: 130,
@@ -61,8 +61,8 @@ export const PLANET_ROUTES: PlanetRoute[] = [
   },
   {
     id: 'forum',
-    label: '讨论区',
-    description: '交流秋招经验和问题',
+    label: '经验库',
+    description: '查看和分享求职经验',
     href: '/forum',
     orbitRadius: 800,
     orbitDuration: 138,

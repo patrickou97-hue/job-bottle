@@ -16,7 +16,7 @@ export function CaptureOrbit({
     <section className="relative overflow-hidden px-1 py-5">
       <div className="mb-4 flex items-baseline justify-between gap-3">
         <div>
-          <h2 className="font-display text-lg font-semibold text-ink-primary">我的投递轨道</h2>
+          <h2 className="font-display text-lg font-semibold text-ink-primary">投递星图</h2>
           <p className="mt-1 text-xs text-ink-muted">捕获后的岗位会停在当前进度附近。</p>
         </div>
         <span className="text-xs text-ink-muted">{applications.length} 颗星</span>

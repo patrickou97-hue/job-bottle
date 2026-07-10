@@ -7,7 +7,7 @@ import type {
   ResumeSkillGroup,
   ResumeTemplateId,
 } from "@/lib/resume";
-import { getResumeTargetLine, isEnglishResumeTemplate } from "@/lib/resume";
+import { getResumeTargetLine, getResumeTemplateStyle, isEnglishResumeTemplate } from "@/lib/resume";
 
 type JsPdf = import("jspdf").jsPDF;
 
@@ -153,12 +153,13 @@ function renderResume(
 function renderHeader(state: LayoutState, resume: ResumeDocument, options: PdfOptions) {
   const basics = resume.content.basics;
   const isEnglish = isEnglishResumeTemplate(options.templateId);
-  const hasPhoto = Boolean(basics.photoDataUrl) && !isEnglish;
+  const templateStyle = getResumeTemplateStyle(options.templateId);
+  const hasPhoto = Boolean(basics.photoDataUrl) && !isEnglish && templateStyle.photo;
   const photoWidth = 58;
   const photoHeight = 72;
   const headerTop = state.y;
-  const isLeftAligned = options.templateId === "modern" || options.templateId === "english_modern";
-  const headerColor = isLeftAligned ? "#203a5f" : BLACK;
+  const isLeftAligned = templateStyle.header === "left";
+  const headerColor = isLeftAligned ? templateStyle.accent : BLACK;
   const displayName = isEnglish ? basics.englishName || basics.name || "Your Name" : addNameSpacing(basics.name || "姓名");
 
   if (hasPhoto && state.draw) {
@@ -208,8 +209,7 @@ function renderHeader(state: LayoutState, resume: ResumeDocument, options: PdfOp
     }
 
     if (state.draw) {
-      const [red, green, blue] = [32, 58, 95];
-      state.pdf.setDrawColor(red, green, blue);
+      state.pdf.setDrawColor(templateStyle.accent);
       state.pdf.setLineWidth(0.8);
       state.pdf.line(state.left, y + 4, state.right, y + 4);
     }
@@ -217,7 +217,7 @@ function renderHeader(state: LayoutState, resume: ResumeDocument, options: PdfOp
     return;
   }
 
-  setFont(state, options.templateId === "classic" || options.templateId === "english_classic" ? 18.6 : 18, "bold");
+  setFont(state, templateStyle.section === "strong" ? 18.6 : 18, "bold");
   drawCentered(state, displayName, headerTop + 22);
   let y = headerTop + 44;
 
@@ -345,13 +345,12 @@ function sectionTitle(state: LayoutState, title: string, options: PdfOptions) {
   ensureSpace(state, options.headingSize + 5);
   setFont(state, options.headingSize, "bold");
 
-  if (options.templateId === "modern" || options.templateId === "english_modern") {
-    const color = "#203a5f";
-    setFont(state, options.headingSize, "bold", color);
+  const templateStyle = getResumeTemplateStyle(options.templateId);
+  if (templateStyle.section === "accent") {
+    setFont(state, options.headingSize, "bold", templateStyle.accent);
     drawText(state, title, state.left, state.y);
     if (state.draw) {
-      const [red, green, blue] = [207, 214, 223];
-      state.pdf.setDrawColor(red, green, blue);
+      state.pdf.setDrawColor(207, 214, 223);
       state.pdf.setLineWidth(0.7);
       state.pdf.line(state.left, state.y + 4.2, state.right, state.y + 4.2);
     }
@@ -362,8 +361,8 @@ function sectionTitle(state: LayoutState, title: string, options: PdfOptions) {
   drawText(state, title, state.left, state.y);
   const titleWidth = state.pdf.getTextWidth(title);
   if (state.draw) {
-    state.pdf.setDrawColor(0, 0, 0);
-    state.pdf.setLineWidth(options.templateId === "classic" || options.templateId === "english_classic" ? 1 : 0.7);
+    state.pdf.setDrawColor(templateStyle.accent);
+    state.pdf.setLineWidth(templateStyle.section === "strong" ? 1 : 0.7);
     state.pdf.line(state.left + titleWidth + 5, state.y - 3.5, state.right, state.y - 3.5);
   }
   // Reserve a full text-line after the rule. Without this clearance, the first
@@ -643,6 +642,16 @@ function getTemplateOptions(templateId: ResumeTemplateId) {
     }));
   }
 
+  if (templateId === "consulting") {
+    return COMPACT_OPTIONS.map((options) => ({
+      ...options,
+      templateId,
+      bodySize: options.bodySize + 0.05,
+      headingSize: options.headingSize + 0.45,
+      sectionGap: options.sectionGap + 0.2,
+    }));
+  }
+
   if (templateId === "modern") {
     return COMPACT_OPTIONS.map((options) => ({
       ...options,
@@ -652,6 +661,29 @@ function getTemplateOptions(templateId: ResumeTemplateId) {
       headingSize: options.headingSize - 0.6,
       itemGap: options.itemGap + 0.15,
       sectionGap: options.sectionGap + 0.45,
+    }));
+  }
+
+  if (templateId === "technical") {
+    return COMPACT_OPTIONS.map((options) => ({
+      ...options,
+      templateId,
+      bodySize: options.bodySize - 0.05,
+      bulletSize: options.bulletSize - 0.05,
+      headingSize: options.headingSize + 0.15,
+      sectionGap: options.sectionGap + 0.4,
+    }));
+  }
+
+  if (templateId === "academic") {
+    return COMPACT_OPTIONS.map((options) => ({
+      ...options,
+      templateId,
+      bodySize: options.bodySize - 0.1,
+      bulletSize: options.bulletSize - 0.1,
+      headingSize: options.headingSize + 0.1,
+      itemGap: options.itemGap + 0.35,
+      sectionGap: options.sectionGap + 0.6,
     }));
   }
 

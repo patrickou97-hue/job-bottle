@@ -65,7 +65,6 @@ export function ForumClient() {
     <div className="observatory-page space-y-8">
       <section className="page-hero">
         <div>
-          <p className="page-kicker">求职经验</p>
           <h1 className="page-title">经验库</h1>
         </div>
         <div className="flex items-end justify-start md:justify-end">

@@ -49,7 +49,7 @@ export function ApplicationOrbitSystem({
     <section className="relative overflow-hidden">
       <div className="section-heading">
         <div>
-          <h2 className="section-title">我的投递轨道</h2>
+          <h2 className="section-title">投递星图</h2>
         </div>
         <span className="section-meta">{applications.length} 条投递</span>
       </div>
@@ -106,7 +106,7 @@ export function ApplicationOrbitSystem({
             <div className="empty-state absolute inset-0">
               <div>
                 <h3>暂无投递记录</h3>
-                <p>从岗位星图中打开官网投递后，岗位会进入这里。</p>
+                <p>从岗位池打开官网投递后，岗位会进入这里。</p>
               </div>
             </div>
           ) : null}

@@ -87,9 +87,15 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/galaxy/CorePlanet.tsx",
-    mustInclude: ["OrbMaterial", "min(34vw, 132px)", "/brand/shi-xing-wordmark.png", "alt=\"拾星\""],
+    mustInclude: ["OrbMaterial", "min(20vw, 78px)", "min(20vw, 82px)", "/brand/shi-xing-wordmark.png", "alt=\"拾星\""],
     mustNotInclude: ["把每一次投递", "minWidth: compact ? 132", "{SITE_NAME}</span>\n      <span", "SITE_NAME"],
-    label: "主页中心星球使用统一材质且拾星字标置于核心中间",
+    label: "主页中心星球使用统一材质，移动端收紧恒星与字标尺寸",
+  },
+  {
+    file: "src/lib/planet-routes.ts",
+    mustInclude: ["label: '岗位池'", "label: '投递'", "label: '简历'", "label: '经验库'", "label: '星瓶'"],
+    mustNotInclude: ["label: '岗位星图'", "label: '我的投递'", "label: '简历制作'", "label: '讨论区'", "label: '我的星瓶'"],
+    label: "首页行星入口与主导航使用同一组项目名称",
   },
   {
     file: "src/components/galaxy/OrbitLines.tsx",
@@ -153,7 +159,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/lib/resume.ts",
-    mustInclude: ["ResumeDocument", "ResumeContent", "createSampleResume", "loadLocalResumes", "linkedJobId", "photoDataUrl", "compact", "classic", "modern", "english_classic", "english_modern", "紧凑中文", "经典商科", "现代单栏", "English Classic", "English Modern", "isEnglishResumeTemplate", "createResumeId", "isResumeId", "getResumeTargetLine"],
+    mustInclude: ["ResumeDocument", "ResumeContent", "createSampleResume", "loadLocalResumes", "linkedJobId", "photoDataUrl", "compact", "classic", "modern", "consulting", "technical", "academic", "english_classic", "english_modern", "紧凑中文", "经典商科", "现代单栏", "咨询投研", "技术简洁", "学术研究", "English Classic", "English Modern", "isEnglishResumeTemplate", "createResumeId", "isResumeId", "getResumeTargetLine"],
     mustNotInclude: [],
     label: "简历制作器定义结构化简历模型、多模板和本地持久化",
   },
@@ -165,15 +171,15 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/resume/ResumeEditor.tsx",
-    mustInclude: ["PhotoField", "cropPhotoToPortrait", "上传照片", "AI 优化即将上线"],
+    mustInclude: ["PhotoField", "cropPhotoToPortrait", "上传照片", "复制通用简历后"],
     mustNotInclude: ["模板风格", "RESUME_TEMPLATES"],
-    label: "简历编辑器聚焦内容填写并保留 AI 能力预留入口",
+    label: "简历编辑器聚焦内容填写并支持岗位关联",
   },
   {
     file: "src/components/resume/ResumeTemplatePicker.tsx",
-    mustInclude: ["RESUME_TEMPLATES", "english_classic", "english_modern", "aria-pressed", "简历版式"],
+    mustInclude: ["RESUME_TEMPLATES", "consulting", "technical", "academic", "english_classic", "english_modern", "aria-pressed", "简历版式"],
     mustNotInclude: ["先选排版，再填内容", "不会改动你的内容", "template.description"],
-    label: "简历制作器在顶层提供克制的五款模板切换器",
+    label: "简历制作器在顶层提供克制的八款模板切换器",
   },
   {
     file: "src/components/resume/ResumePdfExportButton.tsx",
@@ -183,13 +189,13 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/resume/resumePdf.ts",
-    mustInclude: ["jsPDF", "NotoSerifSC-Regular.ttf", "NotoSerifSC-Bold.ttf", "format: \"a4\"", "PAGE_WIDTH = 595.28", "PAGE_HEIGHT = 841.89", "exportResumeToPdf", "addFileToVFS", "getTemplateOptions", "getResumeTargetLine", "english_classic", "english_modern", "isEnglishResumeTemplate", "EDUCATION", "Boolean(basics.photoDataUrl) && !isEnglish"],
+    mustInclude: ["jsPDF", "NotoSerifSC-Regular.ttf", "NotoSerifSC-Bold.ttf", "format: \"a4\"", "PAGE_WIDTH = 595.28", "PAGE_HEIGHT = 841.89", "exportResumeToPdf", "addFileToVFS", "getTemplateOptions", "getResumeTargetLine", "consulting", "technical", "academic", "english_classic", "english_modern", "isEnglishResumeTemplate", "EDUCATION", "Boolean(basics.photoDataUrl) && !isEnglish"],
     mustNotInclude: ["html2canvas", "window.print"],
     label: "简历 PDF 矢量排版器嵌入中文字体并按模板输出 A4 页面",
   },
   {
     file: "src/lib/resume-sync.ts",
-    mustInclude: ["fetchMyResumes", "upsertMyResume", "deleteMyResume", "content_json", "__job_bottle_template_id", "minimal", "executive", "english_classic", "english_modern", "isMissingResumeTableError", "isResumeTemplateConstraintError"],
+    mustInclude: ["fetchMyResumes", "upsertMyResume", "deleteMyResume", "content_json", "__job_bottle_template_id", "minimal", "executive", "consulting", "technical", "academic", "english_classic", "english_modern", "isMissingResumeTableError", "isResumeTemplateConstraintError"],
     mustNotInclude: ["service_role"],
     label: "简历同步层映射 resumes 表并兼容未运行迁移的本地回退",
   },
@@ -210,6 +216,12 @@ const SOURCE_INVARIANTS = [
     mustInclude: ["english_classic", "english_modern", "minimal", "executive", "drop constraint if exists resumes_template_id_check"],
     mustNotInclude: [],
     label: "简历模板收敛迁移保留历史模板兼容并新增英文版式",
+  },
+  {
+    file: "supabase/migrations/20260710150000_resume_template_expansion.sql",
+    mustInclude: ["consulting", "technical", "academic", "minimal", "executive", "drop constraint if exists resumes_template_id_check"],
+    mustNotInclude: [],
+    label: "简历模板扩展迁移新增岗位导向版式并保留历史兼容",
   },
   {
     file: "src/components/admin/AdminJobsClient.tsx",
@@ -301,13 +313,13 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/profile/ProfileClient.tsx",
-    mustInclude: ["求职用户", "SectionLead", "基本信息", "为你推荐"],
+    mustInclude: ["我的资料", "SectionLead", "基本信息", "匹配岗位", "查看秋招流程"],
     mustNotInclude: ["eyebrow=", "个人中心 · 用户管理"],
-    label: "个人中心移除模板化英文眉题，保留求职资料与下一步动作",
+    label: "个人中心移除模板化眉题，保留资料、匹配岗位和流程入口",
   },
   {
     file: "src/app/globals.css",
-    mustInclude: [".collection-surface", "border-right: 1px solid", "font-size: clamp(2.3rem, 5vw, 3.65rem)"],
+    mustInclude: [".collection-surface", "border-right: 1px solid", "font-size: clamp(2rem, 3.8vw, 3rem)", ".space-bg--work"],
     mustNotInclude: [],
     label: "数据页面使用开放集合与收紧的页面层级，避免统一卡片墙",
   },
@@ -319,21 +331,21 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/jobs/[id]/page.tsx",
-    mustInclude: ["generateMetadata", "fetchJobById", "JobDetailActions", "返回探索星海", "RelatedJobs", "开启时间"],
+    mustInclude: ["generateMetadata", "fetchJobById", "JobDetailActions", "返回岗位池", "RelatedJobs", "开启时间"],
     mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY"],
-    label: "岗位详情新路由服务端读取并提供捕获入口且不展示下线日期",
+    label: "岗位详情新路由服务端读取并提供收录入口且不展示下线日期",
   },
   {
     file: "src/components/jobs/JobDetailActions.tsx",
-    mustInclude: ["登录后捕获这颗星", "upsertApplication", "safeOpenUrl", "ApplyReturnConfirm", "keep_opened", "withdrawn"],
+    mustInclude: ["登录后收录岗位", "upsertApplication", "safeOpenUrl", "ApplyReturnConfirm", "keep_opened", "withdrawn"],
     mustNotInclude: ["router.push(`/login"],
-    label: "岗位详情捕获操作为点位登录提示并支持回到页面后确认投递",
+    label: "岗位详情收录操作为点位登录提示并支持回到页面后确认投递",
   },
   {
     file: "src/components/applications/ApplicationOrbitSystem.tsx",
     mustInclude: ["投递中", "ApplicationOrbitRing", "ApplicationOrbitDetail", "OrbMaterial", "OrbitTrackLayer"],
     mustNotInclude: ["CaptureOrbit", "timeline", "ApplicationOrbitLegend", "投递引力核心", "接递引力核心"],
-    label: "我的投递主视觉使用同心投递轨道",
+    label: "投递主视觉使用同心投递轨道",
   },
   {
     file: "src/components/applications/ApplicationOrbitRing.tsx",
@@ -389,9 +401,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/capture/CaptureOrbit.tsx",
-    mustInclude: ["我的投递轨道", "CapturedStar"],
+    mustInclude: ["投递星图", "CapturedStar"],
     mustNotInclude: [],
-    label: "我的投递包含捕获轨道",
+    label: "投递包含捕获轨道",
   },
   {
     file: "src/app/galaxy/page.tsx",
@@ -467,16 +479,16 @@ const REQUIRED_FILES = [
 const REQUIRED_TEXT = {
   "/": ["拾星"],
   "/explore": ["岗位星图", "筛选", "排序方式", "最新开启"],
-  "/my": ["我的投递"],
-  "/profile": ["个人中心", "用户管理"],
-  "/bottle": ["我的星瓶", "季节容器"],
-  "/resume": ["简历制作"],
+  "/my": ["投递"],
+  "/profile": ["我的资料"],
+  "/bottle": ["我的星瓶"],
+  "/resume": ["简历"],
   "/galaxy": ["岗位星系", "地区星系", "行业星系"],
   "/galaxy/region": ["地区星系", "北京星云", "上海星云"],
   "/galaxy/industry": ["行业星系", "互联网星云", "金融星云"],
   "/jobs": ["拾星", "筛选", "排序方式", "最新开启"],
   "/login": ["登录拾星", "邮箱", "密码"],
-  "/forum": ["讨论区"],
+  "/forum": ["经验库"],
   "/admin": ["管理后台"],
 };
 

@@ -46,7 +46,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
           className="inline-flex items-center gap-2 text-sm text-ink-muted transition hover:text-nebula-silver"
         >
           <ArrowLeft aria-hidden="true" className="size-4" />
-          返回探索星海
+          返回岗位池
         </Link>
 
         <section className="liquid-panel overflow-hidden p-5 sm:p-7">

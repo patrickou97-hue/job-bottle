@@ -66,7 +66,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
       setApplications(applicationRows);
       setResumes(resumeResult);
     } catch {
-      setMessage("读取投递工作台失败，请稍后再试。");
+      setMessage("读取投递失败，请稍后再试。");
     } finally {
       setLoading(false);
     }
@@ -128,9 +128,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
     <div className="observatory-page space-y-8">
       <section className="page-hero">
         <div>
-          <p className="page-kicker">投递工作台</p>
-          <h1 className="page-title">把下一步办完</h1>
-          <p className="page-subtitle mt-4">把岗位判断、材料准备和流程更新放在同一个工作区。</p>
+          <h1 className="page-title">投递</h1>
         </div>
         <div className="progress-summary grid grid-cols-2 gap-x-6 gap-y-5 px-4 py-3 md:grid-cols-4 md:px-5">
           <StatBlock value={applications.length} label="全部记录" />
@@ -150,8 +148,8 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
         <section className="empty-state collection-surface">
           <div>
             <h2>从一个岗位开始</h2>
-            <p>先把想投的岗位收进工作台，再记录材料和每一步进展。</p>
-            <Link href="/explore" className="gold-button mt-5 inline-flex rounded-full px-4 py-2 text-sm font-medium">
+            <p>从岗位池添加岗位后，在这里更新投递状态。</p>
+            <Link href="/explore" className="gold-button mt-5 inline-flex rounded-lg px-4 py-2 text-sm font-medium">
               去岗位池
             </Link>
           </div>
@@ -163,7 +161,6 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
               <div className="section-heading px-4 pt-4 sm:px-5">
                 <div>
                   <h2 className="section-title">今日待办</h2>
-                  <p className="mt-1 text-xs text-ink-muted">根据当前阶段、备注和最近更新生成。</p>
                 </div>
                 <span className="section-meta">{tasks.length} 项</span>
               </div>
@@ -195,7 +192,6 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h2 className="section-title">材料准备</h2>
-                  <p className="mt-1 text-xs text-ink-muted">简历与岗位的绑定状态。</p>
                 </div>
                 <FileText aria-hidden="true" className="size-5 text-nebula-silver" />
               </div>
@@ -215,7 +211,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
                 <p className="mt-4 text-sm leading-6 text-ink-secondary">进行中的岗位都已经关联简历版本。</p>
               )}
               <Link href="/resume" className="text-action mt-5 text-sm">
-                管理简历与材料
+                管理简历
                 <ArrowRight aria-hidden="true" className="size-4" />
               </Link>
             </aside>
@@ -242,7 +238,6 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
             <div className="section-heading">
               <div>
                 <h2 className="section-title">投递阶段</h2>
-                <p className="mt-1 text-xs text-ink-muted">先处理看板中的下一步，需要时再切换到星图回顾。</p>
               </div>
               <div className="inline-flex rounded-full bg-black/15 p-1">
                 <button type="button" className={view === "board" ? "rounded-full bg-white/[0.09] px-3 py-1.5 text-xs text-ink-primary" : "rounded-full px-3 py-1.5 text-xs text-ink-muted"} onClick={() => setView("board")}>看板</button>
@@ -279,7 +274,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
               )
             ) : (
               <div className="collection-surface p-3 sm:p-5">
-                <div className="mb-3 flex items-center gap-2 text-sm text-ink-secondary"><Orbit aria-hidden="true" className="size-4" /> 星图用于回顾阶段分布，编辑仍从岗位条目进入。</div>
+                <div className="mb-3 flex items-center gap-2 text-sm text-ink-secondary"><Orbit aria-hidden="true" className="size-4" /> 投递星图</div>
                 <ApplicationOrbitSystem applications={filtered} selectedApplication={selected} onSelect={setSelected} onEdit={setDrawerApplication} />
               </div>
             )}

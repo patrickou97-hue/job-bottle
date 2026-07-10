@@ -6,13 +6,14 @@ import type {
   ResumeSkillGroup,
   ResumeTemplateId,
 } from "@/lib/resume";
-import { getResumeTargetLine, isEnglishResumeTemplate } from "@/lib/resume";
+import { getResumeTargetLine, getResumeTemplateStyle, isEnglishResumeTemplate } from "@/lib/resume";
 
 export function ResumePreview({ resume }: { resume: ResumeDocument }) {
+  const style = getResumeTemplateStyle(resume.templateId);
   const paperClass =
-    resume.templateId === "modern" || resume.templateId === "english_modern"
+    style.header === "left"
       ? "px-[52px] py-[42px]"
-      : resume.templateId === "classic" || resume.templateId === "english_classic"
+      : style.section === "strong"
         ? "px-[50px] py-[40px]"
         : "px-[48px] py-[38px]";
 
@@ -32,12 +33,12 @@ function ResumeTemplate({ resume }: { resume: ResumeDocument }) {
   const targetLine = getResumeTargetLine(resume);
   const isEnglish = isEnglishResumeTemplate(resume.templateId);
   const linkLine = formatLinks(basics, isEnglish);
-  const isModern = resume.templateId === "modern" || resume.templateId === "english_modern";
-  const isClassic = resume.templateId === "classic" || resume.templateId === "english_classic";
-  const isLeftAligned = isModern;
-  const accent = isModern ? "#203a5f" : "#111111";
+  const templateStyle = getResumeTemplateStyle(resume.templateId);
+  const isClassic = templateStyle.section === "strong";
+  const isLeftAligned = templateStyle.header === "left";
+  const accent = templateStyle.accent;
   const displayName = isEnglish ? basics.englishName || basics.name || "Your Name" : addNameSpacing(basics.name || "姓名");
-  const photo = isEnglish ? "" : basics.photoDataUrl;
+  const photo = isEnglish || !templateStyle.photo ? "" : basics.photoDataUrl;
 
   return (
     <article className="resume-compact text-[13px] leading-[1.18]">
@@ -63,10 +64,13 @@ function ResumeTemplate({ resume }: { resume: ResumeDocument }) {
               {basics.englishName}
             </p>
           ) : null}
+          {isLeftAligned && targetLine ? (
+            <p className="mt-2 text-[13px] font-semibold" style={{ color: accent }}>{targetLine}</p>
+          ) : null}
           {contactLine ? (
             <p className="mt-2 text-[13px] leading-[1.22] text-[#111111]">{contactLine}</p>
           ) : null}
-          {targetLine ? (
+          {!isLeftAligned && targetLine ? (
             <p className="mt-1 text-[13px] font-semibold">{targetLine}</p>
           ) : null}
           {linkLine ? (
@@ -94,7 +98,7 @@ function ResumePhoto({ src }: { src: string }) {
 function ResumeSections({ resume, templateId }: { resume: ResumeDocument; templateId: ResumeTemplateId }) {
   const isEnglish = isEnglishResumeTemplate(templateId);
   const labels = getSectionLabels(isEnglish);
-  const sectionClass = templateId === "modern" || templateId === "english_modern" ? "mt-[13px]" : "mt-[12px]";
+  const sectionClass = getResumeTemplateStyle(templateId).header === "left" ? "mt-[13px]" : "mt-[12px]";
   return (
     <div>
       {resume.content.education.length > 0 ? (
@@ -174,12 +178,12 @@ function ResumeSections({ resume, templateId }: { resume: ResumeDocument; templa
 }
 
 function SectionTitle({ templateId, title }: { templateId: ResumeTemplateId; title: string }) {
-  if (templateId === "modern" || templateId === "english_modern") {
-    const accent = "#203a5f";
+  const style = getResumeTemplateStyle(templateId);
+  if (style.section === "accent") {
     return (
       <h2
         className="mb-[7px] border-b pb-[4px] text-[13px] font-bold leading-[1.1] tracking-normal"
-        style={{ borderColor: "#cfd6df", color: accent }}
+        style={{ borderColor: "#cfd6df", color: style.accent }}
       >
         {title}
       </h2>
@@ -187,9 +191,9 @@ function SectionTitle({ templateId, title }: { templateId: ResumeTemplateId; tit
   }
 
   return (
-    <h2 className={`mt-[2px] flex items-center gap-[6px] pb-[6px] font-bold leading-[1.1] tracking-normal text-[#111111] ${templateId === "classic" || templateId === "english_classic" ? "text-[16.5px]" : "text-[16px]"}`}>
+    <h2 className={`mt-[2px] flex items-center gap-[6px] pb-[6px] font-bold leading-[1.1] tracking-normal text-[#111111] ${style.section === "strong" ? "text-[16.5px]" : "text-[16px]"}`}>
       <span>{title}</span>
-      <span className={`flex-1 bg-[#111111] ${templateId === "classic" || templateId === "english_classic" ? "h-[1.5px]" : "h-px"}`} />
+      <span className={`flex-1 ${style.section === "strong" ? "h-[1.5px]" : "h-px"}`} style={{ backgroundColor: style.accent }} />
     </h2>
   );
 }

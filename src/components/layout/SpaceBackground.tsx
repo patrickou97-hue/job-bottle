@@ -1,8 +1,13 @@
 type SpaceBackgroundProps = {
   entering?: boolean;
+  variant?: "scene" | "work";
 }
 
-export function SpaceBackground({ entering = false }: SpaceBackgroundProps) {
+export function SpaceBackground({ entering = false, variant = "work" }: SpaceBackgroundProps) {
+  if (variant === "work") {
+    return <div aria-hidden="true" className="space-bg space-bg--work" />;
+  }
+
   return (
     <div
       className="space-bg"

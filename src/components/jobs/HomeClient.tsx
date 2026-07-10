@@ -312,7 +312,7 @@ export function HomeClient() {
       });
       setPendingApplyConfirmation(null);
       setShowApplyConfirmation(false);
-      setMessage(status === "applied" ? "已确认投递，星体进入投递轨道。" : "已标记为不投了。");
+      setMessage(status === "applied" ? "已确认投递，岗位已出现在投递星图。" : "已标记为不投了。");
       await loadData();
     } catch {
       setMessage("状态更新失败，请稍后再试。");
@@ -463,7 +463,6 @@ export function HomeClient() {
         <div className="section-heading">
           <div>
             <h2 className="section-title">按行业探索</h2>
-            <p className="mt-1 text-xs text-ink-muted">星云入口用于从行业和公司维度继续浏览岗位。</p>
           </div>
         </div>
         <NebulaGateway
@@ -563,9 +562,7 @@ function JobRadarHeader({
   return (
     <section className="page-hero">
       <div className="min-w-0">
-        <p className="page-kicker">岗位发现</p>
         <h1 className="page-title">岗位池</h1>
-        <p className="page-subtitle mt-4">先判断值得投的机会，再准备材料并进入投递流程。</p>
       </div>
 
       <div className="progress-summary px-4 py-2 md:px-5 md:py-3">
@@ -625,14 +622,14 @@ function JobRadarHeader({
               className="text-action pressable px-3 py-2 text-xs"
             >
               <Archive aria-hidden="true" className="size-4" />
-              投递工作台
+              投递
             </Link>
             <Link
               href="/bottle"
-              className="text-action pressable rounded-full bg-nebula-blue/8 px-3 py-2 text-xs text-nebula-silver hover:bg-nebula-blue/12"
+              className="text-action pressable rounded-lg bg-nebula-blue/8 px-3 py-2 text-xs text-nebula-silver hover:bg-nebula-blue/12"
             >
               <Sparkles aria-hidden="true" className="size-4" />
-              星瓶回顾
+              星瓶
             </Link>
           </div>
         </div>

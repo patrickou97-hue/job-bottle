@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Shield, User } from "lucide-react";
+import { LogOut, Menu, Shield, User, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
@@ -12,11 +12,11 @@ import type { Profile } from "@/lib/types";
 
 const navItems = [
   { href: "/explore", label: "岗位池" },
-  { href: "/my", label: "投递工作台" },
-  { href: "/bottle", label: "星瓶回顾" },
-  { href: "/resume", label: "简历与材料" },
-  { href: "/profile", label: "求职资料" },
+  { href: "/my", label: "投递" },
+  { href: "/resume", label: "简历" },
+  { href: "/profile", label: "资料" },
   { href: "/forum", label: "经验库" },
+  { href: "/bottle", label: "星瓶" },
 ];
 
 export function Navbar() {
@@ -36,21 +36,12 @@ export function Navbar() {
         if (mounted) setProfile(null);
         return;
       }
-      const { data } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .maybeSingle();
+      const { data } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
       if (mounted) setProfile((data as Profile | null) ?? null);
     }
 
-    loadProfile();
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
-      loadProfile();
-    });
-
+    void loadProfile();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => { void loadProfile(); });
     return () => {
       mounted = false;
       subscription.unsubscribe();
@@ -65,142 +56,81 @@ export function Navbar() {
     router.refresh();
   }
 
-  const nav = (
-    <>
-      {navItems.map((item) => {
-        const active =
-          item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn(
-              "rounded-full px-3 py-2 text-sm font-medium transition",
-              active
-                ? "bg-nebula-blue/12 text-nebula-silver shadow-star-sm"
-                : "text-ink-secondary hover:bg-white/[0.06] hover:text-nebula-silver",
-            )}
-            onClick={() => setMenuOpen(false)}
-          >
-            {item.label}
-          </Link>
-        );
-      })}
-    </>
-  );
+  function navClass(itemHref: string) {
+    const active = pathname.startsWith(itemHref);
+    return cn(
+      "inline-flex h-10 items-center border-b-2 px-2.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--star-apricot)]",
+      active
+        ? "border-[color:var(--star-apricot)] text-ink-primary"
+        : "border-transparent text-ink-secondary hover:border-white/20 hover:text-ink-primary",
+    );
+  }
 
   return (
-    <header className="sticky top-0 z-40 px-3 pt-3 sm:px-5 lg:px-8">
-      <div className="mx-auto flex h-16 w-full max-w-[1380px] items-center justify-between rounded-full bg-[rgba(4,9,22,0.58)] px-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_22px_70px_rgba(0,0,0,0.22)] backdrop-blur-2xl backdrop-saturate-[1.15] sm:px-4">
-        <Link href="/" className="flex min-w-0 items-center gap-3">
+    <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-[#101725]/94 backdrop-blur-md">
+      <div className="mx-auto flex h-15 w-full max-w-[1320px] items-center gap-4 px-4 sm:px-6 lg:px-8">
+        <Link href="/" className="flex shrink-0 items-center" aria-label="返回首页">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand/shi-xing-wordmark.png" alt={SITE_NAME} className="h-8 w-auto object-contain md:h-9" />
+          <img src="/brand/shi-xing-wordmark.png" alt={SITE_NAME} className="h-7 w-auto object-contain" />
         </Link>
 
-        <nav className="hidden items-center gap-1 rounded-full bg-white/[0.025] px-1 py-1 md:flex">{nav}</nav>
+        <nav className="hidden min-w-0 flex-1 items-center gap-1 md:flex" aria-label="主导航">
+          {navItems.map((item) => (
+            <Link key={item.href} href={item.href} className={navClass(item.href)}>
+              {item.label}
+            </Link>
+          ))}
+        </nav>
 
-        <div className="hidden items-center gap-2 md:flex">
+        <div className="ml-auto hidden items-center gap-1 border-l border-white/[0.08] pl-3 md:flex">
           {profile ? (
             <>
               {profile.role === "admin" ? (
-                <Link
-                  href="/admin"
-                  className="text-action pressable h-10 px-3 text-sm"
-                >
+                <Link href="/admin" className="text-action pressable h-9 px-2.5 text-sm">
                   <Shield aria-hidden="true" className="size-4" />
-                  管理入口
+                  管理
                 </Link>
               ) : null}
-              <Link
-                href="/profile"
-                className="status-pill pressable inline-flex h-10 items-center gap-2 rounded-full px-3 text-sm text-ink-secondary transition hover:text-nebula-silver"
-              >
-                {profile.role === "admin" ? (
-                  <Shield aria-hidden="true" className="size-4 text-nebula-blue" />
-                ) : (
-                  <User aria-hidden="true" className="size-4 text-nebula-blue" />
-                )}
-                {profile.display_name || "求职资料"}
+              <Link href="/profile" className="text-action pressable h-9 px-2.5 text-sm">
+                <User aria-hidden="true" className="size-4" />
+                {profile.display_name || "资料"}
               </Link>
-              <button
-                type="button"
-                className="muted-button pressable inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm transition hover:bg-white/10"
-                onClick={handleLogout}
-              >
+              <button type="button" className="text-action pressable h-9 px-2.5 text-sm" onClick={handleLogout}>
                 <LogOut aria-hidden="true" className="size-4" />
-                退出登录
+                退出
               </button>
             </>
           ) : (
-            <Link className="gold-button rounded-full px-4 py-2 text-sm font-medium" href="/login">
-              登录
-            </Link>
+            <Link className="gold-button inline-flex h-9 items-center rounded-lg px-3 text-sm font-medium" href="/login">登录</Link>
           )}
         </div>
 
         <button
           type="button"
-          className="muted-button pressable relative inline-flex size-10 items-center justify-center rounded-full md:hidden"
+          className="pressable ml-auto inline-flex size-10 items-center justify-center rounded-lg text-ink-secondary hover:bg-white/[0.06] hover:text-ink-primary md:hidden"
           onClick={() => setMenuOpen((value) => !value)}
-          aria-label="打开导航"
+          aria-label={menuOpen ? "关闭导航" : "打开导航"}
+          aria-expanded={menuOpen}
         >
-          <span
-            aria-hidden="true"
-            className={cn(
-              "absolute h-px w-5 bg-current transition duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
-              menuOpen ? "rotate-45" : "-translate-y-1.5",
-            )}
-          />
-          <span
-            aria-hidden="true"
-            className={cn(
-              "absolute h-px w-5 bg-current transition duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]",
-              menuOpen ? "-rotate-45" : "translate-y-1.5",
-            )}
-          />
+          {menuOpen ? <X aria-hidden="true" className="size-5" /> : <Menu aria-hidden="true" className="size-5" />}
         </button>
       </div>
 
       {menuOpen ? (
-        <div className="mx-auto mt-3 max-w-[1380px] rounded-[28px] bg-[rgba(4,9,22,0.82)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_24px_80px_rgba(0,0,0,0.26)] backdrop-blur-2xl md:hidden">
-          <nav className="grid gap-1">{nav}</nav>
-          <div className="mt-3">
-            {profile ? (
-              <div className="grid gap-2">
-                <Link
-                  href="/profile"
-                  className="muted-button rounded-full px-4 py-2 text-center text-sm"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  求职资料
-                </Link>
-                {profile.role === "admin" ? (
-                  <Link
-                    href="/admin"
-                    className="muted-button rounded-full px-4 py-2 text-center text-sm"
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    管理入口
-                  </Link>
-                ) : null}
-                <button
-                  type="button"
-                  className="muted-button w-full rounded-full px-4 py-2 text-sm"
-                  onClick={handleLogout}
-                >
-                  退出登录
-                </button>
-              </div>
-            ) : (
-              <Link
-                href="/login"
-                className="gold-button block rounded-full px-4 py-2 text-center text-sm font-medium"
-                onClick={() => setMenuOpen(false)}
-              >
-                登录
+        <div className="border-t border-white/[0.08] bg-[#101725] px-4 py-3 md:hidden">
+          <nav className="mx-auto grid max-w-[1320px] gap-1" aria-label="移动主导航">
+            {navItems.map((item) => (
+              <Link key={item.href} href={item.href} className={cn(navClass(item.href), "justify-between px-0")} onClick={() => setMenuOpen(false)}>
+                {item.label}
               </Link>
-            )}
-          </div>
+            ))}
+            {profile ? (
+              <div className="mt-2 flex items-center gap-2">
+                <Link href="/profile" className="text-action h-9 px-0 text-sm" onClick={() => setMenuOpen(false)}>资料</Link>
+                <button type="button" className="text-action h-9 px-0 text-sm" onClick={handleLogout}>退出登录</button>
+              </div>
+            ) : <Link href="/login" className="gold-button mt-3 inline-flex h-10 items-center justify-center rounded-lg px-4 text-sm font-medium" onClick={() => setMenuOpen(false)}>登录</Link>}
+          </nav>
         </div>
       ) : null}
     </header>

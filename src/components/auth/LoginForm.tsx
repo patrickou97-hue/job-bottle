@@ -126,14 +126,13 @@ export function LoginForm() {
 
   return (
     <div className="liquid-panel mx-auto w-full max-w-md p-6 sm:p-8">
-      <p className="page-kicker text-center">账号</p>
-      <h1 className="mt-2 text-center text-3xl font-semibold tracking-[-0.02em] text-ink-primary">
+      <h1 className="text-center text-3xl font-semibold tracking-[-0.02em] text-ink-primary">
         登录拾星
       </h1>
       <p className="mt-3 text-center text-sm leading-6 text-ink-secondary">
         {isRegister
-          ? "注册后可保存投递记录，跟踪每一份进度。"
-          : "登录后管理投递进度。"}
+          ? "注册后保存岗位、简历和投递记录。"
+          : "登录后查看投递记录。"}
       </p>
 
       <form className="mt-8 space-y-5" onSubmit={handleSubmit(onSubmit)}>

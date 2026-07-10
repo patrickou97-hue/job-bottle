@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ExternalLink, Sparkles } from "lucide-react";
+import { Archive, ExternalLink } from "lucide-react";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { updateApplication, upsertApplication } from "@/lib/applications";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
@@ -56,7 +56,7 @@ export function JobDetailActions({
   async function captureAndOpen() {
     setMessage("");
     if (!isSupabaseConfigured()) {
-      setMessage("数据库暂未连接，稍后再捕获这颗星。");
+      setMessage("数据库暂未连接，稍后再试。");
       return;
     }
     if (!isValidHttpUrl(job.apply_url)) {
@@ -69,7 +69,7 @@ export function JobDetailActions({
       const supabase = createClient();
       const user = await getCurrentUserOrNull(supabase);
       if (!user) {
-        setMessage("登录后捕获这颗星。");
+        setMessage("登录后收录岗位。");
         return;
       }
       const nextApplication = await upsertApplication(supabase, user.id, job.id);
@@ -82,7 +82,7 @@ export function JobDetailActions({
         setMessage("已浏览，当前投递状态保持不变。");
       }
     } catch {
-      setMessage("捕获失败，网络似乎断开了。重试");
+      setMessage("收录失败，网络似乎断开了。重试");
     } finally {
       setBusy(false);
     }
@@ -125,7 +125,7 @@ export function JobDetailActions({
       setApplication(nextApplication);
       applyConfirmationArmedRef.current = false;
       setShowApplyConfirmation(false);
-      setMessage(status === "applied" ? "已确认投递，星体进入投递轨道。" : "已标记为不投了。");
+      setMessage(status === "applied" ? "已确认投递，岗位已出现在投递星图。" : "已标记为不投了。");
     } catch {
       setMessage("状态更新失败，请稍后再试。");
     } finally {
@@ -134,29 +134,29 @@ export function JobDetailActions({
   }
 
   return (
-    <div className="liquid-panel sticky bottom-4 z-20 p-4 backdrop-blur-xl">
+    <div className="liquid-panel sticky bottom-4 z-20 p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-sm font-medium text-ink-primary">
-            <Sparkles aria-hidden="true" className="size-4 text-nebula-silver" />
-            {application ? "已在你的星图中" : "捕获后进入你的星图"}
+            <Archive aria-hidden="true" className="size-4 text-nebula-silver" />
+            {application ? "已收录" : "收录后再去官网投递"}
           </div>
           <div className="mt-1 text-xs text-ink-muted">
-            {application ? <StatusPill status={application.status} /> : "登录后捕获，不影响继续浏览。"}
+            {application ? <StatusPill status={application.status} /> : "登录后收录，不影响继续浏览。"}
           </div>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          {message === "登录后捕获这颗星。" ? (
+          {message === "登录后收录岗位。" ? (
             <Link
               href={loginHref}
-              className="muted-button pressable inline-flex h-10 items-center justify-center rounded-full px-4 text-sm font-medium"
+              className="muted-button pressable inline-flex h-10 items-center justify-center rounded-lg px-4 text-sm font-medium"
             >
-              登录后捕获
+              登录后收录
             </Link>
           ) : null}
           <Button className="gap-2" disabled={busy} onClick={captureAndOpen}>
             <ExternalLink aria-hidden="true" className="size-4" />
-            {application ? "再次打开官网" : "捕获并去官网投递"}
+            {application ? "打开官网" : "收录并去官网投递"}
           </Button>
         </div>
       </div>
@@ -171,7 +171,7 @@ export function JobDetailActions({
           />
         </div>
       ) : null}
-      {message && message !== "登录后捕获这颗星。" ? (
+        {message && message !== "登录后收录岗位。" ? (
         <p className="mt-3 text-xs text-nebula-silver">{message}</p>
       ) : null}
     </div>

@@ -77,7 +77,7 @@ export function GalaxyJobsClient({ kind, slug }: { kind: GalaxyKind; slug: strin
       startCapture(job);
     }
     safeOpenUrl(job.apply_url);
-    setMessage("岗位已捕获，可在我的投递和星瓶中查看。");
+    setMessage("岗位已收录，可在投递和星瓶中查看。");
     await loadData();
   }
 

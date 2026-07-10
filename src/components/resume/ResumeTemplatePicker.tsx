@@ -8,6 +8,9 @@ const TEMPLATE_SWATCHES: Record<ResumeTemplateId, { accent: string; header: stri
   compact: { accent: "#111111", header: "centered", rule: "split" },
   classic: { accent: "#111111", header: "centered", rule: "strong" },
   modern: { accent: "#172033", header: "left", rule: "soft" },
+  consulting: { accent: "#252a33", header: "centered", rule: "strong" },
+  technical: { accent: "#155e75", header: "left", rule: "accent" },
+  academic: { accent: "#4b5563", header: "centered", rule: "split" },
   english_classic: { accent: "#111111", header: "centered", rule: "strong" },
   english_modern: { accent: "#203a5f", header: "left", rule: "accent" },
 };
@@ -31,7 +34,7 @@ export function ResumeTemplatePicker({
               key={template.id}
               type="button"
               aria-pressed={selected}
-              className={`group min-w-[166px] snap-start rounded-xl p-2 text-left transition duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--star-apricot)] ${
+              className={`group min-w-[166px] snap-start rounded-lg p-2 text-left transition duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--star-apricot)] ${
                 selected
                   ? "bg-white/[0.1] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]"
                   : "hover:bg-white/[0.055] active:scale-[0.98]"

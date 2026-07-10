@@ -215,12 +215,9 @@ export function ResumeEditor({
               ]}
             />
           </FieldGrid>
-          <div className="rounded-[22px] bg-white/[0.045] p-4 text-sm leading-6 text-ink-secondary">
-            建议为不同公司或岗位方向保留不同版本。后续可在岗位详情和投递记录中选择对应简历。
-          </div>
-          <button type="button" disabled className="muted-button rounded-full px-4 py-2 text-sm opacity-55">
-            AI 优化即将上线
-          </button>
+          <p className="border-l border-[color:var(--star-apricot)] pl-3 text-sm leading-6 text-ink-secondary">
+            复制通用简历后，在这里选择要关联的岗位。
+          </p>
         </section>
       ) : null}
     </div>

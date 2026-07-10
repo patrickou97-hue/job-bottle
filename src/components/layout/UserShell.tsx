@@ -2,13 +2,27 @@ import type { ReactNode } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { SpaceShell } from "@/components/layout/SpaceShell";
 
-export function UserShell({ children }: { children: ReactNode }) {
-  return (
-    <SpaceShell>
+export function UserShell({
+  children,
+  variant = "work",
+}: {
+  children: ReactNode;
+  variant?: "scene" | "work";
+}) {
+  const content = (
+    <>
       <Navbar />
-      <main className="mx-auto w-full max-w-[1440px] px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
+      <main className="mx-auto w-full max-w-[1320px] px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
         {children}
       </main>
-    </SpaceShell>
+    </>
+  );
+
+  if (variant === "scene") {
+    return <SpaceShell variant="scene">{content}</SpaceShell>;
+  }
+
+  return (
+    <SpaceShell>{content}</SpaceShell>
   );
 }
