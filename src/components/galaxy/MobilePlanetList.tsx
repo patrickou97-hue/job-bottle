@@ -29,10 +29,10 @@ export function MobilePlanetList({ planets, disabled, onSelect }: MobilePlanetLi
           >
             <OrbMaterial size={size} variant={getOrbVariant(planet)} />
             <span className="flex min-w-0 flex-col">
-              <span className="font-display text-base font-semibold" style={{ color: 'rgba(228,236,247,0.9)' }}>
+              <span className="font-display text-base font-semibold" style={{ color: 'rgba(241,239,255,0.9)' }}>
                 {planet.label}
               </span>
-              <span className="mt-1 text-xs leading-5" style={{ color: 'rgba(150,167,195,0.66)' }}>
+              <span className="mt-1 text-xs leading-5" style={{ color: 'rgba(201,197,228,0.66)' }}>
                 {planet.description}
               </span>
             </span>

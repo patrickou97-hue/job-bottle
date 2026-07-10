@@ -20,7 +20,7 @@ export function Button({
         variant === "secondary" &&
           "muted-button hover:bg-white/[0.07] active:bg-white/[0.09]",
         variant === "danger" &&
-          "bg-[rgba(245,138,158,0.1)] text-[color:var(--text-danger)] hover:bg-[rgba(245,138,158,0.16)]",
+          "bg-[rgba(127,85,104,0.16)] text-[color:var(--text-danger)] hover:bg-[rgba(127,85,104,0.24)]",
         className,
       )}
       {...props}

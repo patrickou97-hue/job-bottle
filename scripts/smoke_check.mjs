@@ -140,6 +140,18 @@ const SOURCE_INVARIANTS = [
     label: "v5 星穹绘卷 token 已集中定义并兼容旧变量",
   },
   {
+    file: "src/styles/tokens.css",
+    mustInclude: ["--night-0: #000001", "--night-1: #12294E", "--night-3: #564A71", "--dusk: #7F5568", "--aurora: #7E7CB5", "--surface-read-bg: rgba(18, 41, 78, 0.44)"],
+    mustNotInclude: ["--arcane: #8F86F0", "--star-apricot: #D9ADA9", "--aurora: #62D9FF"],
+    label: "全站使用林深星渡五色基调和更轻的半透明工作面",
+  },
+  {
+    file: "src/components/applications/shareBottleCard.ts",
+    mustInclude: ["background.addColorStop(0, \"#000001\")", "background.addColorStop(0.42, \"#12294E\")", "fill: \"#7E7CB5\""],
+    mustNotInclude: ["fill: \"#F2D16D\"", "dark: \"#313B59\""],
+    label: "星瓶分享海报同步林深星渡色板",
+  },
+  {
     file: "src/components/ui/FiligreeDivider.tsx",
     mustInclude: ["DiamondDot", "var(--filigree)"],
     mustNotInclude: [],

@@ -175,7 +175,7 @@ export function PostCard({
               <button
                 type="button"
                 onClick={handleDeletePost}
-                className="pressable inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-[color:var(--text-danger)] transition hover:bg-[rgba(245,138,158,0.1)]"
+                className="pressable inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-[color:var(--text-danger)] transition hover:bg-[rgba(127,85,104,0.16)]"
               >
                 <Trash2 aria-hidden="true" className="size-3.5" />
                 删除帖子
@@ -201,7 +201,7 @@ export function PostCard({
               comments.map((comment) => (
                 <div
                   key={comment.id}
-                  className="border-l border-[rgba(159,180,206,0.15)] py-3 pl-4"
+                  className="border-l border-[rgba(201,197,228,0.15)] py-3 pl-4"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-2 text-xs text-ink-muted">
@@ -256,7 +256,7 @@ export function PostCard({
 
 function FreshnessDot({ tier }: { tier: "fresh" | "recent" | "old" }) {
   if (tier === "fresh") {
-    return <span className="size-1.5 rounded-full bg-[color:var(--light-ice)] shadow-[0_0_10px_rgba(195,211,230,0.25)]" aria-hidden="true" />;
+    return <span className="size-1.5 rounded-full bg-[color:var(--light-ice)] shadow-[0_0_10px_rgba(201,197,228,0.28)]" aria-hidden="true" />;
   }
   if (tier === "recent") {
     return <span className="size-1.5 rounded-full bg-[color:var(--light-muted)] opacity-80" aria-hidden="true" />;

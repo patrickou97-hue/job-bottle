@@ -208,7 +208,7 @@ export function ProgressDrawer({
                   >
                     <span className="flex h-6 items-center justify-center">
                       {active ? (
-                        <span className="h-3 w-3 rotate-45 rounded-[3px] bg-aurum-300 shadow-[0_0_18px_rgba(255,217,142,0.48)] motion-safe:animate-pulse" />
+                        <span className="h-3 w-3 rotate-45 rounded-[3px] bg-aurum-300 shadow-[0_0_18px_rgba(126,124,181,0.52)] motion-safe:animate-pulse" />
                       ) : done ? (
                         <span className="h-1.5 w-1.5 rounded-full bg-aurum-300" />
                       ) : (

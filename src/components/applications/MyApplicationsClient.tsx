@@ -256,7 +256,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
               ) : (
                 <div className="grid gap-px overflow-hidden bg-white/[0.08] xl:grid-cols-4">
                   {columns.map((column) => (
-                    <section key={column.id} className="min-h-60 bg-[rgba(7,14,31,0.72)] p-4">
+                    <section key={column.id} className="min-h-60 bg-[rgba(18,41,78,0.36)] p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <h3 className="text-sm font-semibold text-ink-primary">{column.label}</h3>

@@ -23,9 +23,9 @@ export function ApplicationOrbitStar({
   const momentum = momentumTier(application);
   const stayedDays = daysSince(application.updated_at);
   const momentumStyle = {
-    blue: "bg-[#AFC9E8] shadow-[0_0_10px_rgba(175,201,232,0.22)]",
-    neutral: "bg-[color:var(--light-ice)] shadow-[0_0_8px_rgba(195,211,230,0.14)]",
-    red: "bg-[#C4B2A3] shadow-[0_0_8px_rgba(196,178,163,0.12)]",
+    blue: "bg-[#7E7CB5] shadow-[0_0_10px_rgba(126,124,181,0.26)]",
+    neutral: "bg-[color:var(--light-ice)] shadow-[0_0_8px_rgba(201,197,228,0.16)]",
+    red: "bg-[#7F5568] shadow-[0_0_8px_rgba(127,85,104,0.16)]",
   }[momentum];
 
   return (
@@ -58,11 +58,11 @@ export function ApplicationOrbitStar({
       <span className="absolute left-1/2 top-[50px] max-w-20 -translate-x-1/2 whitespace-nowrap text-center text-[11px] leading-4 text-ink-secondary group-hover:text-ink-primary">
         {shortLabel}
       </span>
-      <span className="pointer-events-none absolute left-1/2 top-[72px] z-30 hidden w-44 -translate-x-1/2 rotate-0 bg-[#040814]/78 px-3 py-2 text-left text-xs leading-5 text-ink-secondary shadow-[0_18px_48px_rgba(0,0,0,0.38)] backdrop-blur-xl group-hover:block group-focus:block">
+      <span className="pointer-events-none absolute left-1/2 top-[72px] z-30 hidden w-44 -translate-x-1/2 rotate-0 bg-[#12294E]/58 px-3 py-2 text-left text-xs leading-5 text-ink-secondary shadow-[0_18px_48px_rgba(0,0,0,0.32)] backdrop-blur-xl group-hover:block group-focus:block">
         <span className="block truncate text-nebula-silver">{application.job.company_name}</span>
         <span className="block truncate text-ink-muted">{application.job.job_titles || "岗位待补充"}</span>
         {momentum === "red" ? (
-          <span className="block truncate text-[#C4B2A3]">已停留 {stayedDays} 天 · 跟进一下？</span>
+          <span className="block truncate text-[#C9A7B8]">已停留 {stayedDays} 天 · 跟进一下？</span>
         ) : null}
       </span>
     </button>

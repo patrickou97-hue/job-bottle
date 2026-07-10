@@ -18,7 +18,7 @@ export function StarFieldBackground({ quiet = false }: { quiet?: boolean }) {
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse 80% 60% at 50% 40%, rgba(100, 130, 180, 0.03), transparent)",
+            "radial-gradient(ellipse 80% 60% at 50% 40%, rgba(126, 124, 181, 0.06), transparent)",
         }}
       />
       {stars.map((star, i) => (

@@ -11,59 +11,59 @@ const STAR_TONE: Record<
   { core: string; edge: string; glow: string; text: string; spark?: string }
 > = {
   opened: {
-    core: "#6d7e96",
-    edge: "#c3d6ec",
-    glow: "rgba(125, 173, 216, 0.22)",
-    text: "#edf5ff",
+    core: "#12294E",
+    edge: "#C9C5E4",
+    glow: "rgba(18, 41, 78, 0.26)",
+    text: "#F1EFFF",
   },
   applied: {
-    core: "#8290a6",
-    edge: "#d3deee",
-    glow: "rgba(146, 178, 214, 0.24)",
-    text: "#f4f8ff",
+    core: "#564A71",
+    edge: "#C9C5E4",
+    glow: "rgba(86, 74, 113, 0.28)",
+    text: "#F1EFFF",
   },
   written_test: {
-    core: "#8faccc",
-    edge: "#e0efff",
-    glow: "rgba(142, 190, 232, 0.28)",
-    text: "#f7fbff",
+    core: "#7E7CB5",
+    edge: "#E7E2FF",
+    glow: "rgba(126, 124, 181, 0.3)",
+    text: "#F1EFFF",
   },
   first_round: {
-    core: "#a7b7cf",
-    edge: "#edf7ff",
-    glow: "rgba(174, 203, 232, 0.32)",
-    text: "#ffffff",
+    core: "#7F5568",
+    edge: "#E6C9D6",
+    glow: "rgba(127, 85, 104, 0.34)",
+    text: "#F1EFFF",
   },
   second_round: {
-    core: "#b8c7dc",
-    edge: "#f5fbff",
-    glow: "rgba(189, 214, 240, 0.34)",
-    text: "#ffffff",
+    core: "#7E7CB5",
+    edge: "#E7E2FF",
+    glow: "rgba(126, 124, 181, 0.36)",
+    text: "#F1EFFF",
   },
   final_round: {
-    core: "#c4d1e2",
-    edge: "#ffffff",
-    glow: "rgba(204, 224, 244, 0.36)",
-    text: "#ffffff",
+    core: "#7F5568",
+    edge: "#F1EFFF",
+    glow: "rgba(127, 85, 104, 0.38)",
+    text: "#F1EFFF",
   },
   offer: {
-    core: "#c6a96d",
-    edge: "#fff2c7",
-    glow: "rgba(200, 169, 106, 0.42)",
-    text: "#fff8e7",
-    spark: "#f7d889",
+    core: "#7E7CB5",
+    edge: "#F1EFFF",
+    glow: "rgba(126, 124, 181, 0.46)",
+    text: "#F1EFFF",
+    spark: "#E7E2FF",
   },
   rejected: {
-    core: "#4d535d",
-    edge: "#8a92a0",
-    glow: "rgba(84, 93, 106, 0.16)",
-    text: "#c6ccd5",
+    core: "#564A71",
+    edge: "#918CAE",
+    glow: "rgba(86, 74, 113, 0.18)",
+    text: "#C9C5E4",
   },
   withdrawn: {
-    core: "#424854",
-    edge: "#77808e",
-    glow: "rgba(72, 81, 96, 0.14)",
-    text: "#b8c0cc",
+    core: "#12294E",
+    edge: "#918CAE",
+    glow: "rgba(18, 41, 78, 0.16)",
+    text: "#C9C5E4",
   },
 };
 
@@ -101,7 +101,7 @@ export function StackedStar({
       type="button"
       className={cn(
         "group relative flex items-center justify-center font-semibold leading-none transition outline-none",
-        selected && "drop-shadow-[0_0_14px_rgba(196,225,255,0.44)]",
+        selected && "drop-shadow-[0_0_14px_rgba(201,197,228,0.44)]",
         className,
       )}
       style={{
@@ -133,7 +133,7 @@ export function StackedStar({
             <stop offset="0" stopColor="rgba(255,255,255,0.92)" />
             <stop offset="0.22" stopColor={tone.edge} stopOpacity="0.9" />
             <stop offset="0.58" stopColor={tone.core} stopOpacity="0.88" />
-            <stop offset="1" stopColor="rgba(10,16,29,0.86)" />
+            <stop offset="1" stopColor="rgba(0,0,1,0.86)" />
           </radialGradient>
           <radialGradient id={shineId} cx="34%" cy="26%" r="38%">
             <stop offset="0" stopColor="rgba(255,255,255,0.78)" />
@@ -143,7 +143,7 @@ export function StackedStar({
         <path
           d="M50 5.5L60.8 34.2L91.2 36.4L67.7 55.9L75.2 85.5L50 68.8L24.8 85.5L32.3 55.9L8.8 36.4L39.2 34.2L50 5.5Z"
           fill={`url(#${gradientId})`}
-          stroke={selected ? "rgba(235,248,255,0.95)" : "rgba(235,248,255,0.42)"}
+          stroke={selected ? "rgba(241,239,255,0.95)" : "rgba(231,226,255,0.42)"}
           strokeWidth={selected ? 3.2 : 2.1}
           strokeLinejoin="round"
         />
@@ -162,7 +162,7 @@ export function StackedStar({
       {status === "offer" ? (
         <span
           aria-hidden="true"
-          className="absolute right-[10%] top-[13%] size-2 rounded-full shadow-[0_0_10px_rgba(200,169,106,0.65)]"
+          className="absolute right-[10%] top-[13%] size-2 rounded-full shadow-[0_0_10px_rgba(126,124,181,0.65)]"
           style={{ background: tone.spark }}
         />
       ) : null}

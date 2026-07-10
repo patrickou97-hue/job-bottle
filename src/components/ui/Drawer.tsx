@@ -29,7 +29,7 @@ export function Drawer({
             onClick={onClose}
           />
           <motion.aside
-            className="absolute right-0 top-0 h-full w-full max-w-xl overflow-y-auto bg-[rgba(4,8,18,0.86)] p-5 shadow-glass backdrop-blur-[24px] backdrop-saturate-[1.2] before:pointer-events-none before:absolute before:bottom-0 before:right-full before:top-0 before:w-20 before:bg-gradient-to-l before:from-[rgba(4,8,18,0.86)] before:to-transparent sm:p-7"
+            className="absolute right-0 top-0 h-full w-full max-w-xl overflow-y-auto bg-[rgba(18,41,78,0.62)] p-5 shadow-glass backdrop-blur-[24px] backdrop-saturate-[1.2] before:pointer-events-none before:absolute before:bottom-0 before:right-full before:top-0 before:w-20 before:bg-gradient-to-l before:from-[rgba(18,41,78,0.62)] before:to-transparent sm:p-7"
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}

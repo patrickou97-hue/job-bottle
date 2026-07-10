@@ -119,7 +119,7 @@ export function OpportunityStarfield({
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_330px]">
         <div className="relative h-[420px] overflow-hidden rounded-[28px] bg-black/10 xl:h-[520px]">
-          <div className="absolute inset-0 opacity-20 [background-image:radial-gradient(circle,rgba(214,228,255,.26)_0_1px,transparent_1.5px)] [background-size:96px_96px]" />
+          <div className="absolute inset-0 opacity-20 [background-image:radial-gradient(circle,rgba(201,197,228,.26)_0_1px,transparent_1.5px)] [background-size:96px_96px]" />
           {clusterLabels.map((cluster) => (
             <span
               key={cluster.groupKey}
@@ -139,7 +139,7 @@ export function OpportunityStarfield({
                 <button
                   key={item.id}
                   type="button"
-                  className="absolute flex items-center justify-center rounded-full bg-nebula-blue/8 text-xs font-medium text-ink-secondary shadow-[0_0_18px_rgba(112,143,185,0.12)] transition hover:scale-[1.05] hover:bg-nebula-blue/12 hover:text-nebula-silver"
+                  className="absolute flex items-center justify-center rounded-full bg-nebula-blue/8 text-xs font-medium text-ink-secondary shadow-[0_0_18px_rgba(126,124,181,0.16)] transition hover:scale-[1.05] hover:bg-nebula-blue/12 hover:text-nebula-silver"
                   style={{
                     width: item.size,
                     height: item.size,

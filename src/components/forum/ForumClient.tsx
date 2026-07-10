@@ -88,7 +88,7 @@ export function ForumClient() {
               type="button"
               className={`px-1 py-2 text-sm font-medium transition ${
                 activeCategory === cat
-                  ? "border-b-2 border-[rgba(159,180,206,0.4)] text-[color:var(--light-silver)]"
+                  ? "border-b-2 border-[rgba(126,124,181,0.52)] text-[color:var(--light-silver)]"
                   : "text-[color:var(--text-muted)] hover:text-[color:var(--text-secondary)]"
               }`}
               onClick={() => setActiveCategory(cat)}

@@ -7,15 +7,15 @@ export function EmptyConstellation() {
     >
       <defs>
         <linearGradient id="emptyLine" x1="36" x2="364" y1="142" y2="32">
-          <stop stopColor="#B8C7FF" stopOpacity="0.1" />
-          <stop offset="0.5" stopColor="#D6E4FF" stopOpacity="0.5" />
-          <stop offset="1" stopColor="#7DD3FC" stopOpacity="0.18" />
+          <stop stopColor="#C9C5E4" stopOpacity="0.1" />
+          <stop offset="0.5" stopColor="#E7E2FF" stopOpacity="0.5" />
+          <stop offset="1" stopColor="#7E7CB5" stopOpacity="0.2" />
         </linearGradient>
       </defs>
       <path
         d="M52 132C116 40 242 32 366 74"
         fill="none"
-        stroke="#7DD3FC"
+        stroke="#7E7CB5"
         strokeOpacity="0.11"
         strokeWidth="1.2"
       />
@@ -34,10 +34,10 @@ export function EmptyConstellation() {
         [276, 54, 4.4],
         [348, 82, 3.8],
       ].map(([cx, cy, r]) => (
-        <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={r} fill="#D6E4FF" opacity="0.68" />
+        <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={r} fill="#E7E2FF" opacity="0.68" />
       ))}
-      <circle cx="326" cy="40" r="2" fill="#F3DFA2" opacity="0.42" />
-      <circle cx="112" cy="38" r="1.6" fill="#7DD3FC" opacity="0.54" />
+      <circle cx="326" cy="40" r="2" fill="#7F5568" opacity="0.42" />
+      <circle cx="112" cy="38" r="1.6" fill="#7E7CB5" opacity="0.54" />
     </svg>
   );
 }

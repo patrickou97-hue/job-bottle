@@ -52,7 +52,7 @@ export function ApplicationOrbitRing({
             height: radius * 2,
             marginLeft: -radius,
             marginTop: -radius,
-            borderColor: highlightedBand === band ? "rgba(174,198,230,0.16)" : `rgba(148,163,184,${config.opacity * 0.16})`,
+            borderColor: highlightedBand === band ? "rgba(201,197,228,0.18)" : `rgba(145,140,174,${config.opacity * 0.18})`,
           }}
         />
       ) : null}

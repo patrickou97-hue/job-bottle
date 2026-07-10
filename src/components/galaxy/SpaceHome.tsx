@@ -171,7 +171,7 @@ export function SpaceHome() {
           width={220}
           height={98}
           priority
-          className="h-9 w-auto object-contain drop-shadow-[0_0_18px_rgba(122,156,210,0.18)] md:h-10"
+          className="h-9 w-auto object-contain drop-shadow-[0_0_18px_rgba(126,124,181,0.24)] md:h-10"
         />
       </div>
 

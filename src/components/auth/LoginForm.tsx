@@ -288,7 +288,7 @@ function LoginOptionGrid({
             className={cn(
               "pressable rounded-full px-3 py-1.5 text-xs font-medium transition",
               active
-                ? "bg-[#f4e8c6] text-[#111827]"
+                ? "bg-[#7E7CB5] text-[#F1EFFF]"
                 : "status-pill text-ink-secondary hover:text-ink-primary",
             )}
             aria-pressed={active}

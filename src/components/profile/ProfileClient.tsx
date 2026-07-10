@@ -498,7 +498,7 @@ function ProfileField({
 
 function BottleFact({ label, value }: { label: string; value: string }) {
   return (
-    <div className="border-l border-[#f4e8c6]/18 pl-3">
+    <div className="border-l border-[#7E7CB5]/28 pl-3">
       <p className="text-xl font-semibold tabular-nums text-ink-primary">{value}</p>
       <p className="mt-1 text-xs text-ink-muted">{label}</p>
     </div>
@@ -539,10 +539,10 @@ function OptionGrid({
               "pressable rounded-full px-3 py-1.5 text-xs font-medium transition",
               dark
                 ? active
-                  ? "bg-[#111827] text-[#f4e8c6]"
+                  ? "bg-[#111827] text-[#7E7CB5]"
                   : "bg-[#111827]/8 text-[#111827]/62 hover:bg-[#111827]/14"
                 : active
-                  ? "bg-[#f4e8c6] text-[#111827]"
+                  ? "bg-[#7E7CB5] text-[#F1EFFF]"
                   : "status-pill text-ink-secondary hover:text-ink-primary",
             )}
             aria-pressed={active}

@@ -205,12 +205,12 @@ export function HomeClient() {
         applyWindow.opener = null;
         applyWindow.document.title = "正在打开投递官网";
         applyWindow.document.body.style.margin = "0";
-        applyWindow.document.body.style.background = "#01030a";
-        applyWindow.document.body.style.color = "#dce3ee";
+        applyWindow.document.body.style.background = "#000001";
+        applyWindow.document.body.style.color = "#F1EFFF";
         applyWindow.document.body.style.fontFamily =
           '-apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif';
         applyWindow.document.body.innerHTML =
-          '<main style="min-height:100vh;display:grid;place-items:center;text-align:center;"><div><p style="font-size:15px;letter-spacing:.04em;">正在打开投递官网</p><p style="font-size:12px;color:#8a93a3;">投递记录保存成功后将自动跳转</p></div></main>';
+          '<main style="min-height:100vh;display:grid;place-items:center;text-align:center;"><div><p style="font-size:15px;letter-spacing:.04em;">正在打开投递官网</p><p style="font-size:12px;color:#918CAE;">投递记录保存成功后将自动跳转</p></div></main>';
       }
 
       const supabase = createClient();
@@ -606,7 +606,7 @@ function JobRadarHeader({
                 className={cn(
                   "pressable rounded-full px-3 py-1.5 text-xs transition",
                   jobView === mode.value
-                    ? "bg-nebula-silver/12 text-nebula-silver shadow-[0_0_22px_rgba(150,184,220,0.1)]"
+                    ? "bg-nebula-silver/12 text-nebula-silver shadow-[0_0_22px_rgba(126,124,181,0.14)]"
                     : "text-ink-muted hover:text-ink-secondary",
                 )}
                 onClick={() => onJobViewChange(mode.value)}

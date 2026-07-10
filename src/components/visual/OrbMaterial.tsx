@@ -17,46 +17,46 @@ const ORB_PALETTE: Record<
   }
 > = {
   blue: {
-    light: "rgba(220,232,255,0.86)",
-    main: "rgba(49,59,89,0.88)",
-    dark: "rgba(7,12,28,0.98)",
-    glow: "rgba(126,158,214,0.2)",
-    icon: "rgba(230,238,250,0.76)",
+    light: "rgba(231,226,255,0.84)",
+    main: "rgba(126,124,181,0.72)",
+    dark: "rgba(18,41,78,0.94)",
+    glow: "rgba(126,124,181,0.24)",
+    icon: "rgba(241,239,255,0.8)",
   },
   violet: {
-    light: "rgba(221,216,246,0.72)",
-    main: "rgba(105,100,140,0.82)",
-    dark: "rgba(12,9,28,0.98)",
-    glow: "rgba(105,100,140,0.22)",
-    icon: "rgba(229,224,248,0.74)",
+    light: "rgba(231,226,255,0.76)",
+    main: "rgba(86,74,113,0.76)",
+    dark: "rgba(18,41,78,0.94)",
+    glow: "rgba(86,74,113,0.24)",
+    icon: "rgba(241,239,255,0.78)",
   },
   gold: {
-    light: "rgba(242,229,189,0.95)",
-    main: "rgba(242,209,109,0.7)",
-    dark: "rgba(37,30,34,0.96)",
-    glow: "rgba(242,209,109,0.24)",
-    icon: "rgba(255,247,218,0.82)",
+    light: "rgba(241,239,255,0.92)",
+    main: "rgba(126,124,181,0.76)",
+    dark: "rgba(86,74,113,0.94)",
+    glow: "rgba(126,124,181,0.26)",
+    icon: "rgba(241,239,255,0.84)",
   },
   rose: {
-    light: "rgba(242,229,189,0.72)",
-    main: "rgba(217,173,169,0.68)",
-    dark: "rgba(38,30,45,0.98)",
-    glow: "rgba(217,173,169,0.2)",
-    icon: "rgba(248,234,230,0.78)",
+    light: "rgba(242,222,233,0.78)",
+    main: "rgba(127,85,104,0.7)",
+    dark: "rgba(86,74,113,0.94)",
+    glow: "rgba(127,85,104,0.22)",
+    icon: "rgba(242,222,233,0.8)",
   },
   cream: {
-    light: "rgba(255,247,214,0.9)",
-    main: "rgba(242,229,189,0.62)",
-    dark: "rgba(43,39,55,0.98)",
-    glow: "rgba(242,229,189,0.18)",
-    icon: "rgba(255,248,226,0.8)",
+    light: "rgba(241,239,255,0.9)",
+    main: "rgba(201,197,228,0.62)",
+    dark: "rgba(18,41,78,0.94)",
+    glow: "rgba(201,197,228,0.2)",
+    icon: "rgba(241,239,255,0.82)",
   },
   muted: {
-    light: "rgba(218,226,240,0.48)",
-    main: "rgba(60,70,92,0.62)",
-    dark: "rgba(8,10,18,0.98)",
-    glow: "rgba(145,160,190,0.12)",
-    icon: "rgba(220,228,240,0.62)",
+    light: "rgba(201,197,228,0.5)",
+    main: "rgba(86,74,113,0.62)",
+    dark: "rgba(0,0,1,0.96)",
+    glow: "rgba(145,140,174,0.14)",
+    icon: "rgba(201,197,228,0.64)",
   },
 };
 
@@ -82,8 +82,8 @@ export function OrbMaterial({
       "radial-gradient(circle at 76% 78%, rgba(0,0,0,0.55) 0 36%, transparent 60%)",
     ].join(", "),
     boxShadow: active
-      ? `0 0 34px ${palette.glow}, inset -12px -16px 28px rgba(0,0,0,0.56), inset 8px 7px 18px rgba(237,240,255,0.08)`
-      : `0 0 18px ${palette.glow}, inset -10px -14px 24px rgba(0,0,0,0.58), inset 7px 6px 16px rgba(237,240,255,0.06)`,
+      ? `0 0 34px ${palette.glow}, inset -12px -16px 28px rgba(0,0,0,0.56), inset 8px 7px 18px rgba(231,226,255,0.08)`
+      : `0 0 18px ${palette.glow}, inset -10px -14px 24px rgba(0,0,0,0.58), inset 7px 6px 16px rgba(231,226,255,0.06)`,
   };
 
   return (
@@ -100,14 +100,14 @@ export function OrbMaterial({
         aria-hidden="true"
         className="absolute inset-0 rounded-full"
         style={{
-          background: "radial-gradient(circle at 76% 78%, rgba(1,5,15,0.55) 0 38%, transparent 64%)",
+          background: "radial-gradient(circle at 76% 78%, rgba(0,0,1,0.55) 0 38%, transparent 64%)",
         }}
       />
       <span
         aria-hidden="true"
         className="absolute inset-[1px] rounded-full"
         style={{
-          background: "conic-gradient(from 300deg, rgba(237,240,255,0.42) 0deg 40deg, transparent 52deg 360deg)",
+          background: "conic-gradient(from 300deg, rgba(231,226,255,0.42) 0deg 40deg, transparent 52deg 360deg)",
           maskImage: "radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1px))",
           WebkitMaskImage: "radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1px))",
         }}
@@ -118,8 +118,8 @@ export function OrbMaterial({
         style={{
           width: "clamp(2px, 8%, 3px)",
           height: "clamp(2px, 8%, 3px)",
-          background: "rgba(237,240,255,0.78)",
-          boxShadow: "0 0 8px rgba(237,240,255,0.36)",
+          background: "rgba(231,226,255,0.78)",
+          boxShadow: "0 0 8px rgba(231,226,255,0.36)",
         }}
       />
       {icon ? (

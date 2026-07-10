@@ -67,7 +67,7 @@ export function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-[#101725]/94 backdrop-blur-md">
+    <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-[#000001]/82 backdrop-blur-md">
       <div className="mx-auto flex h-15 w-full max-w-[1320px] items-center gap-4 px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex shrink-0 items-center" aria-label="返回首页">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -117,7 +117,7 @@ export function Navbar() {
       </div>
 
       {menuOpen ? (
-        <div className="border-t border-white/[0.08] bg-[#101725] px-4 py-3 md:hidden">
+        <div className="border-t border-white/[0.08] bg-[#000001]/88 px-4 py-3 backdrop-blur-md md:hidden">
           <nav className="mx-auto grid max-w-[1320px] gap-1" aria-label="移动主导航">
             {navItems.map((item) => (
               <Link key={item.href} href={item.href} className={cn(navClass(item.href), "justify-between px-0")} onClick={() => setMenuOpen(false)}>

@@ -49,7 +49,7 @@ export function NebulaNode({
       <span
         aria-hidden="true"
         className="absolute inset-x-8 top-1/2 h-16 -translate-y-1/2 rounded-full opacity-0 blur-3xl transition group-hover:opacity-70"
-        style={{ background: "rgba(126,158,214,0.14)" }}
+        style={{ background: "rgba(126,124,181,0.16)" }}
       />
       <Image
         src={imageSrc}

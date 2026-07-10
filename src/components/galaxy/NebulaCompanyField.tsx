@@ -49,7 +49,7 @@ export function NebulaCompanyField({
 
   return (
     <div className="relative h-[420px] overflow-hidden rounded-[28px] bg-black/10 xl:h-[470px]">
-      <div className="absolute inset-0 opacity-20 [background-image:radial-gradient(circle,rgba(214,228,255,.30)_0_1px,transparent_1.5px)] [background-size:88px_88px]" />
+      <div className="absolute inset-0 opacity-20 [background-image:radial-gradient(circle,rgba(201,197,228,.30)_0_1px,transparent_1.5px)] [background-size:88px_88px]" />
       <div className="absolute inset-8 rounded-full bg-nebula-blue/[0.025] blur-3xl" />
       {positions.map((item) => {
         if (!item.job) {
@@ -61,7 +61,7 @@ export function NebulaCompanyField({
             <button
               key={item.id}
               type="button"
-              className="absolute flex items-center justify-center rounded-full bg-nebula-blue/8 text-xs font-medium text-ink-secondary shadow-[0_0_18px_rgba(112,143,185,0.12)] transition hover:scale-[1.06] hover:bg-nebula-blue/12 hover:text-nebula-silver"
+              className="absolute flex items-center justify-center rounded-full bg-nebula-blue/8 text-xs font-medium text-ink-secondary shadow-[0_0_18px_rgba(126,124,181,0.16)] transition hover:scale-[1.06] hover:bg-nebula-blue/12 hover:text-nebula-silver"
               style={{
                 width: item.size,
                 height: item.size,

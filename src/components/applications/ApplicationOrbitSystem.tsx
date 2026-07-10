@@ -57,7 +57,7 @@ export function ApplicationOrbitSystem({
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_330px]">
         <div className="liquid-panel relative mx-auto h-[460px] w-full max-w-[840px] overflow-hidden sm:h-[600px] lg:h-[760px] xl:max-w-none">
-          <div className="absolute inset-0 opacity-18 [background-image:radial-gradient(circle,rgba(214,228,255,.28)_0_1px,transparent_1.5px)] [background-size:92px_92px]" />
+          <div className="absolute inset-0 opacity-18 [background-image:radial-gradient(circle,rgba(201,197,228,.28)_0_1px,transparent_1.5px)] [background-size:92px_92px]" />
           <div className="absolute inset-0 grid place-items-center">
             <div className="relative aspect-square h-[min(90vw,720px)] max-h-[720px] w-[min(90vw,720px)] sm:h-[min(92%,720px)] sm:w-[min(92%,720px)]">
               <OrbitTrackLayer activeBand={activeBand} scale={orbitScale} />
@@ -170,8 +170,8 @@ function OrbitTrackLayer({ activeBand, scale }: { activeBand: OrbitBand | null; 
               height: radius * 2,
               marginLeft: -radius,
               marginTop: -radius,
-              borderColor: active ? "rgba(174,198,230,0.18)" : `rgba(148,163,184,${config.opacity * 0.14})`,
-              boxShadow: active ? "0 0 26px rgba(126,158,214,0.08)" : "none",
+              borderColor: active ? "rgba(201,197,228,0.2)" : `rgba(145,140,174,${config.opacity * 0.16})`,
+              boxShadow: active ? "0 0 26px rgba(126,124,181,0.12)" : "none",
             }}
           />
         );

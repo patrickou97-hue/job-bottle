@@ -17,7 +17,7 @@ export function CorePlanet({ compact = false }: { compact?: boolean }) {
         width={420}
         height={188}
         priority
-        className="pointer-events-none mt-3 h-auto object-contain drop-shadow-[0_0_20px_rgba(156,190,238,0.2)]"
+        className="pointer-events-none mt-3 h-auto object-contain drop-shadow-[0_0_20px_rgba(126,124,181,0.24)]"
         style={{ width: compact ? 'min(20vw, 82px)' : 'min(13vw, 128px)' }}
       />
     </div>

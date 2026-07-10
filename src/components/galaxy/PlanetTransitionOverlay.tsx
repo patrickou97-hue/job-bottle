@@ -28,7 +28,7 @@ export function PlanetTransitionOverlay({ planet }: { planet: PlanetRoute | null
         transition={{ duration: 0.74, ease: 'easeOut' }}
         style={{
           background:
-            'radial-gradient(circle at 50% 50%, transparent 0 18%, rgba(1,3,10,0.54) 54%, rgba(1,3,10,0.9) 100%)',
+            'radial-gradient(circle at 50% 50%, transparent 0 18%, rgba(0,0,1,0.5) 54%, rgba(0,0,1,0.84) 100%)',
         }}
       />
     </div>

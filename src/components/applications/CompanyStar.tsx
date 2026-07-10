@@ -14,15 +14,15 @@ const statusGlow: Record<
   ApplicationStatus,
   { color: string; opacity: number; grayscale: boolean }
 > = {
-  opened:       { color: "#1a1a20", opacity: 0.35, grayscale: false },
-  applied:      { color: "#2a2520", opacity: 0.40, grayscale: false },
-  written_test: { color: "#3d3525", opacity: 0.45, grayscale: false },
-  first_round:  { color: "#52452a", opacity: 0.50, grayscale: false },
-  second_round: { color: "#6b5a30", opacity: 0.55, grayscale: false },
-  final_round:  { color: "#8a7540", opacity: 0.60, grayscale: false },
-  offer:        { color: "#c8a96a", opacity: 0.75, grayscale: false },
-  rejected:     { color: "#2a2a2a", opacity: 0.25, grayscale: true  },
-  withdrawn:    { color: "#1a1a1a", opacity: 0.20, grayscale: true  },
+  opened:       { color: "#12294E", opacity: 0.35, grayscale: false },
+  applied:      { color: "#564A71", opacity: 0.4, grayscale: false },
+  written_test: { color: "#7E7CB5", opacity: 0.45, grayscale: false },
+  first_round:  { color: "#7F5568", opacity: 0.5, grayscale: false },
+  second_round: { color: "#7E7CB5", opacity: 0.55, grayscale: false },
+  final_round:  { color: "#7F5568", opacity: 0.6, grayscale: false },
+  offer:        { color: "#7E7CB5", opacity: 0.75, grayscale: false },
+  rejected:     { color: "#564A71", opacity: 0.25, grayscale: true  },
+  withdrawn:    { color: "#12294E", opacity: 0.2, grayscale: true  },
 };
 
 /* Simple deterministic hash for size variation */
