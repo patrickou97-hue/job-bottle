@@ -436,7 +436,7 @@ export function HomeClient() {
               }
             />
           ) : (
-            <div className="liquid-panel overflow-hidden">
+            <div className="collection-surface overflow-hidden">
               {filteredJobs.map((job, index) => (
                 <JobCard
                   key={job.id}
@@ -542,10 +542,9 @@ function JobRadarHeader({
         <h1 className="page-title">岗位星图</h1>
       </div>
 
-      <div className="liquid-panel p-4 md:p-5">
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 md:grid-cols-2 lg:grid-cols-4">
-          <StatNumber value={stats.totalJobs} label="开放岗位" />
-          <StatNumber value={stats.visibleJobs} label="当前结果" />
+      <div className="progress-summary px-4 py-2 md:px-5 md:py-3">
+        <div className="grid grid-cols-3 gap-4">
+          <StatNumber value={stats.visibleJobs} label="当前可看" />
           <StatNumber value={stats.companyCount} label="公司" />
           <StatNumber value={stats.savedJobs} label="已收录" />
         </div>

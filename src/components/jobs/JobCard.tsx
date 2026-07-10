@@ -29,29 +29,11 @@ export function JobCard({
     <div
       id={`job-row-${job.id}`}
       className={cn(
-        "data-row group grid cursor-pointer grid-cols-[34px_minmax(0,1fr)_auto] items-center gap-3 px-4 text-sm",
+        "data-row group grid grid-cols-[34px_minmax(0,1fr)_auto] items-center gap-3 px-4 text-sm",
         highlighted ? "selected" : "",
       )}
-      role="button"
-      tabIndex={0}
-      onClick={() => {
-        onFocusJob?.(job);
-        if (application && onOpenProgress) {
-          onOpenProgress(job);
-          return;
-        }
-        onApply(job);
-      }}
       onMouseEnter={() => onHover?.(job)}
       onMouseLeave={() => onHover?.(null)}
-      onFocus={() => onHover?.(job)}
-      onBlur={() => onHover?.(null)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          (e.currentTarget as HTMLElement).click();
-        }
-      }}
     >
       <span className="text-right text-xs tabular-nums text-[color:var(--text-disabled)]">
         {typeof index === "number" ? String(index + 1).padStart(2, "0") : ""}
@@ -61,9 +43,11 @@ export function JobCard({
       <div className="min-w-0">
         <div className="flex min-w-0 items-baseline gap-3">
           <Link
-            href={`/jobs/${job.id}`}
-            className="truncate text-[15px] font-medium leading-6 text-[color:var(--text-primary)] transition hover:text-nebula-silver"
-            onClick={(event) => event.stopPropagation()}
+          href={`/jobs/${job.id}`}
+          className="truncate text-[15px] font-medium leading-6 text-[color:var(--text-primary)] transition hover:text-nebula-silver"
+          onFocus={() => onHover?.(job)}
+          onBlur={() => onHover?.(null)}
+          onClick={() => onFocusJob?.(job)}
           >
             {job.company_name}
           </Link>
@@ -87,8 +71,7 @@ export function JobCard({
         <button
           type="button"
           className="job-row-action pressable inline-flex shrink-0 items-center gap-1.5 px-3 py-2 text-xs"
-          onClick={(e) => {
-            e.stopPropagation();
+          onClick={() => {
             onOpenProgress?.(job);
           }}
         >
@@ -99,8 +82,8 @@ export function JobCard({
         <button
           type="button"
           className="job-row-action pressable inline-flex shrink-0 items-center gap-1.5 px-3 py-2 text-xs"
-          onClick={(event) => {
-            event.stopPropagation();
+          onClick={() => {
+            onFocusJob?.(job);
             void onApply(job);
           }}
         >

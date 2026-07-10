@@ -254,19 +254,15 @@ export function ProfileClient() {
 
   return (
     <div className="observatory-page space-y-7">
-      <section className="relative overflow-hidden rounded-[2rem] bg-[#080d1b] px-5 py-6 shadow-[inset_0_1px_0_rgba(244,232,198,0.08)] sm:px-7 lg:px-9">
+      <section className="relative overflow-hidden rounded-xl bg-[#080d1b] px-5 py-6 shadow-[inset_0_1px_0_rgba(244,232,198,0.08)] sm:px-7 lg:px-9">
         <div className="pointer-events-none absolute inset-y-0 right-0 w-1/2 opacity-45">
           <div className="absolute right-20 top-16 h-[420px] w-[420px] rounded-full border border-[#f4e8c6]/10" />
           <div className="absolute right-8 top-40 h-[520px] w-[520px] rounded-full border border-[#f4e8c6]/8" />
         </div>
         <div className="relative grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-end">
           <div>
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="text-xs font-medium uppercase tracking-[0.18em] text-[#f4e8c6]/58">个人中心 · 用户管理</span>
-              <span className="h-px w-12 bg-[#f4e8c6]/30" />
-              <span className="text-xs text-ink-muted">{role === "admin" ? "管理员账号" : "求职用户"}</span>
-            </div>
-            <h1 className="mt-6 max-w-3xl text-4xl font-semibold leading-[1.04] tracking-[0] text-[#f8f1df] sm:text-6xl">
+            <p className="text-sm text-[#f4e8c6]/56">{role === "admin" ? "管理员账号" : "求职用户"}</p>
+            <h1 className="mt-3 max-w-3xl text-4xl font-semibold leading-[1.04] tracking-[0] text-[#f8f1df] sm:text-6xl">
               {displayName || "秋招用户"} 的秋招星瓶
             </h1>
             <p className="mt-5 max-w-2xl text-sm leading-7 text-[#f8f1df]/62 sm:text-base">
@@ -307,9 +303,9 @@ export function ProfileClient() {
       {message ? <div className="info-banner text-sm">{message}</div> : null}
 
       <section className="grid gap-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(340px,0.95fr)]">
-        <article className="relative overflow-hidden rounded-[1.75rem] bg-[rgba(8,13,27,0.7)] p-5 shadow-[inset_0_1px_0_rgba(244,232,198,0.07)] sm:p-6">
+        <article className="relative overflow-hidden rounded-lg bg-[rgba(8,13,27,0.7)] p-5 shadow-[inset_0_1px_0_rgba(244,232,198,0.07)] sm:p-6">
           <div className="flex items-start justify-between gap-4">
-            <SectionLead eyebrow="My Bottle" title="我的星瓶" />
+            <SectionLead title="我的星瓶" />
             <Link href="/my" className="text-action text-sm">
               查看星图
               <ArrowRight aria-hidden="true" className="size-4" />
@@ -344,8 +340,8 @@ export function ProfileClient() {
           </div>
         </article>
 
-        <article className="rounded-[1.75rem] bg-[#f4e8c6] p-5 text-[#111827] shadow-[0_24px_80px_rgba(0,0,0,0.18)] sm:p-6">
-          <SectionLead eyebrow="Preference" title="求职偏好" dark />
+        <article className="rounded-lg bg-[#f4e8c6] p-5 text-[#111827] shadow-[0_24px_80px_rgba(0,0,0,0.18)] sm:p-6">
+          <SectionLead title="求职偏好" dark />
           <div className="mt-5 grid gap-4">
             <ProfileField label="意向地区" icon={<MapPin aria-hidden="true" className="size-4" />}>
               <OptionGrid
@@ -381,7 +377,7 @@ export function ProfileClient() {
 
       <section className="grid gap-5 lg:grid-cols-3">
         <article className="border-t border-white/[0.12] pt-5">
-          <SectionLead eyebrow="Basics" title="基本信息" />
+          <SectionLead title="基本信息" />
           <div className="mt-5 grid gap-4">
             <ProfileField label="用户名" icon={<UserRound aria-hidden="true" className="size-4" />}>
               <Input value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
@@ -407,7 +403,7 @@ export function ProfileClient() {
         </article>
 
         <article className="border-t border-white/[0.12] pt-5">
-          <SectionLead eyebrow="Resume" title="简历版本" />
+          <SectionLead title="简历版本" />
           <div className="mt-5 space-y-3">
             {resumes.length > 0 ? (
               resumes.slice(0, 3).map((resume) => (
@@ -429,7 +425,7 @@ export function ProfileClient() {
         </article>
 
         <article className="border-t border-white/[0.12] pt-5">
-          <SectionLead eyebrow="Next" title="为你推荐" />
+          <SectionLead title="为你推荐" />
           <div className="mt-5 space-y-3">
             {recommendedJobs.length > 0 ? (
               recommendedJobs.map((job) => (
@@ -451,7 +447,7 @@ export function ProfileClient() {
 
       <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
         <article className="border-t border-white/[0.12] pt-5">
-          <SectionLead eyebrow="Guide" title="使用教程" />
+          <SectionLead title="使用教程" />
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             <GuideLink href="/explore" step="01" title="探索岗位" />
             <GuideLink href="/my" step="02" title="更新星图" />
@@ -461,7 +457,7 @@ export function ProfileClient() {
         </article>
 
         <article className="border-t border-white/[0.12] pt-5">
-          <SectionLead eyebrow="Account" title="账号与反馈" />
+          <SectionLead title="账号与反馈" />
           <div className="mt-5 space-y-4">
             <InfoLine icon={<Mail aria-hidden="true" className="size-4" />} label="登录邮箱" value={userEmail || "未读取"} />
             <InfoLine icon={<ShieldCheck aria-hidden="true" className="size-4" />} label="公开分享" value="分享海报不展示邮箱和内部 ID" />
@@ -502,11 +498,10 @@ export function ProfileClient() {
   );
 }
 
-function SectionLead({ dark = false, eyebrow, title }: { dark?: boolean; eyebrow: string; title: string }) {
+function SectionLead({ dark = false, title }: { dark?: boolean; title: string }) {
   return (
     <div>
-      <p className={cn("text-xs font-semibold uppercase tracking-[0.16em]", dark ? "text-[#111827]/48" : "text-ink-muted")}>{eyebrow}</p>
-      <h2 className={cn("mt-2 text-2xl font-semibold tracking-[0]", dark ? "text-[#111827]" : "text-ink-primary")}>{title}</h2>
+      <h2 className={cn("text-xl font-semibold tracking-[0]", dark ? "text-[#111827]" : "text-ink-primary")}>{title}</h2>
     </div>
   );
 }

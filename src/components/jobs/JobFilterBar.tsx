@@ -38,7 +38,6 @@ export function JobFilterBar({
     <aside className="filter-rail relative p-5">
       <div className="mb-5">
         <h2 className="section-title text-base">筛选</h2>
-        <p className="mt-1 text-xs leading-5 text-ink-muted">缩小列表范围，不会刷新页面。</p>
       </div>
 
       <div className="space-y-5">

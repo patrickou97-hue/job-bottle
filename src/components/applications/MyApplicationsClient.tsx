@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ExternalLink, Search } from "lucide-react";
@@ -155,7 +156,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
         onEdit={setDrawerApplication}
       />
 
-      <section className="liquid-panel overflow-hidden">
+      <section className="collection-surface overflow-hidden">
         {loading || redirecting ? (
           <div className="empty-state">
             <span className="loading-line">{redirecting ? "正在前往登录" : "正在读取投递"}</span>
@@ -165,6 +166,9 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
             <div>
               <h2>暂无投递记录</h2>
               <p>从岗位星图中打开官网投递后，记录会出现在这里。</p>
+              <Link href="/explore" className="text-action mt-4 text-sm">
+                去探索岗位
+              </Link>
             </div>
           </div>
         ) : (

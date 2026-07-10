@@ -289,9 +289,27 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/jobs/JobCard.tsx",
-    mustInclude: ["application", "StatusPill"],
-    mustNotInclude: ["CompanyBadge", "DeadlineChip", "grid-cols-[34px_32px"],
-    label: "探索列表行保留阅读和投递状态信息且不展示下线日期",
+    mustInclude: ["application", "StatusPill", "开始投递", "更新进度", "href={`/jobs/${job.id}`}"],
+    mustNotInclude: ["CompanyBadge", "DeadlineChip", "grid-cols-[34px_32px", "role=\"button\"", "cursor-pointer"],
+    label: "探索列表使用详情入口与明确投递动作，避免误触打开官网",
+  },
+  {
+    file: "src/components/galaxy/GalaxyChoice.tsx",
+    mustInclude: ["next/image", "imageSrc", "object-cover", "focus-visible:ring-2"],
+    mustNotInclude: ["blur-3xl"],
+    label: "岗位星系入口使用真实星云资产而非纯文字发光块",
+  },
+  {
+    file: "src/components/profile/ProfileClient.tsx",
+    mustInclude: ["求职用户", "SectionLead", "基本信息", "为你推荐"],
+    mustNotInclude: ["eyebrow=", "个人中心 · 用户管理"],
+    label: "个人中心移除模板化英文眉题，保留求职资料与下一步动作",
+  },
+  {
+    file: "src/app/globals.css",
+    mustInclude: [".collection-surface", "border-right: 1px solid", "font-size: clamp(2.3rem, 5vw, 3.65rem)"],
+    mustNotInclude: [],
+    label: "数据页面使用开放集合与收紧的页面层级，避免统一卡片墙",
   },
   {
     file: "src/components/jobs/JobFilterBar.tsx",

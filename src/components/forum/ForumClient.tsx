@@ -75,22 +75,13 @@ export function ForumClient() {
         </div>
       </section>
 
-      <section className="px-1">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h2 className="section-title">频道</h2>
-          </div>
-          <span className="section-meta">{posts.length} 条内容</span>
-        </div>
-      </section>
-
       {showForm ? (
         <section className="liquid-panel p-5">
           <NewPostForm onCreated={handleCreated} onCancel={() => setShowForm(false)} />
         </section>
       ) : null}
 
-      <section className="px-1">
+      <section className="flex flex-wrap items-center justify-between gap-4 border-b border-white/[0.08] px-1 pb-2">
         <div className="flex flex-wrap gap-2">
           {CATEGORIES.map((cat) => (
             <button
@@ -107,6 +98,7 @@ export function ForumClient() {
             </button>
           ))}
         </div>
+        <span className="section-meta">{posts.length} 条内容</span>
       </section>
 
       {message ? (
@@ -115,7 +107,7 @@ export function ForumClient() {
         </div>
       ) : null}
 
-      <section className="liquid-panel overflow-hidden">
+      <section className="collection-surface overflow-hidden">
         {loading ? (
           <div className="empty-state">
             <span className="loading-line">正在读取讨论</span>

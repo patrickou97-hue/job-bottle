@@ -71,7 +71,7 @@ export function MyBottleClient({ loginNextPath = "/bottle" }: { loginNextPath?: 
           <p className="page-kicker">季节容器</p>
           <h1 className="page-title">我的星瓶</h1>
         </div>
-        <div className="liquid-panel p-4 md:p-5">
+        <div className="progress-summary px-4 py-2 md:px-5 md:py-3">
           <p className="text-sm leading-7 text-ink-secondary">
             已收进 <span className="font-display text-3xl font-semibold text-ink-primary tabular-nums">{applications.length}</span> 颗星
           </p>
