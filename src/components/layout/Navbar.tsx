@@ -11,12 +11,12 @@ import { cn } from "@/lib/utils";
 import type { Profile } from "@/lib/types";
 
 const navItems = [
-  { href: "/explore", label: "探索星海" },
-  { href: "/my", label: "我的星图" },
-  { href: "/bottle", label: "我的星瓶" },
-  { href: "/resume", label: "简历制作" },
-  { href: "/profile", label: "个人中心" },
-  { href: "/forum", label: "讨论区" },
+  { href: "/explore", label: "岗位池" },
+  { href: "/my", label: "投递工作台" },
+  { href: "/bottle", label: "星瓶回顾" },
+  { href: "/resume", label: "简历与材料" },
+  { href: "/profile", label: "求职资料" },
+  { href: "/forum", label: "经验库" },
 ];
 
 export function Navbar() {
@@ -120,7 +120,7 @@ export function Navbar() {
                 ) : (
                   <User aria-hidden="true" className="size-4 text-nebula-blue" />
                 )}
-                {profile.display_name || "个人中心"}
+                {profile.display_name || "求职资料"}
               </Link>
               <button
                 type="button"
@@ -172,7 +172,7 @@ export function Navbar() {
                   className="muted-button rounded-full px-4 py-2 text-center text-sm"
                   onClick={() => setMenuOpen(false)}
                 >
-                  个人中心
+                  求职资料
                 </Link>
                 {profile.role === "admin" ? (
                   <Link

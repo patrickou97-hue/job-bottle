@@ -14,7 +14,6 @@ import {
   MapPin,
   Save,
   ShieldCheck,
-  Sparkles,
   Target,
   UserRound,
 } from "lucide-react";
@@ -233,9 +232,9 @@ export function ProfileClient() {
       <div className="observatory-page space-y-8">
         <section className="page-hero">
           <div>
-            <p className="page-kicker">个人中心</p>
-            <h1 className="page-title">拾星名片</h1>
-            <p className="page-subtitle mt-4">登录后进入用户管理空间，维护资料、管理简历、查看推荐和提交反馈。</p>
+            <p className="page-kicker">求职资料</p>
+            <h1 className="page-title">求职资产中心</h1>
+            <p className="page-subtitle mt-4">登录后管理偏好、简历版本、投递资料和推荐岗位。</p>
           </div>
         </section>
         {message ? <div className="info-banner text-sm">{message}</div> : null}
@@ -254,49 +253,28 @@ export function ProfileClient() {
 
   return (
     <div className="observatory-page space-y-7">
-      <section className="relative overflow-hidden rounded-xl bg-[#080d1b] px-5 py-6 shadow-[inset_0_1px_0_rgba(244,232,198,0.08)] sm:px-7 lg:px-9">
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-1/2 opacity-45">
-          <div className="absolute right-20 top-16 h-[420px] w-[420px] rounded-full border border-[#f4e8c6]/10" />
-          <div className="absolute right-8 top-40 h-[520px] w-[520px] rounded-full border border-[#f4e8c6]/8" />
+      <section className="page-hero">
+        <div>
+          <p className="page-kicker">{role === "admin" ? "管理员账号" : "求职用户"}</p>
+          <h1 className="page-title">求职资产中心</h1>
+          <p className="page-subtitle mt-4">{statusLine}</p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Button onClick={() => void handleSave()} disabled={busy}>
+              <Save aria-hidden="true" className="size-4" />
+              保存资料
+            </Button>
+            <Link href="/my" className="muted-button pressable inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm">
+              <Compass aria-hidden="true" className="size-4" />
+              打开投递工作台
+            </Link>
+          </div>
         </div>
-        <div className="relative grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-end">
-          <div>
-            <p className="text-sm text-[#f4e8c6]/56">{role === "admin" ? "管理员账号" : "求职用户"}</p>
-            <h1 className="mt-3 max-w-3xl text-4xl font-semibold leading-[1.04] tracking-[0] text-[#f8f1df] sm:text-6xl">
-              {displayName || "秋招用户"} 的秋招星瓶
-            </h1>
-            <p className="mt-5 max-w-2xl text-sm leading-7 text-[#f8f1df]/62 sm:text-base">
-              {statusLine}
-            </p>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <Button onClick={() => void handleSave()} disabled={busy}>
-                <Save aria-hidden="true" className="size-4" />
-                保存资料
-              </Button>
-              <Link href="/my" className="muted-button pressable inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm">
-                <Compass aria-hidden="true" className="size-4" />
-                进入我的星图
-              </Link>
-              <Link href="/bottle" className="muted-button pressable inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm">
-                <Sparkles aria-hidden="true" className="size-4" />
-                分享星瓶
-              </Link>
-            </div>
-          </div>
-
-          <div className="relative border-l border-[#f4e8c6]/16 pl-5">
-            <p className="text-sm text-[#f4e8c6]/56">资料完整度</p>
-            <p className="mt-2 text-5xl font-semibold tabular-nums text-[#f8f1df]">{completionPercent}%</p>
-            <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/10">
-              <div
-                className="h-full rounded-full bg-[#e3c589]"
-                style={{ width: `${completionPercent}%` }}
-              />
-            </div>
-            <p className="mt-4 text-xs leading-5 text-[#f8f1df]/50">
-              {missingLabels.length > 0 ? `还差：${missingLabels.slice(0, 4).join("、")}` : "资料已经可以用于推荐匹配。"}
-            </p>
-          </div>
+        <div className="progress-summary grid grid-cols-2 gap-x-6 gap-y-5 px-4 py-3 md:grid-cols-4 md:px-5">
+          <ProfileStat value={`${completionPercent}%`} label="资料完整度" />
+          <ProfileStat value={String(resumes.length)} label="简历版本" />
+          <ProfileStat value={String(appliedCount)} label="已投递" />
+          <ProfileStat value={String(recommendedJobs.length)} label="推荐岗位" />
+          {missingLabels.length > 0 ? <p className="col-span-2 text-xs leading-5 text-ink-muted md:col-span-4">待补充：{missingLabels.slice(0, 4).join("、")}</p> : null}
         </div>
       </section>
 
@@ -305,9 +283,9 @@ export function ProfileClient() {
       <section className="grid gap-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(340px,0.95fr)]">
         <article className="relative overflow-hidden rounded-lg bg-[rgba(8,13,27,0.7)] p-5 shadow-[inset_0_1px_0_rgba(244,232,198,0.07)] sm:p-6">
           <div className="flex items-start justify-between gap-4">
-            <SectionLead title="我的星瓶" />
+            <SectionLead title="投递资产" />
             <Link href="/my" className="text-action text-sm">
-              查看星图
+              打开工作台
               <ArrowRight aria-hidden="true" className="size-4" />
             </Link>
           </div>
@@ -447,12 +425,12 @@ export function ProfileClient() {
 
       <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
         <article className="border-t border-white/[0.12] pt-5">
-          <SectionLead title="使用教程" />
+          <SectionLead title="常用入口" />
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            <GuideLink href="/explore" step="01" title="探索岗位" />
-            <GuideLink href="/my" step="02" title="更新星图" />
-            <GuideLink href="/resume" step="03" title="制作简历" />
-            <GuideLink href="/bottle" step="04" title="分享星瓶" />
+            <GuideLink href="/explore" title="浏览岗位池" />
+            <GuideLink href="/my" title="处理投递进度" />
+            <GuideLink href="/resume" title="管理简历与材料" />
+            <GuideLink href="/bottle" title="回顾我的星瓶" />
           </div>
         </article>
 
@@ -598,15 +576,21 @@ function InfoLine({ icon, label, value }: { icon: ReactNode; label: string; valu
   );
 }
 
-function GuideLink({ href, step, title }: { href: string; step: string; title: string }) {
+function GuideLink({ href, title }: { href: string; title: string }) {
   return (
     <Link href={href} className="group flex items-center justify-between border-b border-white/[0.08] py-3">
-      <span>
-        <span className="text-xs text-ink-muted">{step}</span>
-        <span className="ml-3 text-sm font-medium text-ink-primary">{title}</span>
-      </span>
+      <span className="text-sm font-medium text-ink-primary">{title}</span>
       <ArrowRight aria-hidden="true" className="size-4 text-ink-muted transition group-hover:translate-x-0.5 group-hover:text-ink-primary" />
     </Link>
+  );
+}
+
+function ProfileStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-2xl font-semibold tabular-nums text-ink-primary md:text-3xl">{value}</p>
+      <p className="mt-2 text-xs text-ink-muted">{label}</p>
+    </div>
   );
 }
 

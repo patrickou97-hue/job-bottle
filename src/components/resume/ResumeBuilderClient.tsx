@@ -219,7 +219,7 @@ export function ResumeBuilderClient() {
         <section className="page-hero">
           <div>
             <p className="page-kicker">求职材料</p>
-            <h1 className="page-title">简历制作</h1>
+            <h1 className="page-title">简历与材料</h1>
           </div>
         </section>
         <div className="empty-state">
@@ -234,7 +234,8 @@ export function ResumeBuilderClient() {
       <section className="page-hero">
         <div>
           <p className="page-kicker">求职材料</p>
-          <h1 className="page-title">简历制作</h1>
+          <h1 className="page-title">简历与材料</h1>
+          <p className="page-subtitle mt-4">为通用方向保留版本，并在目标岗位确定后绑定对应简历。</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <span className="status-pill rounded-full px-3 py-2 text-sm text-ink-secondary">
@@ -274,6 +275,7 @@ export function ResumeBuilderClient() {
                 {getResumeTargetLine(resume) ? (
                   <span className="mt-1 block text-xs text-ink-muted">{getResumeTargetLine(resume)}</span>
                 ) : null}
+                {resume.linkedJobId ? <span className="mt-2 block text-xs text-nebula-silver">已关联岗位</span> : null}
                 <span className="mt-2 inline-flex rounded-full bg-white/[0.055] px-2 py-1 text-[11px] text-ink-muted">
                   {getResumeTemplateMeta(resume.templateId).label}
                 </span>

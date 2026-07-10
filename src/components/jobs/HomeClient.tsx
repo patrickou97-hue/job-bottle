@@ -8,8 +8,10 @@ import { EMPTY_JOB_FILTERS } from "@/lib/constants";
 import { parseJobCategoriesParam, serializeJobCategories } from "@/lib/categories";
 import { fetchActiveJobs, filterJobs, getJobFacetOptions } from "@/lib/jobs";
 import { fetchMyApplications, updateApplication, upsertApplication } from "@/lib/applications";
+import { getDeadlineInfo, getFitLabel, getMaterialReadiness } from "@/lib/career-workspace";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { queueBottleDrop } from "@/lib/bottle-drop";
+import { fetchMyResumes, isMissingResumeTableError } from "@/lib/resume-sync";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { cn, isValidHttpUrl, safeOpenUrl, formatDateTime } from "@/lib/utils";
 import { JobFilterBar } from "@/components/jobs/JobFilterBar";
@@ -27,8 +29,10 @@ import type {
   ApplicationWithJob,
   Job,
   JobFilters,
+  Profile,
   UserApplication,
 } from "@/lib/types";
+import type { ResumeDocument } from "@/lib/resume";
 
 type JobViewMode = "all" | "unapplied" | "applied";
 type PendingApplyConfirmation = {
@@ -42,6 +46,8 @@ export function HomeClient() {
   const searchParams = useSearchParams();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [applications, setApplications] = useState<ApplicationWithJob[]>([]);
+  const [resumes, setResumes] = useState<ResumeDocument[]>([]);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [filters, setFilters] = useState<JobFilters>(() => ({
     ...EMPTY_JOB_FILTERS,
@@ -85,14 +91,22 @@ export function HomeClient() {
 
       if (user) {
         setCurrentUserId(user.id);
-        const [, applicationRows] = await Promise.all([
-          supabase.from("profiles").select("id").eq("id", user.id).maybeSingle(),
+        const [profileResult, applicationRows, resumeRows] = await Promise.all([
+          supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
           fetchMyApplications(supabase, user.id),
+          fetchMyResumes(supabase).catch((error: unknown) => {
+            if (isMissingResumeTableError(error)) return [];
+            throw error;
+          }),
         ]);
+        setProfile(profileResult.data as Profile | null);
         setApplications(applicationRows);
+        setResumes(resumeRows);
       } else {
         setCurrentUserId(null);
         setApplications([]);
+        setResumes([]);
+        setProfile(null);
       }
     } catch {
       setMessage("无法连接数据库，请确认数据库环境变量已经配置。");
@@ -380,19 +394,6 @@ export function HomeClient() {
         }}
       />
 
-      <NebulaGateway
-        key={nebulaResetSignal}
-        jobs={baseVisibleJobs}
-        applications={applications}
-        applicationByJobId={applicationByJobId}
-        onApply={handleApply}
-        hoveredJobId={hoveredJobId}
-        focusedJobId={focusedJobId}
-        onHoverJob={(job) => setHoveredJobId(job?.id ?? null)}
-        onSelectJob={focusJob}
-        onSelectionChange={setNebulaSelection}
-      />
-
       <div className="grid gap-8 xl:grid-cols-[300px_minmax(0,1fr)]">
         <JobFilterBar
           filters={filters}
@@ -443,6 +444,9 @@ export function HomeClient() {
                   job={job}
                   index={index}
                   application={applicationByJobId.get(job.id) ?? null}
+                  deadline={getDeadlineInfo(job)}
+                  fitLabel={getFitLabel(job, profile)}
+                  material={getMaterialReadiness(job.id, resumes)}
                   highlighted={hoveredJobId === job.id || focusedJobId === job.id}
                   onApply={handleApply}
                   onOpenProgress={openProgressByJob}
@@ -454,6 +458,27 @@ export function HomeClient() {
           )}
         </section>
       </div>
+
+      <section className="border-t border-white/[0.1] pt-6">
+        <div className="section-heading">
+          <div>
+            <h2 className="section-title">按行业探索</h2>
+            <p className="mt-1 text-xs text-ink-muted">星云入口用于从行业和公司维度继续浏览岗位。</p>
+          </div>
+        </div>
+        <NebulaGateway
+          key={nebulaResetSignal}
+          jobs={baseVisibleJobs}
+          applications={applications}
+          applicationByJobId={applicationByJobId}
+          onApply={handleApply}
+          hoveredJobId={hoveredJobId}
+          focusedJobId={focusedJobId}
+          onHoverJob={(job) => setHoveredJobId(job?.id ?? null)}
+          onSelectJob={focusJob}
+          onSelectionChange={setNebulaSelection}
+        />
+      </section>
 
       <ProgressDrawer
         application={drawerApplication}
@@ -538,13 +563,14 @@ function JobRadarHeader({
   return (
     <section className="page-hero">
       <div className="min-w-0">
-        <p className="page-kicker">职位发现</p>
-        <h1 className="page-title">岗位星图</h1>
+        <p className="page-kicker">岗位发现</p>
+        <h1 className="page-title">岗位池</h1>
+        <p className="page-subtitle mt-4">先判断值得投的机会，再准备材料并进入投递流程。</p>
       </div>
 
       <div className="progress-summary px-4 py-2 md:px-5 md:py-3">
         <div className="grid grid-cols-3 gap-4">
-          <StatNumber value={stats.visibleJobs} label="当前可看" />
+          <StatNumber value={stats.visibleJobs} label="当前岗位" />
           <StatNumber value={stats.companyCount} label="公司" />
           <StatNumber value={stats.savedJobs} label="已收录" />
         </div>
@@ -599,14 +625,14 @@ function JobRadarHeader({
               className="text-action pressable px-3 py-2 text-xs"
             >
               <Archive aria-hidden="true" className="size-4" />
-              我的星图
+              投递工作台
             </Link>
             <Link
               href="/bottle"
               className="text-action pressable rounded-full bg-nebula-blue/8 px-3 py-2 text-xs text-nebula-silver hover:bg-nebula-blue/12"
             >
               <Sparkles aria-hidden="true" className="size-4" />
-              我的星瓶
+              星瓶回顾
             </Link>
           </div>
         </div>

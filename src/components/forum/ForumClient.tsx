@@ -65,8 +65,8 @@ export function ForumClient() {
     <div className="observatory-page space-y-8">
       <section className="page-hero">
         <div>
-          <p className="page-kicker">同路人讨论</p>
-          <h1 className="page-title">讨论区</h1>
+          <p className="page-kicker">求职经验</p>
+          <h1 className="page-title">经验库</h1>
         </div>
         <div className="flex items-end justify-start md:justify-end">
           <Button onClick={() => setShowForm((v) => !v)}>
@@ -115,8 +115,8 @@ export function ForumClient() {
         ) : posts.length === 0 ? (
           <div className="empty-state">
             <div>
-              <h2>暂无讨论</h2>
-              <p>发布第一条讨论。</p>
+              <h2>暂无经验内容</h2>
+              <p>分享一条面试复盘、投递经验或准备方法。</p>
             </div>
           </div>
         ) : (
