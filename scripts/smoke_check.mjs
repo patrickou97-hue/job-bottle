@@ -116,6 +116,12 @@ const SOURCE_INVARIANTS = [
     label: "用户端页面统一使用 SpaceShell 背景",
   },
   {
+    file: "src/components/layout/AdminShell.tsx",
+    mustInclude: ["border-b border-white/[0.08]", "管理导航", "border-l border-white/[0.08]", "返回首页"],
+    mustNotInclude: ["StarFieldBackground", "rounded-[28px]", "rounded-full"],
+    label: "管理页使用收紧工具栏而非嵌套圆角浮层",
+  },
+  {
     file: "src/components/layout/SpaceBackground.tsx",
     mustInclude: ["space-bg__image", "space-bg__vignette", "space-bg__stars--far", "space-bg__stars--near", "space-bg__noise", "space-bg__meteor"],
     mustNotInclude: ["Math.random", "canvas"],

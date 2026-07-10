@@ -9,7 +9,6 @@ import { getCurrentUserOrNull } from "@/lib/auth";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { SITE_NAME } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { StarFieldBackground } from "@/components/visuals/StarFieldBackground";
 
 const adminNavItems = [
   { href: "/admin", label: "管理后台", icon: Settings },
@@ -69,59 +68,52 @@ export function AdminShell({ children }: { children: ReactNode }) {
     router.refresh();
   }
 
+  function navClass(itemHref: string) {
+    const active = itemHref === "/admin" ? pathname === "/admin" : pathname.startsWith(itemHref);
+    return cn(
+      "pressable inline-flex h-10 items-center gap-2 border-b-2 px-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--star-apricot)]",
+      active
+        ? "border-[color:var(--star-apricot)] text-ink-primary"
+        : "border-transparent text-ink-secondary hover:border-white/20 hover:text-ink-primary",
+    );
+  }
+
   return (
-    <div className="min-h-screen text-ink-primary">
-      <StarFieldBackground quiet />
-      <header className="sticky top-0 z-40 px-3 pt-3 sm:px-5 lg:px-8">
-        <div className="mx-auto flex min-h-16 w-full max-w-[1380px] flex-col gap-3 rounded-[28px] bg-[rgba(4,9,22,0.66)] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_22px_70px_rgba(0,0,0,0.2)] backdrop-blur-2xl sm:px-5 lg:flex-row lg:items-center lg:justify-between">
-          <Link href="/admin" className="flex min-w-0 items-center gap-3">
+    <div className="min-h-screen bg-[#101725] text-ink-primary">
+      <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-[#101725]/94 backdrop-blur-md">
+        <div className="mx-auto flex min-h-15 w-full max-w-[1380px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2 sm:px-6 lg:px-8">
+          <Link href="/admin" className="flex min-w-0 shrink-0 items-center gap-3" aria-label="管理">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/shi-xing-wordmark.png" alt={SITE_NAME} className="h-8 w-auto shrink-0 object-contain" />
-            <span className="min-w-0">
-              <span className="block truncate text-sm font-semibold text-ink-primary">
-                管理后台
-              </span>
-              <span className="block truncate text-xs text-ink-muted">{SITE_NAME} 数据维护</span>
-            </span>
+            <img src="/brand/shi-xing-wordmark.png" alt={SITE_NAME} className="h-7 w-auto shrink-0 object-contain" />
+            <span className="text-sm font-semibold text-ink-primary">管理</span>
           </Link>
 
-          <nav className="flex flex-wrap items-center gap-2">
+          <nav className="order-3 flex w-full items-center gap-1 overflow-x-auto sm:order-none sm:w-auto sm:flex-1" aria-label="管理导航">
             {adminNavItems.map((item) => {
               const Icon = item.icon;
-              const active =
-                item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={cn(
-                    "pressable inline-flex h-10 items-center gap-2 rounded-full px-3 text-sm transition",
-                    active
-                      ? "bg-nebula-blue/10 text-nebula-silver"
-                      : "text-ink-secondary hover:bg-white/[0.055] hover:text-ink-primary",
-                  )}
+                  className={navClass(item.href)}
                 >
                   <Icon aria-hidden="true" className="size-4" />
                   {item.label}
                 </Link>
               );
             })}
-            <Link
-              href="/"
-              className="inline-flex h-10 items-center gap-2 rounded-full px-3 text-sm text-ink-secondary transition hover:bg-white/[0.055] hover:text-ink-primary"
-            >
-              <ArrowLeft aria-hidden="true" className="size-4" />
-              返回用户端
-            </Link>
-            <button
-              type="button"
-              className="inline-flex h-10 items-center gap-2 rounded-full px-3 text-sm text-ink-secondary transition hover:bg-white/[0.055] hover:text-ink-primary"
-              onClick={handleLogout}
-            >
-              <LogOut aria-hidden="true" className="size-4" />
-              退出登录
-            </button>
           </nav>
+
+          <div className="ml-auto flex shrink-0 items-center gap-1 border-l border-white/[0.08] pl-3">
+            <Link href="/" className="text-action h-9 px-2.5 text-sm">
+              <ArrowLeft aria-hidden="true" className="size-4" />
+              返回首页
+            </Link>
+            <button type="button" className="text-action h-9 px-2.5 text-sm" onClick={handleLogout}>
+              <LogOut aria-hidden="true" className="size-4" />
+              退出
+            </button>
+          </div>
         </div>
       </header>
       <main className="mx-auto w-full max-w-[1440px] px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
@@ -137,7 +129,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             <p className="mt-3 text-sm text-ink-secondary">{message}</p>
             <Link
               href="/login?next=%2Fadmin"
-              className="gold-button mt-5 inline-flex h-10 items-center rounded-full px-4 text-sm font-medium"
+              className="gold-button mt-5 inline-flex h-10 items-center rounded-lg px-4 text-sm font-medium"
             >
               登录管理员账号
             </Link>
