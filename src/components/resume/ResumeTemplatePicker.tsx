@@ -8,8 +8,8 @@ const TEMPLATE_SWATCHES: Record<ResumeTemplateId, { accent: string; header: stri
   compact: { accent: "#111111", header: "centered", rule: "split" },
   classic: { accent: "#111111", header: "centered", rule: "strong" },
   modern: { accent: "#172033", header: "left", rule: "soft" },
-  minimal: { accent: "#111111", header: "left", rule: "plain" },
-  executive: { accent: "#203a5f", header: "left", rule: "accent" },
+  english_classic: { accent: "#111111", header: "centered", rule: "strong" },
+  english_modern: { accent: "#203a5f", header: "left", rule: "accent" },
 };
 
 export function ResumeTemplatePicker({
@@ -21,17 +21,7 @@ export function ResumeTemplatePicker({
 }) {
   return (
     <section className="border-y border-white/[0.1] py-5" aria-labelledby="resume-template-heading">
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <p className="page-kicker">简历版式</p>
-          <h2 id="resume-template-heading" className="mt-1 text-lg font-semibold text-ink-primary">
-            先选排版，再填内容
-          </h2>
-        </div>
-        <p className="max-w-[28rem] text-sm leading-6 text-ink-muted">
-          所有版式均为单栏、A4、可复制文字 PDF，可随时切换，不会改动你的内容。
-        </p>
-      </div>
+      <h2 id="resume-template-heading" className="mb-4 text-lg font-semibold text-ink-primary">简历版式</h2>
 
       <div className="-mx-1 flex snap-x gap-3 overflow-x-auto px-1 pb-1">
         {RESUME_TEMPLATES.map((template) => {
@@ -53,7 +43,6 @@ export function ResumeTemplatePicker({
                 {template.label}
                 {selected ? <Check aria-label="当前版式" className="size-4 text-[color:var(--star-apricot)]" /> : null}
               </span>
-              <span className="mt-1 block min-h-10 text-xs leading-5 text-ink-muted">{template.description}</span>
             </button>
           );
         })}

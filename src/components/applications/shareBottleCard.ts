@@ -171,10 +171,11 @@ function drawBottleSnapshot(
 
   }
 
-  // The canvas snapshot contains only animated stars. Draw the actual glass on
-  // top in both paths so exported posters never show stars floating without a bottle.
+  // BottleStage renders the glass with mix-blend-screen. Mirror that blend here:
+  // a normal source-over draw makes the opaque PNG erase the star canvas below.
   context.save();
-  context.globalAlpha = 0.96;
+  context.globalAlpha = 0.9;
+  context.globalCompositeOperation = "screen";
   context.drawImage(bottleImage, x, y, width, height);
   context.restore();
 

@@ -153,7 +153,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/lib/resume.ts",
-    mustInclude: ["ResumeDocument", "ResumeContent", "createSampleResume", "loadLocalResumes", "linkedJobId", "photoDataUrl", "compact", "classic", "modern", "minimal", "executive", "紧凑单栏", "经典商科", "现代 ATS", "极简 ATS", "专业强调", "createResumeId", "isResumeId", "getResumeTargetLine"],
+    mustInclude: ["ResumeDocument", "ResumeContent", "createSampleResume", "loadLocalResumes", "linkedJobId", "photoDataUrl", "compact", "classic", "modern", "english_classic", "english_modern", "紧凑中文", "经典商科", "现代单栏", "English Classic", "English Modern", "isEnglishResumeTemplate", "createResumeId", "isResumeId", "getResumeTargetLine"],
     mustNotInclude: [],
     label: "简历制作器定义结构化简历模型、多模板和本地持久化",
   },
@@ -171,9 +171,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/resume/ResumeTemplatePicker.tsx",
-    mustInclude: ["RESUME_TEMPLATES", "minimal", "executive", "aria-pressed", "不会改动你的内容"],
-    mustNotInclude: [],
-    label: "简历制作器在顶层提供醒目的五款模板切换器",
+    mustInclude: ["RESUME_TEMPLATES", "english_classic", "english_modern", "aria-pressed", "简历版式"],
+    mustNotInclude: ["先选排版，再填内容", "不会改动你的内容", "template.description"],
+    label: "简历制作器在顶层提供克制的五款模板切换器",
   },
   {
     file: "src/components/resume/ResumePdfExportButton.tsx",
@@ -183,13 +183,13 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/resume/resumePdf.ts",
-    mustInclude: ["jsPDF", "NotoSerifSC-Regular.ttf", "NotoSerifSC-Bold.ttf", "format: \"a4\"", "PAGE_WIDTH = 595.28", "PAGE_HEIGHT = 841.89", "exportResumeToPdf", "addFileToVFS", "getTemplateOptions", "getResumeTargetLine", "modern", "classic", "minimal", "executive"],
+    mustInclude: ["jsPDF", "NotoSerifSC-Regular.ttf", "NotoSerifSC-Bold.ttf", "format: \"a4\"", "PAGE_WIDTH = 595.28", "PAGE_HEIGHT = 841.89", "exportResumeToPdf", "addFileToVFS", "getTemplateOptions", "getResumeTargetLine", "english_classic", "english_modern", "isEnglishResumeTemplate", "EDUCATION", "Boolean(basics.photoDataUrl) && !isEnglish"],
     mustNotInclude: ["html2canvas", "window.print"],
     label: "简历 PDF 矢量排版器嵌入中文字体并按模板输出 A4 页面",
   },
   {
     file: "src/lib/resume-sync.ts",
-    mustInclude: ["fetchMyResumes", "upsertMyResume", "deleteMyResume", "content_json", "__job_bottle_template_id", "isMissingResumeTableError", "isResumeTemplateConstraintError"],
+    mustInclude: ["fetchMyResumes", "upsertMyResume", "deleteMyResume", "content_json", "__job_bottle_template_id", "minimal", "executive", "english_classic", "english_modern", "isMissingResumeTableError", "isResumeTemplateConstraintError"],
     mustNotInclude: ["service_role"],
     label: "简历同步层映射 resumes 表并兼容未运行迁移的本地回退",
   },
@@ -201,9 +201,15 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/shareBottleCard.ts",
-    mustInclude: ["context.drawImage(bottleImage", "已收到 Offer", "已进面", "companies.slice(0, 5)", "context.fillText(\"……\"", "const qrSize = 170"],
+    mustInclude: ["context.drawImage(bottleImage", "globalCompositeOperation = \"screen\"", "bottleSnapshot", "已收到 Offer", "已进面", "companies.slice(0, 5)", "context.fillText(\"……\"", "const qrSize = 170"],
     mustNotInclude: ["意向地区", "意向岗位", "独特简历", "推荐机会"],
     label: "分享海报始终绘制瓶身、使用阶段统计、前五企业和安全二维码",
+  },
+  {
+    file: "supabase/migrations/20260710140000_resume_template_consolidation.sql",
+    mustInclude: ["english_classic", "english_modern", "minimal", "executive", "drop constraint if exists resumes_template_id_check"],
+    mustNotInclude: [],
+    label: "简历模板收敛迁移保留历史模板兼容并新增英文版式",
   },
   {
     file: "src/components/admin/AdminJobsClient.tsx",

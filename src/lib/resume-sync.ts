@@ -30,7 +30,9 @@ function normalizeContent(value: unknown): ResumeContent {
 }
 
 function normalizeTemplateId(value: unknown): ResumeTemplateId {
-  return value === "compact" || value === "classic" || value === "modern" || value === "minimal" || value === "executive"
+  if (value === "minimal") return "modern";
+  if (value === "executive") return "classic";
+  return value === "compact" || value === "classic" || value === "modern" || value === "english_classic" || value === "english_modern"
     ? value
     : "compact";
 }
@@ -122,7 +124,7 @@ export async function upsertMyResume(
   // Older hosted projects may still have the three-template check constraint.
   // Keep the selected template inside content_json and retry with the stable
   // compact value so switching layouts never prevents a cloud save.
-  if (error && isResumeTemplateConstraintError(error) && (resume.templateId === "minimal" || resume.templateId === "executive")) {
+  if (error && isResumeTemplateConstraintError(error) && (resume.templateId === "english_classic" || resume.templateId === "english_modern")) {
     ({ data, error } = await supabase
       .from("resumes")
       .upsert({ ...payload, template_id: "compact" }, { onConflict: "id" })
