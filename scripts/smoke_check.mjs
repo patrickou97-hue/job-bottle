@@ -153,7 +153,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/lib/resume.ts",
-    mustInclude: ["ResumeDocument", "ResumeContent", "createSampleResume", "loadLocalResumes", "linkedJobId", "photoDataUrl", "compact", "classic", "modern", "紧凑单栏", "经典商科", "现代 ATS", "createResumeId", "isResumeId", "getResumeTargetLine"],
+    mustInclude: ["ResumeDocument", "ResumeContent", "createSampleResume", "loadLocalResumes", "linkedJobId", "photoDataUrl", "compact", "classic", "modern", "minimal", "executive", "紧凑单栏", "经典商科", "现代 ATS", "极简 ATS", "专业强调", "createResumeId", "isResumeId", "getResumeTargetLine"],
     mustNotInclude: [],
     label: "简历制作器定义结构化简历模型、多模板和本地持久化",
   },
@@ -165,9 +165,15 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/resume/ResumeEditor.tsx",
-    mustInclude: ["PhotoField", "cropPhotoToPortrait", "上传照片", "AI 优化即将上线", "模板风格", "RESUME_TEMPLATES"],
+    mustInclude: ["PhotoField", "cropPhotoToPortrait", "上传照片", "AI 优化即将上线"],
+    mustNotInclude: ["模板风格", "RESUME_TEMPLATES"],
+    label: "简历编辑器聚焦内容填写并保留 AI 能力预留入口",
+  },
+  {
+    file: "src/components/resume/ResumeTemplatePicker.tsx",
+    mustInclude: ["RESUME_TEMPLATES", "minimal", "executive", "aria-pressed", "不会改动你的内容"],
     mustNotInclude: [],
-    label: "简历编辑器提供照片上传、模板切换和 AI 能力预留入口",
+    label: "简历制作器在顶层提供醒目的五款模板切换器",
   },
   {
     file: "src/components/resume/ResumePdfExportButton.tsx",
@@ -177,19 +183,19 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/resume/resumePdf.ts",
-    mustInclude: ["jsPDF", "NotoSerifSC-Regular.ttf", "NotoSerifSC-Bold.ttf", "format: \"a4\"", "PAGE_WIDTH = 595.28", "PAGE_HEIGHT = 841.89", "exportResumeToPdf", "addFileToVFS", "getTemplateOptions", "getResumeTargetLine", "modern", "classic"],
+    mustInclude: ["jsPDF", "NotoSerifSC-Regular.ttf", "NotoSerifSC-Bold.ttf", "format: \"a4\"", "PAGE_WIDTH = 595.28", "PAGE_HEIGHT = 841.89", "exportResumeToPdf", "addFileToVFS", "getTemplateOptions", "getResumeTargetLine", "modern", "classic", "minimal", "executive"],
     mustNotInclude: ["html2canvas", "window.print"],
     label: "简历 PDF 矢量排版器嵌入中文字体并按模板输出 A4 页面",
   },
   {
     file: "src/lib/resume-sync.ts",
-    mustInclude: ["fetchMyResumes", "upsertMyResume", "deleteMyResume", "content_json", "isMissingResumeTableError"],
+    mustInclude: ["fetchMyResumes", "upsertMyResume", "deleteMyResume", "content_json", "isMissingResumeTableError", "isResumeTemplateConstraintError"],
     mustNotInclude: ["service_role"],
     label: "简历同步层映射 resumes 表并兼容未运行迁移的本地回退",
   },
   {
     file: "supabase/migrations/20260710120000_profile_resume_cloud_repair.sql",
-    mustInclude: ["create table if not exists public.resumes", "preferred_regions", "target_roles", "resumes_select_own", "resumes_update_own", "grant select, insert, update, delete on public.resumes to authenticated"],
+    mustInclude: ["create table if not exists public.resumes", "preferred_regions", "target_roles", "minimal", "executive", "resumes_select_own", "resumes_update_own", "grant select, insert, update, delete on public.resumes to authenticated"],
     mustNotInclude: ["service_role"],
     label: "云端资料和简历修复迁移补齐 owner-only RLS 与必要字段",
   },

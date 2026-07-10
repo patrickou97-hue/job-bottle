@@ -10,7 +10,7 @@ alter table public.resumes
 
 alter table public.resumes
   add constraint resumes_template_id_check
-  check (template_id in ('compact', 'classic', 'modern'));
+  check (template_id in ('compact', 'classic', 'modern', 'minimal', 'executive'));
 
 create index if not exists profiles_preferred_regions_idx
   on public.profiles using gin (preferred_regions);

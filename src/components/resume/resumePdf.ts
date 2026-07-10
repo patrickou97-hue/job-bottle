@@ -135,7 +135,8 @@ function renderHeader(state: LayoutState, resume: ResumeDocument, options: PdfOp
   const photoWidth = 58;
   const photoHeight = 72;
   const headerTop = state.y;
-  const isModern = options.templateId === "modern";
+  const isLeftAligned = options.templateId === "modern" || options.templateId === "minimal" || options.templateId === "executive";
+  const headerColor = options.templateId === "executive" ? "#203a5f" : options.templateId === "modern" ? "#172033" : BLACK;
 
   if (hasPhoto && state.draw) {
     try {
@@ -152,9 +153,9 @@ function renderHeader(state: LayoutState, resume: ResumeDocument, options: PdfOp
     }
   }
 
-  if (isModern) {
+  if (isLeftAligned) {
     let y = headerTop + 23;
-    setFont(state, 19, "bold", "#172033");
+    setFont(state, 19, "bold", headerColor);
     drawText(state, basics.name || "姓名", state.left, y);
     y += 14;
 
@@ -166,7 +167,7 @@ function renderHeader(state: LayoutState, resume: ResumeDocument, options: PdfOp
 
     const target = getResumeTargetLine(resume);
     if (target) {
-      setFont(state, 10.1, "bold", "#172033");
+      setFont(state, 10.1, "bold", headerColor);
       drawText(state, target, state.left, y);
       y += 12;
     }
@@ -184,8 +185,9 @@ function renderHeader(state: LayoutState, resume: ResumeDocument, options: PdfOp
     }
 
     if (state.draw) {
-      state.pdf.setDrawColor(42, 52, 67);
-      state.pdf.setLineWidth(0.8);
+      const [red, green, blue] = options.templateId === "modern" ? [42, 52, 67] : options.templateId === "executive" ? [32, 58, 95] : [17, 17, 17];
+      state.pdf.setDrawColor(red, green, blue);
+      state.pdf.setLineWidth(options.templateId === "executive" ? 1.15 : 0.8);
       state.pdf.line(state.left, y + 4, state.right, y + 4);
     }
     state.y = Math.max(y + 15, headerTop + (hasPhoto ? 78 : 58));
@@ -316,11 +318,14 @@ function sectionTitle(state: LayoutState, title: string, options: PdfOptions) {
   ensureSpace(state, options.headingSize + 5);
   setFont(state, options.headingSize, "bold");
 
-  if (options.templateId === "modern") {
+  if (options.templateId === "modern" || options.templateId === "minimal" || options.templateId === "executive") {
+    const color = options.templateId === "executive" ? "#203a5f" : options.templateId === "modern" ? "#172033" : BLACK;
+    setFont(state, options.headingSize, "bold", color);
     drawText(state, title, state.left, state.y);
     if (state.draw) {
-      state.pdf.setDrawColor(207, 214, 223);
-      state.pdf.setLineWidth(0.7);
+      const [red, green, blue] = options.templateId === "modern" ? [207, 214, 223] : options.templateId === "executive" ? [32, 58, 95] : [17, 17, 17];
+      state.pdf.setDrawColor(red, green, blue);
+      state.pdf.setLineWidth(options.templateId === "executive" ? 1.15 : 0.7);
       state.pdf.line(state.left, state.y + 4.2, state.right, state.y + 4.2);
     }
     state.y += options.headingSize * 1.08;
@@ -576,6 +581,29 @@ function getTemplateOptions(templateId: ResumeTemplateId) {
       headingSize: options.headingSize - 0.6,
       itemGap: options.itemGap + 0.15,
       sectionGap: options.sectionGap + 0.45,
+    }));
+  }
+
+  if (templateId === "minimal") {
+    return COMPACT_OPTIONS.map((options) => ({
+      ...options,
+      templateId,
+      bodySize: options.bodySize - 0.05,
+      bulletSize: options.bulletSize - 0.05,
+      headingSize: options.headingSize - 0.35,
+      itemGap: options.itemGap + 0.05,
+      sectionGap: options.sectionGap + 0.1,
+    }));
+  }
+
+  if (templateId === "executive") {
+    return COMPACT_OPTIONS.map((options) => ({
+      ...options,
+      templateId,
+      bodySize: options.bodySize,
+      headingSize: options.headingSize + 0.15,
+      itemGap: options.itemGap + 0.2,
+      sectionGap: options.sectionGap + 0.4,
     }));
   }
 

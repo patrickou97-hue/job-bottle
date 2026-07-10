@@ -14,6 +14,10 @@ export function ResumePreview({ resume }: { resume: ResumeDocument }) {
       ? "px-[52px] py-[42px]"
       : resume.templateId === "classic"
         ? "px-[50px] py-[40px]"
+        : resume.templateId === "executive"
+          ? "px-[52px] py-[42px]"
+          : resume.templateId === "minimal"
+            ? "px-[52px] py-[42px]"
         : "px-[48px] py-[38px]";
 
   return (
@@ -33,24 +37,32 @@ function ResumeTemplate({ resume }: { resume: ResumeDocument }) {
   const linkLine = formatLinks(basics);
   const isModern = resume.templateId === "modern";
   const isClassic = resume.templateId === "classic";
+  const isMinimal = resume.templateId === "minimal";
+  const isExecutive = resume.templateId === "executive";
+  const isLeftAligned = isModern || isMinimal || isExecutive;
+  const accent = isExecutive ? "#203a5f" : isModern ? "#172033" : "#111111";
 
   return (
     <article className="resume-compact text-[13px] leading-[1.18]">
-      <header className={`relative ${isModern ? "border-b border-[#2a3443] pb-3 text-left" : "pb-1 text-center"}`}>
+      <header
+        className={`relative ${isLeftAligned ? "border-b pb-3 text-left" : "pb-1 text-center"}`}
+        style={isLeftAligned ? { borderColor: accent, borderBottomWidth: isExecutive ? 2 : 1 } : undefined}
+      >
         <div className={basics.photoDataUrl ? "px-[82px]" : ""}>
           <h1
             className={
-              isModern
-                ? "text-[25px] font-bold leading-none text-[#172033]"
+              isLeftAligned
+                ? "text-[25px] font-bold leading-none"
                 : isClassic
                   ? "text-[25px] font-bold leading-none"
                   : "text-[24px] font-bold leading-none"
             }
+            style={isLeftAligned ? { color: accent } : undefined}
           >
             {addNameSpacing(basics.name || "姓名")}
           </h1>
           {basics.englishName ? (
-            <p className={`mt-1 text-[12px] ${isModern ? "tracking-[0.08em] text-[#374151]" : ""}`}>
+            <p className={`mt-1 text-[12px] ${isLeftAligned ? "tracking-[0.08em] text-[#374151]" : ""}`}>
               {basics.englishName}
             </p>
           ) : null}
@@ -83,7 +95,7 @@ function ResumePhoto({ src }: { src: string }) {
 }
 
 function ResumeSections({ resume, templateId }: { resume: ResumeDocument; templateId: ResumeTemplateId }) {
-  const sectionClass = templateId === "modern" ? "mt-[13px]" : "mt-[12px]";
+  const sectionClass = templateId === "modern" || templateId === "executive" ? "mt-[13px]" : "mt-[12px]";
   return (
     <div>
       {resume.content.education.length > 0 ? (
@@ -163,9 +175,13 @@ function ResumeSections({ resume, templateId }: { resume: ResumeDocument; templa
 }
 
 function SectionTitle({ templateId, title }: { templateId: ResumeTemplateId; title: string }) {
-  if (templateId === "modern") {
+  if (templateId === "modern" || templateId === "minimal" || templateId === "executive") {
+    const accent = templateId === "executive" ? "#203a5f" : templateId === "modern" ? "#172033" : "#111111";
     return (
-      <h2 className="mb-[7px] border-b border-[#cfd6df] pb-[4px] text-[13px] font-bold leading-[1.1] tracking-normal text-[#172033]">
+      <h2
+        className="mb-[7px] border-b pb-[4px] text-[13px] font-bold leading-[1.1] tracking-normal"
+        style={{ borderColor: templateId === "modern" ? "#cfd6df" : accent, borderBottomWidth: templateId === "executive" ? 2 : 1, color: accent }}
+      >
         {title}
       </h2>
     );

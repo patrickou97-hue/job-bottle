@@ -1,4 +1,4 @@
-export type ResumeTemplateId = "compact" | "classic" | "modern";
+export type ResumeTemplateId = "compact" | "classic" | "modern" | "minimal" | "executive";
 
 export type ResumeBasics = {
   name: string;
@@ -89,6 +89,8 @@ export const RESUME_TEMPLATES: { id: ResumeTemplateId; label: string; descriptio
   { id: "compact", label: "紧凑单栏", description: "中文秋招一页版，适合金融、咨询、商科投递" },
   { id: "classic", label: "经典商科", description: "参考 LaTeX 简历的强分隔标题，重点突出学校与经历" },
   { id: "modern", label: "现代 ATS", description: "更轻的标题层级与左对齐信息，适合产品、数据、互联网岗位" },
+  { id: "minimal", label: "极简 ATS", description: "参考纯单栏排版，优先保证机器读取与快速扫描" },
+  { id: "executive", label: "专业强调", description: "深色标题层级，更适合咨询、策略与综合管培投递" },
 ];
 
 export function getResumeTemplateMeta(templateId: ResumeTemplateId) {

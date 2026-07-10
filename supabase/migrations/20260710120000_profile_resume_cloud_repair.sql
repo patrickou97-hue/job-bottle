@@ -27,7 +27,7 @@ create table if not exists public.resumes (
   target_role text,
   job_target text,
   linked_job_id uuid references public.jobs(id) on delete set null,
-  template_id text not null default 'compact' check (template_id in ('compact', 'classic', 'modern')),
+  template_id text not null default 'compact' check (template_id in ('compact', 'classic', 'modern', 'minimal', 'executive')),
   content_json jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -41,7 +41,7 @@ alter table public.resumes
 
 alter table public.resumes
   add constraint resumes_template_id_check
-  check (template_id in ('compact', 'classic', 'modern'));
+  check (template_id in ('compact', 'classic', 'modern', 'minimal', 'executive'));
 
 create index if not exists resumes_user_id_updated_at_idx
   on public.resumes (user_id, updated_at desc);

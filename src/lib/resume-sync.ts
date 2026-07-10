@@ -29,7 +29,9 @@ function normalizeContent(value: unknown): ResumeContent {
 }
 
 function normalizeTemplateId(value: string): ResumeTemplateId {
-  return value === "compact" || value === "classic" || value === "modern" ? value : "compact";
+  return value === "compact" || value === "classic" || value === "modern" || value === "minimal" || value === "executive"
+    ? value
+    : "compact";
 }
 
 export function isMissingResumeTableError(error: unknown) {
@@ -44,6 +46,14 @@ export function isMissingResumeTableError(error: unknown) {
     message.includes("schema cache") ||
     message.includes("relation") && message.includes("resumes")
   );
+}
+
+export function isResumeTemplateConstraintError(error: unknown) {
+  const code = typeof error === "object" && error ? String("code" in error ? error.code : "") : "";
+  const message =
+    typeof error === "object" && error ? String("message" in error ? error.message : "") : "";
+
+  return code === "23514" && (message.includes("resumes_template_id_check") || message.includes("template_id"));
 }
 
 export function resumeRowToDocument(row: ResumeRow): ResumeDocument {

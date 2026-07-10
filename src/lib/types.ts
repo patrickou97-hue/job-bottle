@@ -148,7 +148,7 @@ export type ResumeRow = {
   target_role: string | null;
   job_target: string | null;
   linked_job_id: string | null;
-  template_id: "compact" | "classic" | "modern";
+  template_id: "compact" | "classic" | "modern" | "minimal" | "executive";
   content_json: Record<string, unknown>;
   created_at: string;
   updated_at: string;
@@ -276,7 +276,7 @@ export type Database = {
           target_role?: string | null;
           job_target?: string | null;
           linked_job_id?: string | null;
-          template_id?: "compact" | "classic" | "modern";
+          template_id?: "compact" | "classic" | "modern" | "minimal" | "executive";
           content_json?: Record<string, unknown>;
           created_at?: string;
           updated_at?: string;
@@ -286,7 +286,7 @@ export type Database = {
           target_role?: string | null;
           job_target?: string | null;
           linked_job_id?: string | null;
-          template_id?: "compact" | "classic" | "modern";
+          template_id?: "compact" | "classic" | "modern" | "minimal" | "executive";
           content_json?: Record<string, unknown>;
           updated_at?: string;
         };

@@ -5,6 +5,7 @@ import { Copy, FileText, Plus, Trash2 } from "lucide-react";
 import { ResumeEditor, type EditorSection } from "@/components/resume/ResumeEditor";
 import { ResumePdfExportButton } from "@/components/resume/ResumePdfExportButton";
 import { ResumePreview } from "@/components/resume/ResumePreview";
+import { ResumeTemplatePicker } from "@/components/resume/ResumeTemplatePicker";
 import { Button } from "@/components/ui/Button";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import {
@@ -14,12 +15,15 @@ import {
   getResumeTargetLine,
   loadLocalResumes,
   saveLocalResumes,
+  touchResume,
   type ResumeDocument,
+  type ResumeTemplateId,
 } from "@/lib/resume";
 import {
   deleteMyResume,
   fetchMyResumes,
   isMissingResumeTableError,
+  isResumeTemplateConstraintError,
   upsertMyResume,
 } from "@/lib/resume-sync";
 import { fetchActiveJobs } from "@/lib/jobs";
@@ -73,6 +77,11 @@ export function ResumeBuilderClient() {
         cloudFingerprintRef.current = fingerprint;
         setSaveState("已同步到账号");
       } catch (error) {
+        if (isResumeTemplateConstraintError(error)) {
+          setStorageMode("local");
+          setSaveState("云端模板库待升级，已保存到本地");
+          return;
+        }
         if (isMissingResumeTableError(error)) {
           setStorageMode("local");
           setSaveState("云端简历库未升级，已保存到本地");
@@ -155,6 +164,10 @@ export function ResumeBuilderClient() {
     setSelectedId(nextResume.id);
   }
 
+  function updateTemplate(templateId: ResumeTemplateId) {
+    updateResume(touchResume({ ...selectedResume, templateId }));
+  }
+
   function createResume() {
     const next = createEmptyResume();
     next.title = `简历版本 ${resumes.length + 1}`;
@@ -233,6 +246,8 @@ export function ResumeBuilderClient() {
           </Button>
         </div>
       </section>
+
+      <ResumeTemplatePicker selectedTemplateId={selectedResume.templateId} onChange={updateTemplate} />
 
       <section className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
         <aside className="space-y-3 xl:sticky xl:top-24 xl:self-start">

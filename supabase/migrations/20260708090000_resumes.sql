@@ -5,7 +5,7 @@ create table if not exists public.resumes (
   target_role text,
   job_target text,
   linked_job_id uuid references public.jobs(id) on delete set null,
-  template_id text not null default 'classic' check (template_id in ('classic', 'modern')),
+  template_id text not null default 'compact' check (template_id in ('compact', 'classic', 'modern', 'minimal', 'executive')),
   content_json jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
