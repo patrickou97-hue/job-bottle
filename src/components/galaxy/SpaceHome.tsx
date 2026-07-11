@@ -12,6 +12,7 @@ import { FloatingPlanet } from './FloatingPlanet'
 import { OrbitLines } from './OrbitLines'
 import { PlanetTransitionOverlay } from './PlanetTransitionOverlay'
 import { SpaceBackground } from './SpaceBackground'
+import { HomeWorkspace } from '@/components/home/HomeWorkspace'
 
 const TRANSITION_MS = 860
 const MOBILE_PLANET_SIZE: Record<string, number> = {
@@ -44,6 +45,7 @@ export function SpaceHome() {
   const [hovered, setHovered] = useState<PlanetRoute | null>(null)
   const [selectedPlanet, setSelectedPlanet] = useState<PlanetRoute | null>(null)
   const [user, setUser] = useState<{ id: string } | null>(null)
+  const [authResolved, setAuthResolved] = useState(() => !isSupabaseConfigured())
   const [isAdmin, setIsAdmin] = useState(false)
   const [viewportWidth, setViewportWidth] = useState(1200)
   const [viewportHeight, setViewportHeight] = useState(900)
@@ -73,6 +75,7 @@ export function SpaceHome() {
       const currentUser = await getCurrentUserOrNull(supabase)
       if (!mounted) return
       setUser(currentUser ?? null)
+      setAuthResolved(true)
       if (!currentUser) {
         setIsAdmin(false)
         return
@@ -156,6 +159,12 @@ export function SpaceHome() {
     0.92,
     Math.max(0.78, Math.min((viewportWidth - 90) / (mobileMaxOrbitRadius * 2), (viewportHeight - 300) / (mobileMaxOrbitRadius * 2))),
   )
+
+  if (!authResolved) {
+    return <main className="grid min-h-[100svh] place-items-center bg-[#000001] text-sm text-ink-muted"><span className="loading-line">正在进入拾星</span></main>
+  }
+
+  if (user) return <HomeWorkspace userId={user.id} />
 
   return (
     <main

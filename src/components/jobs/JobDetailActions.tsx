@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Archive, ExternalLink } from "lucide-react";
+import { Archive } from "lucide-react";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { updateApplication, upsertApplication } from "@/lib/applications";
+import { getApplicationStageLabel, getCandidateStage, getJobPrimaryAction } from "@/lib/career-workspace";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { isValidHttpUrl, safeOpenUrl } from "@/lib/utils";
+import { track } from "@/lib/track";
 import { Button } from "@/components/ui/Button";
 import { StatusPill } from "@/components/applications/StatusPill";
 import { ApplyReturnConfirm } from "@/components/jobs/ApplyReturnConfirm";
@@ -28,6 +30,10 @@ export function JobDetailActions({
   const applyPageWasHiddenRef = useRef(false);
   const applyConfirmFallbackRef = useRef<number | null>(null);
   const loginHref = `/login?next=${encodeURIComponent(`/jobs/${job.id}`)}`;
+
+  useEffect(() => {
+    void track("job_view", { job_id: job.id });
+  }, [job.id]);
 
   useEffect(() => {
     function handleVisibilityChange() {
@@ -53,14 +59,20 @@ export function JobDetailActions({
     };
   }, []);
 
-  async function captureAndOpen() {
+  async function handlePrimaryAction() {
     setMessage("");
     if (!isSupabaseConfigured()) {
       setMessage("数据库暂未连接，稍后再试。");
       return;
     }
-    if (!isValidHttpUrl(job.apply_url)) {
-      setMessage("投递链接格式不正确，暂时无法打开官网。");
+    if (application?.status === "opened" && getCandidateStage(application) === "preparing") {
+      if (!isValidHttpUrl(job.apply_url)) {
+        setMessage("投递链接格式不正确，当前记录和已填内容都已保留。");
+        return;
+      }
+      safeOpenUrl(job.apply_url);
+      armApplyConfirmation();
+      setMessage("官网已打开。返回后确认是否完成投递。");
       return;
     }
 
@@ -72,17 +84,31 @@ export function JobDetailActions({
         setMessage("登录后收录岗位。");
         return;
       }
-      const nextApplication = await upsertApplication(supabase, user.id, job.id);
-      setApplication(nextApplication);
-      safeOpenUrl(job.apply_url);
-      if (nextApplication.status === "opened") {
-        armApplyConfirmation();
-        setMessage("已记录为“已浏览”，回来后可确认是否已投递。");
-      } else {
-        setMessage("已浏览，当前投递状态保持不变。");
+      if (!application) {
+        const nextApplication = await upsertApplication(supabase, user.id, job.id, "evaluating");
+        setApplication(nextApplication);
+        void track("job_saved", { job_id: job.id });
+        setMessage(
+          nextApplication.candidate_stage === "evaluating"
+            ? "已加入星瓶。先评估岗位，再决定是否投入准备。"
+            : "已加入星瓶。当前数据库尚未升级，候选阶段暂按“准备中”显示。",
+        );
+        return;
       }
-    } catch {
-      setMessage("收录失败，网络似乎断开了。重试");
+
+      if (application.status !== "opened") return;
+      const candidateStage = getCandidateStage(application);
+      const nextStage = candidateStage === "evaluating" ? "saved" : "preparing";
+      const nextApplication = await updateApplication(supabase, application.id, { candidate_stage: nextStage });
+      setApplication(nextApplication);
+      void track("candidate_stage_updated", { job_id: job.id, stage: nextStage });
+      if (nextStage === "saved") {
+        setMessage("已保留为候选岗位。可以设置优先级，或继续开始准备。");
+      } else {
+        setMessage("已进入准备中。建议先创建岗位简历，再记录投递。");
+      }
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "岗位操作失败，当前记录和已填内容都已保留，请稍后重试。");
     } finally {
       setBusy(false);
     }
@@ -102,6 +128,8 @@ export function JobDetailActions({
     }, 2200);
   }
 
+  const primaryAction = getJobPrimaryAction(application);
+
   async function resolveApplyConfirmation(status: "applied" | "withdrawn" | "keep_opened") {
     if (!application) return;
     if (applyConfirmFallbackRef.current) {
@@ -111,7 +139,7 @@ export function JobDetailActions({
     if (status === "keep_opened") {
       applyConfirmationArmedRef.current = false;
       setShowApplyConfirmation(false);
-      setMessage("已保留为“已浏览”，之后可继续更新进度。");
+      setMessage("仍保留在“准备中”，可以稍后继续记录投递。");
       return;
     }
 
@@ -123,6 +151,7 @@ export function JobDetailActions({
         progress_note: application.progress_note,
       });
       setApplication(nextApplication);
+      if (status === "applied") void track("application_recorded", { job_id: job.id });
       applyConfirmationArmedRef.current = false;
       setShowApplyConfirmation(false);
       setMessage(status === "applied" ? "已确认投递，岗位已出现在投递星图。" : "已标记为不投了。");
@@ -139,10 +168,10 @@ export function JobDetailActions({
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-sm font-medium text-ink-primary">
             <Archive aria-hidden="true" className="size-4 text-nebula-silver" />
-            {application ? "已收录" : "收录后再去官网投递"}
+            {application ? getApplicationStageLabel(application) : "先收藏，再决定是否投递"}
           </div>
           <div className="mt-1 text-xs text-ink-muted">
-            {application ? <StatusPill status={application.status} /> : "登录后收录，不影响继续浏览。"}
+            {application ? <StatusPill status={application.status} label={getApplicationStageLabel(application)} /> : "登录后加入星瓶，不会直接打开官网。"}
           </div>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
@@ -167,10 +196,15 @@ export function JobDetailActions({
           >
             准备岗位简历
           </Link>
-          <Button className="gap-2" disabled={busy} onClick={captureAndOpen}>
-            <ExternalLink aria-hidden="true" className="size-4" />
-            {application ? "打开官网" : "收录并去官网投递"}
-          </Button>
+          {primaryAction.kind === "progress" ? (
+            <Link href="/my" className="gold-button inline-flex h-10 items-center justify-center rounded-lg px-4 text-sm font-medium">
+              更新进度
+            </Link>
+          ) : (
+            <Button disabled={busy} onClick={handlePrimaryAction}>
+              {primaryAction.label}
+            </Button>
+          )}
         </div>
       </div>
       {application && showApplyConfirmation ? (

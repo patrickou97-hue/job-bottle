@@ -27,6 +27,10 @@ const emptyValues: JobFormValues = {
   locations: "",
   apply_url: "",
   notes: "",
+  responsibilities: "",
+  must_have: "",
+  preferred_qualifications: "",
+  keywords: "",
   logo_url: "",
   tags: "",
   is_active: true,
@@ -62,6 +66,10 @@ export function AdminJobForm({
       locations: job.locations ?? "",
       apply_url: job.apply_url,
       notes: job.notes ?? "",
+      responsibilities: job.responsibilities ?? "",
+      must_have: job.must_have ?? "",
+      preferred_qualifications: job.preferred_qualifications ?? "",
+      keywords: job.keywords?.join("，") ?? "",
       logo_url: job.logo_url ?? "",
       tags: job.tags?.join("，") ?? "",
       is_active: job.is_active,
@@ -163,6 +171,18 @@ export function AdminJobForm({
         </Field>
         <Field label={JOB_FIELD_LABELS.notes} className="md:col-span-2">
           <Textarea {...register("notes")} />
+        </Field>
+        <Field label="工作职责" className="md:col-span-2">
+          <Textarea {...register("responsibilities")} placeholder="每行一项；没有可靠数据时留空" />
+        </Field>
+        <Field label="必须条件" className="md:col-span-2">
+          <Textarea {...register("must_have")} placeholder="学历、专业、技能等硬性要求" />
+        </Field>
+        <Field label="优先条件" className="md:col-span-2">
+          <Textarea {...register("preferred_qualifications")} placeholder="加分经历或优先资格" />
+        </Field>
+        <Field label="高频关键词" className="md:col-span-2">
+          <Input {...register("keywords")} placeholder="用逗号、空格或顿号分隔" />
         </Field>
       </div>
 

@@ -8,7 +8,7 @@ import type { ApplicationStatus, ApplicationWithJob } from "@/lib/types";
 const CARD_WIDTH = 1200;
 const CARD_HEIGHT = 1600;
 const CARD_PADDING = 88;
-const SITE_URL = "https://job-bottle.vercel.app/";
+const SITE_URL = "https://www.starjob.space/";
 
 type ShareBottleOptions = {
   applications: ApplicationWithJob[];
@@ -277,7 +277,7 @@ function drawShareFooter(context: CanvasRenderingContext2D, qrImage: HTMLImageEl
 
   context.fillStyle = "rgba(18,41,78,0.68)";
   context.font = "600 21px sans-serif";
-  context.fillText("job-bottle.vercel.app", CARD_PADDING + 32, qrY + 88);
+  context.fillText("www.starjob.space", CARD_PADDING + 32, qrY + 88);
   context.font = "700 21px sans-serif";
   context.fillText("拾星", CARD_PADDING + 32, qrY + 146);
 

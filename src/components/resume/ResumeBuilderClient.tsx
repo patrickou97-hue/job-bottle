@@ -8,6 +8,7 @@ import { ResumePreview } from "@/components/resume/ResumePreview";
 import { ResumeTemplatePicker } from "@/components/resume/ResumeTemplatePicker";
 import { Button } from "@/components/ui/Button";
 import { getCurrentUserOrNull } from "@/lib/auth";
+import { fetchMyApplications } from "@/lib/applications";
 import {
   createEmptyResume,
   createSampleResume,
@@ -28,7 +29,9 @@ import {
 } from "@/lib/resume-sync";
 import { fetchActiveJobs } from "@/lib/jobs";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
-import type { Job } from "@/lib/types";
+import type { ApplicationWithJob, Job } from "@/lib/types";
+import { formatDateTime } from "@/lib/utils";
+import { track } from "@/lib/track";
 
 type StorageMode = "local" | "cloud";
 type TargetJobContext = { company: string; id: string; role: string };
@@ -38,6 +41,7 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<EditorSection>("basic");
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [applications, setApplications] = useState<ApplicationWithJob[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [saveState, setSaveState] = useState("已保存到本地");
   const [storageMode, setStorageMode] = useState<StorageMode>("local");
@@ -105,14 +109,16 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
       if (!mounted || !user) return;
       setUserId(user.id);
 
-      const [rows, cloudResumesResult] = await Promise.allSettled([
+      const [rows, cloudResumesResult, applicationResult] = await Promise.allSettled([
         fetchActiveJobs(supabase),
         fetchMyResumes(supabase),
+        fetchMyApplications(supabase, user.id),
       ]);
 
       if (!mounted) return;
 
       if (rows.status === "fulfilled") setJobs(rows.value);
+      if (applicationResult.status === "fulfilled") setApplications(applicationResult.value);
 
       if (cloudResumesResult.status === "rejected") {
         if (isMissingResumeTableError(cloudResumesResult.reason)) {
@@ -211,6 +217,7 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
     setResumes((current) => [next, ...current]);
     setSelectedId(next.id);
     setActiveSection("target");
+    void track("job_resume_created", { job_id: targetJob.id, resume_id: next.id });
   }
 
   function duplicateResume(resume: ResumeDocument) {
@@ -297,8 +304,6 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
         </section>
       ) : null}
 
-      <ResumeTemplatePicker selectedTemplateId={selectedResume.templateId} onChange={updateTemplate} />
-
       <section className="grid gap-6 xl:grid-cols-[240px_minmax(0,1fr)]">
         <aside className="space-y-3 xl:sticky xl:top-24 xl:self-start">
           <div className="flex items-center justify-between">
@@ -306,7 +311,11 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
             <span className="section-meta">{resumes.length} 份</span>
           </div>
           <div className="space-y-2">
-            {resumes.map((resume) => (
+            {resumes.map((resume) => {
+              const health = getResumeHealth(resume);
+              const boundJob = jobs.find((job) => job.id === resume.linkedJobId);
+              const usageCount = applications.filter((application) => application.resume_id === resume.id).length;
+              return (
               <button
                 key={resume.id}
                 type="button"
@@ -324,12 +333,18 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
                 {getResumeTargetLine(resume) ? (
                   <span className="mt-1 block text-xs text-ink-muted">{getResumeTargetLine(resume)}</span>
                 ) : null}
-                {resume.linkedJobId ? <span className="mt-2 block text-xs text-nebula-silver">已关联岗位</span> : null}
-                <span className="mt-2 inline-flex rounded-full bg-white/[0.055] px-2 py-1 text-[11px] text-ink-muted">
-                  {getResumeTemplateMeta(resume.templateId).label}
+                <span className="mt-2 block truncate text-xs text-nebula-silver">
+                  {boundJob ? `绑定 ${boundJob.company_name}` : resume.linkedJobId ? "已绑定岗位" : "基础 / 方向版本"}
                 </span>
+                <span className="mt-2 flex flex-wrap gap-x-2 gap-y-1 text-[11px] text-ink-muted">
+                  <span>{health.percent}% 完整</span>
+                  <span>{usageCount} 次使用</span>
+                  <span>{formatDateTime(resume.updatedAt)}</span>
+                </span>
+                {health.missing.length > 0 ? <span className="mt-1 block truncate text-[11px] text-ink-muted">待补：{health.missing.join("、")}</span> : null}
               </button>
-            ))}
+              );
+            })}
           </div>
         </aside>
 
@@ -363,6 +378,9 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
                 </button>
               </div>
             </div>
+            <div className="mb-6 border-y border-white/[0.08] py-4">
+              <ResumeTemplatePicker selectedTemplateId={selectedResume.templateId} onChange={updateTemplate} />
+            </div>
             <ResumeEditor
               resume={selectedResume}
               jobs={jobs}
@@ -391,4 +409,15 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
       </section>
     </div>
   );
+}
+
+function getResumeHealth(resume: ResumeDocument) {
+  const missing: string[] = [];
+  if (!resume.content.basics.name.trim() || !resume.content.basics.email.trim() || !resume.content.basics.phone.trim()) missing.push("基本信息");
+  if (resume.content.education.length === 0) missing.push("教育");
+  if (resume.content.work.length === 0 && resume.content.projects.length === 0) missing.push("经历/项目");
+  if (resume.content.skills.length === 0) missing.push("技能");
+  if (!getResumeTargetLine(resume)) missing.push("目标岗位");
+  const percent = Math.round(((5 - missing.length) / 5) * 100);
+  return { missing, percent };
 }

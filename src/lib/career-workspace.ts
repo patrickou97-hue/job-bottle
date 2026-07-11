@@ -1,10 +1,11 @@
-import { APPLICATION_STATUS_LABELS } from "@/lib/constants";
+import { APPLICATION_CANDIDATE_STAGE_LABELS, APPLICATION_STATUS_LABELS } from "@/lib/constants";
 import { daysUntilShanghai, formatShanghaiDate } from "@/lib/dates";
 import type {
   ApplicationStatus,
   ApplicationWithJob,
   Job,
   Profile,
+  UserApplication,
 } from "@/lib/types";
 import type { ResumeDocument } from "@/lib/resume";
 
@@ -60,10 +61,51 @@ export function getMaterialReadiness(
 
 export function getNextAction(application: ApplicationWithJob) {
   const hasNote = Boolean(application.progress_note?.trim());
+  const deadline = getDeadlineInfo(application.job);
+  const daysSinceUpdate = Math.max(0, Math.floor((Date.now() - new Date(application.updated_at).getTime()) / 86_400_000));
+
+  if (deadline?.daysUntil != null && deadline.daysUntil >= 0 && deadline.daysUntil <= 3 && application.status === "opened") {
+    return {
+      title: "岗位即将截止",
+      detail: `${deadline.label}，先确认是否准备和投递。`,
+      priority: 0,
+    };
+  }
+  if (application.next_action?.trim()) {
+    return {
+      title: application.next_action.trim(),
+      detail: application.next_action_at
+        ? `计划时间 ${formatShanghaiDate(application.next_action_at)}`
+        : "已记录下一步动作。",
+      priority: getStoredPriority(application),
+    };
+  }
+
+  if (application.status === "opened") {
+    const candidateStage = getCandidateStage(application);
+    if (candidateStage === "evaluating") {
+      return { title: "评估是否保留", detail: "确认岗位要求、截止时间和投入价值。", priority: 1 };
+    }
+    if (candidateStage === "saved") {
+      if (daysSinceUpdate >= 5) {
+        return { title: "候选岗位尚未准备", detail: `已收藏 ${daysSinceUpdate} 天，决定开始准备或结束候选。`, priority: 0 };
+      }
+      return { title: "开始准备材料", detail: "设置优先级并选择对应简历版本。", priority: 1 };
+    }
+    return { title: "记录投递", detail: "材料准备完成后，打开官网并记录投递。", priority: 1 };
+  }
+
+  if (application.status === "applied" && daysSinceUpdate >= 7) {
+    return { title: "投递已多日未更新", detail: `已有 ${daysSinceUpdate} 天没有记录进展。`, priority: 0 };
+  }
+  if (["first_round", "second_round", "final_round"].includes(application.status) && daysSinceUpdate >= 2) {
+    return { title: "面试后待记录结果", detail: `最近一次更新在 ${daysSinceUpdate} 天前。`, priority: 0 };
+  }
+
   const actions: Record<ApplicationStatus, { title: string; detail: string; priority: number }> = {
     opened: {
-      title: "确认是否投递",
-      detail: "已浏览岗位，决定投递后更新状态。",
+      title: "记录投递",
+      detail: "材料准备完成后，打开官网并记录投递。",
       priority: 1,
     },
     applied: {
@@ -116,9 +158,42 @@ export function getWorkspaceTasks(applications: ApplicationWithJob[]) {
     .filter((application) => !["rejected", "withdrawn"].includes(application.status))
     .map((application) => ({ application, ...getNextAction(application) }))
     .sort((a, b) => {
+      const aStoredPriority = getStoredPriority(a.application);
+      const bStoredPriority = getStoredPriority(b.application);
+      if (aStoredPriority !== bStoredPriority) return aStoredPriority - bStoredPriority;
+      const aNext = a.application.next_action_at ? new Date(a.application.next_action_at).getTime() : Number.POSITIVE_INFINITY;
+      const bNext = b.application.next_action_at ? new Date(b.application.next_action_at).getTime() : Number.POSITIVE_INFINITY;
+      if (aNext !== bNext) return aNext - bNext;
       if (a.priority !== b.priority) return a.priority - b.priority;
       return new Date(a.application.updated_at).getTime() - new Date(b.application.updated_at).getTime();
     });
+}
+
+export function getCandidateStage(application: Pick<UserApplication, "candidate_stage">) {
+  return application.candidate_stage ?? "preparing";
+}
+
+export function getApplicationStageLabel(
+  application: Pick<UserApplication, "candidate_stage" | "custom_stage_label" | "status">,
+) {
+  if (application.status !== "opened") {
+    return application.custom_stage_label?.trim() || APPLICATION_STATUS_LABELS[application.status];
+  }
+  return APPLICATION_CANDIDATE_STAGE_LABELS[getCandidateStage(application)];
+}
+
+export function getJobPrimaryAction(application?: UserApplication | null) {
+  if (!application) return { kind: "capture" as const, label: "加入星瓶" };
+  if (application.status !== "opened") return { kind: "progress" as const, label: "更新进度" };
+  const candidateStage = getCandidateStage(application);
+  if (candidateStage === "evaluating") return { kind: "save" as const, label: "保留候选" };
+  if (candidateStage === "saved") return { kind: "prepare" as const, label: "开始准备" };
+  return { kind: "apply" as const, label: "记录投递" };
+}
+
+function getStoredPriority(application: ApplicationWithJob) {
+  const priority = application.priority ?? 0;
+  return priority > 0 ? 4 - priority : 5;
 }
 
 export function getPipelineColumns(applications: ApplicationWithJob[]): PipelineColumn[] {
@@ -158,10 +233,10 @@ export function getDeadlineInfo(job: Job) {
   if (!job.closes_at) return null;
   const days = daysUntilShanghai(job.closes_at);
   if (days === null) return null;
-  if (days < 0) return { label: "报名已截止", urgent: false };
-  if (days === 0) return { label: "今天截止", urgent: true };
-  if (days <= 3) return { label: `${days} 天后截止`, urgent: true };
-  return { label: `截止 ${formatShanghaiDate(job.closes_at)}`, urgent: false };
+  if (days < 0) return { label: "报名已截止", urgent: false, daysUntil: days };
+  if (days === 0) return { label: "今天截止", urgent: true, daysUntil: days };
+  if (days <= 3) return { label: `${days} 天后截止`, urgent: true, daysUntil: days };
+  return { label: `截止 ${formatShanghaiDate(job.closes_at)}`, urgent: false, daysUntil: days };
 }
 
 export function getFitLabel(job: Job, profile: Profile | null) {

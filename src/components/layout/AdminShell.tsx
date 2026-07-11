@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ArrowLeft, Database, LogOut, Rows3, Settings } from "lucide-react";
+import { ArrowLeft, Database, LogOut, Rows3, Settings, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
@@ -14,6 +14,7 @@ const adminNavItems = [
   { href: "/admin", label: "管理后台", icon: Settings },
   { href: "/admin/jobs", label: "岗位管理", icon: Rows3 },
   { href: "/admin/import", label: "批量导入", icon: Database },
+  { href: "/admin/users", label: "用户管理", icon: Users },
 ];
 
 export function AdminShell({ children }: { children: ReactNode }) {

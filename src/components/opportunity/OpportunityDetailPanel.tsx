@@ -1,8 +1,8 @@
 "use client";
 
-import { ExternalLink } from "lucide-react";
 import { StatusPill } from "@/components/applications/StatusPill";
 import { Button } from "@/components/ui/Button";
+import { getApplicationStageLabel, getJobPrimaryAction } from "@/lib/career-workspace";
 import type { Job, UserApplication } from "@/lib/types";
 
 export function OpportunityDetailPanel({
@@ -21,6 +21,7 @@ export function OpportunityDetailPanel({
       </aside>
     );
   }
+  const primaryAction = getJobPrimaryAction(application);
 
   return (
     <aside className="liquid-panel p-5">
@@ -29,7 +30,7 @@ export function OpportunityDetailPanel({
           <h3 className="truncate text-lg font-semibold text-ink-primary">{job.company_name}</h3>
           <p className="mt-1 line-clamp-2 text-sm leading-6 text-nebula-silver">{job.job_titles || "岗位待补充"}</p>
         </div>
-        {application ? <StatusPill status={application.status} /> : null}
+        {application ? <StatusPill status={application.status} label={getApplicationStageLabel(application)} /> : null}
       </div>
 
       <dl className="grid gap-3 text-sm">
@@ -51,9 +52,8 @@ export function OpportunityDetailPanel({
         </div>
       </dl>
 
-      <Button className="mt-5 w-full gap-2" onClick={() => onApply(job)}>
-        <ExternalLink aria-hidden="true" className="size-4" />
-        {application ? "再次打开官网" : "捕获并去官网投递"}
+      <Button className="mt-5 w-full" onClick={() => onApply(job)}>
+        {primaryAction.label}
       </Button>
     </aside>
   );

@@ -1,6 +1,7 @@
 import type { APPLICATION_STATUS, PROFILE_ROLES } from "@/lib/constants";
 
 export type ApplicationStatus = (typeof APPLICATION_STATUS)[number];
+export type ApplicationCandidateStage = "evaluating" | "saved" | "preparing";
 export type ProfileRole = (typeof PROFILE_ROLES)[number];
 
 export type Profile = {
@@ -29,6 +30,10 @@ export type Job = {
   locations: string | null;
   apply_url: string;
   notes: string | null;
+  responsibilities?: string | null;
+  must_have?: string | null;
+  preferred_qualifications?: string | null;
+  keywords?: string[];
   logo_url: string | null;
   tags: string[];
   is_active: boolean;
@@ -47,6 +52,10 @@ export type JobFormValues = {
   locations: string;
   apply_url: string;
   notes: string;
+  responsibilities: string;
+  must_have: string;
+  preferred_qualifications: string;
+  keywords: string;
   logo_url: string;
   tags: string;
   is_active: boolean;
@@ -57,10 +66,21 @@ export type UserApplication = {
   user_id: string;
   job_id: string;
   status: ApplicationStatus;
+  candidate_stage?: ApplicationCandidateStage | null;
+  priority?: number | null;
   interview_round?: number | null;
   note?: string | null;
   progress_note: string | null;
-  applied_at: string;
+  saved_at?: string | null;
+  applied_at: string | null;
+  application_channel?: string | null;
+  application_account?: string | null;
+  contact_name?: string | null;
+  next_action?: string | null;
+  next_action_at?: string | null;
+  resume_id?: string | null;
+  custom_stage_label?: string | null;
+  review_note?: string | null;
   updated_at: string;
 };
 
@@ -221,6 +241,10 @@ export type Database = {
           locations?: string | null;
           apply_url: string;
           notes?: string | null;
+          responsibilities?: string | null;
+          must_have?: string | null;
+          preferred_qualifications?: string | null;
+          keywords?: string[];
           logo_url?: string | null;
           tags?: string[];
           is_active?: boolean;
@@ -239,17 +263,40 @@ export type Database = {
           user_id: string;
           job_id: string;
           status?: ApplicationStatus;
+          candidate_stage?: ApplicationCandidateStage;
+          priority?: number;
           interview_round?: number | null;
           note?: string | null;
           progress_note?: string | null;
-          applied_at?: string;
+          saved_at?: string;
+          applied_at?: string | null;
+          application_channel?: string | null;
+          application_account?: string | null;
+          contact_name?: string | null;
+          next_action?: string | null;
+          next_action_at?: string | null;
+          resume_id?: string | null;
+          custom_stage_label?: string | null;
+          review_note?: string | null;
           updated_at?: string;
         };
         Update: {
           status?: ApplicationStatus;
+          candidate_stage?: ApplicationCandidateStage;
+          priority?: number;
           interview_round?: number | null;
           note?: string | null;
           progress_note?: string | null;
+          saved_at?: string;
+          applied_at?: string | null;
+          application_channel?: string | null;
+          application_account?: string | null;
+          contact_name?: string | null;
+          next_action?: string | null;
+          next_action_at?: string | null;
+          resume_id?: string | null;
+          custom_stage_label?: string | null;
+          review_note?: string | null;
           updated_at?: string;
         };
         Relationships: [];

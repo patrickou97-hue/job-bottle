@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, FileText } from "lucide-react";
+import { FileText } from "lucide-react";
 import { StatusPill } from "@/components/applications/StatusPill";
-import type { MaterialReadiness } from "@/lib/career-workspace";
+import { getApplicationStageLabel, getJobPrimaryAction, type MaterialReadiness } from "@/lib/career-workspace";
 import { cn } from "@/lib/utils";
 import type { Job, UserApplication } from "@/lib/types";
 
@@ -32,6 +32,8 @@ export function JobCard({
   onHover?: (job: Job | null) => void;
   onFocusJob?: (job: Job) => void;
 }) {
+  const primaryAction = getJobPrimaryAction(application);
+
   return (
     <div
       id={`job-row-${job.id}`}
@@ -73,14 +75,18 @@ export function JobCard({
         </div>
       </div>
 
-      {application ? (
+      {primaryAction.kind === "progress" ? (
         <button
           type="button"
           className="job-row-action pressable inline-flex shrink-0 items-center gap-1.5 px-3 py-2 text-xs"
           onClick={() => onOpenProgress?.(job)}
         >
-          <StatusPill status={application.status} className="px-2 py-1 text-[11px]" />
-          <span className="hidden sm:inline">更新进度</span>
+          <StatusPill
+            status={application?.status}
+            label={application ? getApplicationStageLabel(application) : undefined}
+            className="px-2 py-1 text-[11px]"
+          />
+          <span className="hidden sm:inline">{primaryAction.label}</span>
         </button>
       ) : (
         <button
@@ -91,8 +97,14 @@ export function JobCard({
             void onApply(job);
           }}
         >
-          <ArrowUpRight aria-hidden="true" className="size-4" />
-          <span>开始投递</span>
+          {application ? (
+            <StatusPill
+              status={application.status}
+              label={getApplicationStageLabel(application)}
+              className="px-2 py-1 text-[11px]"
+            />
+          ) : null}
+          <span>{primaryAction.label}</span>
         </button>
       )}
     </div>

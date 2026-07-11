@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { fetchMyApplications, upsertApplication } from "@/lib/applications";
+import { fetchMyApplications, updateApplication, upsertApplication } from "@/lib/applications";
 import { getCurrentUserOrNull } from "@/lib/auth";
+import { getCandidateStage } from "@/lib/career-workspace";
 import { queueBottleDrop } from "@/lib/bottle-drop";
 import { fetchActiveJobs } from "@/lib/jobs";
 import { filterJobsByGalaxy, getGalaxyGroup, type GalaxyKind } from "@/lib/galaxy-taxonomy";
@@ -12,6 +13,7 @@ import { isValidHttpUrl, safeOpenUrl } from "@/lib/utils";
 import { OpportunityStarfield } from "@/components/opportunity/OpportunityStarfield";
 import { OpportunitySignalList } from "@/components/opportunity/OpportunitySignalList";
 import { CaptureAnimation } from "@/components/capture/CaptureAnimation";
+import { ApplyReturnConfirm } from "@/components/jobs/ApplyReturnConfirm";
 import { useCaptureMotion } from "@/components/capture/useCaptureMotion";
 import type { ApplicationWithJob, Job, UserApplication } from "@/lib/types";
 
@@ -24,6 +26,11 @@ export function GalaxyJobsClient({ kind, slug }: { kind: GalaxyKind; slug: strin
   const [loading, setLoading] = useState(true);
   const [hoveredJobId, setHoveredJobId] = useState<string | null>(null);
   const [focusedJobId, setFocusedJobId] = useState<string | null>(null);
+  const [pendingConfirmation, setPendingConfirmation] = useState<ApplicationWithJob | null>(null);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [confirmBusy, setConfirmBusy] = useState(false);
+  const pageWasHiddenRef = useRef(false);
+  const confirmationTimerRef = useRef<number | null>(null);
   const { capturedJob, startCapture, clearCapture } = useCaptureMotion();
   const group = getGalaxyGroup(kind, slug);
 
@@ -46,12 +53,29 @@ export function GalaxyJobsClient({ kind, slug }: { kind: GalaxyKind; slug: strin
   }
 
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
+    const timer = window.setTimeout(() => {
       void loadData();
-    });
-    return () => window.cancelAnimationFrame(frame);
+    }, 0);
+    return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kind, slug]);
+
+  useEffect(() => {
+    function handleVisibilityChange() {
+      if (!pendingConfirmation) return;
+      if (document.visibilityState === "hidden") {
+        pageWasHiddenRef.current = true;
+      } else if (pageWasHiddenRef.current) {
+        setShowConfirmation(true);
+      }
+    }
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [pendingConfirmation]);
+
+  useEffect(() => () => {
+    if (confirmationTimerRef.current) window.clearTimeout(confirmationTimerRef.current);
+  }, []);
 
   const applicationByJobId = useMemo(() => {
     const map = new Map<string, UserApplication>();
@@ -65,20 +89,68 @@ export function GalaxyJobsClient({ kind, slug }: { kind: GalaxyKind; slug: strin
       router.push(`/login?next=${encodeURIComponent(`/galaxy/${kind}/${slug}`)}`);
       return;
     }
-    if (!isValidHttpUrl(job.apply_url)) {
-      setMessage("投递链接格式不正确。");
+    try {
+      const supabase = createClient();
+      const existing = applications.find((application) => application.job_id === job.id);
+      if (!existing) {
+        const application = await upsertApplication(supabase, currentUserId, job.id, "evaluating");
+        queueBottleDrop(application.id);
+        startCapture(job);
+        setMessage("已加入星瓶。先评估岗位，再决定是否投入准备。");
+        await loadData();
+        return;
+      }
+      if (existing.status !== "opened") {
+        router.push("/my");
+        return;
+      }
+      const candidateStage = getCandidateStage(existing);
+      if (candidateStage !== "preparing") {
+        const nextStage = candidateStage === "evaluating" ? "saved" : "preparing";
+        await updateApplication(supabase, existing.id, { candidate_stage: nextStage });
+        setMessage(nextStage === "saved" ? "已保留为候选岗位。" : "已进入准备中，建议先绑定岗位简历。");
+        await loadData();
+        return;
+      }
+      if (!isValidHttpUrl(job.apply_url)) {
+        setMessage("投递链接格式不正确，当前记录和已填内容都已保留。");
+        return;
+      }
+      safeOpenUrl(job.apply_url);
+      setPendingConfirmation(existing);
+      setShowConfirmation(false);
+      pageWasHiddenRef.current = false;
+      confirmationTimerRef.current = window.setTimeout(() => setShowConfirmation(true), 2200);
+      setMessage("官网已打开。返回后确认是否完成投递。");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "岗位操作失败，当前记录和已填内容都已保留，请稍后重试。");
+    }
+  }
+
+  async function resolveApplyConfirmation(status: "applied" | "withdrawn" | "keep_opened") {
+    if (!pendingConfirmation) return;
+    if (confirmationTimerRef.current) window.clearTimeout(confirmationTimerRef.current);
+    if (status === "keep_opened") {
+      setPendingConfirmation(null);
+      setShowConfirmation(false);
+      setMessage("仍保留在“准备中”，可以稍后继续记录投递。");
       return;
     }
-    const supabase = createClient();
-    const alreadyCaptured = applications.some((application) => application.job_id === job.id);
-    const application = await upsertApplication(supabase, currentUserId, job.id);
-    if (!alreadyCaptured) {
-      queueBottleDrop(application.id);
-      startCapture(job);
+    setConfirmBusy(true);
+    try {
+      await updateApplication(createClient(), pendingConfirmation.id, {
+        status,
+        progress_note: pendingConfirmation.progress_note,
+      });
+      setPendingConfirmation(null);
+      setShowConfirmation(false);
+      setMessage(status === "applied" ? "已确认投递，接下来可以记录笔试或面试安排。" : "已结束这条候选记录。");
+      await loadData();
+    } catch {
+      setMessage("状态更新失败，候选记录仍保留。请检查网络后重试。");
+    } finally {
+      setConfirmBusy(false);
     }
-    safeOpenUrl(job.apply_url);
-    setMessage("岗位已收录，可在投递和星瓶中查看。");
-    await loadData();
   }
 
   function focusJob(job: Job) {
@@ -107,6 +179,15 @@ export function GalaxyJobsClient({ kind, slug }: { kind: GalaxyKind; slug: strin
         <div className="info-banner text-sm">
           {message}
         </div>
+      ) : null}
+      {pendingConfirmation && showConfirmation ? (
+        <ApplyReturnConfirm
+          companyName={pendingConfirmation.job.company_name}
+          busy={confirmBusy}
+          onApplied={() => void resolveApplyConfirmation("applied")}
+          onLater={() => void resolveApplyConfirmation("keep_opened")}
+          onWithdraw={() => void resolveApplyConfirmation("withdrawn")}
+        />
       ) : null}
       {loading ? (
         <div className="empty-state">

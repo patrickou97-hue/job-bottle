@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, FileText, Orbit, RefreshCw, Search } from "lucide-react";
+import { ArrowRight, FileText, List, Orbit, RefreshCw, Search, Columns3 } from "lucide-react";
 import { APPLICATION_STATUS, APPLICATION_STATUS_LABELS } from "@/lib/constants";
 import { fetchMyApplications } from "@/lib/applications";
 import {
   getMaterialReadiness,
+  getApplicationStageLabel,
   getNextAction,
   getPipelineColumns,
   getWorkspaceTasks,
@@ -25,7 +26,7 @@ import { Button } from "@/components/ui/Button";
 import type { ResumeDocument } from "@/lib/resume";
 import type { ApplicationStatus, ApplicationWithJob } from "@/lib/types";
 
-type WorkspaceView = "board" | "map";
+type WorkspaceView = "list" | "board" | "map";
 
 export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { loginNextPath?: string }) {
   const router = useRouter();
@@ -35,7 +36,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
   const [drawerApplication, setDrawerApplication] = useState<ApplicationWithJob | null>(null);
   const [keyword, setKeyword] = useState("");
   const [status, setStatus] = useState<ApplicationStatus | "">("");
-  const [view, setView] = useState<WorkspaceView>("board");
+  const [view, setView] = useState<WorkspaceView>("list");
   const [loading, setLoading] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
   const [message, setMessage] = useState("");
@@ -160,7 +161,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
             <div className="collection-surface overflow-hidden">
               <div className="section-heading px-4 pt-4 sm:px-5">
                 <div>
-                  <h2 className="section-title">今日待办</h2>
+                  <h2 className="section-title">优先处理</h2>
                 </div>
                 <span className="section-meta">{tasks.length} 项</span>
               </div>
@@ -177,7 +178,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
                     <span className="min-w-0 py-3">
                       <span className="flex min-w-0 items-center gap-2">
                         <span className="truncate text-sm font-semibold text-ink-primary">{task.application.job.company_name}</span>
-                        <StatusPill status={task.application.status} />
+                        <StatusPill status={task.application.status} label={getApplicationStageLabel(task.application)} />
                       </span>
                       <span className="mt-1 block text-sm text-ink-secondary">{task.title}</span>
                       <span className="mt-1 block truncate text-xs text-ink-muted">{task.detail}</span>
@@ -237,15 +238,33 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
           <section>
             <div className="section-heading">
               <div>
-                <h2 className="section-title">投递阶段</h2>
+                <h2 className="section-title">投递记录</h2>
               </div>
-              <div className="inline-flex rounded-full bg-black/15 p-1">
-                <button type="button" className={view === "board" ? "rounded-full bg-white/[0.09] px-3 py-1.5 text-xs text-ink-primary" : "rounded-full px-3 py-1.5 text-xs text-ink-muted"} onClick={() => setView("board")}>看板</button>
-                <button type="button" className={view === "map" ? "rounded-full bg-white/[0.09] px-3 py-1.5 text-xs text-ink-primary" : "rounded-full px-3 py-1.5 text-xs text-ink-muted"} onClick={() => setView("map")}>星图</button>
+              <div className="inline-flex bg-black/15 p-1" aria-label="投递视图">
+                <ViewButton active={view === "list"} icon={<List aria-hidden="true" className="size-3.5" />} label="列表" onClick={() => setView("list")} />
+                <ViewButton active={view === "board"} icon={<Columns3 aria-hidden="true" className="size-3.5" />} label="看板" onClick={() => setView("board")} />
+                <ViewButton active={view === "map"} icon={<Orbit aria-hidden="true" className="size-3.5" />} label="星图" onClick={() => setView("map")} />
               </div>
             </div>
 
-            {view === "board" ? (
+            {view === "list" ? (
+              filtered.length === 0 ? (
+                <div className="empty-state collection-surface">
+                  <div><h3>没有匹配的投递</h3><p>调整搜索或阶段筛选后再查看。</p></div>
+                </div>
+              ) : (
+                <div className="divide-y divide-white/[0.1] border-y border-white/[0.1]">
+                  {filtered.map((application) => (
+                    <ApplicationListItem
+                      key={application.id}
+                      application={application}
+                      resumes={resumes}
+                      onOpen={() => setDrawerApplication(application)}
+                    />
+                  ))}
+                </div>
+              )
+            ) : view === "board" ? (
               filtered.length === 0 ? (
                 <div className="empty-state collection-surface">
                   <div>
@@ -294,11 +313,53 @@ function PipelineItem({ application, resumes, onOpen }: { application: Applicati
     <button type="button" className="w-full border-t border-white/[0.08] py-3 text-left first:border-t-0" onClick={onOpen}>
       <span className="flex items-center justify-between gap-3">
         <span className="min-w-0 truncate text-sm font-medium text-ink-primary">{application.job.company_name}</span>
-        <StatusPill status={application.status} className="px-2 py-1 text-[11px]" />
+        <StatusPill status={application.status} label={getApplicationStageLabel(application)} className="px-2 py-1 text-[11px]" />
       </span>
       <span className="mt-2 block truncate text-xs text-ink-secondary">{nextAction.title}</span>
       <span className={material.ready ? "mt-1 block text-xs text-emerald-200/80" : "mt-1 block text-xs text-ink-muted"}>{material.label}</span>
       <span className="mt-2 block text-[11px] text-ink-muted">更新于 {formatDateTime(application.updated_at)}</span>
+    </button>
+  );
+}
+
+function ApplicationListItem({ application, resumes, onOpen }: { application: ApplicationWithJob; resumes: ResumeDocument[]; onOpen: () => void }) {
+  const nextAction = getNextAction(application);
+  const material = getMaterialReadiness(application.job_id, resumes);
+  return (
+    <button
+      type="button"
+      className="data-row grid w-full gap-3 px-3 py-4 text-left sm:grid-cols-[minmax(220px,1fr)_minmax(180px,0.75fr)_minmax(170px,0.75fr)_auto] sm:items-center sm:px-4"
+      onClick={onOpen}
+    >
+      <span className="min-w-0">
+        <span className="block truncate text-sm font-semibold text-ink-primary">{application.job.company_name}</span>
+        <span className="mt-1 block truncate text-xs text-ink-secondary">{application.job.job_titles || application.job.job_categories.join("、") || "岗位待补充"}</span>
+      </span>
+      <span className="flex items-center gap-2">
+        <StatusPill status={application.status} label={getApplicationStageLabel(application)} className="px-2 py-1 text-[11px]" />
+        <span className="text-xs text-ink-muted">优先级 {application.priority || "未设"}</span>
+      </span>
+      <span className="min-w-0">
+        <span className="block truncate text-xs text-ink-secondary">{nextAction.title}</span>
+        <span className={material.ready ? "mt-1 block text-xs text-emerald-200/80" : "mt-1 block text-xs text-ink-muted"}>{material.label}</span>
+      </span>
+      <span className="flex items-center justify-between gap-3 sm:block sm:text-right">
+        <span className="text-[11px] text-ink-muted">{formatDateTime(application.updated_at)}</span>
+        <ArrowRight aria-hidden="true" className="size-4 text-ink-muted sm:ml-auto sm:mt-2" />
+      </span>
+    </button>
+  );
+}
+
+function ViewButton({ active, icon, label, onClick }: { active: boolean; icon: ReactNode; label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      className={active ? "inline-flex min-h-9 items-center gap-1.5 bg-white/[0.09] px-3 text-xs text-ink-primary" : "inline-flex min-h-9 items-center gap-1.5 px-3 text-xs text-ink-muted"}
+      aria-pressed={active}
+      onClick={onClick}
+    >
+      {icon}{label}
     </button>
   );
 }

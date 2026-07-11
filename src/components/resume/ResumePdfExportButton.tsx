@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import type { ResumeDocument } from "@/lib/resume";
+import { track } from "@/lib/track";
 import { exportResumeToPdf } from "./resumePdf";
 
 export function ResumePdfExportButton({ resume }: { resume: ResumeDocument }) {
@@ -17,6 +18,7 @@ export function ResumePdfExportButton({ resume }: { resume: ResumeDocument }) {
 
     try {
       await exportResumeToPdf(resume);
+      void track("resume_exported", { resume_id: resume.id, template_id: resume.templateId });
       setMessage("PDF 已开始下载");
     } catch (error) {
       console.error("Resume PDF export failed", error);

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Database, Rows3 } from "lucide-react";
+import { Database, Rows3, Users } from "lucide-react";
 import { AdminShell } from "@/components/layout/AdminShell";
 
 const adminActions = [
@@ -15,6 +15,12 @@ const adminActions = [
     body: "上传 CSV 或 Excel，预览数据后写入岗位库。",
     icon: Database,
   },
+  {
+    href: "/admin/users",
+    title: "用户管理",
+    body: "查看用户账户、使用情况和邮箱状态，管理账户身份与登录权限。",
+    icon: Users,
+  },
 ];
 
 export default function AdminPage() {
@@ -28,20 +34,22 @@ export default function AdminPage() {
           </div>
         </section>
 
-        <div className="grid gap-5 md:grid-cols-2">
+        <div className="divide-y divide-white/[0.1] border-y border-white/[0.1]">
           {adminActions.map((item) => {
             const Icon = item.icon;
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className="liquid-panel group p-5 transition hover:bg-white/[0.055]"
+                className="group grid gap-4 py-6 transition hover:bg-white/[0.025] sm:grid-cols-[44px_minmax(0,1fr)] sm:items-start"
               >
-                <div className="mb-5 flex size-11 items-center justify-center rounded-2xl bg-nebula-blue/8 text-nebula-blue">
+                <div className="flex size-11 items-center justify-center bg-nebula-blue/8 text-nebula-blue">
                   <Icon aria-hidden="true" className="size-5" />
                 </div>
-                <h2 className="text-xl font-semibold text-ink-primary">{item.title}</h2>
-                <p className="mt-2 text-sm leading-6 text-ink-secondary">{item.body}</p>
+                <div>
+                  <h2 className="text-xl font-semibold text-ink-primary">{item.title}</h2>
+                  <p className="mt-2 text-sm leading-6 text-ink-secondary">{item.body}</p>
+                </div>
               </Link>
             );
           })}

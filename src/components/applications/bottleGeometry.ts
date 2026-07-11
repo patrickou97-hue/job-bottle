@@ -68,8 +68,12 @@ function sortedApplications(applications: ApplicationWithJob[]) {
     const statusDelta =
       (STATUS_WEIGHT[a.status] ?? 1) - (STATUS_WEIGHT[b.status] ?? 1);
     if (statusDelta !== 0) return statusDelta;
-    return new Date(a.applied_at).getTime() - new Date(b.applied_at).getTime();
+    return getApplicationTime(a) - getApplicationTime(b);
   });
+}
+
+function getApplicationTime(application: ApplicationWithJob) {
+  return new Date(application.applied_at ?? application.saved_at ?? application.updated_at).getTime();
 }
 
 export function calculateBottleStack(applications: ApplicationWithJob[]) {

@@ -84,6 +84,7 @@ export type ResumePreviewOperation =
       color: string;
       size: number;
       text: string;
+      width: number;
       weight: "bold" | "normal";
       x: number;
       y: number;
@@ -544,6 +545,7 @@ function drawText(state: LayoutState, text: string, x: number, y: number) {
     color: state.color,
     size: state.fontSize,
     text,
+    width: state.pdf.getTextWidth(text),
     weight: state.fontWeight,
     x,
     y,

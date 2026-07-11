@@ -17,9 +17,11 @@ const statusClassName: Record<ApplicationStatus | "none", string> = {
 
 export function StatusPill({
   status,
+  label,
   className,
 }: {
   status?: ApplicationStatus | null;
+  label?: string;
   className?: string;
 }) {
   const key = status ?? "none";
@@ -31,7 +33,7 @@ export function StatusPill({
         className,
       )}
     >
-      {status ? APPLICATION_STATUS_LABELS[status] : "未收录"}
+      {label ?? (status ? APPLICATION_STATUS_LABELS[status] : "未收录")}
     </span>
   );
 }

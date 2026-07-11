@@ -8,10 +8,11 @@ import { EMPTY_JOB_FILTERS } from "@/lib/constants";
 import { parseJobCategoriesParam, serializeJobCategories } from "@/lib/categories";
 import { fetchActiveJobs, filterJobs, getJobFacetOptions } from "@/lib/jobs";
 import { fetchMyApplications, updateApplication, upsertApplication } from "@/lib/applications";
-import { getDeadlineInfo, getFitLabel, getMaterialReadiness } from "@/lib/career-workspace";
+import { getCandidateStage, getDeadlineInfo, getFitLabel, getMaterialReadiness } from "@/lib/career-workspace";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { queueBottleDrop } from "@/lib/bottle-drop";
 import { fetchMyResumes, isMissingResumeTableError } from "@/lib/resume-sync";
+import { track } from "@/lib/track";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { cn, isValidHttpUrl, safeOpenUrl, formatDateTime } from "@/lib/utils";
 import { JobFilterBar } from "@/components/jobs/JobFilterBar";
@@ -37,6 +38,7 @@ import type { ResumeDocument } from "@/lib/resume";
 type JobViewMode = "all" | "unapplied" | "applied";
 type PendingApplyConfirmation = {
   applicationId: string;
+  jobId: string;
   companyName: string;
   progressNote: string | null;
 };
@@ -186,6 +188,7 @@ export function HomeClient() {
   async function handleApply(job: Job) {
     setMessage("");
     let applyWindow: Window | null = null;
+    let applyWindowNavigated = false;
     try {
       if (!isSupabaseConfigured()) {
         setMessage("请先配置数据库环境变量，再保存投递记录。");
@@ -195,24 +198,14 @@ export function HomeClient() {
         router.push(`/login?next=${encodeURIComponent("/explore")}`);
         return;
       }
-      if (!isValidHttpUrl(job.apply_url)) {
-        setMessage("投递链接格式不正确，暂时无法打开官网。");
-        return;
+      const existingBeforeAuth = applications.find((item) => item.job_id === job.id);
+      if (
+        existingBeforeAuth?.status === "opened"
+        && getCandidateStage(existingBeforeAuth) === "preparing"
+        && isValidHttpUrl(job.apply_url)
+      ) {
+        applyWindow = window.open("", "_blank");
       }
-
-      applyWindow = window.open("", "_blank");
-      if (applyWindow) {
-        applyWindow.opener = null;
-        applyWindow.document.title = "正在打开投递官网";
-        applyWindow.document.body.style.margin = "0";
-        applyWindow.document.body.style.background = "#000001";
-        applyWindow.document.body.style.color = "#F1EFFF";
-        applyWindow.document.body.style.fontFamily =
-          '-apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif';
-        applyWindow.document.body.innerHTML =
-          '<main style="min-height:100vh;display:grid;place-items:center;text-align:center;"><div><p style="font-size:15px;letter-spacing:.04em;">正在打开投递官网</p><p style="font-size:12px;color:#918CAE;">投递记录保存成功后将自动跳转</p></div></main>';
-      }
-
       const supabase = createClient();
       const user = await getCurrentUserOrNull(supabase);
 
@@ -223,33 +216,69 @@ export function HomeClient() {
         return;
       }
 
-      const alreadyCaptured = applications.some((item) => item.job_id === job.id);
-      const application = await upsertApplication(supabase, user.id, job.id);
-      if (application.status === "opened") {
-        armApplyConfirmation({
-          applicationId: application.id,
-          companyName: job.company_name,
-          progressNote: application.progress_note,
-        });
-      }
-      if (!alreadyCaptured) {
+      const existing = applications.find((item) => item.job_id === job.id);
+      if (!existing) {
+        const application = await upsertApplication(supabase, user.id, job.id, "evaluating");
+        setApplications((current) => [{ ...application, job }, ...current]);
         queueBottleDrop(application.id);
         startCapture(job);
+        void track("job_saved", { job_id: job.id });
+        setMessage(
+          application.candidate_stage === "evaluating"
+            ? "已加入星瓶。先评估岗位，再决定是否投入准备。"
+            : "已加入星瓶。当前数据库尚未升级，候选阶段暂按“准备中”显示。",
+        );
+        return;
       }
+
+      if (existing.status !== "opened") {
+        setDrawerApplication(existing);
+        return;
+      }
+
+      const candidateStage = getCandidateStage(existing);
+      if (candidateStage !== "preparing") {
+        const nextStage = candidateStage === "evaluating" ? "saved" : "preparing";
+        const updated = await updateApplication(supabase, existing.id, { candidate_stage: nextStage });
+        const nextApplication = { ...existing, ...updated, job };
+        handleApplicationChanged(nextApplication);
+        void track("candidate_stage_updated", { job_id: job.id, stage: nextStage });
+        setMessage(
+          nextStage === "saved"
+            ? "已保留为候选岗位。可以设置优先级，或继续开始准备。"
+            : "已进入准备中。先绑定岗位简历，准备好后再记录投递。",
+        );
+        return;
+      }
+
+      if (!isValidHttpUrl(job.apply_url)) {
+        setMessage("投递链接格式不正确，当前记录和已填内容都已保留。");
+        return;
+      }
+
       if (applyWindow) {
+        applyWindow.opener = null;
+        applyWindow.document.title = "正在打开投递官网";
+        applyWindow.document.body.style.margin = "0";
+        applyWindow.document.body.style.background = "#000001";
+        applyWindow.document.body.style.color = "#F1EFFF";
+        applyWindow.document.body.style.fontFamily = '-apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif';
+        applyWindow.document.body.innerHTML = '<main style="min-height:100vh;display:grid;place-items:center;text-align:center;"><div><p style="font-size:15px;">正在打开投递官网</p><p style="font-size:12px;color:#918CAE;">返回后确认是否完成投递</p></div></main>';
         applyWindow.location.href = job.apply_url;
+        applyWindowNavigated = true;
       } else {
         safeOpenUrl(job.apply_url);
       }
-      setMessage(
-        application.status === "opened"
-          ? "已记录为“已浏览”，回来后可确认是否已投递。"
-          : "已浏览，当前投递状态保持不变。",
-      );
-      await loadData();
-    } catch {
-      applyWindow?.close();
-      setMessage("投递记录保存失败，请稍后再试。");
+      armApplyConfirmation({
+        applicationId: existing.id,
+        jobId: job.id,
+        companyName: job.company_name,
+        progressNote: existing.progress_note,
+      });
+      setMessage("官网已打开。返回后确认投递结果，候选记录会继续保留。");
+    } catch (error) {
+      if (!applyWindowNavigated) applyWindow?.close();
+      setMessage(error instanceof Error ? error.message : "岗位操作失败，当前记录和已填内容都已保留，请稍后重试。");
     }
   }
 
@@ -295,7 +324,7 @@ export function HomeClient() {
       }
       setPendingApplyConfirmation(null);
       setShowApplyConfirmation(false);
-      setMessage("已保留为“已浏览”，之后可继续更新进度。");
+      setMessage("仍保留在“准备中”，可以稍后继续记录投递。");
       return;
     }
 
@@ -313,6 +342,11 @@ export function HomeClient() {
       setPendingApplyConfirmation(null);
       setShowApplyConfirmation(false);
       setMessage(status === "applied" ? "已确认投递，岗位已出现在投递星图。" : "已标记为不投了。");
+      if (status === "applied") {
+        void track("application_recorded", {
+          job_id: pendingApplyConfirmation.jobId,
+        });
+      }
       await loadData();
     } catch {
       setMessage("状态更新失败，请稍后再试。");

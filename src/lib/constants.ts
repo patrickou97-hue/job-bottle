@@ -24,6 +24,21 @@ export const APPLICATION_STATUS_LABELS = {
   withdrawn: "已结束",
 } as const;
 
+export const APPLICATION_CANDIDATE_STAGE = ["evaluating", "saved", "preparing"] as const;
+
+export const APPLICATION_CANDIDATE_STAGE_LABELS = {
+  evaluating: "待评估",
+  saved: "已收藏",
+  preparing: "准备中",
+} as const;
+
+export const APPLICATION_PRIORITY_LABELS = {
+  0: "未设置",
+  1: "低优先级",
+  2: "中优先级",
+  3: "高优先级",
+} as const;
+
 export const PROFILE_ROLES = ["user", "admin"] as const;
 
 export const APPLICATION_PROGRESS_STATUS = [

@@ -45,7 +45,13 @@ export function ResumePreview({ resume }: { resume: ResumeDocument }) {
   const layout = preview.layout;
 
   return (
-    <div className="mx-auto w-full max-w-[794px]" data-resume-preview data-page-count={layout?.pageCount ?? 0}>
+    <div
+      className="mx-auto w-full max-w-[210mm]"
+      data-resume-preview
+      data-page-count={layout?.pageCount ?? 0}
+      data-page-width={layout?.pageWidth ?? ""}
+      data-page-height={layout?.pageHeight ?? ""}
+    >
       <div className="mb-2 flex min-h-6 items-center justify-between gap-3 text-xs text-ink-muted">
         <span>{layout ? `A4 · ${layout.pageCount} 页` : "正在生成 A4 预览"}</span>
         {preview.status === "rendering" && layout ? <span>正在同步内容</span> : null}
@@ -90,6 +96,7 @@ function ResumePage({ layout, page }: { layout: ResumePreviewLayout; page: numbe
     <svg
       viewBox={`0 0 ${layout.pageWidth} ${layout.pageHeight}`}
       className="block aspect-[210/297] w-full bg-white shadow-[0_24px_90px_rgba(0,0,0,0.28)]"
+      style={{ aspectRatio: `${layout.pageWidth} / ${layout.pageHeight}` }}
       role="img"
       aria-label={`A4 简历预览第 ${page} 页，共 ${layout.pageCount} 页`}
     >
@@ -123,7 +130,7 @@ function ResumeOperation({ operation }: { operation: ResumePreviewOperation }) {
         y={operation.y}
         width={operation.width}
         height={operation.height}
-        preserveAspectRatio="xMidYMid slice"
+        preserveAspectRatio="none"
       />
     );
   }
@@ -136,6 +143,8 @@ function ResumeOperation({ operation }: { operation: ResumePreviewOperation }) {
       fontFamily="Noto Serif SC Local, Songti SC, STSong, SimSun, serif"
       fontSize={operation.size}
       fontWeight={operation.weight === "bold" ? 700 : 400}
+      lengthAdjust="spacingAndGlyphs"
+      textLength={operation.width}
       xmlSpace="preserve"
     >
       {operation.text}

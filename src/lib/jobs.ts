@@ -241,6 +241,10 @@ export function toJobPayload(values: JobFormValues) {
     locations: values.locations.trim() || null,
     apply_url: values.apply_url.trim(),
     notes: values.notes.trim() || null,
+    responsibilities: values.responsibilities.trim() || null,
+    must_have: values.must_have.trim() || null,
+    preferred_qualifications: values.preferred_qualifications.trim() || null,
+    keywords: splitToTags(values.keywords),
     logo_url: values.logo_url.trim() || null,
     tags: splitToTags(
       values.tags,

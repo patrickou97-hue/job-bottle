@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Menu, Shield, User, X } from "lucide-react";
+import { BriefcaseBusiness, Home, ListChecks, LogOut, Shield, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
@@ -18,11 +18,17 @@ const navItems = [
   { href: "/profile", label: "我的" },
 ];
 
+const mobileNavItems = [
+  { href: "/", label: "首页", icon: Home },
+  { href: "/explore", label: "岗位", icon: BriefcaseBusiness },
+  { href: "/my", label: "投递", icon: ListChecks },
+  { href: "/profile", label: "我的", icon: User },
+];
+
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!isSupabaseConfigured()) return;
@@ -66,8 +72,9 @@ export function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-[#000001]/82 backdrop-blur-md">
-      <div className="mx-auto flex h-15 w-full max-w-[1320px] items-center gap-4 px-4 sm:px-6 lg:px-8">
+    <>
+      <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-[#000001]/82 backdrop-blur-md">
+        <div className="mx-auto flex h-15 w-full max-w-[1320px] items-center gap-4 px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex shrink-0 items-center" aria-label="返回首页">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/brand/shi-xing-wordmark.png" alt={SITE_NAME} className="h-7 w-auto object-contain" />
@@ -104,34 +111,34 @@ export function Navbar() {
           )}
         </div>
 
-        <button
-          type="button"
-          className="pressable ml-auto inline-flex size-10 items-center justify-center rounded-lg text-ink-secondary hover:bg-white/[0.06] hover:text-ink-primary md:hidden"
-          onClick={() => setMenuOpen((value) => !value)}
-          aria-label={menuOpen ? "关闭导航" : "打开导航"}
-          aria-expanded={menuOpen}
-        >
-          {menuOpen ? <X aria-hidden="true" className="size-5" /> : <Menu aria-hidden="true" className="size-5" />}
-        </button>
-      </div>
-
-      {menuOpen ? (
-        <div className="border-t border-white/[0.08] bg-[#000001]/88 px-4 py-3 backdrop-blur-md md:hidden">
-          <nav className="mx-auto grid max-w-[1320px] gap-1" aria-label="移动主导航">
-            {navItems.map((item) => (
-              <Link key={item.href} href={item.href} className={cn(navClass(item.href), "justify-between px-0")} onClick={() => setMenuOpen(false)}>
-                {item.label}
-              </Link>
-            ))}
-            {profile ? (
-              <div className="mt-2 flex items-center gap-2">
-                <Link href="/profile" className="text-action h-9 px-0 text-sm" onClick={() => setMenuOpen(false)}>资料</Link>
-                <button type="button" className="text-action h-9 px-0 text-sm" onClick={handleLogout}>退出登录</button>
-              </div>
-            ) : <Link href="/login" className="gold-button mt-3 inline-flex h-10 items-center justify-center rounded-lg px-4 text-sm font-medium" onClick={() => setMenuOpen(false)}>登录</Link>}
-          </nav>
+        <Link href={profile ? "/profile" : "/login"} className="ml-auto text-sm text-ink-secondary md:hidden">
+          {profile ? profile.display_name || "我的" : "登录"}
+        </Link>
         </div>
-      ) : null}
-    </header>
+      </header>
+      <nav
+        className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-4 border-t border-white/[0.1] bg-[#000001]/94 px-2 pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-1.5 backdrop-blur-md md:hidden"
+        aria-label="移动主导航"
+      >
+        {mobileNavItems.map((item) => {
+          const Icon = item.icon;
+          const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex min-h-12 flex-col items-center justify-center gap-1 text-[11px] transition",
+                active ? "text-ink-primary" : "text-ink-muted",
+              )}
+              aria-current={active ? "page" : undefined}
+            >
+              <Icon aria-hidden="true" className="size-4" />
+              {item.label}
+            </Link>
+          );
+        })}
+      </nav>
+    </>
   );
 }
