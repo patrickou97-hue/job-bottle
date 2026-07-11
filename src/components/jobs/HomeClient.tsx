@@ -9,6 +9,7 @@ import { parseJobCategoriesParam, serializeJobCategories } from "@/lib/categorie
 import { fetchActiveJobs, filterJobs, getJobFacetOptions } from "@/lib/jobs";
 import { fetchMyApplications, updateApplication, upsertApplication } from "@/lib/applications";
 import { getCandidateStage, getDeadlineInfo, getFitLabel, getMaterialReadiness } from "@/lib/career-workspace";
+import { getLocationFilterLabel } from "@/lib/locations";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { queueBottleDrop } from "@/lib/bottle-drop";
 import { fetchMyResumes, isMissingResumeTableError } from "@/lib/resume-sync";
@@ -696,7 +697,7 @@ function getActiveFilterChips(filters: JobFilters, jobView: JobViewMode, nebulaN
   if (keyword) chips.push(`关键词：${keyword}`);
   if (filters.industry) chips.push(`行业：${filters.industry}`);
   if (filters.batchType) chips.push(`批次：${filters.batchType}`);
-  if (filters.location) chips.push(`地点：${filters.location}`);
+  if (filters.location) chips.push(`地点：${getLocationFilterLabel(filters.location)}`);
   filters.categories.forEach((category) => chips.push(`类别：${category}`));
   if (filters.sortBy === "start_date_desc") chips.push("最新开启");
   if (filters.sortBy === "start_date_asc") chips.push("开启时间优先");

@@ -361,7 +361,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/jobs/JobFilterBar.tsx",
-    mustInclude: ["start_date_desc", "最新开启", "最近更新优先", "最早开启", "岗位类别", "toggleCategory"],
+    mustInclude: ["start_date_desc", "最新开启", "最近更新优先", "最早开启", "岗位类别", "toggleCategory", "地点层级", "不限", "全国", "省级", "市级", "选择省级地区", "请选择城市", "buildLocationGroups"],
     mustNotInclude: ["deadline_asc", "downloadDeadlineDigest", "digest_generate", "岗位标签", "toggleTag"],
     label: "探索筛选默认最新开启且不再提供下线日期入口",
   },
@@ -1053,6 +1053,33 @@ async function checkCategoryProbe() {
   console.log("✓ 岗位类别探针通过：归一化和单/双类别筛选结果符合预期");
 }
 
+async function checkLocationProbe() {
+  const typescript = await import("typescript");
+  const source = readFileSync(new URL("src/lib/locations.ts", ROOT), "utf8");
+  const transpiled = typescript.transpileModule(source, {
+    compilerOptions: {
+      module: typescript.ModuleKind.ES2022,
+      target: typescript.ScriptTarget.ES2022,
+    },
+  }).outputText;
+  const encoded = Buffer.from(transpiled).toString("base64");
+  const locations = await import(`data:text/javascript;base64,${encoded}`);
+
+  if (!locations.matchesLocationFilter("成都", "province:四川")) throw new Error("地点探针失败：四川未匹配成都");
+  if (locations.matchesLocationFilter("上海", "province:四川")) throw new Error("地点探针失败：四川错误匹配上海");
+  if (!locations.matchesLocationFilter("北京 上海 成都", "city:成都")) throw new Error("地点探针失败：市级成都未匹配多地点岗位");
+  if (!locations.matchesLocationFilter("全国 海外", "scope:nationwide")) throw new Error("地点探针失败：全国范围未匹配全国岗位");
+  if (locations.matchesLocationFilter("上海", "scope:nationwide")) throw new Error("地点探针失败：全国范围错误匹配上海岗位");
+
+  const groups = locations.buildLocationGroups(["全国", "四川", "成都", "上海", "深圳", "宿迁等"]);
+  const sichuan = groups.find((group) => group.province === "四川");
+  const jiangsu = groups.find((group) => group.province === "江苏");
+  if (!sichuan?.cities.includes("成都")) throw new Error("地点探针失败：四川城市层级缺少成都");
+  if (!jiangsu?.cities.includes("宿迁")) throw new Error("地点探针失败：模糊值宿迁等未归一化");
+
+  console.log("✓ 地点层级探针通过：全国、省级、市级及多地点匹配符合预期");
+}
+
 async function checkPages(baseUrl) {
   for (const [path, requiredTexts] of Object.entries(REQUIRED_TEXT)) {
     const response = await fetchWithRetry(`${baseUrl}${path}`);
@@ -1097,6 +1124,7 @@ async function main() {
   checkSourceInvariants();
   checkBottleGeometryProbe();
   await checkCategoryProbe();
+  await checkLocationProbe();
 
   const reusableServer = await findReusableServer();
   if (reusableServer) {

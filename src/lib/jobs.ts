@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { JOB_CATEGORIES, jobMatchesSelectedCategories, normalizeJobCategories } from "@/lib/categories";
 import { splitToTags } from "@/lib/utils";
+import { matchesLocationFilter } from "@/lib/locations";
 import type { Database, Job, JobFilters, JobFormValues } from "@/lib/types";
 
 const DEFAULT_JOBS_TIMEOUT_MS = 7000;
@@ -122,8 +123,7 @@ export function filterJobs(jobs: Job[], filters: JobFilters) {
       (job.industry ?? "").split(",").map((v) => v.trim()).includes(filters.industry);
     const batchMatched =
       !filters.batchType || job.batch_type === filters.batchType;
-    const locationMatched =
-      !filters.location || (job.locations ?? "").includes(filters.location);
+    const locationMatched = matchesLocationFilter(job.locations, filters.location);
     const tagsMatched =
       filters.tags.length === 0 ||
       filters.tags.some((tag) => job.tags?.includes(tag));
