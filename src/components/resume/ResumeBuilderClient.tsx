@@ -407,6 +407,9 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
           </section>
         </div>
       </section>
+      <p className="border-t border-white/[0.08] pt-4 text-center text-xs leading-5 text-ink-muted">
+        请谨慎审核 AI 输出的简历信息
+      </p>
     </div>
   );
 }

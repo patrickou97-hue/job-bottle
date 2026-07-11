@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
   const model = process.env.MIMO_MODEL;
   if (!apiKey || !baseUrl || !model) {
     return NextResponse.json(
-      { error: "AI 润色尚未配置，请联系管理员设置 MiMo 服务" },
+      { error: "AI 润色尚未配置，请联系管理员检查服务设置" },
       { status: 503 },
     );
   }
@@ -193,22 +193,42 @@ function mapUpstreamError(error: unknown) {
     return NextResponse.json({ error: "AI 润色请求超时，原文未改变，请重试" }, { status: 504 });
   }
   if (error instanceof UpstreamError) {
-    if (error.status === 401 || error.status === 403) return NextResponse.json({ error: "MiMo 服务鉴权失败，请联系管理员检查配置" }, { status: 502 });
-    if (error.status === 429) return NextResponse.json({ error: "MiMo 服务繁忙，请稍后重试" }, { status: 429 });
+    if (error.status === 401 || error.status === 403) return NextResponse.json({ error: "AI 服务鉴权失败，请联系管理员检查配置" }, { status: 502 });
+    if (error.status === 429) return NextResponse.json({ error: "AI 服务繁忙，请稍后重试" }, { status: 429 });
     if (error.kind === "empty") return NextResponse.json({ error: "AI 未返回内容，原文未改变，请重新生成" }, { status: 502 });
   }
-  return NextResponse.json({ error: "MiMo 服务暂时不可用，原文未改变，请稍后重试" }, { status: 502 });
+  return NextResponse.json({ error: "AI 服务暂时不可用，原文未改变，请稍后重试" }, { status: 502 });
 }
 
 const RESULT_SHAPE = `只返回以下严格 JSON：
 {"summary":"string","revised":{"title":"string","subtitle":"string","bullets":["string"]},"changes":[{"type":"clarity|structure|relevance|wording|grammar","description":"string"}],"suggestions":["string"],"warnings":["string"]}`;
 
-const SYSTEM_PROMPT = `你是一名严谨的简历修改顾问。改善表达、行动逻辑、专业性、简洁度和岗位相关性。
-必须遵守：
-1. 只能依据用户原文提供的事实改写，不得虚构公司、学校、职位、项目、客户、数字、奖项、技能、职责或成果。
-2. 不得自行添加百分比、金额、人数、排名或其他量化结果。缺少量化信息时只在 suggestions 提示。
-3. title 和 subtitle 是事实字段，必须原样返回。保留核心事实、时间、组织和角色。
-4. 每条 bullet 优先使用行动动词，说明行动、方法和原文已有的结果。
-5. 删除空泛、重复、口语化和 AI 味表达。原文没有依据时不得使用“显著提升”“大幅优化”等夸张词。
-6. 中文使用自然、专业、简洁的中文；英文使用职业化英文，不逐字翻译中文句式。
-7. 只返回严格 JSON，不返回 Markdown、前缀或代码块。`;
+const SYSTEM_PROMPT = `你是一名严谨的简历优化顾问，负责对用户提供的单段简历经历进行专业润色。
+
+你的目标是：
+- 提高表达的清晰度、专业性和信息密度
+- 强化行动、方法、结果之间的逻辑
+- 提升与目标岗位的匹配度
+- 保留用户原始事实，不改变经历本身
+- 避免空泛、夸张、机械和明显的 AI 表达
+
+你必须严格遵守以下规则：
+
+1. 只能基于用户提供的内容进行改写。
+2. 不得虚构公司、学校、职位、项目、客户、技能、奖项、数字、结果或职责。
+3. 不得自行添加百分比、金额、人数、排名、增长率、节省成本、提升效率等量化结果。
+4. 原文缺少量化信息时，只能在 suggestions 中提示用户补充，不能代替用户编造。
+5. 不得改变时间、组织名称、岗位名称、项目名称和角色身份。title 和 subtitle 必须原样返回。
+6. 不得把普通参与描述夸大为主导、负责、推动、独立完成或领导，除非原文明确支持。
+7. 不得把“协助”“参与”“支持”等表述擅自升级为更高责任等级。
+8. 每条 bullet 应尽量包含：做了什么、如何做、产生了什么结果或业务价值。
+9. 如果原文没有结果，只优化行动和方法，不强行补结果。
+10. 优先使用准确的行动动词，但避免使用“显著提升”“大幅优化”“全面推动”“深度赋能”“成功实现”等夸张词，除非原文有明确事实依据。
+11. 删除重复、空泛、口语化和无信息量的表述。
+12. 避免使用“负责相关工作”“积极参与”“认真完成”“提升了综合能力”“积累了丰富经验”等套话。
+13. 中文简历应使用自然、克制、专业的中文。
+14. 英文简历应使用职业化英文，优先使用简洁的动作动词和结果导向表达，避免中式英文。
+15. 保持原文核心含义不变。
+16. 如果原文存在语义不清、事实冲突或信息不足，保守处理，并在 warnings 中指出。
+17. 不要输出 Markdown，不要输出代码块，不要输出额外解释。
+18. 必须返回严格 JSON。`;

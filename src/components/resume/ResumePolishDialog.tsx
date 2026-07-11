@@ -98,7 +98,7 @@ export function ResumePolishDialog({
           <div>
             <p className="text-xs text-ink-muted">{target.label}</p>
             <h2 id="resume-polish-title" className="mt-1 text-xl font-semibold text-ink-primary">AI 润色</h2>
-            <p className="mt-2 text-sm leading-6 text-ink-secondary">仅当前段落会发送给第三方 MiMo 服务，不会发送联系方式、照片或整份简历</p>
+            <p className="mt-2 text-sm leading-6 text-ink-secondary">仅处理当前段落，不会发送联系方式、照片或整份简历</p>
           </div>
           <button type="button" className="muted-button pressable inline-flex size-9 shrink-0 items-center justify-center rounded-full" aria-label="关闭" onClick={onClose}>
             <X aria-hidden="true" className="size-4" />
