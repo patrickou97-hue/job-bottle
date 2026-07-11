@@ -69,7 +69,7 @@ export function MyBottleClient({ loginNextPath = "/bottle" }: { loginNextPath?: 
       <section className="page-hero">
         <div>
           <p className="page-kicker">投递记录</p>
-          <h1 className="page-title">我的星瓶</h1>
+          <h1 className="page-title">星瓶</h1>
         </div>
         <div className="progress-summary px-4 py-2 md:px-5 md:py-3">
           <p className="text-sm leading-7 text-ink-secondary">

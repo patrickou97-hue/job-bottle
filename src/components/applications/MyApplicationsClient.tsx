@@ -129,7 +129,9 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
     <div className="observatory-page space-y-8">
       <section className="page-hero">
         <div>
-          <h1 className="page-title">投递</h1>
+          <p className="page-kicker">当前阶段</p>
+          <h1 className="page-title">投递管理</h1>
+          <p className="page-description">{getApplicationPhase(applications)}</p>
         </div>
         <div className="progress-summary grid grid-cols-2 gap-x-6 gap-y-5 px-4 py-3 md:grid-cols-4 md:px-5">
           <StatBlock value={applications.length} label="全部记录" />
@@ -149,9 +151,9 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
         <section className="empty-state collection-surface">
           <div>
             <h2>从一个岗位开始</h2>
-            <p>从岗位池添加岗位后，在这里更新投递状态。</p>
+            <p>从岗位坐标添加岗位后，在这里更新投递状态</p>
             <Link href="/explore" className="gold-button mt-5 inline-flex rounded-lg px-4 py-2 text-sm font-medium">
-              去岗位池
+              去岗位坐标
             </Link>
           </div>
         </section>
@@ -161,7 +163,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
             <div className="collection-surface overflow-hidden">
               <div className="section-heading px-4 pt-4 sm:px-5">
                 <div>
-                  <h2 className="section-title">优先处理</h2>
+                  <h2 className="section-title">本周求职行动</h2>
                 </div>
                 <span className="section-meta">{tasks.length} 项</span>
               </div>
@@ -304,6 +306,13 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
       <ProgressDrawer application={drawerApplication} open={Boolean(drawerApplication)} onClose={() => setDrawerApplication(null)} onChanged={handleApplicationChanged} onDeleted={handleApplicationDeleted} />
     </div>
   );
+}
+
+function getApplicationPhase(applications: ApplicationWithJob[]) {
+  if (applications.length === 0) return "先建立候选岗位，再按优先级推进准备与投递";
+  if (applications.some((item) => ["first_round", "second_round", "final_round"].includes(item.status))) return "跟进面试安排，及时记录下一步动作";
+  if (applications.some((item) => item.status !== "opened")) return "处理近期节点，更新已投岗位的最新进展";
+  return "评估候选岗位，绑定简历并完成投递准备";
 }
 
 function PipelineItem({ application, resumes, onOpen }: { application: ApplicationWithJob; resumes: ResumeDocument[]; onOpen: () => void }) {

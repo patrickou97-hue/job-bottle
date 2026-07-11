@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "拾星",
+  title: "拾星 Starjob",
   description: "面向学生秋招投递的岗位信息管理与进度记录工具。",
 };
 

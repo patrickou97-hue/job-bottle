@@ -241,7 +241,7 @@ export function createSampleResume(): ResumeDocument {
       work: [
         {
           id: createId("work"),
-          company: "拾星科技",
+          company: "欧莱雅中国",
           title: "产品实习生",
           location: "上海",
           startDate: "2025.06",
@@ -256,14 +256,14 @@ export function createSampleResume(): ResumeDocument {
       projects: [
         {
           id: createId("project"),
-          name: "Job Bottle 求职管理工具",
-          role: "产品负责人",
+          name: "欧莱雅 Brandstorm 商业创新挑战赛",
+          role: "团队产品负责人",
           startDate: "2025.10",
           endDate: "2026.01",
-          keywords: "Next.js、Supabase、用户访谈、数据看板",
+          keywords: "用户研究、品牌策略、商业分析、原型设计",
           bullets: [
-            "设计岗位星图、投递轨道和星瓶三条核心路径，覆盖岗位发现、进度管理与复盘分享。",
-            "基于 170+ 条真实岗位数据建立筛选体系，支持按地区、行业和岗位类别组合查询。",
+            "围绕年轻消费者的可持续美妆需求开展访谈与竞品分析，提炼核心使用场景并形成产品概念。",
+            "负责商业模式与产品原型设计，协同团队完成市场进入策略和英文路演材料。",
           ],
         },
       ],

@@ -1,6 +1,8 @@
 "use client";
 
-import { ArrowDown, ArrowUp, ImagePlus, Plus, Trash2, X } from "lucide-react";
+import { useMemo, useState } from "react";
+import { ArrowDown, ArrowUp, ImagePlus, Plus, RotateCcw, Sparkles, Trash2, X } from "lucide-react";
+import { ResumePolishDialog, type ResumePolishTarget } from "@/components/resume/ResumePolishDialog";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -18,8 +20,10 @@ import {
   type ResumeProject,
   type ResumeSkillGroup,
   type ResumeCustomSection,
+  isEnglishResumeTemplate,
 } from "@/lib/resume";
 import type { Job } from "@/lib/types";
+import type { ResumePolishResult, ResumePolishSectionType } from "@/lib/resume-ai";
 
 type EditorSection = "basic" | "education" | "work" | "projects" | "skills" | "other" | "target";
 
@@ -48,6 +52,20 @@ export function ResumeEditor({
   onSectionChange: (section: EditorSection) => void;
   onChange: (resume: ResumeDocument) => void;
 }) {
+  const [polishTarget, setPolishTarget] = useState<ResumePolishTarget | null>(null);
+  const [undo, setUndo] = useState<{ label: string; run: () => void } | null>(null);
+  const linkedJob = useMemo(() => jobs.find((job) => job.id === resume.linkedJobId), [jobs, resume.linkedJobId]);
+  const jobDescription = useMemo(() => {
+    if (!linkedJob) return "";
+    return [
+      linkedJob.job_titles,
+      linkedJob.responsibilities,
+      linkedJob.must_have,
+      linkedJob.preferred_qualifications,
+      linkedJob.keywords?.join("、"),
+    ].filter(Boolean).join("\n").slice(0, 6_000);
+  }, [linkedJob]);
+
   function patchResume(patch: Partial<ResumeDocument>) {
     onChange(touchResume({ ...resume, ...patch }));
   }
@@ -67,6 +85,14 @@ export function ResumeEditor({
 
   return (
     <div className="space-y-5">
+      {undo ? (
+        <div className="flex items-center justify-between gap-3 border-l-2 border-[color:var(--aurora)] bg-white/[0.035] px-4 py-3 text-sm text-ink-secondary">
+          <span>{undo.label}已应用</span>
+          <button type="button" className="text-action inline-flex items-center gap-2" onClick={() => { undo.run(); setUndo(null); }}>
+            <RotateCcw aria-hidden="true" className="size-4" />撤销
+          </button>
+        </div>
+      ) : null}
       <div className="flex flex-wrap gap-2">
         {EDITOR_SECTIONS.map((section) => (
           <button
@@ -113,10 +139,12 @@ export function ResumeEditor({
           onAdd={() => patchContent({ education: [...resume.content.education, createBlankEducation()] })}
           onRemove={(id) => patchContent({ education: resume.content.education.filter((item) => item.id !== id) })}
           renderItem={(item) => (
-            <EducationEditor
-              item={item}
-              onChange={(next) => patchContent({ education: replaceById(resume.content.education, next) })}
-            />
+            <PolishableItem onPolish={() => setPolishTarget(toEducationTarget(item))}>
+              <EducationEditor
+                item={item}
+                onChange={(next) => patchContent({ education: replaceById(resume.content.education, next) })}
+              />
+            </PolishableItem>
           )}
         />
       ) : null}
@@ -129,10 +157,12 @@ export function ResumeEditor({
           onAdd={() => patchContent({ work: [...resume.content.work, createBlankExperience()] })}
           onRemove={(id) => patchContent({ work: resume.content.work.filter((item) => item.id !== id) })}
           renderItem={(item) => (
-            <ExperienceEditor
-              item={item}
-              onChange={(next) => patchContent({ work: replaceById(resume.content.work, next) })}
-            />
+            <PolishableItem onPolish={() => setPolishTarget(toExperienceTarget(item))}>
+              <ExperienceEditor
+                item={item}
+                onChange={(next) => patchContent({ work: replaceById(resume.content.work, next) })}
+              />
+            </PolishableItem>
           )}
         />
       ) : null}
@@ -145,10 +175,12 @@ export function ResumeEditor({
           onAdd={() => patchContent({ projects: [...resume.content.projects, createBlankProject()] })}
           onRemove={(id) => patchContent({ projects: resume.content.projects.filter((item) => item.id !== id) })}
           renderItem={(item) => (
-            <ProjectEditor
-              item={item}
-              onChange={(next) => patchContent({ projects: replaceById(resume.content.projects, next) })}
-            />
+            <PolishableItem onPolish={() => setPolishTarget(toProjectTarget(item))}>
+              <ProjectEditor
+                item={item}
+                onChange={(next) => patchContent({ projects: replaceById(resume.content.projects, next) })}
+              />
+            </PolishableItem>
           )}
         />
       ) : null}
@@ -175,26 +207,31 @@ export function ResumeEditor({
             title="校园经历"
             items={resume.content.campus}
             onChange={(items) => patchContent({ campus: items })}
+            onPolish={(item) => setPolishTarget(toCustomTarget(item, "campus", "校园经历"))}
           />
           <CustomSectionGroup
             title="获奖经历"
             items={resume.content.awards}
             onChange={(items) => patchContent({ awards: items })}
+            onPolish={(item) => setPolishTarget(toCustomTarget(item, "award", "获奖经历"))}
           />
           <CustomSectionGroup
             title="证书"
             items={resume.content.certifications}
             onChange={(items) => patchContent({ certifications: items })}
+            onPolish={(item) => setPolishTarget(toCustomTarget(item, "custom", "证书"))}
           />
           <CustomSectionGroup
             title="语言能力"
             items={resume.content.languages}
             onChange={(items) => patchContent({ languages: items })}
+            onPolish={(item) => setPolishTarget(toCustomTarget(item, "custom", "语言能力"))}
           />
           <CustomSectionGroup
             title="自定义模块"
             items={resume.content.customSections}
             onChange={(items) => patchContent({ customSections: items })}
+            onPolish={(item) => setPolishTarget(toCustomTarget(item, "custom", "自定义模块"))}
           />
         </div>
       ) : null}
@@ -230,8 +267,60 @@ export function ResumeEditor({
           </p>
         </section>
       ) : null}
+
+      {polishTarget ? (
+        <ResumePolishDialog
+          target={polishTarget}
+          targetRole={resume.content.basics.targetRole || resume.targetRole}
+          jobDescription={jobDescription}
+          language={isEnglishResumeTemplate(resume.templateId) ? "en-US" : "zh-CN"}
+          onClose={() => setPolishTarget(null)}
+          onApply={(result, bulletIndex) => {
+            applyPolishResult(polishTarget, result, bulletIndex);
+            setPolishTarget(null);
+          }}
+        />
+      ) : null}
     </div>
   );
+
+  function applyPolishResult(target: ResumePolishTarget, result: ResumePolishResult, bulletIndex: number | null) {
+    const revisedBullets = result.revised.bullets;
+    if (target.sectionType === "work") {
+      const item = resume.content.work.find((entry) => entry.id === target.id);
+      if (!item) return;
+      const next = { ...item, bullets: mergeBullets(item.bullets, revisedBullets, bulletIndex) };
+      patchContent({ work: replaceById(resume.content.work, next) });
+      setUndo({ label: "实习 / 工作经历", run: () => patchContent({ work: replaceById(resume.content.work, item) }) });
+      return;
+    }
+    if (target.sectionType === "project") {
+      const item = resume.content.projects.find((entry) => entry.id === target.id);
+      if (!item) return;
+      const next = { ...item, bullets: mergeBullets(item.bullets, revisedBullets, bulletIndex) };
+      patchContent({ projects: replaceById(resume.content.projects, next) });
+      setUndo({ label: "项目经历", run: () => patchContent({ projects: replaceById(resume.content.projects, item) }) });
+      return;
+    }
+    if (target.sectionType === "education") {
+      const item = resume.content.education.find((entry) => entry.id === target.id);
+      if (!item) return;
+      const current = [item.courses, item.honors];
+      const merged = mergeBullets(current, revisedBullets, bulletIndex);
+      const next = { ...item, courses: merged[0] ?? item.courses, honors: merged[1] ?? item.honors };
+      patchContent({ education: replaceById(resume.content.education, next) });
+      setUndo({ label: "教育经历描述", run: () => patchContent({ education: replaceById(resume.content.education, item) }) });
+      return;
+    }
+    const collectionKey = target.sectionType === "campus" ? "campus" : target.sectionType === "award" ? "awards" : findCustomCollection(resume, target.id);
+    if (!collectionKey) return;
+    const collection = resume.content[collectionKey] as ResumeCustomSection[];
+    const item = collection.find((entry) => entry.id === target.id);
+    if (!item) return;
+    const next = { ...item, bullets: mergeBullets(item.bullets, revisedBullets, bulletIndex) };
+    patchContent({ [collectionKey]: replaceById(collection, next) });
+    setUndo({ label: target.label, run: () => patchContent({ [collectionKey]: replaceById(collection, item) }) });
+  }
 }
 
 function PhotoField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
@@ -492,10 +581,12 @@ function CustomSectionGroup({
   title,
   items,
   onChange,
+  onPolish,
 }: {
   title: string;
   items: ResumeCustomSection[];
   onChange: (items: ResumeCustomSection[]) => void;
+  onPolish: (item: ResumeCustomSection) => void;
 }) {
   return (
     <CollectionEditor
@@ -505,19 +596,35 @@ function CustomSectionGroup({
       onAdd={() => onChange([...items, createBlankCustomSection(title)])}
       onRemove={(id) => onChange(items.filter((item) => item.id !== id))}
       renderItem={(item) => (
-        <div className="space-y-4">
-          <TextField
-            label="标题"
-            value={item.title}
-            onChange={(value) => onChange(replaceById(items, { ...item, title: value }))}
-          />
-          <BulletEditor
-            bullets={item.bullets}
-            onChange={(bullets) => onChange(replaceById(items, { ...item, bullets }))}
-          />
-        </div>
+        <PolishableItem onPolish={() => onPolish(item)}>
+          <div className="space-y-4">
+            <TextField
+              label="标题"
+              value={item.title}
+              onChange={(value) => onChange(replaceById(items, { ...item, title: value }))}
+            />
+            <BulletEditor
+              bullets={item.bullets}
+              onChange={(bullets) => onChange(replaceById(items, { ...item, bullets }))}
+            />
+          </div>
+        </PolishableItem>
       )}
     />
+  );
+}
+
+function PolishableItem({ children, onPolish }: { children: React.ReactNode; onPolish: () => void }) {
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <button type="button" className="text-action pressable inline-flex items-center gap-2 border border-white/[0.1] px-3 py-1.5 text-xs" onClick={onPolish}>
+          <Sparkles aria-hidden="true" className="size-3.5" />
+          AI 润色
+        </button>
+      </div>
+      {children}
+    </div>
   );
 }
 
@@ -606,6 +713,49 @@ function IconButton({
 
 function replaceById<T extends { id: string }>(items: T[], nextItem: T) {
   return items.map((item) => (item.id === nextItem.id ? nextItem : item));
+}
+
+function toEducationTarget(item: ResumeEducation): ResumePolishTarget {
+  return {
+    id: item.id,
+    label: "教育经历描述",
+    sectionType: "education",
+    content: { title: item.school, subtitle: `${item.degree} ${item.major}`.trim(), bullets: [item.courses, item.honors] },
+  };
+}
+
+function toExperienceTarget(item: ResumeExperience): ResumePolishTarget {
+  return {
+    id: item.id,
+    label: "实习 / 工作经历",
+    sectionType: "work",
+    content: { title: item.company, subtitle: item.title, bullets: item.bullets },
+  };
+}
+
+function toProjectTarget(item: ResumeProject): ResumePolishTarget {
+  return {
+    id: item.id,
+    label: "项目经历",
+    sectionType: "project",
+    content: { title: item.name, subtitle: item.role, bullets: item.bullets },
+  };
+}
+
+function toCustomTarget(item: ResumeCustomSection, sectionType: ResumePolishSectionType, label: string): ResumePolishTarget {
+  return { id: item.id, label, sectionType, content: { title: item.title, subtitle: "", bullets: item.bullets } };
+}
+
+function mergeBullets(current: string[], revised: string[], bulletIndex: number | null) {
+  if (bulletIndex === null) return revised;
+  return current.map((bullet, index) => index === bulletIndex ? revised[0] ?? bullet : bullet);
+}
+
+function findCustomCollection(resume: ResumeDocument, id: string): "certifications" | "languages" | "customSections" | null {
+  if (resume.content.certifications.some((item) => item.id === id)) return "certifications";
+  if (resume.content.languages.some((item) => item.id === id)) return "languages";
+  if (resume.content.customSections.some((item) => item.id === id)) return "customSections";
+  return null;
 }
 
 export type { EditorSection };

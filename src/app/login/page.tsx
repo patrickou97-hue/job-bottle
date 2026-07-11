@@ -4,7 +4,7 @@ import { PageShell } from "@/components/layout/PageShell";
 
 export default function LoginPage() {
   return (
-    <PageShell>
+    <PageShell variant="scene">
       <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center">
         <Suspense
           fallback={

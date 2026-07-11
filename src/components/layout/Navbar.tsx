@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BriefcaseBusiness, Home, ListChecks, LogOut, Shield, User } from "lucide-react";
+import { BriefcaseBusiness, FileText, FlaskConical, ListChecks, LogOut, MessageCircle, Shield, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
@@ -11,18 +11,21 @@ import { cn } from "@/lib/utils";
 import type { Profile } from "@/lib/types";
 
 const navItems = [
-  { href: "/explore", label: "找岗位" },
+  { href: "/explore", label: "岗位坐标" },
   { href: "/my", label: "投递管理" },
-  { href: "/resume", label: "简历" },
-  { href: "/forum", label: "求职交流" },
-  { href: "/profile", label: "我的" },
+  { href: "/resume", label: "简历制作" },
+  { href: "/forum", label: "求职社区" },
+  { href: "/bottle", label: "星瓶" },
+  { href: "/profile", label: "个人中心" },
 ];
 
 const mobileNavItems = [
-  { href: "/", label: "首页", icon: Home },
   { href: "/explore", label: "岗位", icon: BriefcaseBusiness },
   { href: "/my", label: "投递", icon: ListChecks },
-  { href: "/profile", label: "我的", icon: User },
+  { href: "/resume", label: "简历", icon: FileText },
+  { href: "/forum", label: "社区", icon: MessageCircle },
+  { href: "/bottle", label: "星瓶", icon: FlaskConical },
+  { href: "/profile", label: "个人", icon: User },
 ];
 
 export function Navbar() {
@@ -112,23 +115,23 @@ export function Navbar() {
         </div>
 
         <Link href={profile ? "/profile" : "/login"} className="ml-auto text-sm text-ink-secondary md:hidden">
-          {profile ? profile.display_name || "我的" : "登录"}
+          {profile ? profile.display_name || "个人中心" : "登录"}
         </Link>
         </div>
       </header>
       <nav
-        className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-4 border-t border-white/[0.1] bg-[#000001]/94 px-2 pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-1.5 backdrop-blur-md md:hidden"
+        className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-6 border-t border-white/[0.1] bg-[#000001]/90 px-1 pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-1.5 backdrop-blur-xl md:hidden"
         aria-label="移动主导航"
       >
         {mobileNavItems.map((item) => {
           const Icon = item.icon;
-          const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+          const active = pathname.startsWith(item.href);
           return (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "flex min-h-12 flex-col items-center justify-center gap-1 text-[11px] transition",
+                "flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 text-[10px] transition",
                 active ? "text-ink-primary" : "text-ink-muted",
               )}
               aria-current={active ? "page" : undefined}

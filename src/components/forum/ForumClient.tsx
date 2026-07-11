@@ -65,7 +65,7 @@ export function ForumClient() {
     <div className="observatory-page space-y-8">
       <section className="page-hero">
         <div>
-          <h1 className="page-title">经验库</h1>
+          <h1 className="page-title">求职社区</h1>
         </div>
         <div className="flex items-end justify-start md:justify-end">
           <Button onClick={() => setShowForm((v) => !v)}>

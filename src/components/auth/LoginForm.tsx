@@ -125,14 +125,14 @@ export function LoginForm() {
   const selectedRoles = splitProfileInput(useWatch({ control, name: "targetRoles" }));
 
   return (
-    <div className="liquid-panel mx-auto w-full max-w-md p-6 sm:p-8">
+    <div className="mx-auto w-full max-w-md border border-white/[0.13] bg-[#12294E]/42 p-6 shadow-[0_32px_100px_rgba(0,0,1,0.58)] backdrop-blur-2xl sm:p-8">
       <h1 className="text-center text-3xl font-semibold tracking-[-0.02em] text-ink-primary">
         登录拾星
       </h1>
       <p className="mt-3 text-center text-sm leading-6 text-ink-secondary">
         {isRegister
-          ? "注册后保存岗位、简历和投递记录。"
-          : "登录后查看投递记录。"}
+          ? "注册后保存岗位、简历和投递记录"
+          : "登录后查看投递记录"}
       </p>
 
       <form className="mt-8 space-y-5" onSubmit={handleSubmit(onSubmit)}>

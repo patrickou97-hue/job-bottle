@@ -262,7 +262,7 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
       <div className="observatory-page space-y-8">
         <section className="page-hero">
           <div>
-            <h1 className="page-title">简历</h1>
+            <h1 className="page-title">简历制作</h1>
           </div>
         </section>
         <div className="empty-state">
@@ -276,7 +276,7 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
     <div className="observatory-page space-y-8">
       <section className="page-hero">
         <div>
-          <h1 className="page-title">简历</h1>
+          <h1 className="page-title">简历制作</h1>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <span className="status-pill rounded-full px-3 py-2 text-sm text-ink-secondary">

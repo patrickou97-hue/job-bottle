@@ -106,7 +106,7 @@ export function ApplicationOrbitSystem({
             <div className="empty-state absolute inset-0">
               <div>
                 <h3>暂无投递记录</h3>
-                <p>从岗位池打开官网投递后，岗位会进入这里。</p>
+                <p>从岗位坐标打开官网投递后，岗位会进入这里。</p>
               </div>
             </div>
           ) : null}

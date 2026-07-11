@@ -230,7 +230,7 @@ export function ProfileClient() {
       <div className="observatory-page space-y-8">
         <section className="page-hero">
           <div>
-            <h1 className="page-title">我的资料</h1>
+            <h1 className="page-title">个人中心</h1>
           </div>
         </section>
         {message ? <div className="info-banner text-sm">{message}</div> : null}
@@ -251,7 +251,7 @@ export function ProfileClient() {
     <div className="observatory-page space-y-7">
       <section className="page-hero">
         <div>
-          <h1 className="page-title">我的资料</h1>
+          <h1 className="page-title">个人中心</h1>
           <p className="page-subtitle mt-4">{statusLine}</p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Button onClick={() => void handleSave()} disabled={busy}>
@@ -293,7 +293,7 @@ export function ProfileClient() {
               <p className="text-sm leading-7 text-ink-secondary">
                 {applications.length > 0
                   ? `你已经收进 ${applications.length} 个机会，其中 ${appliedCount} 个进入投递或后续阶段。`
-                  : "还没有保存岗位。先从岗位池添加一条记录。"}
+                  : "还没有保存岗位。先从岗位坐标添加一条记录。"}
               </p>
               <div className="mt-5 grid grid-cols-3 gap-3">
                 <BottleFact label="保存机会" value={formatLit(applications.length)} />
@@ -302,7 +302,7 @@ export function ProfileClient() {
               </div>
               <div className="mt-5 flex flex-wrap gap-3">
                 <Link href="/explore" className="gold-button inline-flex h-10 items-center rounded-lg px-4 text-sm font-medium">
-                  去岗位池
+                  去岗位坐标
                 </Link>
                 <Link href="/bottle" className="muted-button pressable inline-flex h-10 items-center rounded-lg px-4 text-sm">
                   查看星瓶
@@ -409,7 +409,7 @@ export function ProfileClient() {
             )}
           </div>
           <Link href="/explore" className="text-action mt-5 text-sm">
-            打开岗位池
+            打开岗位坐标
             <ArrowRight aria-hidden="true" className="size-4" />
           </Link>
         </article>
@@ -419,7 +419,7 @@ export function ProfileClient() {
         <article className="border-t border-white/[0.12] pt-5">
           <SectionLead title="常用入口" />
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            <GuideLink href="/explore" title="浏览岗位池" />
+            <GuideLink href="/explore" title="浏览岗位坐标" />
             <GuideLink href="/my" title="处理投递进度" />
             <GuideLink href="/resume" title="管理简历" />
             <GuideLink href="/guide" title="查看秋招流程" />

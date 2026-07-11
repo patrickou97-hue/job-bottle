@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import Link from 'next/link'
 import { motion, useReducedMotion } from 'motion/react'
 import { getCurrentUserOrNull } from '@/lib/auth'
 import { PLANET_ROUTES, type PlanetRoute } from '@/lib/galaxy-routes'
@@ -12,7 +13,6 @@ import { FloatingPlanet } from './FloatingPlanet'
 import { OrbitLines } from './OrbitLines'
 import { PlanetTransitionOverlay } from './PlanetTransitionOverlay'
 import { SpaceBackground } from './SpaceBackground'
-import { HomeWorkspace } from '@/components/home/HomeWorkspace'
 
 const TRANSITION_MS = 860
 const MOBILE_PLANET_SIZE: Record<string, number> = {
@@ -164,8 +164,6 @@ export function SpaceHome() {
     return <main className="grid min-h-[100svh] place-items-center bg-[#000001] text-sm text-ink-muted"><span className="loading-line">正在进入拾星</span></main>
   }
 
-  if (user) return <HomeWorkspace userId={user.id} />
-
   return (
     <main
       className="relative h-[100svh] min-h-[560px] w-full overflow-hidden"
@@ -173,7 +171,7 @@ export function SpaceHome() {
     >
       <SpaceBackground entering={entering} />
 
-      <div className="pointer-events-none absolute left-5 top-5 z-30 md:left-10 md:top-8">
+      <Link href="/" aria-label="返回拾星主页" className="absolute left-5 top-5 z-30 md:left-10 md:top-8">
         <Image
           src="/brand/shi-xing-wordmark.png"
           alt="拾星"
@@ -182,7 +180,7 @@ export function SpaceHome() {
           priority
           className="h-9 w-auto object-contain drop-shadow-[0_0_18px_rgba(126,124,181,0.24)] md:h-10"
         />
-      </div>
+      </Link>
 
       <button
         type="button"

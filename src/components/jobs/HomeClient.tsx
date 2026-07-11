@@ -596,7 +596,7 @@ function JobRadarHeader({
   return (
     <section className="page-hero">
       <div className="min-w-0">
-        <h1 className="page-title">岗位池</h1>
+        <h1 className="page-title">岗位坐标</h1>
       </div>
 
       <div className="progress-summary px-4 py-2 md:px-5 md:py-3">

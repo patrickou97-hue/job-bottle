@@ -81,9 +81,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/galaxy/SpaceHome.tsx",
-    mustInclude: ["MOBILE_PLANET_LAYOUT", "OrbitLines", "PlanetTransitionOverlay", "window.setTimeout", "encodeURIComponent(planet.href)", "/brand/shi-xing-wordmark.png", "desktopOrbitScale", "mobileOrbitScale", "planetScale={0.82}", "<CorePlanet compact />", "href: user ? '/profile' : '/login'", "<HomeWorkspace userId={user.id} />", "authResolved"],
-    mustNotInclude: ["router.push(planet.href)", "href: user ? '/my' : '/login'", "href: user ? '/my-applications' : '/login'", "bg-white", "rounded-2xl", "<PlanetLabel"],
-    label: "主页保留拾星字标、桌面/移动端运行星系和行星进入转场",
+    mustInclude: ["MOBILE_PLANET_LAYOUT", "OrbitLines", "PlanetTransitionOverlay", "window.setTimeout", "encodeURIComponent(planet.href)", "/brand/shi-xing-wordmark.png", "desktopOrbitScale", "mobileOrbitScale", "planetScale={0.82}", "<CorePlanet compact />", "href: user ? '/profile' : '/login'", "authResolved", "返回拾星主页"],
+    mustNotInclude: ["router.push(planet.href)", "href: user ? '/my' : '/login'", "href: user ? '/my-applications' : '/login'", "HomeWorkspace", "bg-white", "rounded-2xl", "<PlanetLabel"],
+    label: "所有用户主页均保留拾星字标、运行星系和行星进入转场",
   },
   {
     file: "src/components/galaxy/CorePlanet.tsx",
@@ -93,9 +93,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/lib/planet-routes.ts",
-    mustInclude: ["label: '岗位池'", "label: '投递'", "label: '简历'", "label: '经验库'", "label: '星瓶'"],
-    mustNotInclude: ["label: '岗位星图'", "label: '我的投递'", "label: '简历制作'", "label: '讨论区'", "label: '我的星瓶'"],
-    label: "首页行星入口与主导航使用同一组项目名称",
+    mustInclude: ["label: '岗位坐标'", "label: '投递管理'", "label: '简历制作'", "label: '求职社区'", "label: '星瓶'"],
+    mustNotInclude: ["label: '岗位池'", "label: '经验库'", "label: '我的星瓶'"],
+    label: "首页行星入口使用统一一级模块名称",
   },
   {
     file: "src/components/galaxy/OrbitLines.tsx",
@@ -195,9 +195,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/layout/Navbar.tsx",
-    mustInclude: ["找岗位", "投递管理", "简历", "求职交流", "我的", "mobileNavItems", "首页", "岗位", "投递", "移动主导航", "bottom-0"],
-    mustNotInclude: ["{ href: \"/bottle\", label: \"星瓶\" }"],
-    label: "全局导航按求职任务收敛且星瓶回到个人资产体系",
+    mustInclude: ["岗位坐标", "投递管理", "简历制作", "求职社区", "星瓶", "个人中心", "mobileNavItems", "grid-cols-6", "移动主导航", "bottom-0"],
+    mustNotInclude: ["找岗位", "求职交流", "label: \"我的\"", "label: \"首页\""],
+    label: "桌面与移动端均直接展示六个一级模块",
   },
   {
     file: "src/components/resume/ResumePreview.tsx",
@@ -207,7 +207,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/resume/ResumeEditor.tsx",
-    mustInclude: ["PhotoField", "cropPhotoToPortrait", "上传照片", "复制通用简历后"],
+    mustInclude: ["PhotoField", "cropPhotoToPortrait", "上传照片", "复制通用简历后", "AI 润色", "ResumePolishDialog", "mergeBullets", "撤销"],
     mustNotInclude: ["模板风格", "RESUME_TEMPLATES"],
     label: "简历编辑器聚焦内容填写并支持岗位关联",
   },
@@ -349,7 +349,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/profile/ProfileClient.tsx",
-    mustInclude: ["我的资料", "SectionLead", "基本信息", "匹配岗位", "查看秋招流程"],
+    mustInclude: ["个人中心", "SectionLead", "基本信息", "匹配岗位", "查看秋招流程"],
     mustNotInclude: ["eyebrow=", "个人中心 · 用户管理"],
     label: "个人中心移除模板化眉题，保留资料、匹配岗位和流程入口",
   },
@@ -367,7 +367,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/jobs/[id]/page.tsx",
-    mustInclude: ["generateMetadata", "fetchJobById", "JobDetailActions", "返回岗位池", "RelatedJobs", "开启时间", "工作职责", "必须条件", "优先条件", "高频关键词", "原始岗位数据暂未"],
+    mustInclude: ["generateMetadata", "fetchJobById", "JobDetailActions", "返回岗位坐标", "RelatedJobs", "开启时间", "工作职责", "必须条件", "优先条件", "高频关键词", "原始岗位数据暂未"],
     mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY"],
     label: "岗位详情新路由服务端读取并提供收录入口且不展示下线日期",
   },
@@ -403,7 +403,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/MyApplicationsClient.tsx",
-    mustInclude: ["application.job.company_name", "StatusPill", "handleApplicationChanged", "handleApplicationDeleted", "type WorkspaceView = \"list\" | \"board\" | \"map\"", "优先处理", "ApplicationListItem", "投递视图"],
+    mustInclude: ["application.job.company_name", "StatusPill", "handleApplicationChanged", "handleApplicationDeleted", "type WorkspaceView = \"list\" | \"board\" | \"map\"", "本周求职行动", "ApplicationListItem", "投递视图"],
     mustNotInclude: ["DeadlineChip", "formatDateTime, isValidHttpUrl", "onChanged={loadData}"],
     label: "我的星图列表保留投递状态且不展示下线日期",
   },
@@ -436,10 +436,22 @@ const SOURCE_INVARIANTS = [
     label: "投递轨道侧滑面板使用无界轨道节点、备注失焦保存和行内删除确认",
   },
   {
-    file: "src/components/home/HomeWorkspace.tsx",
-    mustInclude: ["当前阶段", "优先处理", "即将截止", "推荐岗位", "投递漏斗", "最近更新", "getCareerPhase", "getWorkspaceTasks"],
-    mustNotInclude: ["Math.random", "SUPABASE_SERVICE_ROLE_KEY"],
-    label: "登录后首页按阶段、任务、截止、推荐和漏斗提供求职工作台",
+    file: "src/components/applications/MyApplicationsClient.tsx",
+    mustInclude: ["当前阶段", "投递管理", "本周求职行动", "材料准备", "投递记录", "getApplicationPhase", "getWorkspaceTasks"],
+    mustNotInclude: ["HomeWorkspace", "SUPABASE_SERVICE_ROLE_KEY"],
+    label: "阶段推进和本周行动直接合并到投递管理",
+  },
+  {
+    file: "src/app/api/resume/ai-polish/route.ts",
+    mustInclude: ["MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL", "auth.getUser", "REQUEST_TIMEOUT_MS", "takeRateSlot", "不得虚构", "resultSchema", "parseResult", "原文未改变"],
+    mustNotInclude: ["NEXT_PUBLIC_MIMO", "console.log", "SUPABASE_SERVICE_ROLE_KEY"],
+    label: "简历分段润色仅在服务端调用 MiMo 并限制幻觉、输入、超时和频率",
+  },
+  {
+    file: "src/components/resume/ResumePolishDialog.tsx",
+    mustInclude: ["当前经历全部描述", "第三方 MiMo 服务", "原始内容", "润色结果", "修改说明", "建议补充", "风险提示", "应用修改", "保留原文", "重新生成"],
+    mustNotInclude: ["MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL"],
+    label: "AI 结果先对比确认且客户端不包含服务端配置",
   },
   {
     file: "supabase/migrations/20260711120000_application_workflow_details.sql",
@@ -551,16 +563,16 @@ const REQUIRED_FILES = [
 const REQUIRED_TEXT = {
   "/": ["拾星"],
   "/explore": ["岗位星图", "筛选", "排序方式", "最新开启"],
-  "/my": ["投递"],
-  "/profile": ["我的资料"],
-  "/bottle": ["我的星瓶"],
-  "/resume": ["简历"],
+  "/my": ["投递管理", "当前阶段"],
+  "/profile": ["个人中心"],
+  "/bottle": ["星瓶"],
+  "/resume": ["简历制作"],
   "/galaxy": ["岗位星系", "地区星系", "行业星系"],
   "/galaxy/region": ["地区星系", "北京星云", "上海星云"],
   "/galaxy/industry": ["行业星系", "互联网星云", "金融星云"],
   "/jobs": ["拾星", "筛选", "排序方式", "最新开启"],
   "/login": ["登录拾星", "邮箱", "密码"],
-  "/forum": ["经验库"],
+  "/forum": ["求职社区"],
   "/admin": ["管理后台"],
 };
 
