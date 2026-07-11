@@ -183,7 +183,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/resume/ResumeBuilderClient.tsx",
-    mustInclude: ["ResumeEditor", "ResumePreview", "ResumePdfExportButton", "新建简历", "实时预览", "共用同一套 A4 排版坐标", "prepareTargetResume", "创建岗位版本", "打开岗位版本", "linkedJobId: targetJob.id", "primaryRole", "targetRole: primaryRole", "linkedJobContext={targetJob}", "saveLocalResumes", "fetchMyResumes", "upsertMyResume", "已同步到账号", "请谨慎审核 AI 输出的简历信息"],
+    mustInclude: ["ResumeEditor", "ResumePreview", "ResumePdfExportButton", "ResumePageTitle", "AI-Powered", "Snell Roundhand", "新建简历", "实时预览", "共用同一套 A4 排版坐标", "prepareTargetResume", "创建岗位版本", "打开岗位版本", "linkedJobId: targetJob.id", "primaryRole", "targetRole: primaryRole", "linkedJobContext={targetJob}", "saveLocalResumes", "fetchMyResumes", "upsertMyResume", "已同步到账号", "请谨慎审核 AI 输出的简历信息"],
     mustNotInclude: ["requestAnimationFrame"],
     label: "简历制作器提供列表、编辑、预览、本地保存和账号同步",
   },
@@ -207,7 +207,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/resume/ResumeEditor.tsx",
-    mustInclude: ["PhotoField", "cropPhotoToPortrait", "上传照片", "复制通用简历后", "AI 润色", "ResumePolishDialog", "mergeBullets", "撤销"],
+    mustInclude: ["PhotoField", "cropPhotoToPortrait", "上传照片", "复制通用简历后", "AI 润色", "ResumePolishDialog", "linear-gradient(135deg,#12294E_0%,#536D9E_52%,#B9C8E5_100%)", "rounded-full", "focus-visible:ring-[#c8d7ee]/80", "mergeBullets", "撤销"],
     mustNotInclude: ["模板风格", "RESUME_TEMPLATES"],
     label: "简历编辑器聚焦内容填写并支持岗位关联",
   },

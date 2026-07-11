@@ -262,7 +262,7 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
       <div className="observatory-page space-y-8">
         <section className="page-hero">
           <div>
-            <h1 className="page-title">简历制作</h1>
+            <ResumePageTitle />
           </div>
         </section>
         <div className="empty-state">
@@ -276,7 +276,7 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
     <div className="observatory-page space-y-8">
       <section className="page-hero">
         <div>
-          <h1 className="page-title">简历制作</h1>
+          <ResumePageTitle />
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <span className="status-pill rounded-full px-3 py-2 text-sm text-ink-secondary">
@@ -410,6 +410,21 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
       <p className="border-t border-white/[0.08] pt-4 text-center text-xs leading-5 text-ink-muted">
         请谨慎审核 AI 输出的简历信息
       </p>
+    </div>
+  );
+}
+
+function ResumePageTitle() {
+  return (
+    <div className="relative inline-flex pb-7 pr-16 sm:pr-20">
+      <h1 className="page-title">简历制作</h1>
+      <span
+        className="pointer-events-none absolute bottom-0 right-0 whitespace-nowrap bg-[linear-gradient(90deg,#879fc8,#dce7f8)] bg-clip-text text-base font-semibold italic text-transparent drop-shadow-[0_0_10px_rgba(185,200,229,0.3)] sm:text-lg"
+        style={{ fontFamily: '"Snell Roundhand", "Brush Script MT", "Segoe Script", cursive' }}
+        aria-label="AI-Powered"
+      >
+        AI-Powered
+      </span>
     </div>
   );
 }

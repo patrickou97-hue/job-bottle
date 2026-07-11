@@ -618,8 +618,12 @@ function PolishableItem({ children, onPolish }: { children: React.ReactNode; onP
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <button type="button" className="text-action pressable inline-flex items-center gap-2 border border-white/[0.1] px-3 py-1.5 text-xs" onClick={onPolish}>
-          <Sparkles aria-hidden="true" className="size-3.5" />
+        <button
+          type="button"
+          className="pressable inline-flex h-9 items-center gap-2 rounded-full border border-[#dce7f8]/35 bg-[linear-gradient(135deg,#12294E_0%,#536D9E_52%,#B9C8E5_100%)] px-4 text-xs font-semibold text-white shadow-[0_8px_24px_rgba(50,78,126,0.32),inset_0_1px_0_rgba(255,255,255,0.28)] transition-[filter,box-shadow,transform] duration-200 hover:brightness-110 hover:shadow-[0_10px_30px_rgba(83,109,158,0.45),inset_0_1px_0_rgba(255,255,255,0.34)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c8d7ee]/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#07142a]"
+          onClick={onPolish}
+        >
+          <Sparkles aria-hidden="true" className="size-3.5 text-[#f4f7ff] drop-shadow-[0_0_6px_rgba(255,255,255,0.55)]" />
           AI 润色
         </button>
       </div>
