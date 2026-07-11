@@ -31,8 +31,9 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import type { Job } from "@/lib/types";
 
 type StorageMode = "local" | "cloud";
+type TargetJobContext = { company: string; id: string; role: string };
 
-export function ResumeBuilderClient() {
+export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJobContext | null }) {
   const [resumes, setResumes] = useState<ResumeDocument[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<EditorSection>("basic");
@@ -44,14 +45,15 @@ export function ResumeBuilderClient() {
   const cloudFingerprintRef = useRef("");
 
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
+    const timer = window.setTimeout(() => {
       const stored = loadLocalResumes();
       const initial = stored.length > 0 ? stored : [createSampleResume()];
       setResumes(initial);
       setSelectedId(initial[0]?.id ?? null);
       setLoaded(true);
-    });
-    return () => window.cancelAnimationFrame(frame);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -155,6 +157,9 @@ export function ResumeBuilderClient() {
     () => resumes.find((resume) => resume.id === selectedId) ?? resumes[0] ?? null,
     [resumes, selectedId],
   );
+  const targetResume = targetJob
+    ? resumes.find((resume) => resume.linkedJobId === targetJob.id) ?? null
+    : null;
 
   function updateResume(nextResume: ResumeDocument) {
     setSaveState("正在保存");
@@ -174,6 +179,38 @@ export function ResumeBuilderClient() {
     setResumes((current) => [next, ...current]);
     setSelectedId(next.id);
     setActiveSection("basic");
+  }
+
+  function prepareTargetResume() {
+    if (!targetJob || !selectedResume) return;
+    if (targetResume) {
+      setSelectedId(targetResume.id);
+      setActiveSection("target");
+      return;
+    }
+
+    const now = new Date().toISOString();
+    const primaryRole = targetJob.role.split(/[,，、]/)[0]?.trim() || "目标岗位";
+    const next: ResumeDocument = {
+      ...selectedResume,
+      id: createEmptyResume().id,
+      title: `${targetJob.company} · ${primaryRole}`,
+      targetRole: primaryRole,
+      jobTarget: targetJob.role,
+      linkedJobId: targetJob.id,
+      content: {
+        ...selectedResume.content,
+        basics: {
+          ...selectedResume.content.basics,
+          targetRole: primaryRole,
+        },
+      },
+      createdAt: now,
+      updatedAt: now,
+    };
+    setResumes((current) => [next, ...current]);
+    setSelectedId(next.id);
+    setActiveSection("target");
   }
 
   function duplicateResume(resume: ResumeDocument) {
@@ -245,6 +282,21 @@ export function ResumeBuilderClient() {
         </div>
       </section>
 
+      {targetJob ? (
+        <section className="flex flex-col gap-4 border-y border-white/[0.1] py-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-ink-primary">{targetJob.company} · {targetJob.role}</p>
+            <p className="mt-1 text-sm leading-6 text-ink-muted">
+              {targetResume ? "这个岗位已有绑定版本，可以继续修改。" : "基于当前简历创建副本，并自动绑定到这个岗位。"}
+            </p>
+          </div>
+          <Button className="shrink-0" onClick={prepareTargetResume}>
+            <FileText aria-hidden="true" className="size-4" />
+            {targetResume ? "打开岗位版本" : "创建岗位版本"}
+          </Button>
+        </section>
+      ) : null}
+
       <ResumeTemplatePicker selectedTemplateId={selectedResume.templateId} onChange={updateTemplate} />
 
       <section className="grid gap-6 xl:grid-cols-[240px_minmax(0,1fr)]">
@@ -314,6 +366,7 @@ export function ResumeBuilderClient() {
             <ResumeEditor
               resume={selectedResume}
               jobs={jobs}
+              linkedJobContext={targetJob}
               activeSection={activeSection}
               onSectionChange={setActiveSection}
               onChange={updateResume}
@@ -325,12 +378,12 @@ export function ResumeBuilderClient() {
               <div>
                 <h2 className="section-title">实时预览</h2>
                 <p className="mt-1 text-xs text-ink-muted">
-                  {getResumeTemplateMeta(selectedResume.templateId).label}。预览与导出使用相同的版式规则。
+                  {getResumeTemplateMeta(selectedResume.templateId).label}。预览与下载共用同一套 A4 排版坐标。
                 </p>
               </div>
               <ResumePdfExportButton resume={selectedResume} />
             </div>
-            <div className="overflow-x-auto pb-4">
+            <div className="pb-4">
               <ResumePreview resume={selectedResume} />
             </div>
           </section>

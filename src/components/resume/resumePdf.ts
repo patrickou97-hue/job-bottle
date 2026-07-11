@@ -44,14 +44,56 @@ type ResumeCopy = {
 type LayoutState = {
   allowPageBreaks: boolean;
   bottom: number;
+  color: string;
   draw: boolean;
+  fontSize: number;
+  fontWeight: "bold" | "normal";
   left: number;
+  operations?: ResumePreviewOperation[];
   page: number;
   pdf: JsPdf;
   right: number;
   templateId: ResumeTemplateId;
   top: number;
   y: number;
+};
+
+export type ResumePreviewOperation =
+  | {
+      type: "image";
+      page: number;
+      src: string;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    }
+  | {
+      type: "line";
+      page: number;
+      color: string;
+      width: number;
+      x1: number;
+      x2: number;
+      y1: number;
+      y2: number;
+    }
+  | {
+      type: "text";
+      page: number;
+      color: string;
+      size: number;
+      text: string;
+      weight: "bold" | "normal";
+      x: number;
+      y: number;
+    };
+
+export type ResumePreviewLayout = {
+  pageCount: number;
+  pageHeight: number;
+  pageWidth: number;
+  operations: ResumePreviewOperation[];
 };
 
 const PAGE_WIDTH = 595.28;
@@ -72,30 +114,56 @@ const COMPACT_OPTIONS: PdfOptions[] = [
 ];
 
 let fontCache: Promise<{ bold: string; regular: string }> | null = null;
+let previewMeasurementPdfCache: Promise<JsPdf> | null = null;
 
 export async function exportResumeToPdf(resume: ResumeDocument) {
-  const { jsPDF } = await import("jspdf");
-  const fonts = await loadPdfFonts();
-  const selectedOptions = await chooseOptions(resume, jsPDF, fonts);
-  const pdf = createPdf(jsPDF, fonts);
-  renderResume(pdf, resume, selectedOptions, { allowPageBreaks: true, draw: true });
+  const pdf = await buildResumePdf(resume);
   const fileName = sanitizeFileName(resume.content.basics.name || resume.title || "Resume");
   pdf.save(`${fileName}-Resume.pdf`);
 }
 
-async function chooseOptions(
-  resume: ResumeDocument,
-  jsPDF: typeof import("jspdf").jsPDF,
-  fonts: { bold: string; regular: string },
-) {
+export async function createResumePreviewLayout(resume: ResumeDocument): Promise<ResumePreviewLayout> {
+  const pdf = await getPreviewMeasurementPdf();
+  const selectedOptions = chooseOptions(resume, pdf);
+  const operations: ResumePreviewOperation[] = [];
+  const result = renderResume(pdf, resume, selectedOptions, {
+    allowPageBreaks: true,
+    draw: false,
+    operations,
+  });
+
+  return {
+    pageCount: result.page,
+    pageHeight: PAGE_HEIGHT,
+    pageWidth: PAGE_WIDTH,
+    operations,
+  };
+}
+
+async function buildResumePdf(resume: ResumeDocument) {
+  const { jsPDF } = await import("jspdf");
+  const fonts = await loadPdfFonts();
+  const pdf = createPdf(jsPDF, fonts);
+  const selectedOptions = chooseOptions(resume, pdf);
+  renderResume(pdf, resume, selectedOptions, { allowPageBreaks: true, draw: true });
+  return pdf;
+}
+
+function chooseOptions(resume: ResumeDocument, pdf: JsPdf) {
   const optionSet = getTemplateOptions(resume.templateId);
   for (const options of optionSet) {
-    const pdf = createPdf(jsPDF, fonts);
     const result = renderResume(pdf, resume, options, { allowPageBreaks: false, draw: false });
     if (result.page === 1 && result.y <= PAGE_HEIGHT - BOTTOM) return options;
   }
 
   return optionSet[optionSet.length - 1];
+}
+
+function getPreviewMeasurementPdf() {
+  previewMeasurementPdfCache ??= Promise.all([import("jspdf"), loadPdfFonts()]).then(([module, fonts]) =>
+    createPdf(module.jsPDF, fonts),
+  );
+  return previewMeasurementPdfCache;
 }
 
 function createPdf(
@@ -121,13 +189,17 @@ function renderResume(
   pdf: JsPdf,
   resume: ResumeDocument,
   options: PdfOptions,
-  mode: { allowPageBreaks: boolean; draw: boolean },
+  mode: { allowPageBreaks: boolean; draw: boolean; operations?: ResumePreviewOperation[] },
 ) {
   const state: LayoutState = {
     allowPageBreaks: mode.allowPageBreaks,
     bottom: PAGE_HEIGHT - BOTTOM,
+    color: BLACK,
     draw: mode.draw,
+    fontSize: 10,
+    fontWeight: "normal",
     left: MARGIN_X,
+    operations: mode.operations,
     page: 1,
     pdf,
     right: PAGE_WIDTH - MARGIN_X,
@@ -161,20 +233,27 @@ function renderHeader(state: LayoutState, resume: ResumeDocument, options: PdfOp
   const isLeftAligned = templateStyle.header === "left";
   const headerColor = isLeftAligned ? templateStyle.accent : BLACK;
   const displayName = isEnglish ? basics.englishName || basics.name || "Your Name" : addNameSpacing(basics.name || "姓名");
+  const headerTextWidth = state.right - state.left - (hasPhoto ? photoWidth + 18 : 0);
 
-  if (hasPhoto && state.draw) {
-    try {
-      state.pdf.addImage(
-        basics.photoDataUrl,
-        "JPEG",
-        state.right - photoWidth,
-        headerTop - 7,
-        photoWidth,
-        photoHeight,
-      );
-    } catch {
-      // Photo export should not block the resume PDF.
+  if (hasPhoto) {
+    const photoX = state.right - photoWidth;
+    const photoY = headerTop - 7;
+    if (state.draw) {
+      try {
+        state.pdf.addImage(basics.photoDataUrl, "JPEG", photoX, photoY, photoWidth, photoHeight);
+      } catch {
+        // Photo export should not block the resume PDF.
+      }
     }
+    state.operations?.push({
+      type: "image",
+      page: state.page,
+      src: basics.photoDataUrl,
+      x: photoX,
+      y: photoY,
+      width: photoWidth,
+      height: photoHeight,
+    });
   }
 
   if (isLeftAligned) {
@@ -191,16 +270,12 @@ function renderHeader(state: LayoutState, resume: ResumeDocument, options: PdfOp
 
     const target = getResumeTargetLine(resume);
     if (target) {
-      setFont(state, 10.1, "bold", headerColor);
-      drawText(state, target, state.left, y);
-      y += 12;
+      y = drawWrappedAt(state, target, state.left, y, headerTextWidth, 10.1, "bold", headerColor) + 1;
     }
 
     const contact = [formatPhone(basics.phone), basics.email, basics.city].filter(Boolean).join(" | ");
     if (contact) {
-      setFont(state, 9.5, "normal");
-      drawText(state, contact, state.left, y);
-      y += 11;
+      y = drawWrappedAt(state, contact, state.left, y, headerTextWidth, 9.5, "normal") + 1;
     }
 
     const links = formatHeaderLinks(basics, isEnglish);
@@ -208,11 +283,7 @@ function renderHeader(state: LayoutState, resume: ResumeDocument, options: PdfOp
       y = drawWrappedAt(state, links, state.left, y, hasPhoto ? 390 : 505, 8.7, "normal") + 1;
     }
 
-    if (state.draw) {
-      state.pdf.setDrawColor(templateStyle.accent);
-      state.pdf.setLineWidth(0.8);
-      state.pdf.line(state.left, y + 4, state.right, y + 4);
-    }
+    drawLine(state, state.left, y + 4, state.right, y + 4, templateStyle.accent, 0.8);
     state.y = Math.max(y + 15, headerTop + (hasPhoto ? 78 : 58));
     return;
   }
@@ -223,16 +294,12 @@ function renderHeader(state: LayoutState, resume: ResumeDocument, options: PdfOp
 
   const contact = [formatPhone(basics.phone), basics.email, basics.city].filter(Boolean).join(" | ");
   if (contact) {
-    setFont(state, 11, "normal");
-    drawCentered(state, contact, y);
-    y += 14;
+    y = drawCenteredWrapped(state, contact, y, headerTextWidth, 11, "normal") + 1;
   }
 
   const target = getResumeTargetLine(resume);
   if (target) {
-    setFont(state, 10.5, "bold");
-    drawCentered(state, target, y);
-    y += 13;
+    y = drawCenteredWrapped(state, target, y, headerTextWidth, 10.5, "bold") + 1;
   }
 
   const links = formatHeaderLinks(basics, isEnglish);
@@ -349,22 +416,22 @@ function sectionTitle(state: LayoutState, title: string, options: PdfOptions) {
   if (templateStyle.section === "accent") {
     setFont(state, options.headingSize, "bold", templateStyle.accent);
     drawText(state, title, state.left, state.y);
-    if (state.draw) {
-      state.pdf.setDrawColor(207, 214, 223);
-      state.pdf.setLineWidth(0.7);
-      state.pdf.line(state.left, state.y + 4.2, state.right, state.y + 4.2);
-    }
+    drawLine(state, state.left, state.y + 4.2, state.right, state.y + 4.2, "#cfd6df", 0.7);
     state.y += options.headingSize * 1.08;
     return;
   }
 
   drawText(state, title, state.left, state.y);
   const titleWidth = state.pdf.getTextWidth(title);
-  if (state.draw) {
-    state.pdf.setDrawColor(templateStyle.accent);
-    state.pdf.setLineWidth(templateStyle.section === "strong" ? 1 : 0.7);
-    state.pdf.line(state.left + titleWidth + 5, state.y - 3.5, state.right, state.y - 3.5);
-  }
+  drawLine(
+    state,
+    state.left + titleWidth + 5,
+    state.y - 3.5,
+    state.right,
+    state.y - 3.5,
+    templateStyle.accent,
+    templateStyle.section === "strong" ? 1 : 0.7,
+  );
   // Reserve a full text-line after the rule. Without this clearance, the first
   // education or experience row visually collides with the section heading.
   state.y += options.headingSize * 1.38 + 1;
@@ -424,7 +491,7 @@ function bullet(state: LayoutState, text: string, options: PdfOptions) {
 
 function ensureSpace(state: LayoutState, height: number) {
   if (state.y + height <= state.bottom || !state.allowPageBreaks) return;
-  if (state.draw) state.pdf.addPage("letter", "portrait");
+  if (state.draw) state.pdf.addPage("a4", "portrait");
   state.page += 1;
   state.y = state.top;
 }
@@ -464,10 +531,40 @@ function setFont(
   state.pdf.setFont(FONT_FAMILY, weight);
   state.pdf.setFontSize(size);
   state.pdf.setTextColor(color);
+  state.fontSize = size;
+  state.fontWeight = weight;
+  state.color = color;
 }
 
 function drawText(state: LayoutState, text: string, x: number, y: number) {
   if (state.draw) state.pdf.text(text, x, y);
+  state.operations?.push({
+    type: "text",
+    page: state.page,
+    color: state.color,
+    size: state.fontSize,
+    text,
+    weight: state.fontWeight,
+    x,
+    y,
+  });
+}
+
+function drawLine(
+  state: LayoutState,
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number,
+  color: string,
+  width: number,
+) {
+  if (state.draw) {
+    state.pdf.setDrawColor(color);
+    state.pdf.setLineWidth(width);
+    state.pdf.line(x1, y1, x2, y2);
+  }
+  state.operations?.push({ type: "line", page: state.page, color, width, x1, x2, y1, y2 });
 }
 
 function drawCentered(state: LayoutState, text: string, y: number) {
@@ -502,8 +599,9 @@ function drawWrappedAt(
   maxWidth: number,
   size: number,
   weight: "bold" | "normal",
+  color = BLACK,
 ) {
-  setFont(state, size, weight);
+  setFont(state, size, weight, color);
   const lineHeight = size * 1.18;
   let nextY = y;
   wrapText(state, text, maxWidth, size, weight).forEach((line) => {

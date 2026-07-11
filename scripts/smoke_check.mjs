@@ -183,9 +183,27 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/resume/ResumeBuilderClient.tsx",
-    mustInclude: ["ResumeEditor", "ResumePreview", "ResumePdfExportButton", "新建简历", "实时预览", "saveLocalResumes", "fetchMyResumes", "upsertMyResume", "已同步到账号"],
-    mustNotInclude: [],
+    mustInclude: ["ResumeEditor", "ResumePreview", "ResumePdfExportButton", "新建简历", "实时预览", "共用同一套 A4 排版坐标", "prepareTargetResume", "创建岗位版本", "打开岗位版本", "linkedJobId: targetJob.id", "primaryRole", "targetRole: primaryRole", "linkedJobContext={targetJob}", "saveLocalResumes", "fetchMyResumes", "upsertMyResume", "已同步到账号"],
+    mustNotInclude: ["requestAnimationFrame"],
     label: "简历制作器提供列表、编辑、预览、本地保存和账号同步",
+  },
+  {
+    file: "src/components/jobs/JobDetailActions.tsx",
+    mustInclude: ["准备岗位简历", "pathname: \"/resume\"", "company: job.company_name", "job: job.id", "role: job.job_titles"],
+    mustNotInclude: [],
+    label: "岗位详情可携带真实岗位上下文进入简历版本管理",
+  },
+  {
+    file: "src/components/layout/Navbar.tsx",
+    mustInclude: ["找岗位", "投递管理", "简历", "求职交流", "我的"],
+    mustNotInclude: ["{ href: \"/bottle\", label: \"星瓶\" }"],
+    label: "全局导航按求职任务收敛且星瓶回到个人资产体系",
+  },
+  {
+    file: "src/components/resume/ResumePreview.tsx",
+    mustInclude: ["createResumePreviewLayout", "ResumePreviewOperation", "aspect-[210/297]", "data-resume-preview", "viewBox", "A4 简历预览第"],
+    mustNotInclude: ["min-h-[1123px]", "max-w-[794px] bg-white text-[#111111]"],
+    label: "简历预览按共享 PDF 坐标渲染响应式 A4 页面",
   },
   {
     file: "src/components/resume/ResumeEditor.tsx",
@@ -207,9 +225,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/resume/resumePdf.ts",
-    mustInclude: ["jsPDF", "NotoSerifSC-Regular.ttf", "NotoSerifSC-Bold.ttf", "format: \"a4\"", "PAGE_WIDTH = 595.28", "PAGE_HEIGHT = 841.89", "exportResumeToPdf", "addFileToVFS", "getTemplateOptions", "getResumeTargetLine", "consulting", "technical", "academic", "english_classic", "english_modern", "isEnglishResumeTemplate", "EDUCATION", "Boolean(basics.photoDataUrl) && !isEnglish"],
-    mustNotInclude: ["html2canvas", "window.print"],
-    label: "简历 PDF 矢量排版器嵌入中文字体并按模板输出 A4 页面",
+    mustInclude: ["jsPDF", "NotoSerifSC-Regular.ttf", "NotoSerifSC-Bold.ttf", "format: \"a4\"", "PAGE_WIDTH = 595.28", "PAGE_HEIGHT = 841.89", "exportResumeToPdf", "createResumePreviewLayout", "ResumePreviewOperation", "previewMeasurementPdfCache", "addPage(\"a4\", \"portrait\")", "addFileToVFS", "getTemplateOptions", "getResumeTargetLine", "consulting", "technical", "academic", "english_classic", "english_modern", "isEnglishResumeTemplate", "EDUCATION", "Boolean(basics.photoDataUrl) && !isEnglish"],
+    mustNotInclude: ["html2canvas", "window.print", "addPage(\"letter\""],
+    label: "简历 PDF 与网页预览共用矢量 A4 排版坐标和分页规则",
   },
   {
     file: "src/lib/resume-sync.ts",

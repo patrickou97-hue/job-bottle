@@ -154,6 +154,19 @@ export function JobDetailActions({
               登录后收录
             </Link>
           ) : null}
+          <Link
+            href={{
+              pathname: "/resume",
+              query: {
+                company: job.company_name,
+                job: job.id,
+                role: job.job_titles || "目标岗位",
+              },
+            }}
+            className="muted-button pressable inline-flex h-10 items-center justify-center rounded-lg px-4 text-sm font-medium"
+          >
+            准备岗位简历
+          </Link>
           <Button className="gap-2" disabled={busy} onClick={captureAndOpen}>
             <ExternalLink aria-hidden="true" className="size-4" />
             {application ? "打开官网" : "收录并去官网投递"}

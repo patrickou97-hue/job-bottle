@@ -36,12 +36,14 @@ const EDITOR_SECTIONS: { id: EditorSection; label: string }[] = [
 export function ResumeEditor({
   resume,
   jobs,
+  linkedJobContext,
   activeSection,
   onSectionChange,
   onChange,
 }: {
   resume: ResumeDocument;
   jobs: Job[];
+  linkedJobContext?: { company: string; id: string; role: string } | null;
   activeSection: EditorSection;
   onSectionChange: (section: EditorSection) => void;
   onChange: (resume: ResumeDocument) => void;
@@ -208,6 +210,14 @@ export function ResumeEditor({
               onChange={(value) => patchResume({ linkedJobId: value || null })}
               options={[
                 { label: "暂不绑定", value: "" },
+                ...(resume.linkedJobId && !jobs.some((job) => job.id === resume.linkedJobId)
+                  ? [{
+                      label: linkedJobContext?.id === resume.linkedJobId
+                        ? `${linkedJobContext.company} ${linkedJobContext.role}`
+                        : "已关联岗位",
+                      value: resume.linkedJobId,
+                    }]
+                  : []),
                 ...jobs.slice(0, 120).map((job) => ({
                   label: `${job.company_name} ${job.job_titles ?? ""}`.trim(),
                   value: job.id,

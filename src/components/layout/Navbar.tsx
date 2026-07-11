@@ -11,12 +11,11 @@ import { cn } from "@/lib/utils";
 import type { Profile } from "@/lib/types";
 
 const navItems = [
-  { href: "/explore", label: "岗位池" },
-  { href: "/my", label: "投递" },
+  { href: "/explore", label: "找岗位" },
+  { href: "/my", label: "投递管理" },
   { href: "/resume", label: "简历" },
-  { href: "/profile", label: "资料" },
-  { href: "/forum", label: "经验库" },
-  { href: "/bottle", label: "星瓶" },
+  { href: "/forum", label: "求职交流" },
+  { href: "/profile", label: "我的" },
 ];
 
 export function Navbar() {
