@@ -331,9 +331,15 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/galaxy/NebulaDistributionMap.tsx",
-    mustInclude: ["MAP_POSITIONS", "Math.sqrt", "星系越大，岗位越多", "当前维度暂无岗位", "node.count", "md:hidden", "md:block"],
+    mustInclude: ["Math.sqrt", "repeat(3,minmax(0,1fr))", "repeat(4,minmax(0,1fr))", "repeat(5,minmax(0,1fr))", "min-w-0", "max-w-full", "星系越大，岗位越多", "当前维度暂无岗位", "node.count", "md:hidden", "md:block"],
     mustNotInclude: ["Math.random", "blur-3xl"],
-    label: "岗位密度图以稳定位置和面积编码分组数量并提供移动端布局",
+    label: "岗位密度图以无重叠网格和面积编码分组数量并提供移动端布局",
+  },
+  {
+    file: "src/lib/nebula-groups.ts",
+    mustInclude: ["CATEGORY_IMAGES", "REGION_IMAGE_BY_SLUG", "INDUSTRY_IMAGE_BY_SLUG", "nebula-role-fork.png", "nebula-role-triad.png", "nebula-role-crescent.png", "nebula-role-spiral.png", "nebula-role-cross.png", "nebula-role-ring.png", "nebula-region-shenzhen.png", "nebula-region-guangzhou.png", "nebula-region-chengdu.png", "nebula-region-national.png", "nebula-industry-manufacturing.png", "nebula-industry-consumer.png", "nebula-industry-healthcare.png", "nebula-industry-energy.png", "CATEGORY_IMAGES[index % CATEGORY_IMAGES.length]"],
+    mustNotInclude: ["imageSrc: \"/assets/nebula/nebula-batch.png\",\n        variant: \"category\""],
+    label: "地区、行业与职能星系稳定使用多种生成星云资产而非重复同一图片",
   },
   {
     file: "src/components/jobs/HomeClient.tsx",
@@ -455,7 +461,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/resume/ai-polish/route.ts",
-    mustInclude: ["MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL", "auth.getUser", "REQUEST_TIMEOUT_MS", "takeRateSlot", "不得虚构", "不得把普通参与描述夸大", "不得把“协助”“参与”“支持”", "不强行补结果", "warnings 中指出", "必须返回严格 JSON", "resultSchema", "parseResult", "原文未改变"],
+    mustInclude: ["MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL", "auth.getUser", "REQUEST_TIMEOUT_MS", "takeRateSlot", "不得虚构", "不得把普通参与描述夸大", "不得把“协助”“参与”“支持”", "不强行补结果", "warnings 中指出", "必须返回严格 JSON", "resultSchema", "parseResult", "normalizeResultCandidate", "typeof change === \"string\"", "title: source.title", "subtitle: source.subtitle", "原文未改变"],
     mustNotInclude: ["NEXT_PUBLIC_MIMO", "console.log", "SUPABASE_SERVICE_ROLE_KEY"],
     label: "简历分段润色仅在服务端调用 MiMo 并限制幻觉、输入、超时和频率",
   },
@@ -571,6 +577,20 @@ const REQUIRED_FILES = [
   "public/assets/nebula/nebula-industry.png",
   "public/assets/nebula/nebula-batch.png",
   "public/assets/nebula/nebula-captured.png",
+  "public/assets/nebula/nebula-role-fork.png",
+  "public/assets/nebula/nebula-role-triad.png",
+  "public/assets/nebula/nebula-role-crescent.png",
+  "public/assets/nebula/nebula-role-spiral.png",
+  "public/assets/nebula/nebula-role-cross.png",
+  "public/assets/nebula/nebula-role-ring.png",
+  "public/assets/nebula/nebula-region-shenzhen.png",
+  "public/assets/nebula/nebula-region-guangzhou.png",
+  "public/assets/nebula/nebula-region-chengdu.png",
+  "public/assets/nebula/nebula-region-national.png",
+  "public/assets/nebula/nebula-industry-manufacturing.png",
+  "public/assets/nebula/nebula-industry-consumer.png",
+  "public/assets/nebula/nebula-industry-healthcare.png",
+  "public/assets/nebula/nebula-industry-energy.png",
 ];
 const REQUIRED_TEXT = {
   "/": ["拾星"],

@@ -1,17 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import type { CSSProperties } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { layoutTransition } from "@/lib/motion";
 import type { NebulaCategory } from "@/lib/nebula-groups";
-
-const MAP_POSITIONS = [
-  [14, 24], [37, 17], [62, 27], [84, 18],
-  [23, 67], [48, 59], [72, 68], [91, 58],
-  [8, 82], [57, 84],
-] as const;
 
 export function NebulaDistributionMap({
   nodes,
@@ -40,20 +33,19 @@ export function NebulaDistributionMap({
         ))}
       </div>
 
-      <div className="relative hidden h-[390px] overflow-hidden border-y border-white/[0.08] md:block">
+      <div className="relative hidden overflow-hidden border-y border-white/[0.08] py-6 md:block">
         <div className="absolute inset-0 opacity-30 [background-image:radial-gradient(circle,rgba(201,197,228,.24)_0_1px,transparent_1.5px)] [background-size:64px_64px]" />
-        <svg aria-hidden="true" className="absolute inset-0 size-full opacity-30" viewBox="0 0 1000 390" preserveAspectRatio="none">
+        <svg aria-hidden="true" className="absolute inset-0 size-full opacity-30" viewBox="0 0 1000 520" preserveAspectRatio="none">
           <path d="M75 296 C180 75 365 80 470 228 S735 350 930 92" fill="none" stroke="rgba(126,124,181,.34)" strokeWidth="1" strokeDasharray="4 10" />
-          <path d="M110 106 C315 340 565 15 880 252" fill="none" stroke="rgba(127,85,104,.22)" strokeWidth="1" strokeDasharray="3 12" />
+          <path d="M110 106 C315 440 565 15 920 390" fill="none" stroke="rgba(127,85,104,.22)" strokeWidth="1" strokeDasharray="3 12" />
         </svg>
-        {nodes.map((node, index) => {
-          const [x, y] = MAP_POSITIONS[index % MAP_POSITIONS.length];
-          return (
-            <div key={node.id} className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: `${x}%`, top: `${y}%` }}>
+        <div className="relative grid grid-cols-[repeat(3,minmax(0,1fr))] items-center gap-x-4 gap-y-7 lg:grid-cols-[repeat(4,minmax(0,1fr))] xl:grid-cols-[repeat(5,minmax(0,1fr))]">
+          {nodes.map((node) => (
+            <div key={node.id} className="flex min-w-0 justify-center">
               <DensityNode node={node} maxCount={maxCount} onSelect={onSelect} reducedMotion={Boolean(reducedMotion)} />
             </div>
-          );
-        })}
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -77,8 +69,7 @@ function DensityNode({
     <motion.button
       type="button"
       layout
-      className="group relative flex min-h-32 w-full flex-col items-center justify-center outline-none md:w-auto md:min-w-[var(--nebula-width)]"
-      style={{ "--nebula-width": `${width}px` } as CSSProperties}
+      className="group relative flex min-h-32 w-full min-w-0 flex-col items-center justify-center outline-none"
       onClick={() => onSelect(node)}
       whileHover={reducedMotion ? undefined : { scale: 1.025 }}
       whileTap={reducedMotion ? undefined : { scale: 0.98 }}
@@ -91,7 +82,7 @@ function DensityNode({
         width={width}
         height={Math.round(width * 0.58)}
         className={cn(
-          "pointer-events-none h-auto object-contain opacity-72 transition-opacity duration-200 group-hover:opacity-100",
+          "pointer-events-none h-auto max-w-full object-contain opacity-72 transition-opacity duration-200 group-hover:opacity-100",
           node.variant === "region" && "hue-rotate-[-8deg]",
           node.variant === "category" && "hue-rotate-[18deg] saturate-[0.82]",
           node.variant === "captured" && "hue-rotate-[-12deg] saturate-[0.82]",

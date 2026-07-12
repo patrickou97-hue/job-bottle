@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
       model,
       messages: buildMessages(parsed.data),
     });
-    const firstResult = parseResult(first);
+    const firstResult = parseResult(first, parsed.data.content);
     if (firstResult) return NextResponse.json(firstResult);
 
     const repaired = await callMimo({
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
         { role: "user", content: `${RESULT_SHAPE}\n待修复内容：\n${first.slice(0, 12_000)}` },
       ],
     });
-    const repairedResult = parseResult(repaired);
+    const repairedResult = parseResult(repaired, parsed.data.content);
     if (!repairedResult) {
       return NextResponse.json({ error: "AI 返回格式无法识别，原文未改变，请重新生成" }, { status: 502 });
     }
@@ -163,14 +163,49 @@ function buildMessages(input: z.infer<typeof inputSchema>): ChatMessage[] {
   ];
 }
 
-function parseResult(content: string) {
+function parseResult(content: string, source: z.infer<typeof inputSchema>["content"]) {
   const candidate = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
   try {
-    const parsed = resultSchema.safeParse(JSON.parse(candidate));
+    const parsed = resultSchema.safeParse(normalizeResultCandidate(JSON.parse(candidate), source));
     return parsed.success ? parsed.data : null;
   } catch {
     return null;
   }
+}
+
+function normalizeResultCandidate(value: unknown, source: z.infer<typeof inputSchema>["content"]) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+  const candidate = value as Record<string, unknown>;
+  const revised = candidate.revised && typeof candidate.revised === "object" && !Array.isArray(candidate.revised)
+    ? candidate.revised as Record<string, unknown>
+    : {};
+  const changes = Array.isArray(candidate.changes)
+    ? candidate.changes.map((change) => {
+        if (typeof change === "string") return { type: "wording", description: change };
+        if (!change || typeof change !== "object" || Array.isArray(change)) return change;
+        const item = change as Record<string, unknown>;
+        return {
+          type: isChangeType(item.type) ? item.type : "wording",
+          description: item.description,
+        };
+      })
+    : [];
+
+  return {
+    ...candidate,
+    revised: {
+      ...revised,
+      title: source.title,
+      subtitle: source.subtitle,
+    },
+    changes,
+    suggestions: Array.isArray(candidate.suggestions) ? candidate.suggestions : [],
+    warnings: Array.isArray(candidate.warnings) ? candidate.warnings : [],
+  };
+}
+
+function isChangeType(value: unknown): value is "clarity" | "structure" | "relevance" | "wording" | "grammar" {
+  return value === "clarity" || value === "structure" || value === "relevance" || value === "wording" || value === "grammar";
 }
 
 function takeRateSlot(userId: string) {
