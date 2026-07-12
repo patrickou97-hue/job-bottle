@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 import { layoutTransition } from "@/lib/motion";
 import type { NebulaCategory } from "@/lib/nebula-groups";
 
+const DESKTOP_NODE_Y_OFFSETS = [-6, 5, -3, 6, -5, 4, -6, 5, -3, 6, -5, 4, -6, 5, -3] as const;
+
 export function NebulaDistributionMap({
   nodes,
   onSelect,
@@ -40,8 +42,12 @@ export function NebulaDistributionMap({
           <path d="M110 106 C315 440 565 15 920 390" fill="none" stroke="rgba(127,85,104,.22)" strokeWidth="1" strokeDasharray="3 12" />
         </svg>
         <div className="relative grid grid-cols-[repeat(3,minmax(0,1fr))] items-center gap-x-4 gap-y-7 lg:grid-cols-[repeat(4,minmax(0,1fr))] xl:grid-cols-[repeat(5,minmax(0,1fr))]">
-          {nodes.map((node) => (
-            <div key={node.id} className="flex min-w-0 justify-center">
+          {nodes.map((node, index) => (
+            <div
+              key={node.id}
+              className="flex min-w-0 justify-center"
+              style={{ transform: `translateY(${DESKTOP_NODE_Y_OFFSETS[index % DESKTOP_NODE_Y_OFFSETS.length]}px)` }}
+            >
               <DensityNode node={node} maxCount={maxCount} onSelect={onSelect} reducedMotion={Boolean(reducedMotion)} />
             </div>
           ))}
@@ -82,7 +88,7 @@ function DensityNode({
         width={width}
         height={Math.round(width * 0.58)}
         className={cn(
-          "pointer-events-none h-auto max-w-full object-contain opacity-72 transition-opacity duration-200 group-hover:opacity-100",
+          "pointer-events-none h-auto max-w-full mix-blend-screen object-contain opacity-84 transition-opacity duration-200 group-hover:opacity-100",
           node.variant === "region" && "hue-rotate-[-8deg]",
           node.variant === "category" && "hue-rotate-[18deg] saturate-[0.82]",
           node.variant === "captured" && "hue-rotate-[-12deg] saturate-[0.82]",

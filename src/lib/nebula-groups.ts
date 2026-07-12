@@ -23,8 +23,8 @@ export type NebulaSelection = {
 };
 
 const REGION_IMAGE_BY_SLUG: Record<string, string> = {
-  beijing: "/assets/nebula/nebula-beijing.png",
-  shanghai: "/assets/nebula/nebula-shanghai.png",
+  beijing: "/assets/nebula/nebula-role-fork.png",
+  shanghai: "/assets/nebula/nebula-role-triad.png",
   shenzhen: "/assets/nebula/nebula-region-shenzhen.png",
   guangzhou: "/assets/nebula/nebula-region-guangzhou.png",
   chengdu: "/assets/nebula/nebula-region-chengdu.png",
@@ -35,16 +35,16 @@ const REGION_IMAGE_BY_SLUG: Record<string, string> = {
 };
 
 const INDUSTRY_IMAGE_BY_SLUG: Record<string, string> = {
-  internet: "/assets/nebula/nebula-internet.png",
-  finance: "/assets/nebula/nebula-finance.png",
-  consulting: "/assets/nebula/nebula-consulting.png",
-  technology: "/assets/nebula/nebula-tech.png",
+  internet: "/assets/nebula/nebula-role-cross.png",
+  finance: "/assets/nebula/nebula-industry-consumer.png",
+  consulting: "/assets/nebula/nebula-role-crescent.png",
+  technology: "/assets/nebula/nebula-industry-healthcare.png",
   manufacturing: "/assets/nebula/nebula-industry-manufacturing.png",
-  consumer: "/assets/nebula/nebula-industry-consumer.png",
-  "real-estate": "/assets/nebula/nebula-role-fork.png",
-  healthcare: "/assets/nebula/nebula-industry-healthcare.png",
-  energy: "/assets/nebula/nebula-industry-energy.png",
-  other: "/assets/nebula/nebula-role-triad.png",
+  consumer: "/assets/nebula/nebula-role-fork.png",
+  "real-estate": "/assets/nebula/nebula-region-chengdu.png",
+  healthcare: "/assets/nebula/nebula-industry-energy.png",
+  energy: "/assets/nebula/nebula-role-triad.png",
+  other: "/assets/nebula/nebula-region-shenzhen.png",
 };
 
 const CATEGORY_IMAGES = [
@@ -54,10 +54,15 @@ const CATEGORY_IMAGES = [
   "/assets/nebula/nebula-role-spiral.png",
   "/assets/nebula/nebula-role-cross.png",
   "/assets/nebula/nebula-role-ring.png",
+  "/assets/nebula/nebula-region-shenzhen.png",
+  "/assets/nebula/nebula-region-guangzhou.png",
+  "/assets/nebula/nebula-region-chengdu.png",
+  "/assets/nebula/nebula-region-national.png",
+  "/assets/nebula/nebula-industry-manufacturing.png",
+  "/assets/nebula/nebula-industry-consumer.png",
+  "/assets/nebula/nebula-industry-healthcare.png",
+  "/assets/nebula/nebula-industry-energy.png",
   "/assets/nebula/nebula-tech.png",
-  "/assets/nebula/nebula-consulting.png",
-  "/assets/nebula/nebula-finance.png",
-  "/assets/nebula/nebula-internet.png",
 ] as const;
 
 export function buildNebulaGateways(jobs: Job[], applications: UserApplication[]): NebulaCategory[] {

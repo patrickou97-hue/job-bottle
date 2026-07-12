@@ -331,7 +331,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/galaxy/NebulaDistributionMap.tsx",
-    mustInclude: ["Math.sqrt", "repeat(3,minmax(0,1fr))", "repeat(4,minmax(0,1fr))", "repeat(5,minmax(0,1fr))", "min-w-0", "max-w-full", "星系越大，岗位越多", "当前维度暂无岗位", "node.count", "md:hidden", "md:block"],
+    mustInclude: ["DESKTOP_NODE_Y_OFFSETS", "translateY", "mix-blend-screen", "repeat(3,minmax(0,1fr))", "repeat(4,minmax(0,1fr))", "repeat(5,minmax(0,1fr))", "min-w-0", "max-w-full", "星系越大，岗位越多", "当前维度暂无岗位", "node.count", "md:hidden", "md:block"],
     mustNotInclude: ["Math.random", "blur-3xl"],
     label: "岗位密度图以无重叠网格和面积编码分组数量并提供移动端布局",
   },
