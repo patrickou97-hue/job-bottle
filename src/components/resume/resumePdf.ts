@@ -103,8 +103,16 @@ const MARGIN_X = 39;
 const TOP = 34;
 const BOTTOM = 34;
 const FONT_FAMILY = "NotoSerifSC";
-const FONT_REGULAR = process.env.NEXT_PUBLIC_RESUME_FONT_REGULAR_URL?.trim() || "/fonts/NotoSerifSC-Regular.ttf";
-const FONT_BOLD = process.env.NEXT_PUBLIC_RESUME_FONT_BOLD_URL?.trim() || "/fonts/NotoSerifSC-Bold.ttf";
+const LOCAL_FONT_REGULAR = "/fonts/NotoSerifSC-Regular.ttf";
+const LOCAL_FONT_BOLD = "/fonts/NotoSerifSC-Bold.ttf";
+const FONT_REGULAR_SOURCES = getFontSources(
+  process.env.NEXT_PUBLIC_RESUME_FONT_REGULAR_URL,
+  LOCAL_FONT_REGULAR,
+);
+const FONT_BOLD_SOURCES = getFontSources(
+  process.env.NEXT_PUBLIC_RESUME_FONT_BOLD_URL,
+  LOCAL_FONT_BOLD,
+);
 const FONT_TIMEOUT_MS = 15_000;
 const FONT_MAX_ATTEMPTS = 3;
 const BLACK = "#111111";
@@ -632,7 +640,7 @@ function drawRight(state: LayoutState, text: string, right: number, y: number) {
 
 async function loadPdfFonts() {
   if (!fontCache) {
-    fontCache = Promise.all([fetchFont(FONT_REGULAR), fetchFont(FONT_BOLD)])
+    fontCache = Promise.all([fetchFont(FONT_REGULAR_SOURCES), fetchFont(FONT_BOLD_SOURCES)])
       .then(([regular, bold]) => ({ bold, regular }))
       .catch((error) => {
         fontCache = null;
@@ -643,16 +651,19 @@ async function loadPdfFonts() {
   return fontCache;
 }
 
-async function fetchFont(path: string) {
+async function fetchFont(sources: string[]) {
   let lastError: Error | null = null;
 
-  for (let attempt = 1; attempt <= FONT_MAX_ATTEMPTS; attempt += 1) {
-    try {
-      return await fetchFontOnce(path);
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error("简历字体网络请求失败，请检查网络后重试。");
-      if (!shouldRetryFontRequest(lastError) || attempt === FONT_MAX_ATTEMPTS) break;
-      await waitForFontRetry(attempt);
+  for (const source of sources) {
+    const maxAttempts = source.startsWith("/") ? FONT_MAX_ATTEMPTS : 1;
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      try {
+        return await fetchFontOnce(source);
+      } catch (error) {
+        lastError = normalizeFontError(error);
+        if (!shouldRetryFontRequest(lastError) || attempt === maxAttempts) break;
+        await waitForFontRetry(attempt);
+      }
     }
   }
 
@@ -674,11 +685,23 @@ async function fetchFontOnce(path: string) {
       throw new Error("简历字体加载超时，请检查网络后重新生成。");
     }
 
-    if (error instanceof Error) throw error;
-    throw new Error("简历字体网络请求失败，请检查网络后重新生成。");
+    throw normalizeFontError(error);
   } finally {
     window.clearTimeout(timeout);
   }
+}
+
+function getFontSources(configuredUrl: string | undefined, localPath: string) {
+  const remoteUrl = configuredUrl?.trim();
+  return remoteUrl && remoteUrl !== localPath ? [remoteUrl, localPath] : [localPath];
+}
+
+function normalizeFontError(error: unknown) {
+  if (error instanceof TypeError) {
+    return new Error("简历字体网络请求失败，请检查网络后重新生成。");
+  }
+  if (error instanceof Error) return error;
+  return new Error("简历字体网络请求失败，请检查网络后重新生成。");
 }
 
 function shouldRetryFontRequest(error: Error) {
