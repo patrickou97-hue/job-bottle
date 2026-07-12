@@ -88,7 +88,7 @@ function DensityNode({
         width={width}
         height={Math.round(width * 0.58)}
         className={cn(
-          "pointer-events-none h-auto max-w-full mix-blend-screen object-contain opacity-84 transition-opacity duration-200 group-hover:opacity-100",
+          "pointer-events-none h-auto max-w-full object-contain opacity-84 transition-opacity duration-200 group-hover:opacity-100",
           node.variant === "region" && "hue-rotate-[-8deg]",
           node.variant === "category" && "hue-rotate-[18deg] saturate-[0.82]",
           node.variant === "captured" && "hue-rotate-[-12deg] saturate-[0.82]",
