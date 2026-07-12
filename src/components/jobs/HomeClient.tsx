@@ -430,6 +430,38 @@ export function HomeClient() {
         }}
       />
 
+      <section id="job-map" className="border-t border-white/[0.1] pt-6">
+        <div className="section-heading items-end">
+          <div>
+            <h2 className="section-title">岗位地图</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-secondary">
+              从地区、行业、职能或投递状态观察岗位分布，点选星系后，岗位清单会同步筛选。
+            </p>
+          </div>
+          {nebulaSelection ? (
+            <span className="text-xs text-ink-muted">当前选区 · {nebulaSelection.name}</span>
+          ) : null}
+        </div>
+        {loading ? (
+          <div className="grid min-h-[390px] place-items-center border-y border-white/[0.1] text-sm text-ink-muted">
+            <span className="loading-line">正在绘制岗位分布</span>
+          </div>
+        ) : (
+          <NebulaGateway
+            key={nebulaResetSignal}
+            jobs={baseVisibleJobs}
+            applications={applications}
+            applicationByJobId={applicationByJobId}
+            onApply={handleApply}
+            hoveredJobId={hoveredJobId}
+            focusedJobId={focusedJobId}
+            onHoverJob={(job) => setHoveredJobId(job?.id ?? null)}
+            onSelectJob={focusJob}
+            onSelectionChange={setNebulaSelection}
+          />
+        )}
+      </section>
+
       <div className="grid gap-8 xl:grid-cols-[300px_minmax(0,1fr)]">
         <JobFilterBar
           filters={filters}
@@ -437,11 +469,11 @@ export function HomeClient() {
           onChange={handleFiltersChange}
         />
 
-        <section id="job-map" className="min-w-0">
+        <section id="job-list" className="min-w-0">
           <div className="section-heading">
             <div className="flex items-baseline gap-2">
               <h2 className="section-title">
-                {loading ? "正在读取" : `${filteredJobs.length} 个岗位`}
+                {loading ? "正在读取" : nebulaSelection ? `${nebulaSelection.name} · ${filteredJobs.length} 个岗位` : `岗位清单 · ${filteredJobs.length} 个`}
               </h2>
               {!loading && filteredJobs.length !== jobs.length && (
                 <span className="text-xs text-ink-muted">
@@ -449,7 +481,19 @@ export function HomeClient() {
                 </span>
               )}
             </div>
-            <MiniBottleSvg />
+            {nebulaSelection ? (
+              <button
+                type="button"
+                className="text-action pressable px-3 py-1.5 text-xs"
+                onClick={() => {
+                  setNebulaSelection(null);
+                  setFocusedJobId(null);
+                  setNebulaResetSignal((value) => value + 1);
+                }}
+              >
+                查看全部
+              </button>
+            ) : <MiniBottleSvg />}
           </div>
 
           {loading ? (
@@ -497,26 +541,6 @@ export function HomeClient() {
           )}
         </section>
       </div>
-
-      <section className="border-t border-white/[0.1] pt-6">
-        <div className="section-heading">
-          <div>
-            <h2 className="section-title">按行业探索</h2>
-          </div>
-        </div>
-        <NebulaGateway
-          key={nebulaResetSignal}
-          jobs={baseVisibleJobs}
-          applications={applications}
-          applicationByJobId={applicationByJobId}
-          onApply={handleApply}
-          hoveredJobId={hoveredJobId}
-          focusedJobId={focusedJobId}
-          onHoverJob={(job) => setHoveredJobId(job?.id ?? null)}
-          onSelectJob={focusJob}
-          onSelectionChange={setNebulaSelection}
-        />
-      </section>
 
       <ProgressDrawer
         application={drawerApplication}
