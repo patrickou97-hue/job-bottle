@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Archive, Sparkles } from "lucide-react";
@@ -473,9 +474,10 @@ export function HomeClient() {
             />
           ) : (
             <div className="collection-surface overflow-hidden">
+              <AnimatePresence initial={false}>
               {filteredJobs.map((job, index) => (
+                <motion.div key={job.id} layout="position" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
                 <JobCard
-                  key={job.id}
                   job={job}
                   index={index}
                   application={applicationByJobId.get(job.id) ?? null}
@@ -488,7 +490,9 @@ export function HomeClient() {
                   onHover={(target) => setHoveredJobId(target?.id ?? null)}
                   onFocusJob={(target) => setFocusedJobId(target.id)}
                 />
+                </motion.div>
               ))}
+              </AnimatePresence>
             </div>
           )}
         </section>

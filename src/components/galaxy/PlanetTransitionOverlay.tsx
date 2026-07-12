@@ -1,34 +1,53 @@
 'use client'
 
-import { motion } from 'motion/react'
+import { motion, useReducedMotion } from 'motion/react'
 import type { PlanetRoute } from '@/lib/galaxy-routes'
+import { motionDuration, motionEase } from '@/lib/motion'
 import { OrbMaterial, type OrbMaterialVariant } from '@/components/visual/OrbMaterial'
 
-export function PlanetTransitionOverlay({ planet }: { planet: PlanetRoute | null }) {
-  if (!planet) return null
+type PlanetTransition = { planet: PlanetRoute; rect: DOMRect }
+
+export function PlanetTransitionOverlay({ transition }: { transition: PlanetTransition | null }) {
+  const reducedMotion = useReducedMotion()
+  if (!transition) return null
+
+  const { planet, rect } = transition
+  const centerX = rect.left + rect.width / 2
+  const centerY = rect.top + rect.height / 2
+  const targetSize = Math.max(window.innerWidth, window.innerHeight) * 1.7
+  const targetX = window.innerWidth * (window.innerWidth < 768 ? 0.5 : 0.58)
+  const targetY = window.innerHeight * 0.48
+  const scale = targetSize / Math.max(rect.width, 1)
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center overflow-hidden">
+    <div className="pointer-events-none fixed inset-0 z-50 overflow-hidden" aria-hidden="true">
 	      <motion.div
-	        className="absolute rounded-full"
+	        className="absolute z-10 rounded-full"
 	        style={{
-	          width: planet.size,
-	          height: planet.size,
+	          left: centerX - rect.width / 2,
+	          top: centerY - rect.height / 2,
+	          width: rect.width,
+	          height: rect.height,
+	          transformOrigin: '50% 50%',
 	        }}
-        initial={{ scale: 0.96, opacity: 0.88 }}
-        animate={{ scale: 28, opacity: 1 }}
-        transition={{ duration: 0.86, ease: [0.2, 0.78, 0.18, 1] }}
+        initial={{ x: 0, y: 0, scale: 0.975, opacity: 1 }}
+        animate={reducedMotion
+          ? { opacity: 0 }
+          : { x: targetX - centerX, y: targetY - centerY, scale, opacity: 1 }}
+        transition={{
+          duration: reducedMotion ? motionDuration.instant : motionDuration.immersive,
+          ease: reducedMotion ? motionEase.exit : motionEase.planetApproach,
+        }}
 	      >
 	        <OrbMaterial size="100%" variant={getOrbVariant(planet)} active />
 	      </motion.div>
       <motion.div
         className="absolute inset-0"
         initial={{ opacity: 0 }}
-        animate={{ opacity: 0.56 }}
-        transition={{ duration: 0.74, ease: 'easeOut' }}
+        animate={{ opacity: reducedMotion ? 0.72 : 0.5 }}
+        transition={{ duration: reducedMotion ? motionDuration.instant : motionDuration.slow, ease: motionEase.enter }}
         style={{
-          background:
-            'radial-gradient(circle at 50% 50%, transparent 0 18%, rgba(0,0,1,0.5) 54%, rgba(0,0,1,0.84) 100%)',
+          background: 'rgba(0,0,1,0.58)',
         }}
       />
     </div>

@@ -14,7 +14,7 @@ import { OrbitLines } from './OrbitLines'
 import { PlanetTransitionOverlay } from './PlanetTransitionOverlay'
 import { SpaceBackground } from './SpaceBackground'
 
-const TRANSITION_MS = 860
+const TRANSITION_MS = 720
 const MOBILE_PLANET_SIZE: Record<string, number> = {
   jobs: 56,
   applications: 56,
@@ -43,7 +43,7 @@ export function SpaceHome() {
   const router = useRouter()
   const reducedMotion = useReducedMotion()
   const [hovered, setHovered] = useState<PlanetRoute | null>(null)
-  const [selectedPlanet, setSelectedPlanet] = useState<PlanetRoute | null>(null)
+  const [planetTransition, setPlanetTransition] = useState<{ planet: PlanetRoute; rect: DOMRect } | null>(null)
   const [user, setUser] = useState<{ id: string } | null>(null)
   const [authResolved, setAuthResolved] = useState(() => !isSupabaseConfigured())
   const [isAdmin, setIsAdmin] = useState(false)
@@ -110,14 +110,15 @@ export function SpaceHome() {
     return [...PLANET_ROUTES.filter((planet) => !planet.adminOnly || isAdmin), authPlanet]
   }, [isAdmin, user])
 
-  function enterPlanet(planet: PlanetRoute) {
-    if (selectedPlanet) return
+  function enterPlanet(planet: PlanetRoute, rect?: DOMRect) {
+    if (planetTransition) return
     if (planet.adminOnly && !isAdmin) return
 
     setHovered(planet)
-    setSelectedPlanet(planet)
-
     const href = planet.requiresAuth && !user ? `/login?next=${encodeURIComponent(planet.href)}` : planet.href
+    router.prefetch(href)
+    const fallbackRect = new DOMRect(window.innerWidth / 2 - planet.size / 2, window.innerHeight / 2 - planet.size / 2, planet.size, planet.size)
+    setPlanetTransition({ planet, rect: rect ?? fallbackRect })
     window.setTimeout(
       () => {
         router.push(href)
@@ -126,7 +127,7 @@ export function SpaceHome() {
     )
   }
 
-  const entering = selectedPlanet !== null
+  const entering = planetTransition !== null
   const shouldOrbit = !reducedMotion && !entering
   const desktopMaxOrbitRadius = Math.max(...planets.map((planet) => planet.orbitRadius))
   const desktopOrbitScale = Math.min(
@@ -221,7 +222,6 @@ export function SpaceHome() {
           animate={{
             opacity: entering ? 0.12 : 1,
             scale: entering ? 0.82 : 1,
-            filter: entering ? 'blur(3px)' : 'blur(0px)',
           }}
           transition={{ duration: 0.52, ease: 'easeOut' }}
         >
@@ -278,7 +278,7 @@ export function SpaceHome() {
         </motion.div>
       </section>
 
-      <PlanetTransitionOverlay planet={selectedPlanet} />
+      <PlanetTransitionOverlay transition={planetTransition} />
     </main>
   )
 }

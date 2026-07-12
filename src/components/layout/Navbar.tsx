@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { BriefcaseBusiness, FileText, FlaskConical, ListChecks, LogOut, MessageCircle, Shield, User } from "lucide-react";
 import { useEffect, useState } from "react";
+import { motion } from "motion/react";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { SITE_NAME } from "@/lib/constants";
@@ -67,10 +68,10 @@ export function Navbar() {
   function navClass(itemHref: string) {
     const active = pathname.startsWith(itemHref);
     return cn(
-      "inline-flex h-10 items-center border-b-2 px-2.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--star-apricot)]",
+      "relative inline-flex h-10 items-center px-2.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--star-apricot)]",
       active
-        ? "border-[color:var(--star-apricot)] text-ink-primary"
-        : "border-transparent text-ink-secondary hover:border-white/20 hover:text-ink-primary",
+        ? "text-ink-primary"
+        : "text-ink-secondary hover:text-ink-primary",
     );
   }
 
@@ -84,11 +85,21 @@ export function Navbar() {
         </Link>
 
         <nav className="hidden min-w-0 flex-1 items-center gap-1 md:flex" aria-label="主导航">
-          {navItems.map((item) => (
-            <Link key={item.href} href={item.href} className={navClass(item.href)}>
-              {item.label}
-            </Link>
-          ))}
+          {navItems.map((item) => {
+            const active = pathname.startsWith(item.href);
+            return (
+              <Link key={item.href} href={item.href} className={navClass(item.href)} aria-current={active ? "page" : undefined}>
+                {item.label}
+                {active ? (
+                  <motion.span
+                    layoutId="primary-nav-indicator"
+                    className="absolute inset-x-2.5 bottom-0 h-0.5 bg-[color:var(--star-apricot)]"
+                    transition={{ type: "spring", stiffness: 420, damping: 38 }}
+                  />
+                ) : null}
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="ml-auto hidden items-center gap-1 border-l border-white/[0.08] pl-3 md:flex">
@@ -136,7 +147,10 @@ export function Navbar() {
               )}
               aria-current={active ? "page" : undefined}
             >
-              <Icon aria-hidden="true" className="size-4" />
+              <span className="relative">
+                <Icon aria-hidden="true" className="relative z-10 size-4" />
+                {active ? <motion.span layoutId="mobile-nav-indicator" className="absolute -inset-2 rounded-full bg-white/[0.08]" /> : null}
+              </span>
               {item.label}
             </Link>
           );

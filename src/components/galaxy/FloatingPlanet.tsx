@@ -13,7 +13,7 @@ type FloatingPlanetProps = {
   shouldOrbit: boolean
   orbitScale: number
   planetScale?: number
-  onSelect: (planet: PlanetRoute) => void
+  onSelect: (planet: PlanetRoute, rect: DOMRect) => void
   onHover: (planet: PlanetRoute | null) => void
 }
 
@@ -84,16 +84,17 @@ export function FloatingPlanet({
           type="button"
           aria-label={planet.label}
           disabled={disabled}
-          onClick={() => onSelect(planet)}
+          onClick={(event) => onSelect(planet, event.currentTarget.getBoundingClientRect())}
           onMouseEnter={() => onHover(planet)}
           onMouseLeave={() => onHover(null)}
           onFocus={() => onHover(planet)}
           onBlur={() => onHover(null)}
 	          className="relative flex size-full items-center justify-center rounded-full outline-none"
+	          whileTap={disabled ? undefined : { scale: 0.975 }}
 	          animate={{
-	            scale: entering ? 0.68 : hovered ? 1.04 : 1,
+	            scale: entering ? 0.86 : hovered ? 1.04 : 1,
 	            opacity: entering ? 0 : 1,
-	            filter: entering ? 'blur(5px)' : hovered ? 'brightness(1.15)' : 'brightness(1)',
+	            filter: hovered ? 'brightness(1.15)' : 'brightness(1)',
 	          }}
 	          transition={{ duration: entering ? 0.42 : 0.24, ease: 'easeOut' }}
 	        >

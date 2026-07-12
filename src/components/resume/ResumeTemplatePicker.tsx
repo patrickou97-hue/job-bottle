@@ -2,7 +2,9 @@
 
 import type { CSSProperties } from "react";
 import { Check } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 import { RESUME_TEMPLATES, type ResumeTemplateId } from "@/lib/resume";
+import { layoutTransition } from "@/lib/motion";
 
 const TEMPLATE_SWATCHES: Record<ResumeTemplateId, { accent: string; header: string; rule: string }> = {
   compact: { accent: "#111111", header: "centered", rule: "split" },
@@ -22,6 +24,7 @@ export function ResumeTemplatePicker({
   selectedTemplateId: ResumeTemplateId;
   onChange: (templateId: ResumeTemplateId) => void;
 }) {
+  const reducedMotion = useReducedMotion();
   return (
     <section className="border-y border-white/[0.1] py-5" aria-labelledby="resume-template-heading">
       <h2 id="resume-template-heading" className="mb-4 text-lg font-semibold text-ink-primary">简历版式</h2>
@@ -30,8 +33,9 @@ export function ResumeTemplatePicker({
         {RESUME_TEMPLATES.map((template) => {
           const selected = template.id === selectedTemplateId;
           return (
-            <button
+            <motion.button
               key={template.id}
+              layout="position"
               type="button"
               aria-pressed={selected}
               className={`group min-w-[166px] snap-start rounded-lg p-2 text-left transition duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--star-apricot)] ${
@@ -40,13 +44,19 @@ export function ResumeTemplatePicker({
                   : "hover:bg-white/[0.055] active:scale-[0.98]"
               }`}
               onClick={() => onChange(template.id)}
+              whileTap={reducedMotion ? undefined : { scale: 0.98 }}
+              transition={layoutTransition}
             >
               <TemplateSwatch templateId={template.id} />
               <span className="mt-3 flex items-center justify-between gap-2 text-sm font-semibold text-ink-primary">
                 {template.label}
-                {selected ? <Check aria-label="当前版式" className="size-4 text-[color:var(--star-apricot)]" /> : null}
+                {selected ? (
+                  <motion.span initial={reducedMotion ? false : { opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}>
+                    <Check aria-label="当前版式" className="size-4 text-[color:var(--star-apricot)]" />
+                  </motion.span>
+                ) : null}
               </span>
-            </button>
+            </motion.button>
           );
         })}
       </div>

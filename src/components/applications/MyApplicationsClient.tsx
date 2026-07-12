@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, FileText, List, Orbit, RefreshCw, Search, Columns3 } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { APPLICATION_STATUS, APPLICATION_STATUS_LABELS } from "@/lib/constants";
 import { fetchMyApplications } from "@/lib/applications";
 import {
@@ -25,11 +26,13 @@ import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
 import type { ResumeDocument } from "@/lib/resume";
 import type { ApplicationStatus, ApplicationWithJob } from "@/lib/types";
+import { layoutTransition, motionDuration, motionEase } from "@/lib/motion";
 
 type WorkspaceView = "list" | "board" | "map";
 
 export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { loginNextPath?: string }) {
   const router = useRouter();
+  const reducedMotion = useReducedMotion();
   const [applications, setApplications] = useState<ApplicationWithJob[]>([]);
   const [resumes, setResumes] = useState<ResumeDocument[]>([]);
   const [selected, setSelected] = useState<ApplicationWithJob | null>(null);
@@ -249,6 +252,14 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
               </div>
             </div>
 
+            <AnimatePresence initial={false} mode="wait">
+            <motion.div
+              key={view}
+              initial={reducedMotion ? { opacity: 0 } : { opacity: 0, x: 8 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={reducedMotion ? { opacity: 0 } : { opacity: 0, x: -6 }}
+              transition={{ duration: reducedMotion ? motionDuration.instant : motionDuration.normal, ease: motionEase.enter }}
+            >
             {view === "list" ? (
               filtered.length === 0 ? (
                 <div className="empty-state collection-surface">
@@ -256,14 +267,17 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
                 </div>
               ) : (
                 <div className="divide-y divide-white/[0.1] border-y border-white/[0.1]">
+                  <AnimatePresence initial={false}>
                   {filtered.map((application) => (
+                    <motion.div key={application.id} layout="position" transition={layoutTransition}>
                     <ApplicationListItem
-                      key={application.id}
                       application={application}
                       resumes={resumes}
                       onOpen={() => setDrawerApplication(application)}
                     />
+                    </motion.div>
                   ))}
+                  </AnimatePresence>
                 </div>
               )
             ) : view === "board" ? (
@@ -287,7 +301,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
                       </div>
                       <div className="mt-4 space-y-2">
                         {column.applications.length === 0 ? <p className="py-3 text-xs text-ink-muted">暂时没有记录</p> : null}
-                        {column.applications.map((application) => <PipelineItem key={application.id} application={application} resumes={resumes} onOpen={() => setDrawerApplication(application)} />)}
+                        {column.applications.map((application) => <motion.div layout key={application.id} transition={layoutTransition}><PipelineItem application={application} resumes={resumes} onOpen={() => setDrawerApplication(application)} /></motion.div>)}
                       </div>
                     </section>
                   ))}
@@ -299,6 +313,8 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
                 <ApplicationOrbitSystem applications={filtered} selectedApplication={selected} onSelect={setSelected} onEdit={setDrawerApplication} />
               </div>
             )}
+            </motion.div>
+            </AnimatePresence>
           </section>
         </>
       )}

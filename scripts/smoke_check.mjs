@@ -81,9 +81,21 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/galaxy/SpaceHome.tsx",
-    mustInclude: ["MOBILE_PLANET_LAYOUT", "OrbitLines", "PlanetTransitionOverlay", "window.setTimeout", "encodeURIComponent(planet.href)", "/brand/shi-xing-wordmark.png", "desktopOrbitScale", "mobileOrbitScale", "planetScale={0.82}", "<CorePlanet compact />", "href: user ? '/profile' : '/login'", "authResolved", "返回拾星主页"],
-    mustNotInclude: ["router.push(planet.href)", "href: user ? '/my' : '/login'", "href: user ? '/my-applications' : '/login'", "HomeWorkspace", "bg-white", "rounded-2xl", "<PlanetLabel"],
+    mustInclude: ["MOBILE_PLANET_LAYOUT", "OrbitLines", "PlanetTransitionOverlay", "router.prefetch(href)", "window.setTimeout", "encodeURIComponent(planet.href)", "/brand/shi-xing-wordmark.png", "desktopOrbitScale", "mobileOrbitScale", "planetScale={0.82}", "<CorePlanet compact />", "href: user ? '/profile' : '/login'", "authResolved", "返回拾星主页"],
+    mustNotInclude: ["router.push(planet.href)", "href: user ? '/my' : '/login'", "href: user ? '/my-applications' : '/login'", "HomeWorkspace", "bg-white", "rounded-2xl", "<PlanetLabel", "blur(3px)"],
     label: "所有用户主页均保留拾星字标、运行星系和行星进入转场",
+  },
+  {
+    file: "src/components/galaxy/PlanetTransitionOverlay.tsx",
+    mustInclude: ["rect.left", "targetX - centerX", "motionDuration.immersive", "motionEase.planetApproach", "useReducedMotion"],
+    mustNotInclude: ["scale: 28", "radial-gradient(circle at 50% 50%"],
+    label: "首页转场从实际点击行星位置连续靠近并支持减弱动态效果",
+  },
+  {
+    file: "src/lib/motion.ts",
+    mustInclude: ["instant: 0.12", "normal: 0.26", "immersive: 0.92", "planetApproach", "pageVariants", "layoutTransition"],
+    mustNotInclude: ["gsap", "three"],
+    label: "全站复用统一的动效时长、缓动和布局过渡",
   },
   {
     file: "src/components/galaxy/CorePlanet.tsx",
@@ -111,7 +123,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/layout/UserShell.tsx",
-    mustInclude: ["<SpaceShell>", "<Navbar />"],
+    mustInclude: ["<SpaceShell>", "<Navbar />", "RouteContentTransition"],
     mustNotInclude: ["StarFieldBackground"],
     label: "用户端页面统一使用 SpaceShell 背景",
   },
@@ -195,7 +207,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/layout/Navbar.tsx",
-    mustInclude: ["岗位坐标", "投递管理", "简历制作", "求职社区", "星瓶", "个人中心", "mobileNavItems", "grid-cols-6", "移动主导航", "bottom-0"],
+    mustInclude: ["岗位坐标", "投递管理", "简历制作", "求职社区", "星瓶", "个人中心", "mobileNavItems", "grid-cols-6", "移动主导航", "bottom-0", "primary-nav-indicator", "mobile-nav-indicator"],
     mustNotInclude: ["找岗位", "求职交流", "label: \"我的\"", "label: \"首页\""],
     label: "桌面与移动端均直接展示六个一级模块",
   },
@@ -479,7 +491,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/ui/Drawer.tsx",
-    mustInclude: ["before:right-full", "backdrop-blur-[24px]", "hover:bg-white/[0.08]"],
+    mustInclude: ["before:right-full", "backdrop-blur-[24px]", "hover:bg-white/[0.08]", "aria-modal=\"true\"", "Escape", "returnFocusRef"],
     mustNotInclude: ["border-l", "<Button"],
     label: "投递侧滑容器使用液态玻璃融合带和幽灵关闭按钮",
   },
