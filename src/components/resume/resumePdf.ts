@@ -103,8 +103,10 @@ const MARGIN_X = 39;
 const TOP = 34;
 const BOTTOM = 34;
 const FONT_FAMILY = "NotoSerifSC";
-const FONT_REGULAR = "/fonts/NotoSerifSC-Regular.ttf";
-const FONT_BOLD = "/fonts/NotoSerifSC-Bold.ttf";
+const FONT_REGULAR = process.env.NEXT_PUBLIC_RESUME_FONT_REGULAR_URL?.trim() || "/fonts/NotoSerifSC-Regular.ttf";
+const FONT_BOLD = process.env.NEXT_PUBLIC_RESUME_FONT_BOLD_URL?.trim() || "/fonts/NotoSerifSC-Bold.ttf";
+const FONT_TIMEOUT_MS = 15_000;
+const FONT_MAX_ATTEMPTS = 3;
 const BLACK = "#111111";
 
 const COMPACT_OPTIONS: PdfOptions[] = [
@@ -116,6 +118,11 @@ const COMPACT_OPTIONS: PdfOptions[] = [
 
 let fontCache: Promise<{ bold: string; regular: string }> | null = null;
 let previewMeasurementPdfCache: Promise<JsPdf> | null = null;
+
+export function resetResumePdfCaches() {
+  fontCache = null;
+  previewMeasurementPdfCache = null;
+}
 
 export async function exportResumeToPdf(resume: ResumeDocument) {
   const pdf = await buildResumePdf(resume);
@@ -161,9 +168,15 @@ function chooseOptions(resume: ResumeDocument, pdf: JsPdf) {
 }
 
 function getPreviewMeasurementPdf() {
-  previewMeasurementPdfCache ??= Promise.all([import("jspdf"), loadPdfFonts()]).then(([module, fonts]) =>
-    createPdf(module.jsPDF, fonts),
-  );
+  if (!previewMeasurementPdfCache) {
+    previewMeasurementPdfCache = Promise.all([import("jspdf"), loadPdfFonts()])
+      .then(([module, fonts]) => createPdf(module.jsPDF, fonts))
+      .catch((error) => {
+        previewMeasurementPdfCache = null;
+        throw error;
+      });
+  }
+
   return previewMeasurementPdfCache;
 }
 
@@ -618,17 +631,64 @@ function drawRight(state: LayoutState, text: string, right: number, y: number) {
 }
 
 async function loadPdfFonts() {
-  fontCache ??= Promise.all([fetchFont(FONT_REGULAR), fetchFont(FONT_BOLD)]).then(([regular, bold]) => ({
-    bold,
-    regular,
-  }));
+  if (!fontCache) {
+    fontCache = Promise.all([fetchFont(FONT_REGULAR), fetchFont(FONT_BOLD)])
+      .then(([regular, bold]) => ({ bold, regular }))
+      .catch((error) => {
+        fontCache = null;
+        throw error;
+      });
+  }
+
   return fontCache;
 }
 
 async function fetchFont(path: string) {
-  const response = await fetch(path);
-  if (!response.ok) throw new Error("简历 PDF 字体加载失败，请刷新后重试。");
-  return arrayBufferToBase64(await response.arrayBuffer());
+  let lastError: Error | null = null;
+
+  for (let attempt = 1; attempt <= FONT_MAX_ATTEMPTS; attempt += 1) {
+    try {
+      return await fetchFontOnce(path);
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error("简历字体网络请求失败，请检查网络后重试。");
+      if (!shouldRetryFontRequest(lastError) || attempt === FONT_MAX_ATTEMPTS) break;
+      await waitForFontRetry(attempt);
+    }
+  }
+
+  throw lastError ?? new Error("简历字体加载失败，请稍后重新生成。");
+}
+
+async function fetchFontOnce(path: string) {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), FONT_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(path, { cache: "no-store", signal: controller.signal });
+    if (response.status === 404) throw new Error("简历字体文件不存在（404），请联系网站管理员。");
+    if (response.status === 403) throw new Error("简历字体访问权限错误（403），请联系网站管理员。");
+    if (!response.ok) throw new Error(`简历字体加载失败（HTTP ${response.status}），请稍后重新生成。`);
+    return arrayBufferToBase64(await response.arrayBuffer());
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error("简历字体加载超时，请检查网络后重新生成。");
+    }
+
+    if (error instanceof Error) throw error;
+    throw new Error("简历字体网络请求失败，请检查网络后重新生成。");
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
+
+function shouldRetryFontRequest(error: Error) {
+  return !error.message.includes("（404）") && !error.message.includes("（403）") && !error.message.includes("HTTP 4");
+}
+
+function waitForFontRetry(attempt: number) {
+  void attempt;
+  const delay = 500 + Math.floor(Math.random() * 501);
+  return new Promise<void>((resolve) => window.setTimeout(resolve, delay));
 }
 
 function arrayBufferToBase64(buffer: ArrayBuffer) {

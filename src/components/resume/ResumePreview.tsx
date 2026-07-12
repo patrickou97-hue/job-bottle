@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { ResumeDocument } from "@/lib/resume";
 import {
   createResumePreviewLayout,
+  resetResumePdfCaches,
   type ResumePreviewLayout,
   type ResumePreviewOperation,
 } from "./resumePdf";
@@ -75,7 +76,10 @@ export function ResumePreview({ resume }: { resume: ResumeDocument }) {
           <button
             type="button"
             className="mt-2 inline-flex items-center gap-2 text-xs font-medium text-ink-primary"
-            onClick={() => setRevision((value) => value + 1)}
+            onClick={() => {
+              resetResumePdfCaches();
+              setRevision((value) => value + 1);
+            }}
           >
             <RefreshCw aria-hidden="true" className="size-3.5" />
             重新生成

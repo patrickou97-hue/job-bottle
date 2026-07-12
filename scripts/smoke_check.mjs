@@ -225,7 +225,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/resume/resumePdf.ts",
-    mustInclude: ["jsPDF", "NotoSerifSC-Regular.ttf", "NotoSerifSC-Bold.ttf", "format: \"a4\"", "PAGE_WIDTH = 595.28", "PAGE_HEIGHT = 841.89", "exportResumeToPdf", "createResumePreviewLayout", "ResumePreviewOperation", "previewMeasurementPdfCache", "width: state.pdf.getTextWidth(text)", "addPage(\"a4\", \"portrait\")", "addFileToVFS", "getTemplateOptions", "getResumeTargetLine", "consulting", "technical", "academic", "english_classic", "english_modern", "isEnglishResumeTemplate", "EDUCATION", "Boolean(basics.photoDataUrl) && !isEnglish"],
+    mustInclude: ["jsPDF", "NotoSerifSC-Regular.ttf", "NotoSerifSC-Bold.ttf", "NEXT_PUBLIC_RESUME_FONT_REGULAR_URL", "NEXT_PUBLIC_RESUME_FONT_BOLD_URL", "FONT_TIMEOUT_MS = 15_000", "FONT_MAX_ATTEMPTS = 3", "resetResumePdfCaches", "previewMeasurementPdfCache = null", "fontCache = null", "cache: \"no-store\"", "format: \"a4\"", "PAGE_WIDTH = 595.28", "PAGE_HEIGHT = 841.89", "exportResumeToPdf", "createResumePreviewLayout", "ResumePreviewOperation", "previewMeasurementPdfCache", "width: state.pdf.getTextWidth(text)", "addPage(\"a4\", \"portrait\")", "addFileToVFS", "getTemplateOptions", "getResumeTargetLine", "consulting", "technical", "academic", "english_classic", "english_modern", "isEnglishResumeTemplate", "EDUCATION", "Boolean(basics.photoDataUrl) && !isEnglish"],
     mustNotInclude: ["html2canvas", "window.print", "addPage(\"letter\""],
     label: "简历 PDF 与网页预览共用矢量 A4 排版坐标和分页规则",
   },
