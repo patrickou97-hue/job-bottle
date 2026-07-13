@@ -631,6 +631,24 @@ const SOURCE_INVARIANTS = [
     label: "v6 安全跟进迁移加固 is_admin、论坛策略和投递唯一性",
   },
   {
+    file: "src/components/forum/PostCard.tsx",
+    mustInclude: ["SignalStrengthTicks", "置顶帖子", "取消置顶", "setPostPinned", "isAdmin"],
+    mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY"],
+    label: "社区帖子仅向管理员展示置顶与取消置顶操作",
+  },
+  {
+    file: "src/app/api/admin/forum/pin/route.ts",
+    mustInclude: ["auth.getUser", "profile?.role !== \"admin\"", "只有管理员可以置顶社区内容", "is_pinned"],
+    mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY"],
+    label: "社区置顶接口服务端复核管理员身份且不暴露 service role",
+  },
+  {
+    file: "supabase/migrations/20260713193000_forum_admin_pinning.sql",
+    mustInclude: ["protect_forum_post_pinning", "public.is_admin()", "forum_posts_pinned_created_at_idx", "Only administrators can change forum pinning"],
+    mustNotInclude: ["using (true)\nwith check", "delete from public.forum_posts"],
+    label: "论坛置顶迁移阻止普通用户通过数据库直连篡改置顶状态",
+  },
+  {
     file: "supabase/migrations/20260704040000_job_categories.sql",
     mustInclude: ["add column if not exists job_categories", "jobs_job_categories_gin_idx", "normalize_job_categories_from_titles", "教师类", "咨询类"],
     mustNotInclude: ["drop column", "service_role"],

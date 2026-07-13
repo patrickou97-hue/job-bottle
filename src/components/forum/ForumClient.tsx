@@ -21,6 +21,7 @@ export function ForumClient() {
   const [showForm, setShowForm] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserIsAdmin, setCurrentUserIsAdmin] = useState(false);
 
   async function loadPosts() {
     setLoading(true);
@@ -33,6 +34,16 @@ export function ForumClient() {
       const supabase = createClient();
       const user = await getCurrentUserOrNull(supabase);
       setCurrentUserId(user?.id ?? null);
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .maybeSingle();
+        setCurrentUserIsAdmin(profile?.role === "admin");
+      } else {
+        setCurrentUserIsAdmin(false);
+      }
       const result = await fetchPosts(supabase, {
         category: activeCategory,
         limit: 50,
@@ -61,6 +72,15 @@ export function ForumClient() {
   function handleDeleted() {
     setExpandedId(null);
     void loadPosts();
+  }
+
+  function handlePinnedChange(postId: string, isPinned: boolean) {
+    setPosts((current) => current
+      .map((post) => post.id === postId ? { ...post, is_pinned: isPinned } : post)
+      .sort((left, right) => {
+        if (left.is_pinned !== right.is_pinned) return left.is_pinned ? -1 : 1;
+        return new Date(right.created_at).getTime() - new Date(left.created_at).getTime();
+      }));
   }
 
   return (
@@ -114,11 +134,13 @@ export function ForumClient() {
               key={post.id}
               post={post}
               currentUserId={currentUserId}
+              isAdmin={currentUserIsAdmin}
               expanded={expandedId === post.id}
               onToggle={() =>
                 setExpandedId((prev) => (prev === post.id ? null : post.id))
               }
               onDeleted={handleDeleted}
+              onPinnedChange={handlePinnedChange}
             />
           ))
         )}

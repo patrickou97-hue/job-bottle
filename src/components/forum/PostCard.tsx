@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Pin, PinOff, Trash2 } from "lucide-react";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import {
   toggleLike,
@@ -10,6 +10,7 @@ import {
   deleteComment,
   deletePost,
   fetchPost,
+  setPostPinned,
 } from "@/lib/forum";
 import { formatDateTime } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
@@ -22,17 +23,21 @@ import type { ForumComment, ForumPost, ForumPostWithComments } from "@/lib/types
 type PostCardProps = {
   post: ForumPost;
   currentUserId: string | null;
+  isAdmin: boolean;
   expanded: boolean;
   onToggle: () => void;
   onDeleted: () => void;
+  onPinnedChange: (postId: string, isPinned: boolean) => void;
 };
 
 export function PostCard({
   post,
   currentUserId,
+  isAdmin,
   expanded,
   onToggle,
   onDeleted,
+  onPinnedChange,
 }: PostCardProps) {
   const [comments, setComments] = useState<ForumComment[]>([]);
   const [commentText, setCommentText] = useState("");
@@ -135,6 +140,22 @@ export function PostCard({
     }
   }
 
+  async function handlePinPost() {
+    if (!isAdmin || actionBusy) return;
+    const nextPinned = !post.is_pinned;
+    setActionBusy(true);
+    setActionMessage("");
+    try {
+      await setPostPinned(post.id, nextPinned);
+      onPinnedChange(post.id, nextPinned);
+      setActionMessage(nextPinned ? "已置顶，所有用户都会优先看到这条内容。" : "已取消置顶。");
+    } catch (error) {
+      setActionMessage(error instanceof Error ? error.message : "置顶状态保存失败，请稍后重试。");
+    } finally {
+      setActionBusy(false);
+    }
+  }
+
   return (
     <div className="border-b border-white/[0.05] transition hover:bg-[color:var(--surface-hover-bg)]">
       {/* Header */}
@@ -188,6 +209,18 @@ export function PostCard({
 
           {/* Actions */}
           <div className="mb-4 flex items-center gap-3">
+            {isAdmin ? (
+              <button
+                type="button"
+                onClick={handlePinPost}
+                disabled={actionBusy}
+                className="pressable inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] px-3 py-1.5 text-xs font-medium text-[color:var(--light-silver)] transition hover:bg-white/[0.06]"
+              >
+                {post.is_pinned ? <PinOff aria-hidden="true" className="size-3.5" /> : <Pin aria-hidden="true" className="size-3.5" />}
+                {post.is_pinned ? "取消置顶" : "置顶帖子"}
+              </button>
+            ) : null}
+
             <button
               type="button"
               onClick={handleLike}

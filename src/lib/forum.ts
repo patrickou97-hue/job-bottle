@@ -236,3 +236,20 @@ export async function fetchUserLike(
   }
   return false;
 }
+
+/* ── Admin-only pinning (server rechecks the authenticated profile role) ── */
+export async function setPostPinned(postId: string, isPinned: boolean) {
+  const response = await fetch("/api/admin/forum/pin", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ postId, isPinned }),
+  });
+  const result = await response.json().catch(() => null) as {
+    error?: string;
+    post?: Pick<ForumPost, "id" | "is_pinned">;
+  } | null;
+  if (!response.ok || !result?.post) {
+    throw new Error(result?.error ?? "置顶状态保存失败。");
+  }
+  return result.post;
+}
