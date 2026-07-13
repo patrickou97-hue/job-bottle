@@ -481,13 +481,13 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/ApplicationOrbitSystem.tsx",
-    mustInclude: ["投递中", "ApplicationOrbitRing", "ApplicationOrbitDetail", "OrbMaterial", "OrbitTrackLayer"],
+    mustInclude: ["投递中", "ApplicationOrbitRing", "ApplicationOrbitDetail", "OrbMaterial", "OrbitTrackLayer", "pointer-events-none absolute left-1/2 top-1/2 z-10", "absolute z-20"],
     mustNotInclude: ["CaptureOrbit", "timeline", "ApplicationOrbitLegend", "投递引力核心", "接递引力核心"],
     label: "投递主视觉使用同心投递轨道",
   },
   {
     file: "src/components/applications/ApplicationOrbitRing.tsx",
-    mustInclude: ["getOrbitPoint", "x: path.map", "y: path.map", "showTrack"],
+    mustInclude: ["getOrbitPoint", "x: path.map", "y: path.map", "showTrack", "pointer-events-none absolute left-1/2 top-1/2 z-20", "pointer-events-auto -translate-x-1/2"],
     mustNotInclude: ["rotate: 360", "translateX(${radius}px)", "rotate(${angle}deg)"],
     label: "投递轨道星体使用数学坐标运动而非旋转文字父层",
   },
@@ -499,7 +499,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/ApplicationOrbitStar.tsx",
-    mustInclude: ["OrbMaterial", "getCompanyShortLabel", "已停留", "momentumTier", "group relative flex size-16", "variant={selected || offer ? \"gold\""],
+    mustInclude: ["OrbMaterial", "getCompanyShortLabel", "已停留", "momentumTier", "group pointer-events-auto relative z-20 flex size-16 touch-manipulation", "variant={selected || offer ? \"gold\""],
     mustNotInclude: ["getCompactCompanyLabelStyle", "style={labelStyle}"],
     label: "投递节点使用统一球体材质且公司简称移到球下方",
   },

@@ -43,7 +43,7 @@ export function ApplicationOrbitRing({
   const dimmed = Boolean(highlightedBand && highlightedBand !== band);
 
   return (
-    <div className="absolute left-1/2 top-1/2 size-0">
+    <div className="pointer-events-none absolute left-1/2 top-1/2 z-20 size-0">
       {showTrack ? (
         <div
           className="pointer-events-none absolute rounded-full border border-dashed"
@@ -56,9 +56,7 @@ export function ApplicationOrbitRing({
           }}
         />
       ) : null}
-      <motion.div
-        className="absolute size-0"
-      >
+      <motion.div className="pointer-events-none absolute size-0">
         {slots.map((application, index) => {
           const total = Math.max(1, slots.length);
           const id = application?.id ?? `${band}-aggregate`;
@@ -71,7 +69,7 @@ export function ApplicationOrbitRing({
               duration={config.duration}
               reducedMotion={Boolean(reducedMotion)}
             >
-              <div className="-translate-x-1/2 -translate-y-1/2">
+              <div className="pointer-events-auto -translate-x-1/2 -translate-y-1/2">
                 {application ? (
                   <ApplicationOrbitStar
                     application={application}

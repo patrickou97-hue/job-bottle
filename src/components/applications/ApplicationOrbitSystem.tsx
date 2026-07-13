@@ -57,11 +57,11 @@ export function ApplicationOrbitSystem({
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_330px]">
         <div className="theme-scene visualization-canvas relative mx-auto h-[460px] w-full max-w-[840px] overflow-hidden sm:h-[600px] lg:h-[760px] xl:max-w-none">
-          <div className="absolute inset-0 opacity-18 [background-image:radial-gradient(circle,rgba(201,197,228,.28)_0_1px,transparent_1.5px)] [background-size:92px_92px]" />
+          <div className="pointer-events-none absolute inset-0 opacity-18 [background-image:radial-gradient(circle,rgba(201,197,228,.28)_0_1px,transparent_1.5px)] [background-size:92px_92px]" />
           <div className="absolute inset-0 grid place-items-center">
             <div className="relative aspect-square h-[min(90vw,720px)] max-h-[720px] w-[min(90vw,720px)] sm:h-[min(92%,720px)] sm:w-[min(92%,720px)]">
               <OrbitTrackLayer activeBand={activeBand} scale={orbitScale} />
-              <div className="absolute left-1/2 top-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center text-center text-xs text-nebula-silver">
+              <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center text-center text-xs text-nebula-silver">
                 <RadarCore active={applications.length > 0} />
                 <span className="mt-3 block text-[11px]">
                   投递中 <span className="font-display text-base text-ink-primary tabular-nums">{applications.length}</span>
@@ -87,7 +87,7 @@ export function ApplicationOrbitSystem({
           {terminal.map((application, index) => (
             <div
               key={application.id}
-              className="absolute"
+              className="absolute z-20"
               style={{
                 left: `${10 + (index % 5) * 9}%`,
                 bottom: `${9 + Math.floor(index / 5) * 11}%`,

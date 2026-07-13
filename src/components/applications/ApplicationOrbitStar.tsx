@@ -32,7 +32,7 @@ export function ApplicationOrbitStar({
     <button
       type="button"
       className={cn(
-        "group relative flex size-16 items-center justify-center font-medium outline-none transition",
+        "group pointer-events-auto relative z-20 flex size-16 touch-manipulation items-center justify-center font-medium outline-none transition",
         dimmed ? "opacity-35" : "hover:scale-[1.08]",
         momentum === "red" ? "brightness-[0.82]" : "",
         terminal ? "grayscale opacity-45" : "",

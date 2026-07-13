@@ -926,6 +926,7 @@ html[data-scene-transition="arrived"] .scene-arrival-veil__stars {
 .radar-core {
   position: relative;
   display: inline-block;
+  pointer-events: none;
   width: 6.5rem;
   height: 6.5rem;
   border-radius: 999px;
