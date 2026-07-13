@@ -39,6 +39,8 @@ export function PostCard({
   const [postLikeCount, setPostLikeCount] = useState(post.like_count);
   const [loadingComments, setLoadingComments] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [actionBusy, setActionBusy] = useState(false);
+  const [actionMessage, setActionMessage] = useState("");
 
   const isOwner = currentUserId === post.user_id;
   const authorName = (post as Record<string, unknown>).author_name as string ?? "匿名用户";
@@ -49,6 +51,7 @@ export function PostCard({
   async function handleExpand() {
     if (!expanded && isSupabaseConfigured()) {
       setLoadingComments(true);
+      setActionMessage("");
       try {
         const supabase = createClient();
         const full = (await fetchPost(supabase, post.id)) as ForumPostWithComments;
@@ -58,7 +61,7 @@ export function PostCard({
           setLiked(likedNow);
         }
       } catch {
-        // ignore
+        setActionMessage("评论读取失败，请检查网络后重试。");
       } finally {
         setLoadingComments(false);
       }
@@ -67,24 +70,36 @@ export function PostCard({
   }
 
   async function handleLike() {
-    if (!currentUserId || !isSupabaseConfigured()) return;
-    const supabase = createClient();
-    const isLiked = await toggleLike(supabase, currentUserId, post.id);
-    setLiked(isLiked);
-    setPostLikeCount((c) => (isLiked ? c + 1 : Math.max(c - 1, 0)));
+    if (!currentUserId) {
+      setActionMessage("登录后可以点赞。");
+      return;
+    }
+    if (!isSupabaseConfigured() || actionBusy) return;
+    setActionBusy(true);
+    setActionMessage("");
+    try {
+      const isLiked = await toggleLike(createClient(), currentUserId, post.id);
+      setLiked(isLiked);
+      setPostLikeCount((count) => (isLiked ? count + 1 : Math.max(count - 1, 0)));
+    } catch {
+      setActionMessage("点赞状态保存失败，请稍后重试。");
+    } finally {
+      setActionBusy(false);
+    }
   }
 
   async function handleSubmitComment() {
     const text = commentText.trim();
     if (!text || !currentUserId || !isSupabaseConfigured()) return;
     setSubmitting(true);
+    setActionMessage("");
     try {
       const supabase = createClient();
       const comment = await createComment(supabase, currentUserId, post.id, text);
       setComments((prev) => [...prev, comment]);
       setCommentText("");
     } catch {
-      // ignore
+      setActionMessage("评论发布失败，请检查网络后重试。");
     } finally {
       setSubmitting(false);
     }
@@ -92,17 +107,31 @@ export function PostCard({
 
   async function handleDeleteComment(commentId: string) {
     if (!currentUserId || !isSupabaseConfigured()) return;
-    const supabase = createClient();
-    await deleteComment(supabase, currentUserId, commentId);
-    setComments((prev) => prev.filter((c) => c.id !== commentId));
+    setActionBusy(true);
+    setActionMessage("");
+    try {
+      await deleteComment(createClient(), currentUserId, commentId);
+      setComments((current) => current.filter((comment) => comment.id !== commentId));
+    } catch {
+      setActionMessage("评论删除失败，请稍后重试。");
+    } finally {
+      setActionBusy(false);
+    }
   }
 
   async function handleDeletePost() {
     if (!currentUserId || !isSupabaseConfigured()) return;
     if (!window.confirm("确定要删除这条帖子吗？")) return;
-    const supabase = createClient();
-    await deletePost(supabase, currentUserId, post.id);
-    onDeleted();
+    setActionBusy(true);
+    setActionMessage("");
+    try {
+      await deletePost(createClient(), currentUserId, post.id);
+      onDeleted();
+    } catch {
+      setActionMessage("帖子删除失败，请稍后重试。");
+    } finally {
+      setActionBusy(false);
+    }
   }
 
   return (
@@ -162,7 +191,8 @@ export function PostCard({
             <button
               type="button"
               onClick={handleLike}
-            className={`pressable relative inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition ${
+              disabled={actionBusy}
+              className={`pressable relative inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition ${
                 liked
                   ? "bg-nebula-blue/8 text-[color:var(--light-silver)]"
                   : "bg-white/[0.04] text-ink-muted hover:bg-white/[0.07]"
@@ -175,6 +205,7 @@ export function PostCard({
               <button
                 type="button"
                 onClick={handleDeletePost}
+                disabled={actionBusy}
                 className="pressable inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-[color:var(--text-danger)] transition hover:bg-[rgba(127,85,104,0.16)]"
               >
                 <Trash2 aria-hidden="true" className="size-3.5" />
@@ -182,6 +213,12 @@ export function PostCard({
               </button>
             ) : null}
           </div>
+
+          {actionMessage ? (
+            <p className="mb-4 text-sm text-[#d8a8b7]" role="status" aria-live="polite">
+              {actionMessage}
+            </p>
+          ) : null}
 
           {/* Comments */}
           <div className="space-y-3">
@@ -214,6 +251,7 @@ export function PostCard({
                       <button
                         type="button"
                         onClick={() => handleDeleteComment(comment.id)}
+                        disabled={actionBusy}
                         className="text-ink-muted transition hover:text-red-300"
                         aria-label="删除评论"
                       >

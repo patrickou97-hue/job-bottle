@@ -45,12 +45,20 @@ export function Navbar() {
         if (mounted) setProfile(null);
         return;
       }
-      const { data } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
+      const { data, error } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
+      if (error) {
+        if (mounted) setProfile(null);
+        return;
+      }
       if (mounted) setProfile((data as Profile | null) ?? null);
     }
 
     void loadProfile();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => { void loadProfile(); });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      window.setTimeout(() => {
+        if (mounted) void loadProfile();
+      }, 0);
+    });
     return () => {
       mounted = false;
       subscription.unsubscribe();

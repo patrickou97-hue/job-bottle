@@ -64,6 +64,9 @@ export async function upsertApplication(
     .single();
 
   if (!error) return data as UserApplication;
+  if (getErrorCode(error) === "23505") {
+    return fetchExistingApplication(supabase, userId, jobId);
+  }
   if (!isMissingApplicationWorkflowColumnsError(error)) throw error;
 
   const { data: legacyData, error: legacyError } = await supabase
@@ -72,6 +75,9 @@ export async function upsertApplication(
     .select("*")
     .single();
 
+  if (legacyError && getErrorCode(legacyError) === "23505") {
+    return fetchExistingApplication(supabase, userId, jobId);
+  }
   if (legacyError) throw legacyError;
   return legacyData as UserApplication;
 }
@@ -146,4 +152,23 @@ export function isMissingApplicationWorkflowColumnsError(error: unknown) {
       : String(error ?? "");
   return /candidate_stage|priority|saved_at|application_channel|application_account|contact_name|next_action|resume_id|custom_stage_label|review_note/i.test(message)
     && /column|schema cache|does not exist|could not find/i.test(message);
+}
+
+function getErrorCode(error: unknown) {
+  return typeof error === "object" && error && "code" in error ? String(error.code) : "";
+}
+
+async function fetchExistingApplication(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  jobId: string,
+) {
+  const { data, error } = await supabase
+    .from("user_applications")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("job_id", jobId)
+    .single();
+  if (error) throw error;
+  return data as UserApplication;
 }

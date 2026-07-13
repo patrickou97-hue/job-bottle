@@ -39,11 +39,12 @@ export function AdminShell({ children }: { children: ReactNode }) {
           if (mounted) setMessage("请先登录管理员账号。");
           return;
         }
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from("profiles")
           .select("role")
           .eq("id", user.id)
           .maybeSingle();
+        if (error) throw error;
         if (data?.role !== "admin") {
           if (mounted) setMessage("无权限访问。");
           return;

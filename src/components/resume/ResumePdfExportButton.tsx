@@ -12,7 +12,7 @@ export function ResumePdfExportButton({
   preserveDraft,
   resume,
 }: {
-  preserveDraft: () => void;
+  preserveDraft: () => boolean;
   resume: ResumeDocument;
 }) {
   const pathname = usePathname();
@@ -27,7 +27,10 @@ export function ResumePdfExportButton({
     setMessage("");
 
     try {
-      preserveDraft();
+      if (!preserveDraft()) {
+        setMessage("浏览器存储空间不足，当前简历尚未安全保存。请压缩或删除照片后重试");
+        return;
+      }
       const authenticated = await hasVerifiedDownloadSession();
 
       if (!authenticated) {

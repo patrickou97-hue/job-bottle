@@ -269,7 +269,10 @@ export function HomeClient() {
         applyWindow.location.href = job.apply_url;
         applyWindowNavigated = true;
       } else {
-        safeOpenUrl(job.apply_url);
+        if (!safeOpenUrl(job.apply_url)) {
+          setMessage("浏览器阻止了新窗口，请允许本站打开投递页面后重试。");
+          return;
+        }
       }
       armApplyConfirmation({
         applicationId: existing.id,

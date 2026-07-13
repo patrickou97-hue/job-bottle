@@ -63,10 +63,13 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
 
   useEffect(() => {
     if (!loaded) return;
-    saveLocalResumes(resumes);
+    const savedLocally = saveLocalResumes(resumes);
 
     if (storageMode !== "cloud" || !userId || !isSupabaseConfigured()) {
-      const timer = window.setTimeout(() => setSaveState("已保存到本地"), 120);
+      const timer = window.setTimeout(
+        () => setSaveState(savedLocally ? "已保存到本地" : "浏览器存储空间不足，请删除大图后重试"),
+        120,
+      );
       return () => window.clearTimeout(timer);
     }
 

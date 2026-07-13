@@ -317,8 +317,13 @@ export function loadLocalResumes() {
 }
 
 export function saveLocalResumes(resumes: ResumeDocument[]) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(resumes));
+  if (typeof window === "undefined") return false;
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(resumes));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function mergeResumeCollections(

@@ -70,7 +70,10 @@ export function JobDetailActions({
         setMessage("投递链接格式不正确，当前记录和已填内容都已保留。");
         return;
       }
-      safeOpenUrl(job.apply_url);
+      if (!safeOpenUrl(job.apply_url)) {
+        setMessage("浏览器阻止了新窗口，请允许本站打开投递页面后重试。");
+        return;
+      }
       armApplyConfirmation();
       setMessage("官网已打开。返回后确认是否完成投递。");
       return;

@@ -48,6 +48,11 @@ export function CsvImportPanel() {
   async function handleFile(file?: File) {
     if (!file) return;
     setMessage("");
+    if (file.size > 15 * 1024 * 1024) {
+      setRows([]);
+      setMessage("文件不能超过 15MB，请拆分后再导入。");
+      return;
+    }
     try {
       setRows(await parseJobsImportFile(file));
     } catch {

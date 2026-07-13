@@ -171,31 +171,37 @@ export async function toggleLike(
   commentId?: string,
 ) {
   if (postId) {
-    const { data: existing } = await supabase
+    const { data: existing, error: readError } = await supabase
       .from("forum_likes")
       .select("user_id")
       .eq("user_id", userId)
       .eq("post_id", postId)
       .maybeSingle();
+    if (readError) throw readError;
     if (existing) {
-      await supabase.from("forum_likes").delete().eq("user_id", userId).eq("post_id", postId);
+      const { error } = await supabase.from("forum_likes").delete().eq("user_id", userId).eq("post_id", postId);
+      if (error) throw error;
       return false;
     }
-    await supabase.from("forum_likes").insert({ user_id: userId, post_id: postId });
+    const { error } = await supabase.from("forum_likes").insert({ user_id: userId, post_id: postId });
+    if (error) throw error;
     return true;
   }
   if (commentId) {
-    const { data: existing } = await supabase
+    const { data: existing, error: readError } = await supabase
       .from("forum_likes")
       .select("user_id")
       .eq("user_id", userId)
       .eq("comment_id", commentId)
       .maybeSingle();
+    if (readError) throw readError;
     if (existing) {
-      await supabase.from("forum_likes").delete().eq("user_id", userId).eq("comment_id", commentId);
+      const { error } = await supabase.from("forum_likes").delete().eq("user_id", userId).eq("comment_id", commentId);
+      if (error) throw error;
       return false;
     }
-    await supabase.from("forum_likes").insert({ user_id: userId, comment_id: commentId });
+    const { error } = await supabase.from("forum_likes").insert({ user_id: userId, comment_id: commentId });
+    if (error) throw error;
     return true;
   }
   return false;
@@ -209,21 +215,23 @@ export async function fetchUserLike(
   commentId?: string,
 ) {
   if (postId) {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("forum_likes")
       .select("user_id")
       .eq("user_id", userId)
       .eq("post_id", postId)
       .maybeSingle();
+    if (error) throw error;
     return Boolean(data);
   }
   if (commentId) {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("forum_likes")
       .select("user_id")
       .eq("user_id", userId)
       .eq("comment_id", commentId)
       .maybeSingle();
+    if (error) throw error;
     return Boolean(data);
   }
   return false;

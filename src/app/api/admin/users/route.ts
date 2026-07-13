@@ -53,12 +53,19 @@ export async function PATCH(request: NextRequest) {
   if ("response" in access) return access.response;
 
   try {
-    const input = validateUpdate(await request.json());
+    const input = validateUpdate(await request.json().catch(() => null));
     if (input.id === access.userId && (input.disabled || input.role !== "admin")) {
       return NextResponse.json({ error: "不能停用或降级当前管理员账号。" }, { status: 400 });
     }
 
     const admin = createAdminClient();
+    const [applicationCountResult, resumeCountResult] = await Promise.all([
+      admin.from("user_applications").select("id", { count: "exact", head: true }).eq("user_id", input.id),
+      admin.from("resumes").select("id", { count: "exact", head: true }).eq("user_id", input.id),
+    ]);
+    if (applicationCountResult.error) throw applicationCountResult.error;
+    if (resumeCountResult.error) throw resumeCountResult.error;
+
     const { data: previousAuth, error: previousAuthError } = await admin.auth.admin.getUserById(input.id);
     if (previousAuthError) throw previousAuthError;
     const wasDisabled = isFutureDate(previousAuth.user.banned_until);
@@ -83,13 +90,13 @@ export async function PATCH(request: NextRequest) {
       throw profileError;
     }
 
-    const [{ count: applicationCount }, { count: resumeCount }] = await Promise.all([
-      admin.from("user_applications").select("id", { count: "exact", head: true }).eq("user_id", input.id),
-      admin.from("resumes").select("id", { count: "exact", head: true }).eq("user_id", input.id),
-    ]);
-
     return NextResponse.json({
-      user: toSummary(authData.user, profile as Profile, applicationCount ?? 0, resumeCount ?? 0),
+      user: toSummary(
+        authData.user,
+        profile as Profile,
+        applicationCountResult.count ?? 0,
+        resumeCountResult.count ?? 0,
+      ),
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "请求格式无效。";
@@ -99,16 +106,27 @@ export async function PATCH(request: NextRequest) {
 }
 
 async function requireAdmin() {
-  const supabase = await createClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) {
-    return { response: NextResponse.json({ error: "请先登录管理员账号。" }, { status: 401 }) };
+  try {
+    const supabase = await createClient();
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error || !user) {
+      return { response: NextResponse.json({ error: "请先登录管理员账号。" }, { status: 401 }) };
+    }
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (profileError) {
+      return { response: NextResponse.json({ error: "管理员权限读取失败，请稍后重试。" }, { status: 500 }) };
+    }
+    if (profile?.role !== "admin") {
+      return { response: NextResponse.json({ error: "无权限管理用户账户。" }, { status: 403 }) };
+    }
+    return { userId: user.id };
+  } catch {
+    return { response: NextResponse.json({ error: "管理员鉴权服务暂时不可用。" }, { status: 503 }) };
   }
-  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
-  if (profile?.role !== "admin") {
-    return { response: NextResponse.json({ error: "无权限管理用户账户。" }, { status: 403 }) };
-  }
-  return { userId: user.id };
 }
 
 function validateUpdate(value: unknown): AdminUserUpdate & { id: string } {

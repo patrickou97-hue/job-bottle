@@ -36,20 +36,29 @@ export function GalaxyJobsClient({ kind, slug }: { kind: GalaxyKind; slug: strin
 
   async function loadData() {
     if (!isSupabaseConfigured()) {
+      setMessage("请先配置数据库环境变量，再读取岗位数据库。");
       setLoading(false);
       return;
     }
-    const supabase = createClient();
-    const [jobRows, user] = await Promise.all([fetchActiveJobs(supabase), getCurrentUserOrNull(supabase)]);
-    setJobs(filterJobsByGalaxy(jobRows, kind, slug));
-    if (user) {
-      setCurrentUserId(user.id);
-      setApplications(await fetchMyApplications(supabase, user.id));
-    } else {
-      setCurrentUserId(null);
+    setLoading(true);
+    try {
+      const supabase = createClient();
+      const [jobRows, user] = await Promise.all([fetchActiveJobs(supabase), getCurrentUserOrNull(supabase)]);
+      setJobs(filterJobsByGalaxy(jobRows, kind, slug));
+      if (user) {
+        setCurrentUserId(user.id);
+        setApplications(await fetchMyApplications(supabase, user.id));
+      } else {
+        setCurrentUserId(null);
+        setApplications([]);
+      }
+    } catch {
+      setJobs([]);
       setApplications([]);
+      setMessage("岗位读取失败，请检查网络后重试。");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   useEffect(() => {
@@ -116,10 +125,14 @@ export function GalaxyJobsClient({ kind, slug }: { kind: GalaxyKind; slug: strin
         setMessage("投递链接格式不正确，当前记录和已填内容都已保留。");
         return;
       }
-      safeOpenUrl(job.apply_url);
+      if (!safeOpenUrl(job.apply_url)) {
+        setMessage("浏览器阻止了新窗口，请允许本站打开投递页面后重试。");
+        return;
+      }
       setPendingConfirmation(existing);
       setShowConfirmation(false);
       pageWasHiddenRef.current = false;
+      if (confirmationTimerRef.current) window.clearTimeout(confirmationTimerRef.current);
       confirmationTimerRef.current = window.setTimeout(() => setShowConfirmation(true), 2200);
       setMessage("官网已打开。返回后确认是否完成投递。");
     } catch (error) {

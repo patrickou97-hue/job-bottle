@@ -14,6 +14,48 @@ const SOURCE_INVARIANTS = [
     label: "根布局启用 Vercel Web Analytics 访问统计",
   },
   {
+    file: "src/app/error.tsx",
+    mustInclude: ["reset", "重新尝试", "返回首页", "当前页面的数据没有被主动删除"],
+    mustNotInclude: [],
+    label: "页面级错误边界提供恢复路径且不误报数据删除",
+  },
+  {
+    file: "src/app/global-error.tsx",
+    mustInclude: ["<html", "<body", "reset", "账号数据不会因此被删除"],
+    mustNotInclude: [],
+    label: "根布局错误边界可在全局渲染失败时恢复",
+  },
+  {
+    file: "src/lib/resume.ts",
+    mustInclude: ["saveLocalResumes", "window.localStorage.setItem", "return true", "return false"],
+    mustNotInclude: [],
+    label: "简历本地保存捕获浏览器配额异常而不让页面崩溃",
+  },
+  {
+    file: "src/lib/resume-ai.ts",
+    mustInclude: ["AbortController", "45_000", "isResumePolishResult", "AI 返回内容格式异常", "AI 润色请求超时"],
+    mustNotInclude: ["return payload as ResumePolishResult"],
+    label: "简历 AI 客户端具备超时与响应结构验证",
+  },
+  {
+    file: "src/lib/applications.ts",
+    mustInclude: ["getErrorCode(error) === \"23505\"", "getErrorCode(legacyError) === \"23505\"", "fetchExistingApplication"],
+    mustNotInclude: [],
+    label: "重复点击收录岗位时可从唯一键竞争中恢复",
+  },
+  {
+    file: "src/lib/forum.ts",
+    mustInclude: ["readError", "if (readError) throw readError", "if (error) throw error"],
+    mustNotInclude: [],
+    label: "社区点赞读写错误不会被静默当成成功",
+  },
+  {
+    file: "src/components/galaxy/GalaxyMapClient.tsx",
+    mustInclude: ["try {", "catch {", "finally {", "岗位星系读取失败"],
+    mustNotInclude: [],
+    label: "岗位星系加载失败时退出等待态并显示错误",
+  },
+  {
     file: "src/lib/auth.ts",
     mustInclude: ["DEFAULT_AUTH_TIMEOUT_MS = 1800", "hasStoredBrowserSession", "expires_at", "getSession()", "读取登录状态超时。"],
     mustNotInclude: [],

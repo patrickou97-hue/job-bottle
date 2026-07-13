@@ -324,10 +324,25 @@ export function ResumeEditor({
 }
 
 function PhotoField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const [message, setMessage] = useState("");
+
   async function handleFile(file: File | undefined) {
     if (!file) return;
-    const dataUrl = await cropPhotoToPortrait(file);
-    onChange(dataUrl);
+    setMessage("");
+    if (!file.type.startsWith("image/")) {
+      setMessage("请选择 JPG、PNG 或 WebP 图片。");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setMessage("照片不能超过 10MB，请压缩后重试。");
+      return;
+    }
+    try {
+      const dataUrl = await cropPhotoToPortrait(file);
+      onChange(dataUrl);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "照片处理失败，请换一张图片。");
+    }
   }
 
   return (
@@ -351,7 +366,7 @@ function PhotoField({ value, onChange }: { value: string; onChange: (value: stri
             上传照片
             <input
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp"
               className="sr-only"
               onChange={(event) => {
                 void handleFile(event.target.files?.[0]);
@@ -370,6 +385,7 @@ function PhotoField({ value, onChange }: { value: string; onChange: (value: stri
             </button>
           ) : null}
         </div>
+        {message ? <p className="mt-2 text-xs text-red-200" role="status">{message}</p> : null}
       </div>
     </div>
   );
@@ -398,7 +414,7 @@ async function cropPhotoToPortrait(file: File) {
   canvas.width = outputWidth;
   canvas.height = outputHeight;
   const context = canvas.getContext("2d");
-  if (!context) return "";
+  if (!context) throw new Error("浏览器无法处理这张照片，请换一张图片。");
   context.fillStyle = "#ffffff";
   context.fillRect(0, 0, outputWidth, outputHeight);
   context.drawImage(
