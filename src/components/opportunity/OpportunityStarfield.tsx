@@ -118,7 +118,7 @@ export function OpportunityStarfield({
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_330px]">
-        <div className="relative h-[420px] overflow-hidden rounded-[28px] bg-black/10 xl:h-[520px]">
+        <div className="relative h-[420px] overflow-hidden rounded-[18px] bg-black/10 xl:h-[520px]">
           <div className="absolute inset-0 opacity-20 [background-image:radial-gradient(circle,rgba(201,197,228,.26)_0_1px,transparent_1.5px)] [background-size:96px_96px]" />
           {clusterLabels.map((cluster) => (
             <span

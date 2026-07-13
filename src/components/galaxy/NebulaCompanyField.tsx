@@ -48,7 +48,7 @@ export function NebulaCompanyField({
   }, [applicationByJobId, jobs]);
 
   return (
-    <div className="relative h-[420px] overflow-hidden rounded-[28px] bg-black/10 xl:h-[470px]">
+    <div className="relative h-[420px] overflow-hidden rounded-[18px] bg-black/10 xl:h-[470px]">
       <div className="absolute inset-0 opacity-20 [background-image:radial-gradient(circle,rgba(201,197,228,.30)_0_1px,transparent_1.5px)] [background-size:88px_88px]" />
       <div className="absolute inset-8 rounded-full bg-nebula-blue/[0.025] blur-3xl" />
       {positions.map((item) => {

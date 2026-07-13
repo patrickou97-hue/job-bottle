@@ -76,9 +76,10 @@
   --apple-separator: rgba(231, 226, 255, 0.085);
   --apple-shadow-panel: 0 24px 72px rgba(0, 0, 1, 0.3);
   --apple-shadow-sheet: 0 34px 120px rgba(0, 0, 1, 0.72);
-  --apple-radius-control: 14px;
-  --apple-radius-panel: 24px;
-  --apple-radius-sheet: 30px;
+  /* macOS-style radius scale: compact controls, restrained desktop windows. */
+  --apple-radius-control: 10px;
+  --apple-radius-panel: 18px;
+  --apple-radius-sheet: 20px;
 
   --ease-out-cine: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-snap: cubic-bezier(0.16, 1, 0.3, 1);

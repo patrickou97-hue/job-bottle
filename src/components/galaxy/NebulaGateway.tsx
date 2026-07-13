@@ -92,7 +92,7 @@ export function NebulaGateway({
   }
 
   return (
-    <section className="relative min-h-[34rem] overflow-hidden rounded-[30px] border border-white/[0.08] bg-black/10 px-3 pb-24 pt-5 sm:px-5">
+    <section className="relative min-h-[34rem] overflow-hidden rounded-[20px] border border-white/[0.08] bg-black/10 px-3 pb-24 pt-5 sm:px-5">
       <div className="flex min-h-11 justify-end">
         {activeNebula ? (
           <button
@@ -136,7 +136,7 @@ export function NebulaGateway({
                     <span className="text-xs text-ink-muted">{activeJobs.length} 个结果</span>
                     <button
                       type="button"
-                      className="pressable inline-flex min-h-8 items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.05] px-2.5 text-xs text-ink-secondary hover:bg-white/[0.09] hover:text-ink-primary"
+                      className="pressable inline-flex min-h-8 items-center gap-1.5 rounded-[8px] border border-white/[0.08] bg-white/[0.05] px-2.5 text-xs text-ink-secondary hover:bg-white/[0.09] hover:text-ink-primary"
                       onClick={() => setShowCompanyField((visible) => !visible)}
                     >
                       {showCompanyField ? <ListBulletsIcon className="size-3.5" weight="bold" /> : <CirclesThreePlusIcon className="size-3.5" weight="bold" />}

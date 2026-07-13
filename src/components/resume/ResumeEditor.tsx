@@ -338,8 +338,8 @@ function PhotoField({ value, onChange }: { value: string; onChange: (value: stri
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-4 rounded-[22px] bg-white/[0.035] p-4">
-      <div className="flex h-28 w-[86px] items-center justify-center overflow-hidden rounded-[14px] bg-white/[0.07] ring-1 ring-white/[0.08]">
+    <div className="flex flex-wrap items-center gap-4 rounded-[14px] bg-white/[0.035] p-4">
+      <div className="flex h-28 w-[86px] items-center justify-center overflow-hidden rounded-[10px] bg-white/[0.07] ring-1 ring-white/[0.08]">
         {value ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={value} alt="简历照片预览" className="h-full w-full object-cover" />
@@ -353,7 +353,7 @@ function PhotoField({ value, onChange }: { value: string; onChange: (value: stri
           上传后自动居中裁剪为证件照比例，适合中文简历放在右上角。
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <label className="muted-button pressable inline-flex cursor-pointer items-center gap-2 rounded-full px-4 py-2 text-sm">
+          <label className="muted-button pressable inline-flex cursor-pointer items-center gap-2 rounded-[10px] px-4 py-2 text-sm">
             <ImagePlus aria-hidden="true" className="size-4" />
             上传照片
             <input
@@ -369,7 +369,7 @@ function PhotoField({ value, onChange }: { value: string; onChange: (value: stri
           {value ? (
             <button
               type="button"
-              className="muted-button pressable inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm text-red-100"
+              className="muted-button pressable inline-flex items-center gap-2 rounded-[10px] px-4 py-2 text-sm text-red-100"
               onClick={() => onChange("")}
             >
               <X aria-hidden="true" className="size-4" />
@@ -628,7 +628,7 @@ function PolishableItem({ children, onPolish }: { children: React.ReactNode; onP
       <div className="flex justify-end">
         <button
           type="button"
-          className="pressable inline-flex h-9 items-center gap-2 rounded-full border border-[#dce7f8]/35 bg-[linear-gradient(135deg,#12294E_0%,#536D9E_52%,#B9C8E5_100%)] px-4 text-xs font-semibold text-white shadow-[0_8px_24px_rgba(50,78,126,0.32),inset_0_1px_0_rgba(255,255,255,0.28)] transition-[filter,box-shadow,transform] duration-200 hover:brightness-110 hover:shadow-[0_10px_30px_rgba(83,109,158,0.45),inset_0_1px_0_rgba(255,255,255,0.34)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c8d7ee]/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#07142a]"
+          className="pressable inline-flex h-9 items-center gap-2 rounded-[10px] border border-[#dce7f8]/35 bg-[linear-gradient(135deg,#12294E_0%,#536D9E_52%,#B9C8E5_100%)] px-4 text-xs font-semibold text-white shadow-[0_8px_24px_rgba(50,78,126,0.32),inset_0_1px_0_rgba(255,255,255,0.28)] transition-[filter,box-shadow,transform] duration-200 hover:brightness-110 hover:shadow-[0_10px_30px_rgba(83,109,158,0.45),inset_0_1px_0_rgba(255,255,255,0.34)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c8d7ee]/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#07142a]"
           onClick={onPolish}
         >
           <Sparkles aria-hidden="true" className="size-3.5 text-[#f4f7ff] drop-shadow-[0_0_6px_rgba(255,255,255,0.55)]" />

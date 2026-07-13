@@ -162,7 +162,7 @@ export function BottleStage({
             <p className="font-display text-lg text-ink-primary">这个秋天，从捕获第一颗星开始</p>
             <a
               href="/explore"
-              className="gold-button mt-4 inline-flex h-9 items-center rounded-full px-4 text-sm font-medium"
+              className="gold-button mt-4 inline-flex h-9 items-center rounded-lg px-4 text-sm font-medium"
             >
               去探索
             </a>

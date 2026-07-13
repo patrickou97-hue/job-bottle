@@ -327,7 +327,7 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
               <button
                 key={resume.id}
                 type="button"
-                className={`w-full rounded-[16px] px-4 py-3 text-left transition ${
+                className={`w-full rounded-[10px] px-4 py-3 text-left transition ${
                   selectedResume.id === resume.id
                     ? "bg-white/[0.075] text-ink-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]"
                     : "text-ink-secondary hover:bg-white/[0.045]"

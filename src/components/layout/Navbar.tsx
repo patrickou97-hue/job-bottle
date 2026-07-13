@@ -150,7 +150,7 @@ export function Navbar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "relative flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-2xl text-[10px] transition",
+                "relative flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-xl text-[10px] transition",
                 active ? "text-ink-primary" : "text-ink-muted",
               )}
               aria-current={active ? "page" : undefined}

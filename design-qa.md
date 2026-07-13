@@ -20,6 +20,7 @@ Final result: passed
 - Preserved the existing deep-space palette, nebula imagery, Chinese information architecture, and real job data.
 - Matched the selected direction with a dominant nebula, floating glass result sheet, and bottom segmented dock without replacing the product identity.
 - Kept the original company-star drill-down available as an explicit secondary view.
+- Normalized controls, segmented tabs, panels, windows, and sheets to a compact macOS-style radius scale; full circles remain only for semantic pills, toolbar icons, avatars, and celestial objects.
 - Verified the primary tabs, filters, publish flow, post inspector, resume tabs, drawer close behavior, Escape handling, focus return, and reduced-motion branches.
 - No horizontal overflow at 1440 px or 390 px on the checked routes.
 - Corrected the drawer blur contract and Next image sizing/loading behavior found during QA.
