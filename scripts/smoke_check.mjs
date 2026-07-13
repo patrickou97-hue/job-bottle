@@ -9,9 +9,9 @@ const NEXT_BIN = new URL("node_modules/.bin/next", ROOT);
 const SOURCE_INVARIANTS = [
   {
     file: "src/app/layout.tsx",
-    mustInclude: ["@vercel/analytics/next", "<Analytics />"],
+    mustInclude: ["@vercel/analytics/next", "<Analytics />", "<WelcomeNotice />"],
     mustNotInclude: [],
-    label: "根布局启用 Vercel Web Analytics 访问统计",
+    label: "根布局启用 Vercel Web Analytics 并覆盖全站首次访问说明",
   },
   {
     file: "src/app/error.tsx",
@@ -24,6 +24,12 @@ const SOURCE_INVARIANTS = [
     mustInclude: ["<html", "<body", "reset", "账号数据不会因此被删除"],
     mustNotInclude: [],
     label: "根布局错误边界可在全局渲染失败时恢复",
+  },
+  {
+    file: "src/components/onboarding/WelcomeNotice.tsx",
+    mustInclude: ["GUEST_NOTICE_KEY", "USER_NOTICE_METADATA_KEY", "auth.updateUser", "欢迎来到拾星", "Vercel", "Supabase", "不会向其他用户公开、出售或用于广告投放", "aria-modal=\"true\"", "Escape"],
+    mustNotInclude: ["开发者与管理员可见", "不会以任何方式泄露"],
+    label: "游客与首次登录用户收到可访问且可兑现的产品和隐私说明",
   },
   {
     file: "src/lib/resume.ts",
