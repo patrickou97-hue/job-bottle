@@ -632,7 +632,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/forum/PostCard.tsx",
-    mustInclude: ["SignalStrengthTicks", "置顶帖子", "取消置顶", "全站置顶", "setPostPinned", "isAdmin", "data-pinned={post.is_pinned}"],
+    mustInclude: ["SignalStrengthTicks", "lastActivityAt: post.created_at", "发布于 {formatDateTime(post.created_at)}", "置顶帖子", "取消置顶", "全站置顶", "setPostPinned", "isAdmin", "data-pinned={post.is_pinned}"],
     mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY", "<Drawer open={expanded}"],
     label: "社区帖子原位展开且仅向管理员展示醒目的全站置顶操作",
   },

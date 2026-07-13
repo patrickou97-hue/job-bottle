@@ -49,9 +49,9 @@ export function PostCard({
 
   const isOwner = currentUserId === post.user_id;
   const authorName = post.author_name;
-  const strength = signalScore({ replies: post.comment_count, lastActivityAt: post.updated_at });
-  const freshness = freshnessTier(post.updated_at);
-  const fading = isFadingSignal(post.updated_at);
+  const strength = signalScore({ replies: post.comment_count, lastActivityAt: post.created_at });
+  const freshness = freshnessTier(post.created_at);
+  const fading = isFadingSignal(post.created_at);
 
   async function handleExpand() {
     if (!expanded && isSupabaseConfigured()) {
@@ -197,7 +197,7 @@ export function PostCard({
         <div className="flex shrink-0 items-center gap-4 text-xs text-[color:var(--text-muted)]">
           <SignalStrengthTicks score={strength} />
           <span className="hidden tabular-nums sm:inline">
-            评论 {post.comment_count} · 点赞 {postLikeCount} · {formatDateTime(post.updated_at)}
+            评论 {post.comment_count} · 点赞 {postLikeCount}
           </span>
           <span className="text-[color:var(--text-muted)]">{expanded ? "收起" : "展开"}</span>
         </div>
