@@ -109,7 +109,7 @@ export function getLocationFilterLevel(filter: string): LocationFilterLevel {
 
 export function getLocationFilterLabel(filter: string) {
   if (filter === "scope:nationwide") return "全国岗位";
-  if (filter.startsWith("province:")) return `${filter.slice("province:".length)}省级`;
+  if (filter.startsWith("province:")) return filter.slice("province:".length);
   if (filter.startsWith("city:")) return filter.slice("city:".length);
   return filter;
 }

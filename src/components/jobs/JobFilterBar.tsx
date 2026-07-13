@@ -66,8 +66,16 @@ export function JobFilterBar({
 
   return (
     <aside className="relative self-start border-r border-[color:var(--line-ghost)] pr-5 xl:sticky xl:top-24">
-      <div className="mb-5">
+      <div className="mb-5 flex items-center justify-between gap-3">
         <h2 className="section-title text-base">筛选</h2>
+        <button
+          type="button"
+          className="text-action pressable px-1 py-1 text-xs"
+          aria-label="清空所有岗位筛选"
+          onClick={clearFilters}
+        >
+          清空筛选
+        </button>
       </div>
 
       <div className="space-y-5">
