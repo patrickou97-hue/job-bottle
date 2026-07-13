@@ -21,7 +21,7 @@ type ProvinceDatum = {
 };
 
 const SMALL_REGION_LABELS: Record<string, { x: number; y: number }> = {
-  北京: { x: 554, y: 148 },
+  北京: { x: 625, y: 120 },
   天津: { x: 574, y: 184 },
   上海: { x: 600, y: 280 },
   香港: { x: 572, y: 380 },
