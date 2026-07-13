@@ -675,14 +675,14 @@ const SOURCE_INVARIANTS = [
   {
     file: "src/app/api/admin/forum/pin/route.ts",
     mustInclude: ["auth.getUser", "profile?.role !== \"admin\"", "只有管理员可以置顶社区内容", "is_pinned"],
-    mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY"],
-    label: "社区置顶接口服务端复核管理员身份且不暴露 service role",
+    mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY", ".update({ is_pinned: false })", ".neq(\"id\", input.postId)"],
+    label: "社区置顶接口服务端复核管理员身份且允许多个帖子同时置顶",
   },
   {
     file: "supabase/migrations/20260713193000_forum_admin_pinning.sql",
     mustInclude: ["protect_forum_post_pinning", "public.is_admin()", "forum_posts_pinned_created_at_idx", "Only administrators can change forum pinning"],
-    mustNotInclude: ["using (true)\nwith check", "delete from public.forum_posts"],
-    label: "论坛置顶迁移阻止普通用户通过数据库直连篡改置顶状态",
+    mustNotInclude: ["using (true)\nwith check", "delete from public.forum_posts", "create unique index"],
+    label: "论坛置顶迁移阻止普通用户篡改且不限制同时置顶数量",
   },
   {
     file: "supabase/migrations/20260704040000_job_categories.sql",
