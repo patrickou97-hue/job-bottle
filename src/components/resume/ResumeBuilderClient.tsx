@@ -313,7 +313,7 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
       ) : null}
 
       <section className="grid gap-6 xl:grid-cols-[240px_minmax(0,1fr)]">
-        <aside className="space-y-3 xl:sticky xl:top-24 xl:self-start">
+        <aside className="apple-panel space-y-3 p-4 xl:sticky xl:top-24 xl:self-start">
           <div className="flex items-center justify-between">
             <h2 className="section-title">我的简历</h2>
             <span className="section-meta">{resumes.length} 份</span>
@@ -327,7 +327,7 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
               <button
                 key={resume.id}
                 type="button"
-                className={`w-full rounded-lg px-4 py-3 text-left transition ${
+                className={`w-full rounded-[16px] px-4 py-3 text-left transition ${
                   selectedResume.id === resume.id
                     ? "bg-white/[0.075] text-ink-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]"
                     : "text-ink-secondary hover:bg-white/[0.045]"
@@ -357,7 +357,7 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
         </aside>
 
         <div className="grid gap-8 xl:grid-cols-[minmax(360px,0.82fr)_minmax(520px,1fr)] xl:items-start">
-          <section className="min-w-0 border-t border-white/[0.1] pt-5">
+          <section className="apple-panel min-w-0 p-5 sm:p-6">
             <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="section-title">编辑内容</h2>

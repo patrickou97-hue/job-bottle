@@ -67,6 +67,19 @@
   --surface-core: rgba(0, 0, 1, 0.42);
   --surface-core-hi: rgba(255, 255, 255, 0.035);
 
+  --apple-glass-bg: rgba(13, 29, 57, 0.72);
+  --apple-glass-bg-strong: rgba(13, 27, 52, 0.9);
+  --apple-glass-border: rgba(231, 226, 255, 0.16);
+  --apple-glass-highlight: rgba(255, 255, 255, 0.1);
+  --apple-control-bg: rgba(241, 239, 255, 0.075);
+  --apple-control-selected: rgba(241, 239, 255, 0.15);
+  --apple-separator: rgba(231, 226, 255, 0.085);
+  --apple-shadow-panel: 0 24px 72px rgba(0, 0, 1, 0.3);
+  --apple-shadow-sheet: 0 34px 120px rgba(0, 0, 1, 0.72);
+  --apple-radius-control: 14px;
+  --apple-radius-panel: 24px;
+  --apple-radius-sheet: 30px;
+
   --ease-out-cine: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-snap: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);

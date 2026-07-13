@@ -15,6 +15,7 @@ import { formatDateTime } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";
 import { SignalStrengthTicks } from "@/components/forum/SignalStrengthTicks";
+import { Drawer } from "@/components/ui/Drawer";
 import { freshnessTier, isFadingSignal, signalScore } from "@/lib/signal-score";
 import type { ForumComment, ForumPost, ForumPostWithComments } from "@/lib/types";
 
@@ -179,8 +180,7 @@ export function PostCard({
       </button>
 
       {/* Expanded content */}
-      {expanded ? (
-        <div className="border-t border-white/[0.07] px-5 pb-5 pt-4">
+      <Drawer open={expanded} title={post.title} onClose={onToggle}>
           {/* Post content */}
           <div className="mb-4 whitespace-pre-wrap text-sm leading-relaxed text-ink-secondary">
             {post.content}
@@ -286,8 +286,7 @@ export function PostCard({
               </div>
             ) : null}
           </div>
-        </div>
-      ) : null}
+      </Drawer>
     </div>
   );
 }

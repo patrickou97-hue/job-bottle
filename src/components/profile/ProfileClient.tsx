@@ -275,8 +275,8 @@ export function ProfileClient() {
 
       {message ? <div className="info-banner text-sm">{message}</div> : null}
 
-      <section className="grid gap-8 border-y border-white/[0.1] py-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(340px,0.95fr)]">
-        <article className="min-w-0">
+      <section className="grid gap-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(340px,0.95fr)]">
+        <article className="apple-panel min-w-0 p-5 sm:p-6">
           <div className="flex items-start justify-between gap-4">
             <SectionLead title="投递资产" />
             <Link href="/my" className="text-action text-sm">
@@ -312,7 +312,7 @@ export function ProfileClient() {
           </div>
         </article>
 
-        <article className="border-t border-white/[0.08] pt-5 lg:border-l lg:border-t-0 lg:pl-8">
+        <article className="apple-panel p-5 sm:p-6">
           <SectionLead title="求职偏好" />
           <div className="mt-5 grid gap-4">
             <ProfileField label="意向地区" icon={<MapPin aria-hidden="true" className="size-4" />}>
@@ -346,7 +346,7 @@ export function ProfileClient() {
       </section>
 
       <section className="grid gap-5 lg:grid-cols-3">
-        <article className="border-t border-white/[0.12] pt-5">
+        <article className="apple-panel p-5">
           <SectionLead title="基本信息" />
           <div className="mt-5 grid gap-4">
             <ProfileField label="用户名" icon={<UserRound aria-hidden="true" className="size-4" />}>
@@ -372,7 +372,7 @@ export function ProfileClient() {
           </div>
         </article>
 
-        <article className="border-t border-white/[0.12] pt-5">
+        <article className="apple-panel p-5">
           <SectionLead title="简历版本" />
           <div className="mt-5 space-y-3">
             {resumes.length > 0 ? (
@@ -394,7 +394,7 @@ export function ProfileClient() {
           </Link>
         </article>
 
-        <article className="border-t border-white/[0.12] pt-5">
+        <article className="apple-panel p-5">
           <SectionLead title="匹配岗位" />
           <div className="mt-5 space-y-3">
             {recommendedJobs.length > 0 ? (
@@ -416,7 +416,7 @@ export function ProfileClient() {
       </section>
 
       <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
-        <article className="border-t border-white/[0.12] pt-5">
+        <article className="apple-panel p-5">
           <SectionLead title="常用入口" />
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             <GuideLink href="/explore" title="浏览岗位坐标" />
@@ -426,14 +426,14 @@ export function ProfileClient() {
           </div>
         </article>
 
-        <article className="border-t border-white/[0.12] pt-5">
+        <article className="apple-panel p-5">
           <SectionLead title="账号与反馈" />
           <div className="mt-5 space-y-4">
             <InfoLine icon={<Mail aria-hidden="true" className="size-4" />} label="登录邮箱" value={userEmail || "未读取"} />
             <InfoLine icon={<ShieldCheck aria-hidden="true" className="size-4" />} label="公开分享" value="分享海报不展示邮箱和内部 ID" />
             <ProfileField label="反馈内容" icon={<LifeBuoy aria-hidden="true" className="size-4" />}>
               <select
-                className="field-shell mb-3 h-11 w-full px-0 text-sm"
+                className="field-shell mb-3 h-11 w-full px-3.5 text-sm"
                 value={feedbackType}
                 onChange={(event) => setFeedbackType(event.target.value)}
               >
@@ -536,7 +536,7 @@ function OptionGrid({
             key={option}
             type="button"
             className={cn(
-              "pressable rounded-full px-3 py-1.5 text-xs font-medium transition",
+              "pressable min-h-9 rounded-full px-3 py-1.5 text-xs font-medium transition",
               dark
                 ? active
                   ? "bg-[#111827] text-[#7E7CB5]"

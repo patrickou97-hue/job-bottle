@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BriefcaseBusiness, FileText, FlaskConical, ListChecks, LogOut, MessageCircle, Shield, User } from "lucide-react";
+import { BriefcaseIcon, ChatCircleIcon, FileTextIcon, FlaskIcon, ListChecksIcon, ShieldCheckIcon, SignOutIcon, UserCircleIcon } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { getCurrentUserOrNull } from "@/lib/auth";
@@ -21,12 +21,12 @@ const navItems = [
 ];
 
 const mobileNavItems = [
-  { href: "/explore", label: "岗位", icon: BriefcaseBusiness },
-  { href: "/my", label: "投递", icon: ListChecks },
-  { href: "/resume", label: "简历", icon: FileText },
-  { href: "/forum", label: "社区", icon: MessageCircle },
-  { href: "/bottle", label: "星瓶", icon: FlaskConical },
-  { href: "/profile", label: "个人", icon: User },
+  { href: "/explore", label: "岗位", icon: BriefcaseIcon },
+  { href: "/my", label: "投递", icon: ListChecksIcon },
+  { href: "/resume", label: "简历", icon: FileTextIcon },
+  { href: "/forum", label: "社区", icon: ChatCircleIcon },
+  { href: "/bottle", label: "星瓶", icon: FlaskIcon },
+  { href: "/profile", label: "个人", icon: UserCircleIcon },
 ];
 
 export function Navbar() {
@@ -85,7 +85,7 @@ export function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-[#000001]/82 backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-white/[0.07] bg-[#000001]/68 backdrop-blur-2xl backdrop-saturate-150">
         <div className="mx-auto flex h-15 w-full max-w-[1320px] items-center gap-4 px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex shrink-0 items-center" aria-label="返回首页">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -101,7 +101,7 @@ export function Navbar() {
                 {active ? (
                   <motion.span
                     layoutId="primary-nav-indicator"
-                    className="absolute inset-x-2.5 bottom-0 h-0.5 bg-[color:var(--star-apricot)]"
+                    className="absolute inset-x-2.5 bottom-0 h-0.5 rounded-full bg-[color:var(--aurora)] shadow-[0_0_12px_rgba(126,124,181,.42)]"
                     transition={{ type: "spring", stiffness: 420, damping: 38 }}
                   />
                 ) : null}
@@ -115,16 +115,16 @@ export function Navbar() {
             <>
               {profile.role === "admin" ? (
                 <Link href="/admin" className="text-action pressable h-9 px-2.5 text-sm">
-                  <Shield aria-hidden="true" className="size-4" />
+                  <ShieldCheckIcon aria-hidden="true" className="size-4" weight="regular" />
                   管理
                 </Link>
               ) : null}
               <Link href="/profile" className="text-action pressable h-9 px-2.5 text-sm">
-                <User aria-hidden="true" className="size-4" />
+                <UserCircleIcon aria-hidden="true" className="size-4" weight="regular" />
                 {profile.display_name || "资料"}
               </Link>
               <button type="button" className="text-action pressable h-9 px-2.5 text-sm" onClick={handleLogout}>
-                <LogOut aria-hidden="true" className="size-4" />
+                <SignOutIcon aria-hidden="true" className="size-4" weight="regular" />
                 退出
               </button>
             </>
@@ -139,7 +139,7 @@ export function Navbar() {
         </div>
       </header>
       <nav
-        className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-6 border-t border-white/[0.1] bg-[#000001]/90 px-1 pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-1.5 backdrop-blur-xl md:hidden"
+        className="apple-dock fixed inset-x-3 bottom-[max(.65rem,env(safe-area-inset-bottom))] z-50 grid grid-cols-6 md:hidden"
         aria-label="移动主导航"
       >
         {mobileNavItems.map((item) => {
@@ -150,14 +150,14 @@ export function Navbar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 text-[10px] transition",
+                "relative flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-2xl text-[10px] transition",
                 active ? "text-ink-primary" : "text-ink-muted",
               )}
               aria-current={active ? "page" : undefined}
             >
               <span className="relative">
-                <Icon aria-hidden="true" className="relative z-10 size-4" />
-                {active ? <motion.span layoutId="mobile-nav-indicator" className="absolute -inset-2 rounded-full bg-white/[0.08]" /> : null}
+                <Icon aria-hidden="true" className="relative z-10 size-[18px]" weight={active ? "fill" : "regular"} />
+                {active ? <motion.span layoutId="mobile-nav-indicator" className="absolute -inset-2 rounded-full bg-white/[0.1]" transition={{ type: "spring", stiffness: 430, damping: 38 }} /> : null}
               </span>
               {item.label}
             </Link>

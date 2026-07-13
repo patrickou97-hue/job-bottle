@@ -6,6 +6,7 @@ import { ResumePolishDialog, type ResumePolishTarget } from "@/components/resume
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import {
   createBlankCustomSection,
   createBlankEducation,
@@ -93,22 +94,13 @@ export function ResumeEditor({
           </button>
         </div>
       ) : null}
-      <div className="flex flex-wrap gap-2">
-        {EDITOR_SECTIONS.map((section) => (
-          <button
-            key={section.id}
-            type="button"
-            className={`px-1 py-2 text-sm font-medium transition ${
-              activeSection === section.id
-                ? "border-b-2 border-[rgba(242,209,109,0.52)] text-ink-primary"
-                : "text-ink-muted hover:text-ink-secondary"
-            }`}
-            onClick={() => onSectionChange(section.id)}
-          >
-            {section.label}
-          </button>
-        ))}
-      </div>
+      <SegmentedControl
+        ariaLabel="简历编辑章节"
+        className="w-full"
+        options={EDITOR_SECTIONS.map((section) => ({ value: section.id, label: section.label }))}
+        value={activeSection}
+        onChange={onSectionChange}
+      />
 
       {activeSection === "basic" ? (
         <section className="space-y-4">

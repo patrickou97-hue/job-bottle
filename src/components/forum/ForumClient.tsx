@@ -7,6 +7,8 @@ import { fetchPosts } from "@/lib/forum";
 import { Button } from "@/components/ui/Button";
 import { PostCard } from "@/components/forum/PostCard";
 import { NewPostForm } from "@/components/forum/NewPostForm";
+import { Drawer } from "@/components/ui/Drawer";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import type { ForumPost } from "@/lib/types";
 
 const CATEGORIES = ["全部", "讨论", "经验", "求助", "分享"] as const;
@@ -74,29 +76,17 @@ export function ForumClient() {
         </div>
       </section>
 
-      {showForm ? (
-        <section className="liquid-panel p-5">
+      <Drawer open={showForm} title="发布讨论" onClose={() => setShowForm(false)}>
           <NewPostForm onCreated={handleCreated} onCancel={() => setShowForm(false)} />
-        </section>
-      ) : null}
+      </Drawer>
 
-      <section className="flex flex-wrap items-center justify-between gap-4 border-b border-white/[0.08] px-1 pb-2">
-        <div className="flex flex-wrap gap-2">
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat}
-              type="button"
-              className={`px-1 py-2 text-sm font-medium transition ${
-                activeCategory === cat
-                  ? "border-b-2 border-[rgba(126,124,181,0.52)] text-[color:var(--light-silver)]"
-                  : "text-[color:var(--text-muted)] hover:text-[color:var(--text-secondary)]"
-              }`}
-              onClick={() => setActiveCategory(cat)}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
+      <section className="flex flex-wrap items-center justify-between gap-4">
+        <SegmentedControl
+          ariaLabel="讨论分类"
+          options={CATEGORIES.map((category) => ({ value: category, label: category }))}
+          value={activeCategory}
+          onChange={setActiveCategory}
+        />
         <span className="section-meta">{posts.length} 条内容</span>
       </section>
 

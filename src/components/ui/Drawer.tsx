@@ -3,8 +3,8 @@
 import type { ReactNode } from "react";
 import { useEffect, useRef } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { X } from "lucide-react";
-import { motionDuration, motionEase } from "@/lib/motion";
+import { XIcon } from "@phosphor-icons/react";
+import { motionDuration } from "@/lib/motion";
 
 export function Drawer({
   open,
@@ -63,22 +63,23 @@ export function Drawer({
             role="dialog"
             aria-modal="true"
             aria-labelledby="drawer-title"
-            className="absolute right-0 top-0 h-full w-full max-w-xl overflow-y-auto bg-[rgba(18,41,78,0.62)] p-5 shadow-glass backdrop-blur-[24px] backdrop-saturate-[1.2] before:pointer-events-none before:absolute before:bottom-0 before:right-full before:top-0 before:w-20 before:bg-gradient-to-l before:from-[rgba(18,41,78,0.62)] before:to-transparent sm:p-7"
-            initial={{ x: reducedMotion ? 0 : "100%", opacity: reducedMotion ? 0 : 1 }}
-            animate={{ x: 0 }}
-            exit={{ x: reducedMotion ? 0 : "100%", opacity: reducedMotion ? 0 : 1 }}
-            transition={{ duration: reducedMotion ? motionDuration.instant : 0.32, ease: motionEase.enter }}
+            className="apple-sheet absolute inset-x-0 bottom-0 max-h-[88svh] w-full overflow-y-auto px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-[24px] before:pointer-events-none before:absolute before:bottom-8 before:right-full before:top-8 before:hidden before:w-16 before:bg-gradient-to-l before:from-[rgba(13,29,57,.44)] before:to-transparent md:bottom-4 md:left-auto md:right-4 md:top-4 md:max-h-none md:max-w-xl md:p-7 md:before:block"
+            initial={{ y: reducedMotion ? 0 : "100%", x: 0, opacity: reducedMotion ? 0 : 1 }}
+            animate={{ y: 0, x: 0 }}
+            exit={{ y: reducedMotion ? 0 : "100%", x: 0, opacity: reducedMotion ? 0 : 1 }}
+            transition={reducedMotion ? { duration: motionDuration.instant } : { type: "spring", stiffness: 340, damping: 34, mass: 0.9 }}
           >
+            <div className="mb-2 flex justify-center md:hidden"><span className="apple-sheet-handle" /></div>
             <div className="mb-6 flex items-center justify-between gap-4">
               <h2 id="drawer-title" className="text-xl font-semibold text-ink-primary">{title}</h2>
               <button
                 ref={closeButtonRef}
                 type="button"
-                className="inline-flex size-10 items-center justify-center rounded-full text-ink-secondary transition hover:bg-white/[0.08] hover:text-ink-primary"
+                className="inline-flex size-10 items-center justify-center rounded-full text-ink-secondary transition hover:bg-white/[0.08] hover:text-ink-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--aurora)]"
                 onClick={onClose}
                 aria-label="关闭"
               >
-                <X aria-hidden="true" className="size-4" />
+                <XIcon aria-hidden="true" className="size-4" weight="bold" />
               </button>
             </div>
             {children}

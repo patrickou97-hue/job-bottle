@@ -92,8 +92,9 @@ export function ResumePolishDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby="resume-polish-title"
-        className="max-h-[92svh] w-full max-w-4xl overflow-y-auto border border-white/[0.14] bg-[#08152c]/96 p-5 shadow-[0_30px_100px_rgba(0,0,0,0.65)] sm:p-7"
+        className="apple-sheet max-h-[92svh] w-full max-w-4xl overflow-y-auto p-5 sm:p-7"
       >
+        <div className="mb-3 flex justify-center sm:hidden"><span className="apple-sheet-handle" /></div>
         <header className="flex items-start justify-between gap-4 border-b border-white/[0.1] pb-5">
           <div>
             <p className="text-xs text-ink-muted">{target.label}</p>

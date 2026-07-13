@@ -121,12 +121,13 @@ export function WelcomeNotice() {
         aria-modal="true"
         aria-labelledby="welcome-notice-title"
         aria-describedby="welcome-notice-description"
-        className="relative max-h-[92svh] w-full overflow-y-auto border border-white/[0.14] bg-[#08152c]/96 px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-6 shadow-[0_32px_110px_rgba(0,0,1,0.72)] sm:max-w-2xl sm:px-8 sm:pb-8 sm:pt-8"
+        className="apple-sheet relative max-h-[92svh] w-full overflow-y-auto px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 sm:max-w-2xl sm:px-8 sm:pb-8 sm:pt-6"
       >
+        <div className="mb-3 flex justify-center sm:hidden"><span className="apple-sheet-handle" /></div>
         <button
           ref={closeButtonRef}
           type="button"
-          className="muted-button pressable absolute right-4 top-4 inline-flex size-9 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--star-apricot)] sm:right-6 sm:top-6"
+          className="muted-button pressable absolute right-4 top-4 inline-flex size-9 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--aurora)] sm:right-6 sm:top-6"
           aria-label="关闭介绍"
           onClick={() => void dismiss()}
         >
@@ -187,7 +188,7 @@ function UserWelcomeContent() {
     <div className="mt-7 space-y-6">
       <div className="grid gap-3 sm:grid-cols-3">
         {["整理招聘岗位，避免错过申请时间", "管理简历和求职材料", "记录投递、笔试和面试进度"].map((item) => (
-          <div key={item} className="flex gap-3 border-t border-white/[0.1] pt-3 text-sm leading-6 text-ink-secondary">
+          <div key={item} className="apple-panel flex gap-3 p-4 text-sm leading-6 text-ink-secondary">
             <Check aria-hidden="true" className="mt-1 size-4 shrink-0 text-[color:var(--star-apricot)]" />
             <span>{item}</span>
           </div>
