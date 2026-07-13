@@ -145,6 +145,16 @@ export type ForumComment = {
   profiles?: { display_name: string | null } | null;
 };
 
+export type ForumPostView = ForumPost & {
+  author_name: string;
+  author_role: ProfileRole;
+};
+
+export type ForumCommentView = ForumComment & {
+  author_name: string;
+  author_role: ProfileRole;
+};
+
 export type ForumLike = {
   user_id: string;
   post_id: string | null;
@@ -191,8 +201,8 @@ export type AnalyticsEvent = {
   created_at: string;
 };
 
-export type ForumPostWithComments = ForumPost & {
-  comments: ForumComment[];
+export type ForumPostWithComments = ForumPostView & {
+  comments: ForumCommentView[];
 };
 
 export type Database = {

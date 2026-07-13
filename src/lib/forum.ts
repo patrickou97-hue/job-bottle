@@ -1,21 +1,25 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database, ForumPost, ForumComment, ForumPostWithComments } from "@/lib/types";
+import type { Database, ForumPost, ForumComment, ForumPostWithComments, ForumPostView, ProfileRole } from "@/lib/types";
 
 /* ── Helper: batch-fetch display names for a set of user IDs ── */
-async function fetchDisplayNames(
+async function fetchForumAuthors(
   supabase: SupabaseClient<Database>,
   userIds: string[],
-): Promise<Map<string, string>> {
-  const map = new Map<string, string>();
+): Promise<Map<string, { name: string; role: ProfileRole }>> {
+  const map = new Map<string, { name: string; role: ProfileRole }>();
   if (userIds.length === 0) return map;
   const unique = [...new Set(userIds)];
   const { data } = await supabase
     .from("profiles")
-    .select("id, display_name")
+    .select("id, display_name, role")
     .in("id", unique);
   if (data) {
-    for (const row of data as { id: string; display_name: string | null }[]) {
-      map.set(row.id, row.display_name ?? "匿名用户");
+    for (const row of data as { id: string; display_name: string | null; role: ProfileRole }[]) {
+      const displayName = row.display_name?.trim() || "匿名用户";
+      map.set(row.id, {
+        name: row.role === "admin" ? displayName : `${Array.from(displayName).slice(0, 3).join("")}***`,
+        role: row.role,
+      });
     }
   }
   return map;
@@ -44,15 +48,16 @@ export async function fetchPosts(
   if (error) throw error;
 
   const posts = (data ?? []) as ForumPost[];
-  const names = await fetchDisplayNames(
+  const authors = await fetchForumAuthors(
     supabase,
     posts.map((p) => p.user_id),
   );
 
   return posts.map((p) => ({
     ...p,
-    author_name: names.get(p.user_id) ?? "匿名用户",
-  }));
+    author_name: authors.get(p.user_id)?.name ?? (p.is_pinned ? "拾星管理员" : "匿名用户***"),
+    author_role: authors.get(p.user_id)?.role ?? (p.is_pinned ? "admin" : "user"),
+  })) satisfies ForumPostView[];
 }
 
 /* ── Fetch single post with comments ── */
@@ -74,14 +79,16 @@ export async function fetchPost(supabase: SupabaseClient<Database>, postId: stri
 
   const comments = (commentRows ?? []) as ForumComment[];
   const allUserIds = [post.user_id, ...comments.map((c) => c.user_id)];
-  const names = await fetchDisplayNames(supabase, allUserIds);
+  const authors = await fetchForumAuthors(supabase, allUserIds);
 
   return {
     ...post,
-    author_name: names.get(post.user_id) ?? "匿名用户",
+    author_name: authors.get(post.user_id)?.name ?? (post.is_pinned ? "拾星管理员" : "匿名用户***"),
+    author_role: authors.get(post.user_id)?.role ?? (post.is_pinned ? "admin" : "user"),
     comments: comments.map((c) => ({
       ...c,
-      author_name: names.get(c.user_id) ?? "匿名用户",
+      author_name: authors.get(c.user_id)?.name ?? "匿名用户***",
+      author_role: authors.get(c.user_id)?.role ?? "user",
     })),
   } as ForumPostWithComments;
 }
@@ -99,8 +106,12 @@ export async function createPost(
     .single();
   if (error) throw error;
 
-  const names = await fetchDisplayNames(supabase, [userId]);
-  return { ...(post as ForumPost), author_name: names.get(userId) ?? "匿名用户" };
+  const authors = await fetchForumAuthors(supabase, [userId]);
+  return {
+    ...(post as ForumPost),
+    author_name: authors.get(userId)?.name ?? "匿名用户***",
+    author_role: authors.get(userId)?.role ?? "user",
+  };
 }
 
 /* ── Update post ── */
@@ -145,8 +156,12 @@ export async function createComment(
     .single();
   if (error) throw error;
 
-  const names = await fetchDisplayNames(supabase, [userId]);
-  return { ...(comment as ForumComment), author_name: names.get(userId) ?? "匿名用户" };
+  const authors = await fetchForumAuthors(supabase, [userId]);
+  return {
+    ...(comment as ForumComment),
+    author_name: authors.get(userId)?.name ?? "匿名用户***",
+    author_role: authors.get(userId)?.role ?? "user",
+  };
 }
 
 /* ── Delete comment ── */

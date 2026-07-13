@@ -632,9 +632,27 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/forum/PostCard.tsx",
-    mustInclude: ["SignalStrengthTicks", "置顶帖子", "取消置顶", "setPostPinned", "isAdmin"],
+    mustInclude: ["SignalStrengthTicks", "置顶帖子", "取消置顶", "全站置顶", "setPostPinned", "isAdmin", "data-pinned={post.is_pinned}"],
+    mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY", "<Drawer open={expanded}"],
+    label: "社区帖子原位展开且仅向管理员展示醒目的全站置顶操作",
+  },
+  {
+    file: "src/lib/forum.ts",
+    mustInclude: ["fetchForumAuthors", "author_role", "Array.from(displayName).slice(0, 3)", "***"],
     mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY"],
-    label: "社区帖子仅向管理员展示置顶与取消置顶操作",
+    label: "社区普通作者名称保留前三位并追加三个星号而管理员名称保持可见",
+  },
+  {
+    file: "src/components/auth/LoginForm.tsx",
+    mustInclude: ["账号或邮箱", "normalizeLoginAccount", "@preset.starjob.space"],
+    mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY"],
+    label: "登录页支持五位预设账号并映射到内部认证邮箱",
+  },
+  {
+    file: "scripts/provision_preset_accounts.mjs",
+    mustInclude: ["SUPABASE_SERVICE_ROLE_KEY", "auth.admin.createUser", "email_confirm: true", "preset_account", "@preset.starjob.space"],
+    mustNotInclude: ["gTpigTHK", "bnFbmOHn", "NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY"],
+    label: "预设账户脚本从外部 CSV 幂等创建确认账户且不提交明文密码",
   },
   {
     file: "src/app/api/admin/forum/pin/route.ts",

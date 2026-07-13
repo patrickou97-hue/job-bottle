@@ -9,12 +9,12 @@ import { PostCard } from "@/components/forum/PostCard";
 import { NewPostForm } from "@/components/forum/NewPostForm";
 import { Drawer } from "@/components/ui/Drawer";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
-import type { ForumPost } from "@/lib/types";
+import type { ForumPostView } from "@/lib/types";
 
 const CATEGORIES = ["全部", "讨论", "经验", "求助", "分享"] as const;
 
 export function ForumClient() {
-  const [posts, setPosts] = useState<ForumPost[]>([]);
+  const [posts, setPosts] = useState<ForumPostView[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("全部");

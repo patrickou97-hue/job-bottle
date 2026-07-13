@@ -16,12 +16,11 @@ import { formatDateTime } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";
 import { SignalStrengthTicks } from "@/components/forum/SignalStrengthTicks";
-import { Drawer } from "@/components/ui/Drawer";
 import { freshnessTier, isFadingSignal, signalScore } from "@/lib/signal-score";
-import type { ForumComment, ForumPost, ForumPostWithComments } from "@/lib/types";
+import type { ForumCommentView, ForumPostView, ForumPostWithComments } from "@/lib/types";
 
 type PostCardProps = {
-  post: ForumPost;
+  post: ForumPostView;
   currentUserId: string | null;
   isAdmin: boolean;
   expanded: boolean;
@@ -39,7 +38,7 @@ export function PostCard({
   onDeleted,
   onPinnedChange,
 }: PostCardProps) {
-  const [comments, setComments] = useState<ForumComment[]>([]);
+  const [comments, setComments] = useState<ForumCommentView[]>([]);
   const [commentText, setCommentText] = useState("");
   const [liked, setLiked] = useState(false);
   const [postLikeCount, setPostLikeCount] = useState(post.like_count);
@@ -49,7 +48,7 @@ export function PostCard({
   const [actionMessage, setActionMessage] = useState("");
 
   const isOwner = currentUserId === post.user_id;
-  const authorName = (post as Record<string, unknown>).author_name as string ?? "匿名用户";
+  const authorName = post.author_name;
   const strength = signalScore({ replies: post.comment_count, lastActivityAt: post.updated_at });
   const freshness = freshnessTier(post.updated_at);
   const fading = isFadingSignal(post.updated_at);
@@ -157,7 +156,10 @@ export function PostCard({
   }
 
   return (
-    <div className="border-b border-white/[0.05] transition hover:bg-[color:var(--surface-hover-bg)]">
+    <div
+      data-pinned={post.is_pinned}
+      className={`border-b transition ${post.is_pinned ? "border-[#efc29a]/25 bg-[linear-gradient(90deg,rgba(239,194,154,0.11),rgba(126,124,181,0.035)_55%,transparent)] shadow-[inset_3px_0_0_rgba(239,194,154,0.82)]" : "border-white/[0.05] hover:bg-[color:var(--surface-hover-bg)]"}`}
+    >
       {/* Header */}
       <button
         type="button"
@@ -174,8 +176,9 @@ export function PostCard({
               {post.title}
             </h3>
             {post.is_pinned ? (
-              <span className="inline-flex shrink-0 items-center gap-1 text-xs text-[color:var(--light-silver)]">
-                置顶
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#efc29a] px-2 py-1 text-[11px] font-bold tracking-[0.08em] text-[#121827] shadow-[0_0_20px_rgba(239,194,154,0.24)]">
+                <Pin aria-hidden="true" className="size-3 fill-current" />
+                全站置顶
               </span>
             ) : null}
           </div>
@@ -201,7 +204,8 @@ export function PostCard({
       </button>
 
       {/* Expanded content */}
-      <Drawer open={expanded} title={post.title} onClose={onToggle}>
+      {expanded ? (
+        <div className="border-t border-white/[0.06] px-5 pb-7 pt-5 sm:px-10">
           {/* Post content */}
           <div className="mb-4 whitespace-pre-wrap text-sm leading-relaxed text-ink-secondary">
             {post.content}
@@ -276,7 +280,7 @@ export function PostCard({
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-2 text-xs text-ink-muted">
                       <span className="font-medium text-ink-secondary">
-                        {(comment as Record<string, unknown>).author_name as string ?? "匿名用户"}
+                        {comment.author_name}
                       </span>
                       <span>{formatDateTime(comment.created_at)}</span>
                     </div>
@@ -319,7 +323,8 @@ export function PostCard({
               </div>
             ) : null}
           </div>
-      </Drawer>
+        </div>
+      ) : null}
     </div>
   );
 }

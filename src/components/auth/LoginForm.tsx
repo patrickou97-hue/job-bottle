@@ -17,7 +17,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const loginSchema = z.object({
-  email: z.string().email("请输入有效邮箱。"),
+  account: z.string().min(1, "请输入账号或邮箱。"),
   password: z.string().min(6, "密码至少需要 6 位。"),
   displayName: z.string().max(24, "用户名不超过 24 个字。").optional(),
   city: z.string().max(30, "城市不超过 30 个字。").optional(),
@@ -47,7 +47,7 @@ export function LoginForm() {
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "",
+      account: "",
       password: "",
       displayName: "",
       city: "",
@@ -70,6 +70,12 @@ export function LoginForm() {
       }
       const supabase = createClient();
       if (mode === "register") {
+        const emailResult = z.string().email().safeParse(values.account.trim());
+        if (!emailResult.success) {
+          setMessage("注册时请输入有效邮箱。");
+          return;
+        }
+        const registrationEmail = emailResult.data;
         const preferredRegions = splitProfileInput(values.preferredRegions);
         const targetRoles = splitProfileInput(values.targetRoles);
         const displayName = values.displayName?.trim();
@@ -78,11 +84,11 @@ export function LoginForm() {
         const major = values.major?.trim() ?? "";
         const graduationYear = values.graduationYear?.trim() ?? "";
         const { data, error } = await supabase.auth.signUp({
-          email: values.email,
+          email: registrationEmail,
           password: values.password,
           options: {
             data: {
-              display_name: displayName || values.email.split("@")[0],
+              display_name: displayName || registrationEmail.split("@")[0],
               city,
               school,
               major,
@@ -113,7 +119,7 @@ export function LoginForm() {
         setMessage("注册成功。若系统要求邮箱验证，请先完成确认，再登录返回简历制作。");
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
-          email: values.email,
+          email: normalizeLoginAccount(values.account),
           password: values.password,
         });
         if (error) throw error;
@@ -157,10 +163,10 @@ export function LoginForm() {
         ) : null}
 
         <label className="block">
-          <span className="mb-2 block text-sm text-ink-secondary">邮箱</span>
-          <Input type="email" autoComplete="email" {...register("email")} />
-          {errors.email ? (
-            <span className="mt-2 block text-xs text-red-200">{errors.email.message}</span>
+          <span className="mb-2 block text-sm text-ink-secondary">{isRegister ? "邮箱" : "账号或邮箱"}</span>
+          <Input type={isRegister ? "email" : "text"} autoComplete={isRegister ? "email" : "username"} {...register("account")} />
+          {errors.account ? (
+            <span className="mt-2 block text-xs text-red-200">{errors.account.message}</span>
           ) : null}
         </label>
 
@@ -280,6 +286,11 @@ function splitProfileInput(value?: string) {
 
 function getSafeNextPath(value: string | null) {
   return value?.startsWith("/") && !value.startsWith("//") ? value : "/";
+}
+
+function normalizeLoginAccount(value: string) {
+  const account = value.trim();
+  return /^\d{5}$/.test(account) ? `${account}@preset.starjob.space` : account;
 }
 
 function LoginOptionGrid({
