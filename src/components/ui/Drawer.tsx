@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { XIcon } from "@phosphor-icons/react";
 import { motionDuration } from "@/lib/motion";
+import { CommunityHelpLink } from "@/components/ui/CommunityHelpLink";
 
 export function Drawer({
   open,
@@ -83,6 +84,9 @@ export function Drawer({
               </button>
             </div>
             {children}
+            <div className="mt-6 border-t border-[color:var(--line-ghost)] pt-4">
+              <CommunityHelpLink onClick={onClose} />
+            </div>
           </motion.aside>
         </div>
       ) : null}

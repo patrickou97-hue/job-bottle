@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { LoaderCircle, RefreshCw, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { CommunityHelpLink } from "@/components/ui/CommunityHelpLink";
 import { Select } from "@/components/ui/Select";
 import {
   requestResumePolish,
@@ -137,7 +138,8 @@ export function ResumePolishDialog({
 
         {error ? <p className="mt-5 border-l-2 border-[#9f2d3f] pl-3 text-sm text-[color:var(--text-danger)]">{error}</p> : null}
 
-        <footer className="mt-6 flex flex-wrap justify-end gap-3 border-t border-[color:var(--line-ghost)] pt-5">
+        <footer className="mt-6 flex flex-wrap items-center justify-end gap-3 border-t border-[color:var(--line-ghost)] pt-5">
+          <CommunityHelpLink className="mr-auto" onClick={onClose} />
           <Button variant="secondary" onClick={onClose}>保留原文</Button>
           <Button variant="secondary" className="gap-2" disabled={busy} onClick={generate}>
             {busy ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> : result ? <RefreshCw aria-hidden="true" className="size-4" /> : <Sparkles aria-hidden="true" className="size-4" />}

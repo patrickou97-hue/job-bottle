@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Check, LockKeyhole, Sparkles, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { CommunityHelpLink } from "@/components/ui/CommunityHelpLink";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
@@ -150,19 +151,25 @@ export function WelcomeNotice() {
 
         {isUserWelcome ? <UserWelcomeContent /> : <GuestWelcomeContent />}
 
-        <footer className="mt-7 flex flex-col-reverse gap-3 border-t border-[color:var(--line-ghost)] pt-5 sm:flex-row sm:items-center sm:justify-end">
-          {!isUserWelcome ? (
-            <Link
-              href="/login?mode=register"
-              className="text-action pressable inline-flex h-10 items-center justify-center px-4 text-sm font-medium"
-              onClick={() => writeStorage(GUEST_NOTICE_KEY)}
-            >
-              注册或登录
-            </Link>
-          ) : null}
-          <Button className="w-full sm:w-auto" onClick={() => void dismiss()}>
-            {isUserWelcome ? "开始使用拾星" : "我知道了"}
-          </Button>
+        <footer className="mt-7 flex flex-col gap-3 border-t border-[color:var(--line-ghost)] pt-5 sm:flex-row sm:items-center">
+          <CommunityHelpLink
+            className="justify-center sm:mr-auto sm:justify-start"
+            onClick={() => void dismiss()}
+          />
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center">
+            {!isUserWelcome ? (
+              <Link
+                href="/login?mode=register"
+                className="text-action pressable inline-flex h-10 items-center justify-center px-4 text-sm font-medium"
+                onClick={() => writeStorage(GUEST_NOTICE_KEY)}
+              >
+                注册或登录
+              </Link>
+            ) : null}
+            <Button className="w-full sm:w-auto" onClick={() => void dismiss()}>
+              {isUserWelcome ? "开始使用拾星" : "我知道了"}
+            </Button>
+          </div>
         </footer>
       </section>
     </div>

@@ -27,7 +27,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/onboarding/WelcomeNotice.tsx",
-    mustInclude: ["GUEST_NOTICE_KEY", "USER_NOTICE_METADATA_KEY", "auth.updateUser", "欢迎来到拾星", "Vercel", "Supabase", "不会向其他用户公开、出售或用于广告投放", "aria-modal=\"true\"", "Escape"],
+    mustInclude: ["GUEST_NOTICE_KEY", "USER_NOTICE_METADATA_KEY", "auth.updateUser", "欢迎来到拾星", "Vercel", "Supabase", "不会向其他用户公开、出售或用于广告投放", "aria-modal=\"true\"", "Escape", "CommunityHelpLink"],
     mustNotInclude: ["开发者与管理员可见", "不会以任何方式泄露"],
     label: "游客与首次登录用户收到可访问且可兑现的产品和隐私说明",
   },
@@ -551,7 +551,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/resume/ResumePolishDialog.tsx",
-    mustInclude: ["当前经历全部描述", "仅处理当前段落", "原始内容", "润色结果", "修改说明", "建议补充", "风险提示", "应用修改", "保留原文", "重新生成"],
+    mustInclude: ["当前经历全部描述", "仅处理当前段落", "原始内容", "润色结果", "修改说明", "建议补充", "风险提示", "应用修改", "保留原文", "重新生成", "CommunityHelpLink"],
     mustNotInclude: ["MiMo", "第三方", "MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL"],
     label: "AI 结果先对比确认且客户端不暴露供应商或服务端配置",
   },
@@ -581,9 +581,15 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/ui/Drawer.tsx",
-    mustInclude: ["theme-work", "apple-sheet", "rounded-lg", "var(--surface-hover-bg)", "aria-modal=\"true\"", "Escape", "returnFocusRef"],
+    mustInclude: ["theme-work", "apple-sheet", "rounded-lg", "var(--surface-hover-bg)", "aria-modal=\"true\"", "Escape", "returnFocusRef", "CommunityHelpLink"],
     mustNotInclude: ["border-l", "<Button"],
     label: "投递侧滑容器使用实体工作面并保留焦点管理与键盘关闭",
+  },
+  {
+    file: "src/components/ui/CommunityHelpLink.tsx",
+    mustInclude: ["href=\"/forum\"", "去求职社区了解如何使用「拾星」", "focus-visible:ring-2"],
+    mustNotInclude: ["target=\"_blank\""],
+    label: "所有业务弹窗复用可访问的求职社区使用帮助入口",
   },
   {
     file: "src/components/capture/CaptureOrbit.tsx",
