@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { Pin, PinOff, Trash2 } from "lucide-react";
+import { Pencil, Pin, PinOff, Trash2 } from "lucide-react";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import {
   toggleLike,
@@ -12,9 +12,12 @@ import {
   deletePost,
   fetchPost,
   setPostPinned,
+  updatePost,
 } from "@/lib/forum";
 import { formatDateTime } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { SignalStrengthTicks } from "@/components/forum/SignalStrengthTicks";
 import { freshnessTier, isFadingSignal, signalScore } from "@/lib/signal-score";
@@ -28,7 +31,13 @@ type PostCardProps = {
   onToggle: () => void;
   onDeleted: () => void;
   onPinnedChange: (postId: string, isPinned: boolean) => void;
+  onUpdated: (
+    postId: string,
+    updates: Pick<ForumPostView, "title" | "content" | "category" | "tags">,
+  ) => void;
 };
+
+const FORUM_CATEGORIES = ["讨论", "经验", "求助", "分享"] as const;
 
 export function PostCard({
   post,
@@ -38,6 +47,7 @@ export function PostCard({
   onToggle,
   onDeleted,
   onPinnedChange,
+  onUpdated,
 }: PostCardProps) {
   const [comments, setComments] = useState<ForumCommentView[]>([]);
   const [commentText, setCommentText] = useState("");
@@ -47,6 +57,11 @@ export function PostCard({
   const [submitting, setSubmitting] = useState(false);
   const [actionBusy, setActionBusy] = useState(false);
   const [actionMessage, setActionMessage] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(post.title);
+  const [editCategory, setEditCategory] = useState(post.category);
+  const [editContent, setEditContent] = useState(post.content);
+  const [editTags, setEditTags] = useState(post.tags.join("，"));
   const reducedMotion = useReducedMotion();
   const contentId = `forum-post-content-${post.id}`;
 
@@ -147,6 +162,65 @@ export function PostCard({
     }
   }
 
+  function beginEditing() {
+    setEditTitle(post.title);
+    setEditCategory(post.category);
+    setEditContent(post.content);
+    setEditTags(post.tags.join("，"));
+    setActionMessage("");
+    setEditing(true);
+  }
+
+  async function handleUpdatePost() {
+    if (!currentUserId || !isSupabaseConfigured() || actionBusy) return;
+
+    const title = editTitle.trim();
+    const content = editContent.trim();
+    if (!title) {
+      setActionMessage("请输入标题。");
+      return;
+    }
+    if (title.length > 120) {
+      setActionMessage("标题不超过120字。");
+      return;
+    }
+    if (!content) {
+      setActionMessage("请输入内容。");
+      return;
+    }
+    if (content.length > 5000) {
+      setActionMessage("内容不超过5000字。");
+      return;
+    }
+
+    const category = FORUM_CATEGORIES.includes(editCategory as (typeof FORUM_CATEGORIES)[number])
+      ? editCategory
+      : "讨论";
+    const tags = editTags
+      .split(/[,，、\s]+/)
+      .map((tag) => tag.trim())
+      .filter(Boolean)
+      .slice(0, 8);
+
+    setActionBusy(true);
+    setActionMessage("");
+    try {
+      await updatePost(createClient(), currentUserId, post.id, {
+        title,
+        content,
+        category,
+        tags,
+      });
+      onUpdated(post.id, { title, content, category, tags });
+      setEditing(false);
+      setActionMessage("帖子已更新。");
+    } catch {
+      setActionMessage("帖子更新失败，请稍后重试。");
+    } finally {
+      setActionBusy(false);
+    }
+  }
+
   async function handlePinPost() {
     if (!isAdmin || actionBusy) return;
     const nextPinned = !post.is_pinned;
@@ -228,12 +302,87 @@ export function PostCard({
           className="border-t border-[color:var(--line-ghost)] px-5 pb-7 pt-5 sm:px-10"
         >
           {/* Post content */}
-          <div className="mb-4 whitespace-pre-wrap text-sm leading-relaxed text-ink-secondary">
-            {post.content}
-          </div>
+          {editing ? (
+            <form
+              className="mb-5 space-y-4 border-b border-[color:var(--line-ghost)] pb-5"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void handleUpdatePost();
+              }}
+            >
+              <div>
+                <label htmlFor={`edit-post-title-${post.id}`} className="mb-1 block text-xs font-medium text-ink-muted">
+                  标题
+                </label>
+                <Input
+                  id={`edit-post-title-${post.id}`}
+                  value={editTitle}
+                  maxLength={120}
+                  onChange={(event) => setEditTitle(event.target.value)}
+                />
+              </div>
+              <div>
+                <label htmlFor={`edit-post-category-${post.id}`} className="mb-1 block text-xs font-medium text-ink-muted">
+                  分类
+                </label>
+                <Select
+                  id={`edit-post-category-${post.id}`}
+                  value={editCategory}
+                  onChange={(event) => setEditCategory(event.target.value)}
+                >
+                  {FORUM_CATEGORIES.map((category) => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </Select>
+              </div>
+              <div>
+                <label htmlFor={`edit-post-content-${post.id}`} className="mb-1 block text-xs font-medium text-ink-muted">
+                  内容
+                </label>
+                <Textarea
+                  id={`edit-post-content-${post.id}`}
+                  value={editContent}
+                  maxLength={5000}
+                  rows={7}
+                  onChange={(event) => setEditContent(event.target.value)}
+                />
+                <p className="mt-1 text-right text-xs text-ink-muted">{editContent.length} / 5000</p>
+              </div>
+              <div>
+                <label htmlFor={`edit-post-tags-${post.id}`} className="mb-1 block text-xs font-medium text-ink-muted">
+                  标签（可选，逗号分隔）
+                </label>
+                <Input
+                  id={`edit-post-tags-${post.id}`}
+                  value={editTags}
+                  onChange={(event) => setEditTags(event.target.value)}
+                />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button type="submit" disabled={actionBusy}>
+                  {actionBusy ? "保存中" : "保存修改"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={actionBusy}
+                  onClick={() => {
+                    setEditing(false);
+                    setActionMessage("");
+                  }}
+                >
+                  取消
+                </Button>
+              </div>
+            </form>
+          ) : (
+            <div className="mb-4 whitespace-pre-wrap text-sm leading-relaxed text-ink-secondary">
+              {post.content}
+            </div>
+          )}
 
           {/* Actions */}
-          <div className="mb-4 flex items-center gap-3">
+          <div className="mb-4 flex flex-wrap items-center gap-2">
             {isAdmin ? (
               <button
                 type="button"
@@ -259,16 +408,27 @@ export function PostCard({
               点赞 {postLikeCount > 0 ? postLikeCount : 0}
             </button>
 
-            {isOwner ? (
-              <button
-                type="button"
-                onClick={handleDeletePost}
-                disabled={actionBusy}
-                className="pressable inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-[color:var(--text-danger)] transition hover:bg-[rgba(127,85,104,0.12)]"
-              >
-                <Trash2 aria-hidden="true" className="size-3.5" />
-                删除帖子
-              </button>
+            {isOwner && !editing ? (
+              <>
+                <button
+                  type="button"
+                  onClick={beginEditing}
+                  disabled={actionBusy}
+                  className="pressable inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-ink-muted transition hover:bg-[color:var(--surface-hover-bg)] hover:text-ink-primary"
+                >
+                  <Pencil aria-hidden="true" className="size-3.5" />
+                  编辑帖子
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeletePost}
+                  disabled={actionBusy}
+                  className="pressable inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-[color:var(--text-danger)] transition hover:bg-[rgba(127,85,104,0.12)]"
+                >
+                  <Trash2 aria-hidden="true" className="size-3.5" />
+                  删除帖子
+                </button>
+              </>
             ) : null}
           </div>
 

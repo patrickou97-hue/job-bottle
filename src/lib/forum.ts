@@ -125,7 +125,9 @@ export async function updatePost(
     .from("forum_posts")
     .update(data)
     .eq("id", postId)
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .select("id")
+    .single();
   if (error) throw error;
 }
 

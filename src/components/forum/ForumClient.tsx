@@ -83,6 +83,15 @@ export function ForumClient() {
       }));
   }
 
+  function handleUpdated(
+    postId: string,
+    updates: Pick<ForumPostView, "title" | "content" | "category" | "tags">,
+  ) {
+    setPosts((current) => current
+      .map((post) => post.id === postId ? { ...post, ...updates } : post)
+      .filter((post) => activeCategory === "全部" || post.category === activeCategory));
+  }
+
   return (
     <div className="observatory-page space-y-8">
       <section className="page-hero">
@@ -141,6 +150,7 @@ export function ForumClient() {
               }
               onDeleted={handleDeleted}
               onPinnedChange={handlePinnedChange}
+              onUpdated={handleUpdated}
             />
           ))
         )}

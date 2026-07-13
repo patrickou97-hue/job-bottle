@@ -644,9 +644,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/forum/PostCard.tsx",
-    mustInclude: ["AnimatePresence", "motion.article", "useReducedMotion", "aria-expanded={expanded}", "aria-controls={contentId}", "onToggle();", "正在读取评论", "SignalStrengthTicks", "lastActivityAt: post.created_at", "发布于 {formatDateTime(post.created_at)}", "置顶帖子", "取消置顶", "全站置顶", "setPostPinned", "isAdmin", "data-pinned={post.is_pinned}"],
+    mustInclude: ["AnimatePresence", "motion.article", "useReducedMotion", "aria-expanded={expanded}", "aria-controls={contentId}", "onToggle();", "正在读取评论", "SignalStrengthTicks", "lastActivityAt: post.created_at", "发布于 {formatDateTime(post.created_at)}", "置顶帖子", "取消置顶", "全站置顶", "setPostPinned", "isAdmin", "data-pinned={post.is_pinned}", "编辑帖子", "保存修改", "updatePost", "isOwner && !editing"],
     mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY", "<Drawer open={expanded}"],
-    label: "社区帖子原位展开且仅向管理员展示醒目的全站置顶操作",
+    label: "社区帖子原位展开、作者可编辑且仅向管理员展示醒目的全站置顶操作",
   },
   {
     file: "src/lib/forum.ts",
