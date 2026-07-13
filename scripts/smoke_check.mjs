@@ -8,6 +8,12 @@ const ENV_FILE = new URL(".env.local", ROOT);
 const NEXT_BIN = new URL("node_modules/.bin/next", ROOT);
 const SOURCE_INVARIANTS = [
   {
+    file: "src/app/layout.tsx",
+    mustInclude: ["@vercel/analytics/next", "<Analytics />"],
+    mustNotInclude: [],
+    label: "根布局启用 Vercel Web Analytics 访问统计",
+  },
+  {
     file: "src/lib/auth.ts",
     mustInclude: ["DEFAULT_AUTH_TIMEOUT_MS = 1800", "hasStoredBrowserSession", "expires_at", "getSession()", "读取登录状态超时。"],
     mustNotInclude: [],
