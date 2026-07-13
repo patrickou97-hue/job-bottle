@@ -195,7 +195,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/resume/ResumeBuilderClient.tsx",
-    mustInclude: ["ResumeEditor", "ResumePreview", "ResumePdfExportButton", "ResumePageTitle", "AI-Powered", "Snell Roundhand", "inline-block", "px-2", "新建简历", "实时预览", "共用同一套 A4 排版坐标", "prepareTargetResume", "创建岗位版本", "打开岗位版本", "linkedJobId: targetJob.id", "primaryRole", "targetRole: primaryRole", "linkedJobContext={targetJob}", "saveLocalResumes", "fetchMyResumes", "upsertMyResume", "已同步到账号", "请谨慎审核 AI 输出的简历信息"],
+    mustInclude: ["ResumeEditor", "ResumePreview", "ResumePdfExportButton", "ResumePageTitle", "AI-Powered", "Snell Roundhand", "inline-block", "px-2", "新建简历", "实时预览", "共用同一套 A4 排版坐标", "prepareTargetResume", "创建岗位版本", "打开岗位版本", "linkedJobId: targetJob.id", "primaryRole", "targetRole: primaryRole", "linkedJobContext={targetJob}", "saveLocalResumes", "mergeResumeCollections", "fetchMyResumes", "upsertMyResume", "正在合并本地与账号简历", "已同步到账号", "请谨慎审核 AI 输出的简历信息"],
     mustNotInclude: ["requestAnimationFrame"],
     label: "简历制作器提供列表、编辑、预览、本地保存和账号同步",
   },
@@ -231,9 +231,27 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/resume/ResumePdfExportButton.tsx",
-    mustInclude: ["exportResumeToPdf", "正在生成", "PDF 已开始下载"],
+    mustInclude: ["/api/resume/download-auth", "hasVerifiedDownloadSession", "cache: \"no-store\"", "credentials: \"same-origin\"", "preserveDraft", "mode=register", "reason=resume-download", "当前简历已保存在本浏览器", "exportResumeToPdf", "正在生成", "PDF 已开始下载"],
     mustNotInclude: ["window.print", "document.title"],
-    label: "简历 PDF 导出直接生成矢量文件且不走浏览器打印页眉页脚",
+    label: "简历 PDF 下载要求登录并在跳转注册前保留浏览器草稿",
+  },
+  {
+    file: "src/app/api/resume/download-auth/route.ts",
+    mustInclude: ["supabase.auth.getUser()", "authenticated: false", "status: 401", "authenticated: true", "Cache-Control", "no-store"],
+    mustNotInclude: ["getSession", "service_role"],
+    label: "简历下载资格由服务端验证 Supabase 用户而非信任本地 session",
+  },
+  {
+    file: "src/components/auth/LoginForm.tsx",
+    mustInclude: ["mode", "register", "reason", "resume-download", "getSafeNextPath", "data.session", "返回简历制作"],
+    mustNotInclude: ["router.push(searchParams.get(\"next\")"],
+    label: "注册登录可安全返回来源页并兼容邮箱确认流程",
+  },
+  {
+    file: "src/lib/resume.ts",
+    mustInclude: ["mergeResumeCollections", "getResumeTimestamp", "consulting", "technical", "academic", "english_classic", "english_modern"],
+    mustNotInclude: [],
+    label: "本地和云端简历按更新时间无损合并并保留全部模板",
   },
   {
     file: "src/components/resume/resumePdf.ts",

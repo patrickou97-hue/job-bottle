@@ -15,6 +15,7 @@ import {
   getResumeTemplateMeta,
   getResumeTargetLine,
   loadLocalResumes,
+  mergeResumeCollections,
   saveLocalResumes,
   touchResume,
   type ResumeDocument,
@@ -132,23 +133,27 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
       }
 
       const cloudResumes = cloudResumesResult.value;
+      const localResumes = loadLocalResumes();
+      const mergedResumes = mergeResumeCollections(localResumes, cloudResumes);
       setStorageMode("cloud");
 
-      if (cloudResumes.length > 0) {
-        const fingerprint = JSON.stringify(cloudResumes);
-        cloudFingerprintRef.current = fingerprint;
-        setResumes(cloudResumes);
+      if (mergedResumes.length > 0) {
+        cloudFingerprintRef.current = JSON.stringify(cloudResumes);
+        setResumes(mergedResumes);
         setSelectedId((current) =>
-          current && cloudResumes.some((resume) => resume.id === current)
+          current && mergedResumes.some((resume) => resume.id === current)
             ? current
-            : cloudResumes[0]?.id ?? null,
+            : mergedResumes[0]?.id ?? null,
         );
-        setSaveState("已同步到账号");
+        setSaveState(
+          JSON.stringify(mergedResumes) === JSON.stringify(cloudResumes)
+            ? "已同步到账号"
+            : "正在合并本地与账号简历",
+        );
         return;
       }
 
-      const localResumes = loadLocalResumes();
-      const initial = localResumes.length > 0 ? localResumes : [createSampleResume()];
+      const initial = [createSampleResume()];
       setResumes(initial);
       setSelectedId(initial[0]?.id ?? null);
       setSaveState("正在同步");
@@ -399,7 +404,10 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
                   {getResumeTemplateMeta(selectedResume.templateId).label}。预览与下载共用同一套 A4 排版坐标。
                 </p>
               </div>
-              <ResumePdfExportButton resume={selectedResume} />
+              <ResumePdfExportButton
+                resume={selectedResume}
+                preserveDraft={() => saveLocalResumes(resumes)}
+              />
             </div>
             <div className="pb-4">
               <ResumePreview resume={selectedResume} />

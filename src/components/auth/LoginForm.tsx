@@ -33,7 +33,9 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [mode, setMode] = useState<"login" | "register">("login");
+  const [mode, setMode] = useState<"login" | "register">(
+    searchParams.get("mode") === "register" ? "register" : "login",
+  );
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const {
@@ -91,7 +93,7 @@ export function LoginForm() {
           },
         });
         if (error) throw error;
-        if (data.user) {
+        if (data.user && data.session) {
           await ensureProfile(supabase, data.user, {
             city,
             displayName,
@@ -102,7 +104,13 @@ export function LoginForm() {
             targetRoles,
           });
         }
-        setMessage("注册成功。若系统要求邮箱验证，请先前往邮箱完成确认。");
+        if (data.session) {
+          router.push(getSafeNextPath(searchParams.get("next")));
+          router.refresh();
+          return;
+        }
+        setMode("login");
+        setMessage("注册成功。若系统要求邮箱验证，请先完成确认，再登录返回简历制作。");
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
           email: values.email,
@@ -110,7 +118,7 @@ export function LoginForm() {
         });
         if (error) throw error;
         if (data.user) await ensureProfile(supabase, data.user);
-        router.push(searchParams.get("next") || "/");
+        router.push(getSafeNextPath(searchParams.get("next")));
         router.refresh();
       }
     } catch (error) {
@@ -130,7 +138,9 @@ export function LoginForm() {
         登录拾星
       </h1>
       <p className="mt-3 text-center text-sm leading-6 text-ink-secondary">
-        {isRegister
+        {searchParams.get("reason") === "resume-download"
+          ? "当前简历已保存在本浏览器，注册或登录后会自动带你返回下载"
+          : isRegister
           ? "注册后保存岗位、简历和投递记录"
           : "登录后查看投递记录"}
       </p>
@@ -266,6 +276,10 @@ function splitProfileInput(value?: string) {
         .slice(0, 12),
     ),
   );
+}
+
+function getSafeNextPath(value: string | null) {
+  return value?.startsWith("/") && !value.startsWith("//") ? value : "/";
 }
 
 function LoginOptionGrid({

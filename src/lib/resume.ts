@@ -321,6 +321,24 @@ export function saveLocalResumes(resumes: ResumeDocument[]) {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(resumes));
 }
 
+export function mergeResumeCollections(
+  localResumes: ResumeDocument[],
+  cloudResumes: ResumeDocument[],
+) {
+  const merged = new Map<string, ResumeDocument>();
+
+  for (const resume of [...cloudResumes, ...localResumes]) {
+    const current = merged.get(resume.id);
+    if (!current || getResumeTimestamp(resume) >= getResumeTimestamp(current)) {
+      merged.set(resume.id, resume);
+    }
+  }
+
+  return Array.from(merged.values()).sort(
+    (left, right) => getResumeTimestamp(right) - getResumeTimestamp(left),
+  );
+}
+
 export function touchResume(resume: ResumeDocument): ResumeDocument {
   return {
     ...resume,
@@ -424,5 +442,19 @@ function normalizeResumeDocument(value: unknown): ResumeDocument | null {
 }
 
 function normalizeTemplateId(value: unknown): ResumeTemplateId {
-  return value === "compact" || value === "classic" || value === "modern" ? value : "compact";
+  return value === "compact" ||
+    value === "classic" ||
+    value === "modern" ||
+    value === "consulting" ||
+    value === "technical" ||
+    value === "academic" ||
+    value === "english_classic" ||
+    value === "english_modern"
+    ? value
+    : "compact";
+}
+
+function getResumeTimestamp(resume: ResumeDocument) {
+  const timestamp = Date.parse(resume.updatedAt);
+  return Number.isFinite(timestamp) ? timestamp : 0;
 }

@@ -2,12 +2,22 @@
 
 import { useState } from "react";
 import { Download } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import type { ResumeDocument } from "@/lib/resume";
 import { track } from "@/lib/track";
 import { exportResumeToPdf } from "./resumePdf";
 
-export function ResumePdfExportButton({ resume }: { resume: ResumeDocument }) {
+export function ResumePdfExportButton({
+  preserveDraft,
+  resume,
+}: {
+  preserveDraft: () => void;
+  resume: ResumeDocument;
+}) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [isExporting, setIsExporting] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -17,6 +27,17 @@ export function ResumePdfExportButton({ resume }: { resume: ResumeDocument }) {
     setMessage("");
 
     try {
+      preserveDraft();
+      const authenticated = await hasVerifiedDownloadSession();
+
+      if (!authenticated) {
+        const query = searchParams.toString();
+        const next = `${pathname}${query ? `?${query}` : ""}`;
+        setMessage("当前简历已保存在本浏览器，注册或登录后即可下载");
+        router.push(`/login?next=${encodeURIComponent(next)}&mode=register&reason=resume-download`);
+        return;
+      }
+
       await exportResumeToPdf(resume);
       void track("resume_exported", { resume_id: resume.id, template_id: resume.templateId });
       setMessage("PDF 已开始下载");
@@ -41,4 +62,19 @@ export function ResumePdfExportButton({ resume }: { resume: ResumeDocument }) {
       ) : null}
     </div>
   );
+}
+
+async function hasVerifiedDownloadSession() {
+  try {
+    const response = await fetch("/api/resume/download-auth", {
+      cache: "no-store",
+      credentials: "same-origin",
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) return false;
+    const result = (await response.json()) as { authenticated?: unknown };
+    return result.authenticated === true;
+  } catch {
+    return false;
+  }
 }
