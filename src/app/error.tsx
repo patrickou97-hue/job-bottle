@@ -16,7 +16,7 @@ export default function ErrorPage({
   }, [error]);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#000001] px-5 text-center text-ink-primary">
+    <main className="theme-work flex min-h-screen items-center justify-center bg-[#e9ebef] px-5 text-center text-ink-primary">
       <div className="max-w-lg">
         <p className="page-kicker">页面暂时无法打开</p>
         <h1 className="mt-3 text-3xl font-semibold">这段星轨刚刚中断了</h1>

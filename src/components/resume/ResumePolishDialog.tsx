@@ -87,7 +87,7 @@ export function ResumePolishDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-6" role="presentation">
+    <div className="theme-work fixed inset-0 z-[90] flex items-end justify-center bg-black/48 p-0 sm:items-center sm:p-6" role="presentation">
       <section
         role="dialog"
         aria-modal="true"
@@ -95,18 +95,18 @@ export function ResumePolishDialog({
         className="apple-sheet max-h-[92svh] w-full max-w-4xl overflow-y-auto p-5 sm:p-7"
       >
         <div className="mb-3 flex justify-center sm:hidden"><span className="apple-sheet-handle" /></div>
-        <header className="flex items-start justify-between gap-4 border-b border-white/[0.1] pb-5">
+        <header className="flex items-start justify-between gap-4 border-b border-[color:var(--line-ghost)] pb-5">
           <div>
             <p className="text-xs text-ink-muted">{target.label}</p>
             <h2 id="resume-polish-title" className="mt-1 text-xl font-semibold text-ink-primary">AI 润色</h2>
             <p className="mt-2 text-sm leading-6 text-ink-secondary">仅处理当前段落，不会发送联系方式、照片或整份简历</p>
           </div>
-          <button type="button" className="muted-button pressable inline-flex size-9 shrink-0 items-center justify-center rounded-full" aria-label="关闭" onClick={onClose}>
+          <button type="button" className="muted-button pressable inline-flex size-9 shrink-0 items-center justify-center rounded-lg" aria-label="关闭" onClick={onClose}>
             <X aria-hidden="true" className="size-4" />
           </button>
         </header>
 
-        <div className="grid gap-4 border-b border-white/[0.1] py-5 sm:grid-cols-2">
+        <div className="grid gap-4 border-b border-[color:var(--line-ghost)] py-5 sm:grid-cols-2">
           <label className="block">
             <span className="mb-2 block text-xs font-medium text-ink-muted">润色范围</span>
             <Select value={scope} onChange={(event) => { setScope(event.target.value); setResult(null); }}>
@@ -128,16 +128,16 @@ export function ResumePolishDialog({
         </div>
 
         {result ? (
-          <div className="space-y-4 border-t border-white/[0.1] pt-5 text-sm leading-6">
+          <div className="space-y-4 border-t border-[color:var(--line-ghost)] pt-5 text-sm leading-6">
             <ResultBlock title="修改说明" items={[result.summary, ...result.changes.map((change) => change.description)]} />
             <ResultBlock title="建议补充" items={result.suggestions} empty="暂无" />
             <ResultBlock title="风险提示" items={result.warnings} empty="暂无" warning />
           </div>
         ) : null}
 
-        {error ? <p className="mt-5 border-l-2 border-red-300/70 pl-3 text-sm text-red-100">{error}</p> : null}
+        {error ? <p className="mt-5 border-l-2 border-[#9f2d3f] pl-3 text-sm text-[color:var(--text-danger)]">{error}</p> : null}
 
-        <footer className="mt-6 flex flex-wrap justify-end gap-3 border-t border-white/[0.1] pt-5">
+        <footer className="mt-6 flex flex-wrap justify-end gap-3 border-t border-[color:var(--line-ghost)] pt-5">
           <Button variant="secondary" onClick={onClose}>保留原文</Button>
           <Button variant="secondary" className="gap-2" disabled={busy} onClick={generate}>
             {busy ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> : result ? <RefreshCw aria-hidden="true" className="size-4" /> : <Sparkles aria-hidden="true" className="size-4" />}
@@ -154,7 +154,7 @@ function PolishColumn({ title, bullets, placeholder }: { title: string; bullets:
   return (
     <section className="min-w-0">
       <h3 className="text-sm font-semibold text-ink-primary">{title}</h3>
-      {bullets.length ? <ul className="mt-3 space-y-3 text-sm leading-6 text-ink-secondary">{bullets.map((bullet, index) => <li key={index} className="border-l border-white/[0.14] pl-3">{bullet}</li>)}</ul> : <p className="mt-3 text-sm leading-6 text-ink-muted">{placeholder}</p>}
+      {bullets.length ? <ul className="mt-3 space-y-3 text-sm leading-6 text-ink-secondary">{bullets.map((bullet, index) => <li key={index} className="border-l border-[color:var(--line)] pl-3">{bullet}</li>)}</ul> : <p className="mt-3 text-sm leading-6 text-ink-muted">{placeholder}</p>}
     </section>
   );
 }
@@ -163,7 +163,7 @@ function ResultBlock({ title, items, empty, warning = false }: { title: string; 
   return (
     <section>
       <h3 className="font-semibold text-ink-primary">{title}</h3>
-      {items.length ? <ul className={`mt-1 space-y-1 ${warning ? "text-amber-100" : "text-ink-secondary"}`}>{items.map((item, index) => <li key={index}>{item}</li>)}</ul> : <p className="mt-1 text-ink-muted">{empty}</p>}
+      {items.length ? <ul className={`mt-1 space-y-1 ${warning ? "text-[#8a4b16]" : "text-ink-secondary"}`}>{items.map((item, index) => <li key={index}>{item}</li>)}</ul> : <p className="mt-1 text-ink-muted">{empty}</p>}
     </section>
   );
 }

@@ -279,7 +279,7 @@ export function ProgressDrawer({
             <div className="flex items-start justify-between gap-3">
               <h3 className="min-w-0 text-2xl font-semibold text-ink-primary">{job.company_name}</h3>
               {ended ? (
-                <span className="shrink-0 rounded-full bg-white/[0.08] px-2 py-1 text-[10px] text-ink-muted">
+                <span className="shrink-0 rounded-md bg-[color:var(--surface-hover-bg)] px-2 py-1 text-[10px] text-ink-muted">
                   已结束
                 </span>
               ) : null}
@@ -289,7 +289,7 @@ export function ProgressDrawer({
           </div>
         </header>
 
-        <section className="border-y border-white/[0.1] py-5">
+        <section className="border-y border-[color:var(--line-ghost)] py-5">
           <div className="grid gap-5 sm:grid-cols-2">
             <label className="block">
               <span className="mb-2 block text-sm text-ink-secondary">优先级</span>
@@ -313,13 +313,13 @@ export function ProgressDrawer({
           {status === "opened" ? (
             <div className="mt-5">
               <span className="mb-2 block text-sm text-ink-secondary">候选阶段</span>
-              <div className="grid grid-cols-3 gap-1 bg-black/15 p-1">
+              <div className="grid grid-cols-3 gap-1 rounded-lg bg-[color:var(--apple-control-bg)] p-1">
                 {APPLICATION_CANDIDATE_STAGE.map((item) => (
                   <button
                     key={item}
                     type="button"
                     className={candidateStage === item
-                      ? "pressable min-h-10 bg-white/[0.09] px-2 text-xs font-medium text-ink-primary"
+                      ? "pressable min-h-10 rounded-md bg-white px-2 text-xs font-medium text-ink-primary"
                       : "pressable min-h-10 px-2 text-xs text-ink-muted hover:text-ink-primary"}
                     onClick={() => setCandidateStage(item)}
                   >
@@ -334,7 +334,7 @@ export function ProgressDrawer({
         <section className={ended ? "opacity-40 transition-opacity" : "transition-opacity"}>
           <div className="mb-4 text-sm font-medium text-ink-primary">状态轨道</div>
           <div className="relative px-1 pb-9 pt-4">
-            <div className="absolute left-2 right-2 top-7 h-px bg-white/12" />
+            <div className="absolute left-2 right-2 top-7 h-px bg-[color:var(--line)]" />
             <div
               className="absolute left-2 top-7 h-px bg-aurum-300/70 transition-[width] duration-300 ease-out motion-reduce:transition-none"
               style={{
@@ -437,7 +437,7 @@ export function ProgressDrawer({
             onChange={(event) => setNote(event.target.value)}
             onBlur={() => void handleNoteBlur()}
             placeholder="记录笔试时间、面试反馈或需要跟进的事项"
-            className="min-h-28 w-full resize-none border-0 border-b border-white/14 bg-transparent px-0 py-3 text-sm leading-6 text-ink-primary outline-none transition placeholder:text-ink-muted focus:border-nebula-blue/60 focus:bg-white/[0.04]"
+            className="min-h-28 w-full resize-none border-0 border-b border-[color:var(--line)] bg-transparent px-0 py-3 text-sm leading-6 text-ink-primary outline-none transition placeholder:text-ink-muted focus:border-[color:var(--aurora)] focus:bg-[color:var(--surface-hover-bg)]"
           />
         </label>
 
@@ -447,7 +447,7 @@ export function ProgressDrawer({
             value={reviewNote}
             onChange={(event) => setReviewNote(event.target.value)}
             placeholder="记录卡点、有效准备和下次调整"
-            className="min-h-24 w-full resize-none border-0 border-b border-white/14 bg-transparent px-0 py-3 text-sm leading-6 text-ink-primary outline-none transition placeholder:text-ink-muted focus:border-nebula-blue/60 focus:bg-white/[0.04]"
+            className="min-h-24 w-full resize-none border-0 border-b border-[color:var(--line)] bg-transparent px-0 py-3 text-sm leading-6 text-ink-primary outline-none transition placeholder:text-ink-muted focus:border-[color:var(--aurora)] focus:bg-[color:var(--surface-hover-bg)]"
           />
         </label>
 
@@ -463,7 +463,7 @@ export function ProgressDrawer({
           ) : history.length === 0 ? (
             <p className="text-sm text-ink-muted">还没有状态变化记录。</p>
           ) : (
-            <ol className="border-l border-white/[0.12] pl-4">
+            <ol className="border-l border-[color:var(--line)] pl-4">
               {history.map((item) => (
                 <li key={item.id} className="relative pb-4 last:pb-0">
                   <span className="absolute -left-[19px] top-1.5 size-1.5 rounded-full bg-nebula-silver" />
@@ -500,9 +500,9 @@ export function ProgressDrawer({
           <div className="flex items-center justify-between gap-3 pt-4">
             <span className="text-[10px] text-ink-muted">最近更新 {formatDateTime(application.updated_at)}</span>
             {confirmingDelete ? (
-              <span className="text-xs text-red-100">
+              <span className="text-xs text-[color:var(--text-danger)]">
                 确认删除?
-                <button type="button" className="ml-2 text-red-200" onClick={() => void handleDelete()}>
+                <button type="button" className="ml-2 text-[color:var(--text-danger)]" onClick={() => void handleDelete()}>
                   删除
                 </button>
                 <button type="button" className="ml-2 text-ink-muted" onClick={() => setConfirmingDelete(false)}>
@@ -510,7 +510,7 @@ export function ProgressDrawer({
                 </button>
               </span>
             ) : (
-              <button type="button" className="text-xs text-red-200/80 transition hover:text-red-100" onClick={() => void handleDelete()}>
+              <button type="button" className="text-xs text-[color:var(--text-danger)] transition" onClick={() => void handleDelete()}>
                 删除记录
               </button>
             )}

@@ -12,7 +12,7 @@ export function UserShell({
 }) {
   const content = (
     <>
-      <Navbar />
+      <Navbar appearance={variant} />
       <RouteContentTransition>{children}</RouteContentTransition>
     </>
   );

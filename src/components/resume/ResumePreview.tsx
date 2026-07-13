@@ -64,7 +64,7 @@ export function ResumePreview({ resume }: { resume: ResumeDocument }) {
               <ResumePage key={index + 1} layout={layout} page={index + 1} />
             ))
           : (
-              <div className="grid aspect-[210/297] w-full place-items-center bg-white text-sm text-[#5b6270] shadow-[0_24px_90px_rgba(0,0,0,0.28)]">
+              <div className="grid aspect-[210/297] w-full place-items-center border border-[#d2d2d7] bg-white text-sm text-[#5b6270]">
                 正在生成 A4 预览
               </div>
             )}
@@ -99,7 +99,7 @@ function ResumePage({ layout, page }: { layout: ResumePreviewLayout; page: numbe
   return (
     <svg
       viewBox={`0 0 ${layout.pageWidth} ${layout.pageHeight}`}
-      className="block aspect-[210/297] w-full bg-white shadow-[0_24px_90px_rgba(0,0,0,0.28)]"
+      className="block aspect-[210/297] w-full border border-[#d2d2d7] bg-white"
       style={{ aspectRatio: `${layout.pageWidth} / ${layout.pageHeight}` }}
       role="img"
       aria-label={`A4 简历预览第 ${page} 页，共 ${layout.pageCount} 页`}

@@ -135,9 +135,15 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/galaxy/SpaceHome.tsx",
-    mustInclude: ["MOBILE_PLANET_LAYOUT", "OrbitLines", "PlanetTransitionOverlay", "router.prefetch(href)", "window.setTimeout", "encodeURIComponent(planet.href)", "/brand/shi-xing-wordmark.png", "desktopOrbitScale", "mobileOrbitScale", "planetScale={0.82}", "<CorePlanet compact />", "href: user ? '/profile' : '/login'", "authResolved", "返回拾星主页"],
+    mustInclude: ["MOBILE_PLANET_LAYOUT", "OrbitLines", "PlanetTransitionOverlay", "router.prefetch(href)", "window.setTimeout", "markSceneDeparture(href)", "encodeURIComponent(planet.href)", "/brand/shi-xing-wordmark.png", "desktopOrbitScale", "mobileOrbitScale", "planetScale={0.82}", "<CorePlanet compact />", "href: user ? '/profile' : '/login'", "authResolved", "返回拾星主页"],
     mustNotInclude: ["router.push(planet.href)", "href: user ? '/my' : '/login'", "href: user ? '/my-applications' : '/login'", "HomeWorkspace", "bg-white", "rounded-2xl", "<PlanetLabel", "blur(3px)"],
     label: "所有用户主页均保留拾星字标、运行星系和行星进入转场",
+  },
+  {
+    file: "src/components/galaxy/SpaceBackground.tsx",
+    mustInclude: ["variant=\"scene\"", "SharedSpaceBackground"],
+    mustNotInclude: ["variant=\"work\""],
+    label: "主页明确复用星瓶的深空 scene 背景",
   },
   {
     file: "src/components/galaxy/PlanetTransitionOverlay.tsx",
@@ -177,13 +183,13 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/layout/UserShell.tsx",
-    mustInclude: ["<SpaceShell>", "<Navbar />", "RouteContentTransition"],
+    mustInclude: ["<SpaceShell>", "<Navbar appearance={variant} />", "RouteContentTransition"],
     mustNotInclude: ["StarFieldBackground"],
     label: "用户端页面统一使用 SpaceShell 背景",
   },
   {
     file: "src/components/layout/AdminShell.tsx",
-    mustInclude: ["border-b border-white/[0.08]", "管理导航", "border-l border-white/[0.08]", "返回首页"],
+    mustInclude: ["theme-work", "md:grid-cols-[210px_minmax(0,1fr)]", "管理导航", "nav-account", "返回首页"],
     mustNotInclude: ["StarFieldBackground", "rounded-[28px]", "rounded-full"],
     label: "管理页使用收紧工具栏而非嵌套圆角浮层",
   },
@@ -195,7 +201,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/globals.css",
-    mustInclude: ["../styles/tokens.css", "/assets/space/bg-desktop.png", "/assets/space/bg-mobile.png", "background-size: cover", "var(--arcane)", "linear-gradient(135deg"],
+    mustInclude: ["../styles/tokens.css", "/assets/space/bg-desktop.png", "/assets/space/bg-mobile.png", "background-size: cover", ".space-bg--work", "#e9ebef", ".scene-arrival-veil", "data-scene-transition=\"arrived\""],
     mustNotInclude: ["linear-gradient(180deg, #01030a 0%, #02040a 52%, #01030a 100%)"],
     label: "全站背景和控件使用 v5 星穹绘卷 token",
   },
@@ -207,7 +213,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/styles/tokens.css",
-    mustInclude: ["--night-0: #000001", "--night-1: #12294E", "--night-3: #564A71", "--dusk: #7F5568", "--aurora: #7E7CB5", "--surface-read-bg: rgba(18, 41, 78, 0.44)"],
+    mustInclude: ["--night-0: #000001", "--night-1: #12294E", "--night-3: #564A71", "--dusk: #7F5568", ".theme-work", "--background: #e9ebef", "--surface-read-bg: #f6f7f9", "--text-primary: #1d1d1f", "--aurora: #12294e", "--apple-radius-control: 8px", ".theme-scene"],
     mustNotInclude: ["--arcane: #8F86F0", "--star-apricot: #D9ADA9", "--aurora: #62D9FF"],
     label: "全站使用林深星渡五色基调和更轻的半透明工作面",
   },
@@ -273,7 +279,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/resume/ResumeEditor.tsx",
-    mustInclude: ["PhotoField", "cropPhotoToPortrait", "上传照片", "复制通用简历后", "AI 润色", "ResumePolishDialog", "linear-gradient(135deg,#12294E_0%,#536D9E_52%,#B9C8E5_100%)", "rounded-full", "focus-visible:ring-[#c8d7ee]/80", "mergeBullets", "撤销"],
+    mustInclude: ["PhotoField", "cropPhotoToPortrait", "上传照片", "复制通用简历后", "AI 润色", "ResumePolishDialog", "bg-[#12294e]", "rounded-lg", "focus-visible:ring-[#12294e]/40", "mergeBullets", "撤销"],
     mustNotInclude: ["模板风格", "RESUME_TEMPLATES"],
     label: "简历编辑器聚焦内容填写并支持岗位关联",
   },
@@ -294,6 +300,18 @@ const SOURCE_INVARIANTS = [
     mustInclude: ["supabase.auth.getUser()", "authenticated: false", "status: 401", "authenticated: true", "Cache-Control", "no-store"],
     mustNotInclude: ["getSession", "service_role"],
     label: "简历下载资格由服务端验证 Supabase 用户而非信任本地 session",
+  },
+  {
+    file: "src/app/login/page.tsx",
+    mustInclude: ["拾星 · StarJob", "「用星瓶收录明日坐标」", "让拾星StarJob成为你秋招路上的超级伙伴"],
+    mustNotInclude: ["Job Bottle", "Starjob"],
+    label: "登录页统一使用 StarJob 品牌名与新版秋招文案",
+  },
+  {
+    file: "src/lib/constants.ts",
+    mustInclude: ["拾星 StarJob"],
+    mustNotInclude: ["Job Bottle", "Starjob"],
+    label: "全站共享英文品牌名统一为 StarJob",
   },
   {
     file: "src/components/auth/LoginForm.tsx",
@@ -396,28 +414,22 @@ const SOURCE_INVARIANTS = [
     label: "岗位星图不再随机散点并支持聚合与联动",
   },
   {
-    file: "src/components/galaxy/NebulaGateway.tsx",
-    mustInclude: ["NebulaDistributionMap", "NebulaCompanyField", "岗位地图维度", "地区", "行业", "职能", "我的投递", "清除选区", "onSelectionChange", "data-nebula-job-list", "overflow-y-auto", "activeJobs.map"],
-    mustNotInclude: ["Math.random", "返回星云入口", "mode === \"gateway\"", "activeJobs.slice"],
-    label: "岗位地图直接展示可切换的密度分布并可下钻到公司星体",
+    file: "src/components/jobs/ChinaJobMap.tsx",
+    mustInclude: ["china-provinces.json", "geoMercator", "matchesLocationFilter", "province:", "全国省级岗位分布图", "SMALL_REGION_LABELS", "北京:", "天津:", "上海:", "香港:", "澳门:", "group-focus:underline", "aria-pressed", "Enter", "当前地区暂无匹配岗位", "selectedJobs.slice(0, 8)", "查看全部"],
+    mustNotInclude: ["Math.random", "linear-gradient", "Nebula", "ECharts"],
+    label: "岗位地图使用本地省级 GeoJSON，并以可点击折线标注强化小型直辖地区",
   },
   {
-    file: "src/components/galaxy/NebulaDistributionMap.tsx",
-    mustInclude: ["DESKTOP_NODE_Y_OFFSETS", "translateY", "repeat(3,minmax(0,1fr))", "repeat(4,minmax(0,1fr))", "repeat(5,minmax(0,1fr))", "min-w-0", "max-w-full", "星系越大，岗位越多", "当前维度暂无岗位", "node.count", "md:hidden", "md:block"],
-    mustNotInclude: ["Math.random", "blur-3xl"],
-    label: "岗位密度图以无重叠网格和面积编码分组数量并提供移动端布局",
-  },
-  {
-    file: "src/lib/nebula-groups.ts",
-    mustInclude: ["CATEGORY_IMAGES", "REGION_IMAGE_BY_SLUG", "INDUSTRY_IMAGE_BY_SLUG", "/cutouts/", "nebula-role-fork.png", "nebula-role-triad.png", "nebula-role-crescent.png", "nebula-role-spiral.png", "nebula-role-cross.png", "nebula-role-ring.png", "nebula-region-shenzhen.png", "nebula-region-guangzhou.png", "nebula-region-chengdu.png", "nebula-region-national.png", "nebula-industry-manufacturing.png", "nebula-industry-consumer.png", "nebula-industry-healthcare.png", "nebula-industry-energy.png", "CATEGORY_IMAGES[index % CATEGORY_IMAGES.length]"],
-    mustNotInclude: ["imageSrc: \"/assets/nebula/nebula-batch.png\",\n        variant: \"category\""],
-    label: "地区、行业与职能星系稳定使用多种生成星云资产而非重复同一图片",
+    file: "src/data/CHINA_GEOJSON_LICENSE.md",
+    mustInclude: ["zhChuXiao/ChinaGeoJson", "MIT License", "Copyright (c) 2024 ChuXiao"],
+    mustNotInclude: [],
+    label: "全国地图保留第三方 GeoJSON 来源和 MIT 版权声明",
   },
   {
     file: "src/components/jobs/HomeClient.tsx",
-    mustInclude: ["NebulaGateway", "岗位地图", "岗位清单", "查看全部", "清单会同步筛选", "正在绘制岗位分布", "CaptureAnimation", "candidateStage", "\"evaluating\"", "\"saved\"", "\"preparing\"", "hoveredJobId", "focusJob", "nebulaSelection", "encodeURIComponent(\"/explore\")", "href=\"/my\"", "最新开启", "ApplyReturnConfirm", "visibilitychange", "keep_opened", "useSearchParams", "\"cats\"", "window.history.replaceState"],
-    mustNotInclude: ["按行业探索", "queueBottleDrop(application.id);\n      if (applyWindow)", "encodeURIComponent(\"/jobs\")", "href=\"/my-applications\"", "router.replace(query ? `/explore?${query}` : \"/explore\""],
-    label: "岗位地图与线性清单共享选区并保留捕获和官网返回确认闭环",
+    mustInclude: ["ChinaJobMap", "岗位地图", "岗位清单", "按省份查看", "正在绘制全国岗位分布", "mapMatchingJobs", "location: \"\"", "selectedLocation={filters.location}", "handleFiltersChange({ ...filters, location })", "CaptureAnimation", "candidateStage", "\"evaluating\"", "\"saved\"", "\"preparing\"", "focusJob", "encodeURIComponent(\"/explore\")", "href=\"/my\"", "最新开启", "ApplyReturnConfirm", "visibilitychange", "keep_opened", "useSearchParams", "\"cats\"", "window.history.replaceState"],
+    mustNotInclude: ["NebulaGateway", "nebulaSelection", "按行业探索", "queueBottleDrop(application.id);\n      if (applyWindow)", "encodeURIComponent(\"/jobs\")", "href=\"/my-applications\"", "router.replace(query ? `/explore?${query}` : \"/explore\""],
+    label: "全国地图与线性清单共用地点筛选并保留捕获和官网返回确认闭环",
   },
   {
     file: "src/components/jobs/ApplyReturnConfirm.tsx",
@@ -445,13 +457,13 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/globals.css",
-    mustInclude: [".collection-surface", ".filter-rail", "border-radius: var(--apple-radius-panel)", ".apple-segmented", ".nebula-job-scroll", "font-size: clamp(2rem, 3.8vw, 3rem)", ".space-bg--work"],
+    mustInclude: [".form-section", ".list-surface", ".table-surface", ".visualization-boundary", ".apple-segmented", ".nebula-job-scroll", "font-size: clamp(1.8rem, 3vw, 2.5rem)", ".space-bg--work"],
     mustNotInclude: [],
     label: "数据页面使用开放集合与收紧的页面层级，避免统一卡片墙",
   },
   {
     file: "src/components/jobs/JobFilterBar.tsx",
-    mustInclude: ["start_date_desc", "最新开启", "最近更新优先", "最早开启", "岗位类别", "toggleCategory", "地点层级", "不限", "全国", "省级", "市级", "选择省级地区", "请选择城市", "buildLocationGroups"],
+    mustInclude: ["start_date_desc", "最新开启", "最近更新优先", "最早开启", "岗位类别", "toggleCategory", "地点层级", "不限", "全国", "省级", "市级", "选择省级地区", "请选择城市", "buildLocationGroups", "left-3", "pl-10"],
     mustNotInclude: ["deadline_asc", "downloadDeadlineDigest", "digest_generate", "岗位标签", "toggleTag"],
     label: "探索筛选默认最新开启且不再提供下线日期入口",
   },
@@ -569,9 +581,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/ui/Drawer.tsx",
-    mustInclude: ["before:right-full", "backdrop-blur-[24px]", "hover:bg-white/[0.08]", "aria-modal=\"true\"", "Escape", "returnFocusRef"],
+    mustInclude: ["theme-work", "apple-sheet", "rounded-lg", "var(--surface-hover-bg)", "aria-modal=\"true\"", "Escape", "returnFocusRef"],
     mustNotInclude: ["border-l", "<Button"],
-    label: "投递侧滑容器使用液态玻璃融合带和幽灵关闭按钮",
+    label: "投递侧滑容器使用实体工作面并保留焦点管理与键盘关闭",
   },
   {
     file: "src/components/capture/CaptureOrbit.tsx",
@@ -632,7 +644,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/forum/PostCard.tsx",
-    mustInclude: ["SignalStrengthTicks", "lastActivityAt: post.created_at", "发布于 {formatDateTime(post.created_at)}", "置顶帖子", "取消置顶", "全站置顶", "setPostPinned", "isAdmin", "data-pinned={post.is_pinned}"],
+    mustInclude: ["AnimatePresence", "motion.article", "useReducedMotion", "aria-expanded={expanded}", "aria-controls={contentId}", "onToggle();", "正在读取评论", "SignalStrengthTicks", "lastActivityAt: post.created_at", "发布于 {formatDateTime(post.created_at)}", "置顶帖子", "取消置顶", "全站置顶", "setPostPinned", "isAdmin", "data-pinned={post.is_pinned}"],
     mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY", "<Drawer open={expanded}"],
     label: "社区帖子原位展开且仅向管理员展示醒目的全站置顶操作",
   },
@@ -722,7 +734,7 @@ const REQUIRED_FILES = [
 ];
 const REQUIRED_TEXT = {
   "/": ["拾星"],
-  "/explore": ["岗位地图", "岗位清单", "筛选", "排序方式", "最新开启"],
+  "/explore": ["岗位坐标", "正在加载岗位"],
   "/my": ["投递管理", "当前阶段"],
   "/profile": ["个人中心"],
   "/bottle": ["星瓶"],
@@ -730,8 +742,8 @@ const REQUIRED_TEXT = {
   "/galaxy": ["岗位星系", "地区星系", "行业星系"],
   "/galaxy/region": ["地区星系", "北京星云", "上海星云"],
   "/galaxy/industry": ["行业星系", "互联网星云", "金融星云"],
-  "/jobs": ["岗位地图", "岗位清单", "筛选", "排序方式", "最新开启"],
-  "/login": ["登录拾星", "邮箱", "密码"],
+  "/jobs": ["岗位坐标", "正在加载岗位"],
+  "/login": ["正在打开登录"],
   "/forum": ["求职社区"],
   "/admin": ["管理后台"],
 };

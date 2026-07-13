@@ -43,13 +43,13 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
       <main className="observatory-page mx-auto max-w-5xl space-y-8">
         <Link
           href="/explore"
-          className="inline-flex items-center gap-2 text-sm text-ink-muted transition hover:text-nebula-silver"
+          className="inline-flex items-center gap-2 text-sm text-ink-muted transition hover:text-[color:var(--aurora)]"
         >
           <ArrowLeft aria-hidden="true" className="size-4" />
           返回岗位坐标
         </Link>
 
-        <section className="border-y border-white/[0.1] py-6 sm:py-8">
+        <section className="border-y border-[color:var(--line-ghost)] py-6 sm:py-8">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex min-w-0 gap-4">
               <CompanyBadge companyName={job.company_name} logoUrl={job.logo_url} size="lg" />
@@ -58,14 +58,14 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
                 <h1 className="mt-1 text-2xl font-semibold leading-9 text-ink-primary sm:text-3xl">
                   {job.company_name}
                 </h1>
-                <p className="mt-2 max-w-2xl text-base leading-7 text-nebula-silver">
+                <p className="mt-2 max-w-2xl text-base leading-7 text-[color:var(--aurora)]">
                   {job.job_titles || "岗位待补充"}
                 </p>
               </div>
             </div>
           </div>
 
-          <dl className="mt-7 grid gap-px overflow-hidden bg-white/[0.1] sm:grid-cols-2 lg:grid-cols-4">
+          <dl className="mt-7 grid border-y border-[color:var(--line-ghost)] sm:grid-cols-2 lg:grid-cols-4 lg:divide-x lg:divide-[color:var(--line-ghost)]">
             <MetaItem label="城市 / base" value={job.locations || "地点待补充"} />
             <MetaItem label="行业" value={job.industry || "暂无行业"} />
             <MetaItem label="批次" value={job.batch_type || "暂无批次"} />
@@ -75,7 +75,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
 
         <JobDetailActions job={job} initialApplication={application} />
 
-        <section className="grid gap-x-10 gap-y-8 border-y border-white/[0.1] py-7 lg:grid-cols-2">
+        <section className="grid gap-x-10 gap-y-8 border-y border-[color:var(--line-ghost)] py-7 lg:grid-cols-2">
           <DecisionSection title="工作职责" content={job.responsibilities} empty="原始岗位数据暂未拆分工作职责。" />
           <DecisionSection title="必须条件" content={job.must_have} empty="原始岗位数据暂未标注必须条件。" />
           <DecisionSection title="优先条件" content={job.preferred_qualifications} empty="原始岗位数据暂未标注优先条件。" />
@@ -83,7 +83,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
             <h2 className="text-base font-semibold text-ink-primary">高频关键词</h2>
             {job.keywords?.length ? (
               <div className="mt-4 flex flex-wrap gap-2">
-                {job.keywords.map((keyword) => <span key={keyword} className="border border-white/[0.12] px-2.5 py-1 text-xs text-ink-secondary">{keyword}</span>)}
+                {job.keywords.map((keyword) => <span key={keyword} className="border border-[color:var(--line)] px-2.5 py-1 text-xs text-ink-secondary">{keyword}</span>)}
               </div>
             ) : <p className="mt-3 text-sm leading-7 text-ink-muted">原始岗位数据暂未提取关键词。</p>}
           </div>
@@ -101,7 +101,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
 
 function MetaItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-[rgba(18,41,78,0.34)] p-4">
+    <div className="p-4">
       <dt className="flex items-center gap-2 text-xs text-ink-muted">
         {label.includes("城市") ? <MapPin aria-hidden="true" className="size-3.5" /> : <Building2 aria-hidden="true" className="size-3.5" />}
         {label}
@@ -113,7 +113,7 @@ function MetaItem({ label, value }: { label: string; value: string }) {
 
 function RelatedJobs({ title, jobs }: { title: string; jobs: Job[] }) {
   return (
-    <section className="border-t border-white/[0.1] pt-5">
+    <section className="border-t border-[color:var(--line-ghost)] pt-5">
       <h2 className="text-base font-medium text-ink-primary">{title}</h2>
       {jobs.length === 0 ? (
         <p className="mt-4 text-sm text-ink-muted">暂无更多岗位</p>
@@ -123,7 +123,7 @@ function RelatedJobs({ title, jobs }: { title: string; jobs: Job[] }) {
             <Link
               key={job.id}
               href={`/jobs/${job.id}`}
-              className="block border-t border-white/[0.08] py-3 text-sm first:border-t-0"
+              className="block border-t border-[color:var(--line-ghost)] py-3 text-sm first:border-t-0"
             >
               <span className="block truncate text-ink-primary">{job.company_name}</span>
               <span className="mt-0.5 block truncate text-xs text-ink-muted">

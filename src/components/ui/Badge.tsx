@@ -11,7 +11,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "status-pill inline-flex w-auto items-center whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium leading-none",
+        "status-pill inline-flex w-auto items-center whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium leading-none",
         className,
       )}
     >

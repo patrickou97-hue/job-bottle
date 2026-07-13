@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Pin, PinOff, Trash2 } from "lucide-react";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import {
@@ -46,6 +47,8 @@ export function PostCard({
   const [submitting, setSubmitting] = useState(false);
   const [actionBusy, setActionBusy] = useState(false);
   const [actionMessage, setActionMessage] = useState("");
+  const reducedMotion = useReducedMotion();
+  const contentId = `forum-post-content-${post.id}`;
 
   const isOwner = currentUserId === post.user_id;
   const authorName = post.author_name;
@@ -54,7 +57,13 @@ export function PostCard({
   const fading = isFadingSignal(post.created_at);
 
   async function handleExpand() {
-    if (!expanded && isSupabaseConfigured()) {
+    if (expanded) {
+      onToggle();
+      return;
+    }
+
+    onToggle();
+    if (isSupabaseConfigured()) {
       setLoadingComments(true);
       setActionMessage("");
       try {
@@ -71,7 +80,6 @@ export function PostCard({
         setLoadingComments(false);
       }
     }
-    onToggle();
   }
 
   async function handleLike() {
@@ -156,15 +164,19 @@ export function PostCard({
   }
 
   return (
-    <div
+    <motion.article
+      layout
+      transition={reducedMotion ? { duration: 0 } : { layout: { duration: 0.22, ease: [0.16, 1, 0.3, 1] } }}
       data-pinned={post.is_pinned}
-      className={`border-b transition ${post.is_pinned ? "border-[#efc29a]/25 bg-[linear-gradient(90deg,rgba(239,194,154,0.11),rgba(126,124,181,0.035)_55%,transparent)] shadow-[inset_3px_0_0_rgba(239,194,154,0.82)]" : "border-white/[0.05] hover:bg-[color:var(--surface-hover-bg)]"}`}
+      className={`border-b transition ${post.is_pinned ? "border-[#d8b08b] bg-[#fff8f1] shadow-[inset_3px_0_0_#c9864f]" : "border-[color:var(--line-ghost)] hover:bg-[color:var(--surface-hover-bg)]"}`}
     >
       {/* Header */}
       <button
         type="button"
         className="grid w-full grid-cols-[18px_minmax(0,1fr)_auto] items-center gap-3 px-4 py-4 text-left"
         onClick={handleExpand}
+        aria-expanded={expanded}
+        aria-controls={contentId}
       >
         <FreshnessDot tier={freshness} />
         <div className="min-w-0 flex-1">
@@ -176,7 +188,7 @@ export function PostCard({
               {post.title}
             </h3>
             {post.is_pinned ? (
-              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#efc29a] px-2 py-1 text-[11px] font-bold tracking-[0.08em] text-[#121827] shadow-[0_0_20px_rgba(239,194,154,0.24)]">
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-[#efc29a] px-2 py-1 text-[11px] font-bold tracking-[0.08em] text-[#121827]">
                 <Pin aria-hidden="true" className="size-3 fill-current" />
                 全站置顶
               </span>
@@ -204,8 +216,17 @@ export function PostCard({
       </button>
 
       {/* Expanded content */}
+      <AnimatePresence initial={false}>
       {expanded ? (
-        <div className="border-t border-white/[0.06] px-5 pb-7 pt-5 sm:px-10">
+        <motion.div
+          key={contentId}
+          id={contentId}
+          initial={reducedMotion ? false : { opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -6 }}
+          transition={{ duration: reducedMotion ? 0 : 0.2, ease: [0.16, 1, 0.3, 1] }}
+          className="border-t border-[color:var(--line-ghost)] px-5 pb-7 pt-5 sm:px-10"
+        >
           {/* Post content */}
           <div className="mb-4 whitespace-pre-wrap text-sm leading-relaxed text-ink-secondary">
             {post.content}
@@ -218,7 +239,7 @@ export function PostCard({
                 type="button"
                 onClick={handlePinPost}
                 disabled={actionBusy}
-                className="pressable inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] px-3 py-1.5 text-xs font-medium text-[color:var(--light-silver)] transition hover:bg-white/[0.06]"
+                className="pressable inline-flex items-center gap-1.5 rounded-lg border border-[color:var(--line-ghost)] px-3 py-1.5 text-xs font-medium text-[color:var(--light-silver)] transition hover:bg-[color:var(--surface-hover-bg)]"
               >
                 {post.is_pinned ? <PinOff aria-hidden="true" className="size-3.5" /> : <Pin aria-hidden="true" className="size-3.5" />}
                 {post.is_pinned ? "取消置顶" : "置顶帖子"}
@@ -229,10 +250,10 @@ export function PostCard({
               type="button"
               onClick={handleLike}
               disabled={actionBusy}
-              className={`pressable relative inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition ${
+              className={`pressable relative inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
                 liked
                   ? "bg-nebula-blue/8 text-[color:var(--light-silver)]"
-                  : "bg-white/[0.04] text-ink-muted hover:bg-white/[0.07]"
+                  : "bg-[color:var(--surface-subtle-bg)] text-ink-muted hover:bg-[color:var(--surface-hover-bg)]"
               }`}
             >
               点赞 {postLikeCount > 0 ? postLikeCount : 0}
@@ -243,7 +264,7 @@ export function PostCard({
                 type="button"
                 onClick={handleDeletePost}
                 disabled={actionBusy}
-                className="pressable inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-[color:var(--text-danger)] transition hover:bg-[rgba(127,85,104,0.16)]"
+                className="pressable inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-[color:var(--text-danger)] transition hover:bg-[rgba(127,85,104,0.12)]"
               >
                 <Trash2 aria-hidden="true" className="size-3.5" />
                 删除帖子
@@ -323,9 +344,10 @@ export function PostCard({
               </div>
             ) : null}
           </div>
-        </div>
+        </motion.div>
       ) : null}
-    </div>
+      </AnimatePresence>
+    </motion.article>
   );
 }
 

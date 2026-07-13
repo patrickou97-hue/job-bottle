@@ -151,7 +151,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
           <span className="loading-line">{redirecting ? "正在前往登录" : "正在读取投递"}</span>
         </div>
       ) : applications.length === 0 ? (
-        <section className="empty-state collection-surface">
+        <section className="empty-state border-y border-[color:var(--line-ghost)]">
           <div>
             <h2>从一个岗位开始</h2>
             <p>从岗位坐标添加岗位后，在这里更新投递状态</p>
@@ -163,7 +163,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
       ) : (
         <>
           <section className="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_320px]">
-            <div className="collection-surface overflow-hidden">
+            <div className="list-surface">
               <div className="section-heading px-4 pt-4 sm:px-5">
                 <div>
                   <h2 className="section-title">本周求职行动</h2>
@@ -194,7 +194,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
               )}
             </div>
 
-            <aside className="collection-surface p-4 sm:p-5">
+            <aside className="border-l border-[color:var(--line-ghost)] pl-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h2 className="section-title">材料准备</h2>
@@ -207,7 +207,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
               {needsMaterial.length > 0 ? (
                 <div className="mt-5 space-y-3">
                   {needsMaterial.map((application) => (
-                    <Link key={application.id} href="/resume" className="block border-b border-white/[0.08] pb-3 last:border-b-0">
+                    <Link key={application.id} href="/resume" className="block border-b border-[color:var(--line-ghost)] pb-3 last:border-b-0">
                       <p className="truncate text-sm font-medium text-ink-primary">{application.job.company_name}</p>
                       <p className="mt-1 text-xs text-ink-muted">{getMaterialReadiness(application.job_id, resumes).label}</p>
                     </Link>
@@ -223,7 +223,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
             </aside>
           </section>
 
-          <section className="filter-rail p-4">
+          <section className="border-y border-[color:var(--line-ghost)] py-4">
             <div className="grid gap-4 md:grid-cols-[1fr_220px_auto]">
               <div className="relative">
                 <Search aria-hidden="true" className="absolute left-0 top-1/2 size-4 -translate-y-1/2 text-nebula-blue/70" />
@@ -245,7 +245,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
               <div>
                 <h2 className="section-title">投递记录</h2>
               </div>
-              <div className="inline-flex bg-black/15 p-1" aria-label="投递视图">
+              <div className="inline-flex rounded-lg bg-[color:var(--apple-control-bg)] p-1" aria-label="投递视图">
                 <ViewButton active={view === "list"} icon={<List aria-hidden="true" className="size-3.5" />} label="列表" onClick={() => setView("list")} />
                 <ViewButton active={view === "board"} icon={<Columns3 aria-hidden="true" className="size-3.5" />} label="看板" onClick={() => setView("board")} />
                 <ViewButton active={view === "map"} icon={<Orbit aria-hidden="true" className="size-3.5" />} label="星图" onClick={() => setView("map")} />
@@ -262,11 +262,11 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
             >
             {view === "list" ? (
               filtered.length === 0 ? (
-                <div className="empty-state collection-surface">
+                <div className="empty-state border-y border-[color:var(--line-ghost)]">
                   <div><h3>没有匹配的投递</h3><p>调整搜索或阶段筛选后再查看。</p></div>
                 </div>
               ) : (
-                <div className="divide-y divide-white/[0.1] border-y border-white/[0.1]">
+                <div className="divide-y divide-[color:var(--line-ghost)] border-y border-[color:var(--line-ghost)]">
                   <AnimatePresence initial={false}>
                   {filtered.map((application) => (
                     <motion.div key={application.id} layout="position" transition={layoutTransition}>
@@ -282,16 +282,16 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
               )
             ) : view === "board" ? (
               filtered.length === 0 ? (
-                <div className="empty-state collection-surface">
+                <div className="empty-state border-y border-[color:var(--line-ghost)]">
                   <div>
                     <h3>没有匹配的投递</h3>
                     <p>调整搜索或阶段筛选后再查看。</p>
                   </div>
                 </div>
               ) : (
-                <div className="grid gap-px overflow-hidden bg-white/[0.08] xl:grid-cols-4">
+                <div className="grid overflow-hidden border-y border-[color:var(--line-ghost)] xl:grid-cols-4 xl:divide-x xl:divide-[color:var(--line-ghost)]">
                   {columns.map((column) => (
-                    <section key={column.id} className="min-h-60 bg-[rgba(18,41,78,0.36)] p-4">
+                    <section key={column.id} className="min-h-60 bg-white p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <h3 className="text-sm font-semibold text-ink-primary">{column.label}</h3>
@@ -308,7 +308,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
                 </div>
               )
             ) : (
-              <div className="collection-surface p-3 sm:p-5">
+              <div className="visualization-boundary p-3 sm:p-5">
                 <div className="mb-3 flex items-center gap-2 text-sm text-ink-secondary"><Orbit aria-hidden="true" className="size-4" /> 投递星图</div>
                 <ApplicationOrbitSystem applications={filtered} selectedApplication={selected} onSelect={setSelected} onEdit={setDrawerApplication} />
               </div>
@@ -335,13 +335,13 @@ function PipelineItem({ application, resumes, onOpen }: { application: Applicati
   const nextAction = getNextAction(application);
   const material = getMaterialReadiness(application.job_id, resumes);
   return (
-    <button type="button" className="w-full border-t border-white/[0.08] py-3 text-left first:border-t-0" onClick={onOpen}>
+    <button type="button" className="w-full border-t border-[color:var(--line-ghost)] py-3 text-left first:border-t-0" onClick={onOpen}>
       <span className="flex items-center justify-between gap-3">
         <span className="min-w-0 truncate text-sm font-medium text-ink-primary">{application.job.company_name}</span>
         <StatusPill status={application.status} label={getApplicationStageLabel(application)} className="px-2 py-1 text-[11px]" />
       </span>
       <span className="mt-2 block truncate text-xs text-ink-secondary">{nextAction.title}</span>
-      <span className={material.ready ? "mt-1 block text-xs text-emerald-200/80" : "mt-1 block text-xs text-ink-muted"}>{material.label}</span>
+      <span className={material.ready ? "mt-1 block text-xs text-[#39725b]" : "mt-1 block text-xs text-ink-muted"}>{material.label}</span>
       <span className="mt-2 block text-[11px] text-ink-muted">更新于 {formatDateTime(application.updated_at)}</span>
     </button>
   );
@@ -366,7 +366,7 @@ function ApplicationListItem({ application, resumes, onOpen }: { application: Ap
       </span>
       <span className="min-w-0">
         <span className="block truncate text-xs text-ink-secondary">{nextAction.title}</span>
-        <span className={material.ready ? "mt-1 block text-xs text-emerald-200/80" : "mt-1 block text-xs text-ink-muted"}>{material.label}</span>
+        <span className={material.ready ? "mt-1 block text-xs text-[#39725b]" : "mt-1 block text-xs text-ink-muted"}>{material.label}</span>
       </span>
       <span className="flex items-center justify-between gap-3 sm:block sm:text-right">
         <span className="text-[11px] text-ink-muted">{formatDateTime(application.updated_at)}</span>
@@ -380,7 +380,7 @@ function ViewButton({ active, icon, label, onClick }: { active: boolean; icon: R
   return (
     <button
       type="button"
-      className={active ? "inline-flex min-h-9 items-center gap-1.5 bg-white/[0.09] px-3 text-xs text-ink-primary" : "inline-flex min-h-9 items-center gap-1.5 px-3 text-xs text-ink-muted"}
+      className={active ? "inline-flex min-h-9 items-center gap-1.5 rounded-md bg-white px-3 text-xs text-ink-primary" : "inline-flex min-h-9 items-center gap-1.5 rounded-md px-3 text-xs text-ink-muted"}
       aria-pressed={active}
       onClick={onClick}
     >

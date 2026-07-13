@@ -176,9 +176,9 @@ export function AdminJobsClient() {
         <>
           <AdminJobForm job={editing} onSubmit={saveJob} onCancel={() => setEditing(null)} />
 
-          <section className="liquid-panel p-4">
+          <section className="form-section">
             {duplicateGroups.length > 0 ? (
-              <div className="mb-5 border-l-2 border-amber-200/55 px-4 py-1 text-sm leading-6 text-amber-50/85">
+              <div className="mb-5 border-l-2 border-[#b86b28] px-4 py-1 text-sm leading-6 text-[#704018]">
                 发现 {duplicateGroups.length} 组疑似重复岗位。当前筛选不会删除数据，你可以逐条核验并保留一条。
               </div>
             ) : null}
@@ -197,7 +197,7 @@ export function AdminJobsClient() {
           </section>
 
           {duplicateOnly && duplicateGroups.length > 0 ? (
-            <section className="space-y-3 border-t border-white/[0.09] pt-5">
+            <section className="space-y-3 border-t border-[color:var(--line-ghost)] pt-5">
               <div className="flex items-end justify-between gap-4">
                 <div>
                   <p className="page-kicker">重复核验</p>

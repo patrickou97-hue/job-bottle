@@ -10,6 +10,7 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { SITE_NAME } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@/lib/types";
+import { isSceneRoute, markSceneDeparture } from "@/lib/scene-transition";
 
 const navItems = [
   { href: "/explore", label: "岗位坐标" },
@@ -29,7 +30,7 @@ const mobileNavItems = [
   { href: "/profile", label: "个人", icon: UserCircleIcon },
 ];
 
-export function Navbar() {
+export function Navbar({ appearance = "work" }: { appearance?: "scene" | "work" }) {
   const pathname = usePathname();
   const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -83,25 +84,38 @@ export function Navbar() {
     );
   }
 
+  function handleSceneLink(event: React.MouseEvent<HTMLAnchorElement>, href: string) {
+    if (
+      appearance !== "scene" ||
+      isSceneRoute(href) ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) return;
+    markSceneDeparture(href);
+  }
+
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-white/[0.07] bg-[#000001]/68 backdrop-blur-2xl backdrop-saturate-150">
+      <header className={cn("app-navbar sticky top-0 z-40 border-b", appearance === "scene" && "app-navbar--scene")}>
         <div className="mx-auto flex h-15 w-full max-w-[1320px] items-center gap-4 px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex shrink-0 items-center" aria-label="返回首页">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand/shi-xing-wordmark.png" alt={SITE_NAME} className="h-7 w-auto object-contain" />
+          <img src="/brand/shi-xing-wordmark.png" alt={SITE_NAME} className="brand-wordmark h-7 w-auto object-contain" />
         </Link>
 
         <nav className="hidden min-w-0 flex-1 items-center gap-1 md:flex" aria-label="主导航">
           {navItems.map((item) => {
             const active = pathname.startsWith(item.href);
             return (
-              <Link key={item.href} href={item.href} className={navClass(item.href)} aria-current={active ? "page" : undefined}>
+              <Link key={item.href} href={item.href} className={navClass(item.href)} aria-current={active ? "page" : undefined} onClick={(event) => handleSceneLink(event, item.href)}>
                 {item.label}
                 {active ? (
                   <motion.span
                     layoutId="primary-nav-indicator"
-                    className="absolute inset-x-2.5 bottom-0 h-0.5 rounded-full bg-[color:var(--aurora)] shadow-[0_0_12px_rgba(126,124,181,.42)]"
+                    className="absolute inset-x-2.5 bottom-0 h-0.5 bg-[color:var(--aurora)]"
                     transition={{ type: "spring", stiffness: 420, damping: 38 }}
                   />
                 ) : null}
@@ -110,16 +124,16 @@ export function Navbar() {
           })}
         </nav>
 
-        <div className="ml-auto hidden items-center gap-1 border-l border-white/[0.08] pl-3 md:flex">
+        <div className="nav-account ml-auto hidden items-center gap-1 border-l pl-3 md:flex">
           {profile ? (
             <>
               {profile.role === "admin" ? (
-                <Link href="/admin" className="text-action pressable h-9 px-2.5 text-sm">
+                <Link href="/admin" className="text-action pressable h-9 px-2.5 text-sm" onClick={(event) => handleSceneLink(event, "/admin")}>
                   <ShieldCheckIcon aria-hidden="true" className="size-4" weight="regular" />
                   管理
                 </Link>
               ) : null}
-              <Link href="/profile" className="text-action pressable h-9 px-2.5 text-sm">
+              <Link href="/profile" className="text-action pressable h-9 px-2.5 text-sm" onClick={(event) => handleSceneLink(event, "/profile")}>
                 <UserCircleIcon aria-hidden="true" className="size-4" weight="regular" />
                 {profile.display_name || "资料"}
               </Link>
@@ -129,11 +143,11 @@ export function Navbar() {
               </button>
             </>
           ) : (
-            <Link className="gold-button inline-flex h-9 items-center rounded-lg px-3 text-sm font-medium" href="/login">登录</Link>
+            <Link className="gold-button inline-flex h-9 items-center rounded-lg px-3 text-sm font-medium" href="/login" onClick={(event) => handleSceneLink(event, "/login")}>登录</Link>
           )}
         </div>
 
-        <Link href={profile ? "/profile" : "/login"} className="ml-auto text-sm text-ink-secondary md:hidden">
+        <Link href={profile ? "/profile" : "/login"} className="ml-auto text-sm text-ink-secondary md:hidden" onClick={(event) => handleSceneLink(event, profile ? "/profile" : "/login")}>
           {profile ? profile.display_name || "个人中心" : "登录"}
         </Link>
         </div>
@@ -150,14 +164,15 @@ export function Navbar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "relative flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-xl text-[10px] transition",
+                "relative flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 text-[10px] transition",
                 active ? "text-ink-primary" : "text-ink-muted",
               )}
               aria-current={active ? "page" : undefined}
+              onClick={(event) => handleSceneLink(event, item.href)}
             >
               <span className="relative">
                 <Icon aria-hidden="true" className="relative z-10 size-[18px]" weight={active ? "fill" : "regular"} />
-                {active ? <motion.span layoutId="mobile-nav-indicator" className="absolute -inset-2 rounded-full bg-white/[0.1]" transition={{ type: "spring", stiffness: 430, damping: 38 }} /> : null}
+                {active ? <motion.span layoutId="mobile-nav-indicator" className="mobile-nav-indicator absolute -inset-x-2 -inset-y-1" transition={{ type: "spring", stiffness: 430, damping: 38 }} /> : null}
               </span>
               {item.label}
             </Link>

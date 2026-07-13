@@ -12,10 +12,10 @@ const config: Config = {
           700: "#7F5568",
         },
         nebula: {
-          blue: "#7E7CB5",
-          ice: "#C9C5E4",
+          blue: "var(--aurora)",
+          ice: "var(--light-ice)",
           violet: "#564A71",
-          silver: "#F1EFFF",
+          silver: "var(--light-silver)",
         },
         aurum: {
           300: "#E7E2FF",
@@ -24,10 +24,10 @@ const config: Config = {
           600: "#564A71",
         },
         text: {
-          primary: "#F1EFFF",
-          secondary: "#C9C5E4",
-          muted: "#918CAE",
-          faint: "#564A71",
+          primary: "var(--text-primary)",
+          secondary: "var(--text-secondary)",
+          muted: "var(--text-muted)",
+          faint: "var(--text-disabled)",
         },
         night: {
           950: "#000001",
@@ -45,10 +45,10 @@ const config: Config = {
           600: "#564A71",
         },
         ink: {
-          primary: "#F1EFFF",
-          secondary: "#C9C5E4",
-          muted: "#918CAE",
-          inverse: "#000001",
+          primary: "var(--text-primary)",
+          secondary: "var(--text-secondary)",
+          muted: "var(--text-muted)",
+          inverse: "var(--text-inverse)",
         },
       },
       boxShadow: {

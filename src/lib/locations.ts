@@ -8,7 +8,7 @@ export type LocationGroup = {
 const NATIONWIDE_TOKENS = ["全国", "全球"];
 const OVERSEAS_TOKENS = ["海外", "新加坡", "东京", "首尔", "西雅图", "泰国", "瑞士", "马来西亚", "德国"];
 
-const PROVINCE_CITIES: Record<string, string[]> = {
+export const PROVINCE_CITIES: Record<string, string[]> = {
   北京: ["北京"],
   上海: ["上海"],
   天津: ["天津"],
@@ -46,7 +46,22 @@ const PROVINCE_CITIES: Record<string, string[]> = {
   海外: OVERSEAS_TOKENS.filter((token) => token !== "海外"),
 };
 
-const PROVINCE_ORDER = Object.keys(PROVINCE_CITIES);
+export const PROVINCE_ORDER = Object.keys(PROVINCE_CITIES);
+
+export function normalizeProvinceName(value: string) {
+  return value
+    .trim()
+    .replace(/(维吾尔自治区|壮族自治区|回族自治区|特别行政区|自治区|省|市)$/u, "");
+}
+
+export function getProvinceFromLocationFilter(filter: string) {
+  if (filter.startsWith("province:")) return normalizeProvinceName(filter.slice("province:".length));
+  if (!filter.startsWith("city:")) return null;
+  const city = filter.slice("city:".length);
+  return PROVINCE_ORDER.find((province) =>
+    PROVINCE_CITIES[province].some((candidate) => city === candidate || city.startsWith(candidate)),
+  ) ?? null;
+}
 
 export function buildLocationGroups(rawLocations: string[]): LocationGroup[] {
   const tokens = new Set(rawLocations.flatMap(splitLocationTokens).map(normalizeLocationToken));

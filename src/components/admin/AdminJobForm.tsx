@@ -116,7 +116,7 @@ export function AdminJobForm({
 
   return (
     <form
-      className="liquid-panel p-5"
+      className="form-section"
       onSubmit={handleSubmit(submit)}
     >
       <div className="mb-5 flex items-center justify-between gap-4">

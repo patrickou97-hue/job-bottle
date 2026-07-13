@@ -139,7 +139,7 @@ export function LoginForm() {
   const selectedRoles = splitProfileInput(useWatch({ control, name: "targetRoles" }));
 
   return (
-    <div className="mx-auto w-full max-w-md border border-white/[0.13] bg-[#12294E]/42 p-6 shadow-[0_32px_100px_rgba(0,0,1,0.58)] backdrop-blur-2xl sm:p-8">
+    <div className="mx-auto w-full max-w-md py-4 sm:py-8 lg:py-10">
       <h1 className="text-center text-3xl font-semibold tracking-[-0.02em] text-ink-primary">
         登录拾星
       </h1>
@@ -157,7 +157,7 @@ export function LoginForm() {
             <span className="mb-2 block text-sm text-ink-secondary">用户名</span>
             <Input type="text" autoComplete="nickname" {...register("displayName")} />
             {errors.displayName ? (
-              <span className="mt-2 block text-xs text-red-200">{errors.displayName.message}</span>
+              <span className="mt-2 block text-xs text-[color:var(--text-danger)]">{errors.displayName.message}</span>
             ) : null}
           </label>
         ) : null}
@@ -166,7 +166,7 @@ export function LoginForm() {
           <span className="mb-2 block text-sm text-ink-secondary">{isRegister ? "邮箱" : "账号或邮箱"}</span>
           <Input type={isRegister ? "email" : "text"} autoComplete={isRegister ? "email" : "username"} {...register("account")} />
           {errors.account ? (
-            <span className="mt-2 block text-xs text-red-200">{errors.account.message}</span>
+            <span className="mt-2 block text-xs text-[color:var(--text-danger)]">{errors.account.message}</span>
           ) : null}
         </label>
 
@@ -176,28 +176,28 @@ export function LoginForm() {
               <span className="mb-2 block text-sm text-ink-secondary">所在城市</span>
               <Input type="text" placeholder="成都" {...register("city")} />
               {errors.city ? (
-                <span className="mt-2 block text-xs text-red-200">{errors.city.message}</span>
+                <span className="mt-2 block text-xs text-[color:var(--text-danger)]">{errors.city.message}</span>
               ) : null}
             </label>
             <label className="block">
               <span className="mb-2 block text-sm text-ink-secondary">毕业年份</span>
               <Input type="text" placeholder="2027" {...register("graduationYear")} />
               {errors.graduationYear ? (
-                <span className="mt-2 block text-xs text-red-200">{errors.graduationYear.message}</span>
+                <span className="mt-2 block text-xs text-[color:var(--text-danger)]">{errors.graduationYear.message}</span>
               ) : null}
             </label>
             <label className="block">
               <span className="mb-2 block text-sm text-ink-secondary">学校</span>
               <Input type="text" placeholder="西南财经大学" {...register("school")} />
               {errors.school ? (
-                <span className="mt-2 block text-xs text-red-200">{errors.school.message}</span>
+                <span className="mt-2 block text-xs text-[color:var(--text-danger)]">{errors.school.message}</span>
               ) : null}
             </label>
             <label className="block">
               <span className="mb-2 block text-sm text-ink-secondary">专业</span>
               <Input type="text" placeholder="金融学" {...register("major")} />
               {errors.major ? (
-                <span className="mt-2 block text-xs text-red-200">{errors.major.message}</span>
+                <span className="mt-2 block text-xs text-[color:var(--text-danger)]">{errors.major.message}</span>
               ) : null}
             </label>
             <label className="block">
@@ -214,7 +214,7 @@ export function LoginForm() {
                 }
               />
               {errors.preferredRegions ? (
-                <span className="mt-2 block text-xs text-red-200">{errors.preferredRegions.message}</span>
+                <span className="mt-2 block text-xs text-[color:var(--text-danger)]">{errors.preferredRegions.message}</span>
               ) : null}
             </label>
             <label className="block">
@@ -231,7 +231,7 @@ export function LoginForm() {
                 }
               />
               {errors.targetRoles ? (
-                <span className="mt-2 block text-xs text-red-200">{errors.targetRoles.message}</span>
+                <span className="mt-2 block text-xs text-[color:var(--text-danger)]">{errors.targetRoles.message}</span>
               ) : null}
             </label>
           </div>
@@ -245,7 +245,7 @@ export function LoginForm() {
             {...register("password")}
           />
           {errors.password ? (
-            <span className="mt-2 block text-xs text-red-200">
+            <span className="mt-2 block text-xs text-[color:var(--text-danger)]">
               {errors.password.message}
             </span>
           ) : null}
@@ -311,7 +311,7 @@ function LoginOptionGrid({
             key={option}
             type="button"
             className={cn(
-              "pressable rounded-full px-3 py-1.5 text-xs font-medium transition",
+              "pressable rounded-lg px-3 py-1.5 text-xs font-medium transition",
               active
                 ? "bg-[#7E7CB5] text-[#F1EFFF]"
                 : "status-pill text-ink-secondary hover:text-ink-primary",

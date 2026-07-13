@@ -21,7 +21,7 @@ export function CompanyBadge({
 
   return (
     <div
-      className={`${sizeClass} relative flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-[rgba(18,41,78,0.5)] text-sm font-semibold text-nebula-silver shadow-[inset_0_1px_0_rgba(231,226,255,0.08),0_18px_40px_rgba(0,0,0,0.22)]`}
+      className={`${sizeClass} company-badge relative flex shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-semibold`}
     >
       {logoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element

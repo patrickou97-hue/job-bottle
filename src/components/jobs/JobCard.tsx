@@ -52,7 +52,7 @@ export function JobCard({
         <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
           <Link
             href={`/jobs/${job.id}`}
-            className="truncate text-[15px] font-semibold leading-6 text-[color:var(--text-primary)] transition hover:text-nebula-silver"
+            className="truncate text-[15px] font-semibold leading-6 text-[color:var(--text-primary)] transition hover:text-[color:var(--aurora)]"
             onFocus={() => onHover?.(job)}
             onBlur={() => onHover?.(null)}
             onClick={() => onFocusJob?.(job)}
@@ -64,10 +64,10 @@ export function JobCard({
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[color:var(--text-muted)]">
           <span>{job.industry || "暂无行业"}</span>
           <span>{job.locations || "地点待补充"}</span>
-          {deadline ? <span className={deadline.urgent ? "text-amber-200" : ""}>{deadline.label}</span> : null}
-          {fitLabel ? <span className="text-nebula-silver">{fitLabel}</span> : null}
+          {deadline ? <span className={deadline.urgent ? "text-[#9a5a20]" : ""}>{deadline.label}</span> : null}
+          {fitLabel ? <span className="text-[color:var(--aurora)]">{fitLabel}</span> : null}
           {application && material ? (
-            <span className={material.ready ? "inline-flex items-center gap-1 text-emerald-200/80" : "inline-flex items-center gap-1"}>
+            <span className={material.ready ? "inline-flex items-center gap-1 text-[#39725b]" : "inline-flex items-center gap-1"}>
               <FileText aria-hidden="true" className="size-3" />
               {material.label}
             </span>

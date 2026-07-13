@@ -139,8 +139,8 @@ export function CsvImportPanel() {
 
       {isAdmin ? (
         <>
-          <section className="liquid-panel p-5">
-            <label className="pressable flex cursor-pointer flex-col items-center justify-center p-8 text-center transition hover:bg-white/[0.045]">
+          <section className="visualization-boundary border-dashed p-5">
+            <label className="pressable flex cursor-pointer flex-col items-center justify-center p-8 text-center transition hover:bg-[color:var(--surface-hover-bg)]">
               <Upload aria-hidden="true" className="mb-3 size-8 text-nebula-blue" />
               <span className="text-base font-semibold text-ink-primary">上传 CSV / Excel</span>
               <span className="mt-2 text-sm text-ink-muted">选择文件后将自动预览导入结果</span>
@@ -154,7 +154,7 @@ export function CsvImportPanel() {
           </section>
 
           {rows.length > 0 ? (
-            <section className="liquid-panel overflow-hidden">
+            <section className="table-surface">
               <div className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
                 <div className="text-sm text-ink-secondary">
                   预览导入：可导入 {validRows.length} 条，跳过 {invalidRows.length} 条
@@ -176,7 +176,7 @@ export function CsvImportPanel() {
 
               <div className="overflow-x-auto">
                 <table className="min-w-[980px] w-full text-left text-sm">
-                  <thead className="bg-white/[0.04] text-ink-muted">
+                  <thead className="bg-[#eef0f3] text-ink-muted">
                     <tr>
                       <th className="px-4 py-3 font-medium">行号</th>
                       <th className="px-4 py-3 font-medium">公司名称</th>
@@ -190,7 +190,7 @@ export function CsvImportPanel() {
                   </thead>
                   <tbody>
                     {rows.slice(0, 80).map((row) => (
-                      <tr key={row.rowNumber} className="border-t border-white/5 text-ink-secondary">
+                      <tr key={row.rowNumber} className="border-t border-[color:var(--line-ghost)] text-ink-secondary">
                         <td className="px-4 py-3">{row.rowNumber}</td>
                         <td className="px-4 py-3 text-ink-primary">{row.company_name || "缺失"}</td>
                         <td className="max-w-[280px] px-4 py-3">

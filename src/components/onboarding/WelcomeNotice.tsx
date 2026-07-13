@@ -109,7 +109,7 @@ export function WelcomeNotice() {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-end justify-center bg-[#000001]/78 p-0 backdrop-blur-md sm:items-center sm:p-6"
+      className="theme-work fixed inset-0 z-[100] flex items-end justify-center bg-black/48 p-0 sm:items-center sm:p-6"
       role="presentation"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) void dismiss();
@@ -127,7 +127,7 @@ export function WelcomeNotice() {
         <button
           ref={closeButtonRef}
           type="button"
-          className="muted-button pressable absolute right-4 top-4 inline-flex size-9 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--aurora)] sm:right-6 sm:top-6"
+          className="muted-button pressable absolute right-4 top-4 inline-flex size-9 items-center justify-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--aurora)] sm:right-6 sm:top-6"
           aria-label="关闭介绍"
           onClick={() => void dismiss()}
         >
@@ -135,7 +135,7 @@ export function WelcomeNotice() {
         </button>
 
         <div className="pr-12">
-          <div className="mb-5 inline-flex size-11 items-center justify-center rounded-full border border-[color:var(--star-apricot)]/35 bg-[color:var(--star-apricot)]/10 text-[color:var(--star-apricot)]">
+          <div className="mb-5 inline-flex size-11 items-center justify-center rounded-lg border border-[color:var(--star-apricot)]/35 bg-[color:var(--star-apricot)]/10 text-[color:var(--star-apricot)]">
             {isUserWelcome ? <Sparkles aria-hidden="true" className="size-5" /> : <LockKeyhole aria-hidden="true" className="size-5" />}
           </div>
           <h2 id="welcome-notice-title" className="text-2xl font-semibold tracking-[-0.02em] text-ink-primary sm:text-3xl">
@@ -150,7 +150,7 @@ export function WelcomeNotice() {
 
         {isUserWelcome ? <UserWelcomeContent /> : <GuestWelcomeContent />}
 
-        <footer className="mt-7 flex flex-col-reverse gap-3 border-t border-white/[0.1] pt-5 sm:flex-row sm:items-center sm:justify-end">
+        <footer className="mt-7 flex flex-col-reverse gap-3 border-t border-[color:var(--line-ghost)] pt-5 sm:flex-row sm:items-center sm:justify-end">
           {!isUserWelcome ? (
             <Link
               href="/login?mode=register"
@@ -188,7 +188,7 @@ function UserWelcomeContent() {
     <div className="mt-7 space-y-6">
       <div className="grid gap-3 sm:grid-cols-3">
         {["整理招聘岗位，避免错过申请时间", "管理简历和求职材料", "记录投递、笔试和面试进度"].map((item) => (
-          <div key={item} className="apple-panel flex gap-3 p-4 text-sm leading-6 text-ink-secondary">
+          <div key={item} className="flex gap-3 border-t border-[color:var(--line-ghost)] py-4 text-sm leading-6 text-ink-secondary">
             <Check aria-hidden="true" className="mt-1 size-4 shrink-0 text-[color:var(--star-apricot)]" />
             <span>{item}</span>
           </div>

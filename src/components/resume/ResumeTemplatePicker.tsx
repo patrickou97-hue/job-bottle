@@ -40,7 +40,7 @@ export function ResumeTemplatePicker({
               aria-pressed={selected}
               className={`group min-w-[166px] snap-start rounded-lg p-2 text-left transition duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--star-apricot)] ${
                 selected
-                  ? "bg-white/[0.045] shadow-[inset_0_1px_0_rgba(255,255,255,0.055)]"
+                  ? "bg-[#eef2f7]"
                   : "hover:bg-white/[0.025] active:scale-[0.98]"
               }`}
               onClick={() => onChange(template.id)}
@@ -75,7 +75,7 @@ function TemplateSwatch({ templateId }: { templateId: ResumeTemplateId }) {
         : "h-px";
 
   return (
-    <span className="block h-[122px] overflow-hidden rounded-md bg-[#f7f7f4] p-3 shadow-[0_7px_20px_rgba(0,0,0,0.18)]">
+    <span className="block h-[122px] overflow-hidden rounded-md border border-[#d2d2d7] bg-[#f7f7f4] p-3">
       <span className={`block h-[5px] w-14 rounded-full bg-[color:var(--template-accent)] ${centered ? "mx-auto" : ""}`} style={{ "--template-accent": swatch.accent } as CSSProperties} />
       <span className={`mt-2 block h-[3px] w-24 rounded-full bg-black/[0.42] ${centered ? "mx-auto" : ""}`} />
       <span className={`mt-2 block w-full bg-[color:var(--template-accent)] ${ruleClass}`} style={{ "--template-accent": swatch.accent } as CSSProperties} />

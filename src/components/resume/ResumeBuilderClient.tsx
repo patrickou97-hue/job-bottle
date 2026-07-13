@@ -287,7 +287,7 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
           <ResumePageTitle />
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <span className="status-pill rounded-full px-3 py-2 text-sm text-ink-secondary">
+          <span className="status-pill rounded-md px-3 py-2 text-sm text-ink-secondary">
             {saveState}
           </span>
           <Button onClick={createResume} className="gap-2">
@@ -298,7 +298,7 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
       </section>
 
       {targetJob ? (
-        <section className="flex flex-col gap-4 border-y border-white/[0.1] py-5 sm:flex-row sm:items-center sm:justify-between">
+        <section className="flex flex-col gap-4 border-y border-[color:var(--line-ghost)] py-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <p className="text-sm font-semibold text-ink-primary">{targetJob.company} · {targetJob.role}</p>
             <p className="mt-1 text-sm leading-6 text-ink-muted">
@@ -312,8 +312,8 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
         </section>
       ) : null}
 
-      <section className="grid gap-6 xl:grid-cols-[240px_minmax(0,1fr)]">
-        <aside className="apple-panel space-y-3 p-4 xl:sticky xl:top-24 xl:self-start">
+      <section className="grid gap-6 xl:grid-cols-[208px_minmax(0,1fr)]">
+        <aside className="space-y-3 xl:sticky xl:top-24 xl:self-start xl:border-r xl:border-[color:var(--line-ghost)] xl:pr-5">
           <div className="flex items-center justify-between">
             <h2 className="section-title">我的简历</h2>
             <span className="section-meta">{resumes.length} 份</span>
@@ -328,7 +328,7 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
                 key={resume.id}
                 type="button"
                 data-selected={selectedResume.id === resume.id}
-                className={`resume-list-item w-full rounded-[10px] px-4 py-3 text-left transition ${selectedResume.id === resume.id ? "text-ink-primary" : "text-ink-secondary"}`}
+                className={`resume-list-item w-full rounded-lg px-3 py-2.5 text-left transition ${selectedResume.id === resume.id ? "text-ink-primary" : "text-ink-secondary"}`}
                 onClick={() => setSelectedId(resume.id)}
               >
                 <span className="flex items-center gap-2 text-sm font-semibold">
@@ -338,7 +338,7 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
                 {getResumeTargetLine(resume) ? (
                   <span className="mt-1 block text-xs text-ink-muted">{getResumeTargetLine(resume)}</span>
                 ) : null}
-                <span className="mt-2 block truncate text-xs text-nebula-silver">
+                <span className="mt-2 block truncate text-xs text-[color:var(--aurora)]">
                   {boundJob ? `绑定 ${boundJob.company_name}` : resume.linkedJobId ? "已绑定岗位" : "基础 / 方向版本"}
                 </span>
                 <span className="mt-2 flex flex-wrap gap-x-2 gap-y-1 text-[11px] text-ink-muted">
@@ -353,8 +353,8 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
           </div>
         </aside>
 
-        <div className="grid gap-8 xl:grid-cols-[minmax(360px,0.82fr)_minmax(520px,1fr)] xl:items-start">
-          <section className="apple-panel min-w-0 p-5 sm:p-6">
+        <div className="grid gap-8 xl:grid-cols-[minmax(400px,0.9fr)_minmax(540px,1.1fr)] xl:items-start">
+          <section className="min-w-0 border-t border-[color:var(--line-ghost)] pt-5">
             <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="section-title">编辑内容</h2>
@@ -365,7 +365,7 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  className="muted-button pressable inline-flex size-9 items-center justify-center rounded-full"
+                  className="muted-button pressable inline-flex size-9 items-center justify-center rounded-lg"
                   aria-label="复制简历"
                   title="复制简历"
                   onClick={() => duplicateResume(selectedResume)}
@@ -374,7 +374,7 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
                 </button>
                 <button
                   type="button"
-                  className="muted-button pressable inline-flex size-9 items-center justify-center rounded-full text-red-200"
+                  className="muted-button pressable inline-flex size-9 items-center justify-center rounded-lg text-[color:var(--text-danger)]"
                   aria-label="删除简历"
                   title="删除简历"
                   onClick={() => deleteResume(selectedResume.id)}
@@ -415,7 +415,7 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
           </section>
         </div>
       </section>
-      <p className="border-t border-white/[0.08] pt-4 text-center text-xs leading-5 text-ink-muted">
+      <p className="border-t border-[color:var(--line-ghost)] pt-4 text-center text-xs leading-5 text-ink-muted">
         请谨慎审核 AI 输出的简历信息
       </p>
     </div>

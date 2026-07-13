@@ -24,10 +24,9 @@ import { ProgressDrawer } from "@/components/applications/ProgressDrawer";
 import { StatusPill } from "@/components/applications/StatusPill";
 import { Button } from "@/components/ui/Button";
 import { EmptyConstellation } from "@/components/visuals/EmptyConstellation";
-import { NebulaGateway } from "@/components/galaxy/NebulaGateway";
+import { ChinaJobMap } from "@/components/jobs/ChinaJobMap";
 import { CaptureAnimation } from "@/components/capture/CaptureAnimation";
 import { useCaptureMotion } from "@/components/capture/useCaptureMotion";
-import type { NebulaSelection } from "@/lib/nebula-groups";
 import type {
   ApplicationWithJob,
   Job,
@@ -66,8 +65,6 @@ export function HomeClient() {
     useState<ApplicationWithJob | null>(null);
   const [hoveredJobId, setHoveredJobId] = useState<string | null>(null);
   const [focusedJobId, setFocusedJobId] = useState<string | null>(null);
-  const [nebulaSelection, setNebulaSelection] = useState<NebulaSelection | null>(null);
-  const [nebulaResetSignal, setNebulaResetSignal] = useState(0);
   const [pendingApplyConfirmation, setPendingApplyConfirmation] =
     useState<PendingApplyConfirmation | null>(null);
   const [showApplyConfirmation, setShowApplyConfirmation] = useState(false);
@@ -158,6 +155,10 @@ export function HomeClient() {
 
   const facets = useMemo(() => getJobFacetOptions(jobs), [jobs]);
   const matchingJobs = useMemo(() => filterJobs(jobs, filters), [jobs, filters]);
+  const mapMatchingJobs = useMemo(
+    () => filterJobs(jobs, { ...filters, location: "" }),
+    [filters, jobs],
+  );
   const baseVisibleJobs = useMemo(() => {
     if (jobView === "applied") {
       return matchingJobs.filter((job) => applicationByJobId.has(job.id));
@@ -167,14 +168,19 @@ export function HomeClient() {
     }
     return matchingJobs;
   }, [applicationByJobId, jobView, matchingJobs]);
-  const filteredJobs = useMemo(() => {
-    if (!nebulaSelection) return baseVisibleJobs;
-    const selectedIds = new Set(nebulaSelection.jobIds);
-    return baseVisibleJobs.filter((job) => selectedIds.has(job.id));
-  }, [baseVisibleJobs, nebulaSelection]);
+  const mapVisibleJobs = useMemo(() => {
+    if (jobView === "applied") {
+      return mapMatchingJobs.filter((job) => applicationByJobId.has(job.id));
+    }
+    if (jobView === "unapplied") {
+      return mapMatchingJobs.filter((job) => !applicationByJobId.has(job.id));
+    }
+    return mapMatchingJobs;
+  }, [applicationByJobId, jobView, mapMatchingJobs]);
+  const filteredJobs = baseVisibleJobs;
   const activeFilterChips = useMemo(
-    () => getActiveFilterChips(filters, jobView, nebulaSelection?.name),
-    [filters, jobView, nebulaSelection?.name],
+    () => getActiveFilterChips(filters, jobView),
+    [filters, jobView],
   );
   const radarStats = useMemo(() => {
     const companyCount = new Set(filteredJobs.map((job) => job.company_name)).size;
@@ -427,40 +433,36 @@ export function HomeClient() {
         onClear={() => {
           setFilters(EMPTY_JOB_FILTERS);
           setJobView("all");
-          setNebulaSelection(null);
           setFocusedJobId(null);
-          setNebulaResetSignal((value) => value + 1);
         }}
       />
 
-      <section id="job-map" className="border-t border-white/[0.1] pt-6">
+      <section id="job-map" className="border-t border-[color:var(--line-ghost)] pt-6">
         <div className="section-heading items-end">
           <div>
             <h2 className="section-title">岗位地图</h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-secondary">
-              从地区、行业、职能或投递状态观察岗位分布，点选星系后，岗位清单会同步筛选。
+              按省份查看当前筛选下的岗位分布，点选地图后，右侧预览和下方清单会同步更新。
             </p>
           </div>
-          {nebulaSelection ? (
-            <span className="text-xs text-ink-muted">当前选区 · {nebulaSelection.name}</span>
+          {filters.location ? (
+            <span className="text-xs text-ink-muted">当前地区 · {getLocationFilterLabel(filters.location)}</span>
           ) : null}
         </div>
         {loading ? (
-          <div className="grid min-h-[390px] place-items-center border-y border-white/[0.1] text-sm text-ink-muted">
-            <span className="loading-line">正在绘制岗位分布</span>
+          <div className="grid min-h-[390px] place-items-center border-y border-[color:var(--line-ghost)] text-sm text-ink-muted">
+            <span className="loading-line">正在绘制全国岗位分布</span>
           </div>
         ) : (
-          <NebulaGateway
-            key={nebulaResetSignal}
-            jobs={baseVisibleJobs}
-            applications={applications}
-            applicationByJobId={applicationByJobId}
-            onApply={handleApply}
-            hoveredJobId={hoveredJobId}
-            focusedJobId={focusedJobId}
-            onHoverJob={(job) => setHoveredJobId(job?.id ?? null)}
+          <ChinaJobMap
+            jobs={mapVisibleJobs}
+            selectedJobs={filteredJobs}
+            selectedLocation={filters.location}
             onSelectJob={focusJob}
-            onSelectionChange={setNebulaSelection}
+            onLocationChange={(location) => {
+              setFocusedJobId(null);
+              handleFiltersChange({ ...filters, location });
+            }}
           />
         )}
       </section>
@@ -476,7 +478,7 @@ export function HomeClient() {
           <div className="section-heading">
             <div className="flex items-baseline gap-2">
               <h2 className="section-title">
-                {loading ? "正在读取" : nebulaSelection ? `${nebulaSelection.name} · ${filteredJobs.length} 个岗位` : `岗位清单 · ${filteredJobs.length} 个`}
+                {loading ? "正在读取" : filters.location ? `${getLocationFilterLabel(filters.location)} · ${filteredJobs.length} 个岗位` : `岗位清单 · ${filteredJobs.length} 个`}
               </h2>
               {!loading && filteredJobs.length !== jobs.length && (
                 <span className="text-xs text-ink-muted">
@@ -484,19 +486,7 @@ export function HomeClient() {
                 </span>
               )}
             </div>
-            {nebulaSelection ? (
-              <button
-                type="button"
-                className="text-action pressable px-3 py-1.5 text-xs"
-                onClick={() => {
-                  setNebulaSelection(null);
-                  setFocusedJobId(null);
-                  setNebulaResetSignal((value) => value + 1);
-                }}
-              >
-                查看全部
-              </button>
-            ) : <MiniBottleSvg />}
+            <MiniBottleSvg />
           </div>
 
           {loading ? (
@@ -520,7 +510,7 @@ export function HomeClient() {
               }
             />
           ) : (
-            <div className="collection-surface overflow-hidden">
+            <div className="list-surface">
               <AnimatePresence initial={false}>
               {filteredJobs.map((job, index) => (
                 <motion.div key={job.id} layout="position" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
@@ -556,7 +546,7 @@ export function HomeClient() {
       {/* Bottom detail card for selected application */}
       {selectedApplication ? (
         <div className="fixed inset-x-0 bottom-0 z-30 px-4 pb-4 sm:px-6">
-          <div className="liquid-panel mx-auto max-w-2xl p-4">
+          <div className="action-bar mx-auto max-w-2xl p-4">
             <div className="flex items-center gap-4">
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-semibold text-ink-primary">
@@ -581,7 +571,7 @@ export function HomeClient() {
               </Button>
               <button
                 type="button"
-                className="shrink-0 rounded-full p-1.5 text-ink-muted transition hover:bg-white/[0.06] hover:text-ink-secondary"
+                  className="shrink-0 rounded-lg p-1.5 text-ink-muted transition hover:bg-[color:var(--surface-hover-bg)] hover:text-ink-secondary"
                 onClick={() => setSelectedApplication(null)}
                 aria-label="关闭"
               >
@@ -647,7 +637,7 @@ function JobRadarHeader({
               {activeFilterChips.map((chip) => (
                 <span
                   key={chip}
-                  className="status-pill whitespace-nowrap rounded-full px-2.5 py-1 text-xs text-ink-secondary"
+                  className="status-pill whitespace-nowrap rounded-md px-2.5 py-1 text-xs text-ink-secondary"
                 >
                   {chip}
                 </span>
@@ -664,15 +654,15 @@ function JobRadarHeader({
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="inline-grid grid-cols-3 rounded-full bg-black/15 p-1">
+          <div className="inline-grid grid-cols-3 rounded-lg bg-[color:var(--apple-control-bg)] p-1">
             {modes.map((mode) => (
               <button
                 key={mode.value}
                 type="button"
                 className={cn(
-                  "pressable rounded-full px-3 py-1.5 text-xs transition",
+                  "pressable rounded-md px-3 py-1.5 text-xs transition",
                   jobView === mode.value
-                    ? "bg-nebula-silver/12 text-nebula-silver shadow-[0_0_22px_rgba(126,124,181,0.14)]"
+                    ? "bg-[#e8edf4] text-[#12294e]"
                     : "text-ink-muted hover:text-ink-secondary",
                 )}
                 onClick={() => onJobViewChange(mode.value)}
@@ -722,7 +712,7 @@ function StatNumber({ value, label }: { value: number; label: string }) {
   );
 }
 
-function getActiveFilterChips(filters: JobFilters, jobView: JobViewMode, nebulaName?: string) {
+function getActiveFilterChips(filters: JobFilters, jobView: JobViewMode) {
   const chips: string[] = [];
   const keyword = filters.keyword.trim();
   if (keyword) chips.push(`关键词：${keyword}`);
@@ -735,7 +725,6 @@ function getActiveFilterChips(filters: JobFilters, jobView: JobViewMode, nebulaN
   if (filters.sortBy === "company_asc") chips.push("公司名称排序");
   if (jobView === "unapplied") chips.push("只看未投递");
   if (jobView === "applied") chips.push("只看已投递");
-  if (nebulaName) chips.push(`星云：${nebulaName}`);
   return chips;
 }
 

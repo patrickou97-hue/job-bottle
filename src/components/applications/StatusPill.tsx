@@ -4,15 +4,15 @@ import type { ApplicationStatus } from "@/lib/types";
 
 const statusClassName: Record<ApplicationStatus | "none", string> = {
   none: "text-ink-muted",
-  opened: "text-nebula-silver",
-  applied: "text-nebula-silver",
-  written_test: "text-nebula-silver",
-  first_round: "text-nebula-silver shadow-star-sm",
-  second_round: "text-nebula-silver shadow-star-sm",
-  final_round: "text-nebula-silver shadow-star-md",
-  offer: "text-aurum-300 shadow-star-md",
-  rejected: "text-slate-300",
-  withdrawn: "text-stone-300",
+  opened: "text-[color:var(--aurora)]",
+  applied: "text-[color:var(--aurora)]",
+  written_test: "text-[color:var(--aurora)]",
+  first_round: "text-[color:var(--aurora)]",
+  second_round: "text-[color:var(--aurora)]",
+  final_round: "text-[color:var(--aurora)]",
+  offer: "text-[color:var(--ok)]",
+  rejected: "text-[color:var(--text-danger)]",
+  withdrawn: "text-ink-muted",
 };
 
 export function StatusPill({
@@ -28,7 +28,7 @@ export function StatusPill({
   return (
     <span
       className={cn(
-        "status-pill inline-flex w-auto shrink-0 items-center whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium leading-none",
+        "status-pill inline-flex w-auto shrink-0 items-center whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium leading-none",
         statusClassName[key],
         className,
       )}

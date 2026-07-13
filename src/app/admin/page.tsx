@@ -34,16 +34,16 @@ export default function AdminPage() {
           </div>
         </section>
 
-        <div className="divide-y divide-white/[0.1] border-y border-white/[0.1]">
+        <div className="divide-y divide-[color:var(--line-ghost)] border-y border-[color:var(--line-ghost)]">
           {adminActions.map((item) => {
             const Icon = item.icon;
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className="group grid gap-4 py-6 transition hover:bg-white/[0.025] sm:grid-cols-[44px_minmax(0,1fr)] sm:items-start"
+                className="group grid gap-4 py-6 transition hover:bg-[color:var(--surface-hover-bg)] sm:grid-cols-[28px_minmax(0,1fr)] sm:items-start"
               >
-                <div className="flex size-11 items-center justify-center bg-nebula-blue/8 text-nebula-blue">
+                <div className="flex size-7 items-center justify-center text-[color:var(--aurora)]">
                   <Icon aria-hidden="true" className="size-5" />
                 </div>
                 <div>

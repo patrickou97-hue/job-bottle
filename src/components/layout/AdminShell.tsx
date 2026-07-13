@@ -73,40 +73,24 @@ export function AdminShell({ children }: { children: ReactNode }) {
   function navClass(itemHref: string) {
     const active = itemHref === "/admin" ? pathname === "/admin" : pathname.startsWith(itemHref);
     return cn(
-      "pressable inline-flex h-10 items-center gap-2 border-b-2 px-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--star-apricot)]",
+      "pressable inline-flex h-10 items-center gap-2 border-b-2 px-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--aurora)] md:border-b-0 md:border-l-2 md:px-3",
       active
-        ? "border-[color:var(--star-apricot)] text-ink-primary"
-        : "border-transparent text-ink-secondary hover:border-white/20 hover:text-ink-primary",
+        ? "border-[color:var(--aurora)] text-ink-primary"
+        : "border-transparent text-ink-secondary hover:border-[color:var(--line)] hover:text-ink-primary",
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#000001] text-ink-primary">
-      <header className="sticky top-0 z-40 border-b border-white/[0.08] bg-[#000001]/82 backdrop-blur-md">
+    <div className="theme-work min-h-screen bg-[color:var(--background)] text-ink-primary">
+      <header className="app-navbar sticky top-0 z-40 border-b">
         <div className="mx-auto flex min-h-15 w-full max-w-[1380px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2 sm:px-6 lg:px-8">
           <Link href="/admin" className="flex min-w-0 shrink-0 items-center gap-3" aria-label="管理">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/shi-xing-wordmark.png" alt={SITE_NAME} className="h-7 w-auto shrink-0 object-contain" />
+            <img src="/brand/shi-xing-wordmark.png" alt={SITE_NAME} className="brand-wordmark h-7 w-auto shrink-0 object-contain" />
             <span className="text-sm font-semibold text-ink-primary">管理</span>
           </Link>
 
-          <nav className="order-3 flex w-full items-center gap-1 overflow-x-auto sm:order-none sm:w-auto sm:flex-1" aria-label="管理导航">
-            {adminNavItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={navClass(item.href)}
-                >
-                  <Icon aria-hidden="true" className="size-4" />
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
-
-          <div className="ml-auto flex shrink-0 items-center gap-1 border-l border-white/[0.08] pl-3">
+          <div className="nav-account ml-auto flex shrink-0 items-center gap-1 border-l pl-3">
             <Link href="/" className="text-action h-9 px-2.5 text-sm">
               <ArrowLeft aria-hidden="true" className="size-4" />
               返回首页
@@ -118,7 +102,24 @@ export function AdminShell({ children }: { children: ReactNode }) {
           </div>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-[1440px] px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
+      <div className="mx-auto grid w-full max-w-[1440px] md:grid-cols-[210px_minmax(0,1fr)]">
+        <aside className="hidden border-r border-[color:var(--line-ghost)] px-4 py-8 md:block">
+          <nav className="sticky top-24 flex flex-col gap-1" aria-label="管理导航">
+            {adminNavItems.map((item) => {
+              const Icon = item.icon;
+              return <Link key={item.href} href={item.href} className={navClass(item.href)}><Icon aria-hidden="true" className="size-4" />{item.label}</Link>;
+            })}
+          </nav>
+        </aside>
+        <div className="border-b border-[color:var(--line-ghost)] px-4 md:hidden">
+          <nav className="flex items-center gap-1 overflow-x-auto" aria-label="管理导航">
+            {adminNavItems.map((item) => {
+              const Icon = item.icon;
+              return <Link key={item.href} href={item.href} className={navClass(item.href)}><Icon aria-hidden="true" className="size-4" />{item.label}</Link>;
+            })}
+          </nav>
+        </div>
+      <main className="min-w-0 px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
         {loading ? (
           <div className="empty-state text-sm text-ink-secondary">
             <span className="loading-line">正在确认管理员权限</span>
@@ -126,7 +127,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
         ) : allowed ? (
           children
         ) : (
-          <div className="liquid-panel p-6">
+          <div className="form-section py-6">
             <h1 className="text-2xl font-semibold text-ink-primary">管理后台</h1>
             <p className="mt-3 text-sm text-ink-secondary">{message}</p>
             <Link
@@ -138,6 +139,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
           </div>
         )}
       </main>
+      </div>
     </div>
   );
 }

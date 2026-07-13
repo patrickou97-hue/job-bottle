@@ -56,7 +56,7 @@ export function ApplicationOrbitSystem({
       <FiligreeDivider className="mb-4 opacity-70" />
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_330px]">
-        <div className="liquid-panel relative mx-auto h-[460px] w-full max-w-[840px] overflow-hidden sm:h-[600px] lg:h-[760px] xl:max-w-none">
+        <div className="theme-scene visualization-canvas relative mx-auto h-[460px] w-full max-w-[840px] overflow-hidden sm:h-[600px] lg:h-[760px] xl:max-w-none">
           <div className="absolute inset-0 opacity-18 [background-image:radial-gradient(circle,rgba(201,197,228,.28)_0_1px,transparent_1.5px)] [background-size:92px_92px]" />
           <div className="absolute inset-0 grid place-items-center">
             <div className="relative aspect-square h-[min(90vw,720px)] max-h-[720px] w-[min(90vw,720px)] sm:h-[min(92%,720px)] sm:w-[min(92%,720px)]">
@@ -115,14 +115,14 @@ export function ApplicationOrbitSystem({
         <ApplicationOrbitDetail application={selectedApplication} onEdit={onEdit ?? onSelect} />
       </div>
       {expandedBand ? (
-        <div className="liquid-panel absolute inset-x-5 bottom-5 z-40 p-4 backdrop-blur-xl xl:left-auto xl:w-[420px]">
+        <div className="scene-panel absolute inset-x-5 bottom-5 z-40 p-4 xl:left-auto xl:w-[420px]">
           <div className="mb-3 flex items-center justify-between gap-3">
             <span className="text-sm font-medium text-nebula-silver">
               {ORBIT_BAND_CONFIG[expandedBand].label} · {expandedApplications.length} 条记录
             </span>
             <button
               type="button"
-              className="rounded-full p-1.5 text-ink-muted transition hover:bg-white/[0.05] hover:text-nebula-silver"
+              className="rounded-lg p-1.5 text-ink-muted transition hover:bg-white/[0.05] hover:text-nebula-silver"
               onClick={() => setExpandedBand(null)}
               aria-label="关闭投递聚合列表"
             >
@@ -134,7 +134,7 @@ export function ApplicationOrbitSystem({
               <button
                 key={application.id}
                 type="button"
-                className="pressable flex w-full items-center justify-between gap-3 rounded-2xl px-3 py-2 text-left text-sm transition hover:bg-white/[0.04]"
+                className="pressable flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm transition hover:bg-white/[0.04]"
                 onClick={() => {
                   setExpandedBand(null);
                   onSelect(application);

@@ -14,7 +14,7 @@ export function ApplicationOrbitDetail({
 }) {
   if (!application) {
     return (
-      <aside className="liquid-panel empty-state min-h-[260px] p-5 text-sm text-ink-muted">
+      <aside className="scene-panel empty-state min-h-[260px] p-5 text-sm text-ink-muted">
         <div>
           <h3>选择一条记录</h3>
           <p>点击轨道或列表中的投递记录查看详情。</p>
@@ -24,7 +24,7 @@ export function ApplicationOrbitDetail({
   }
 
   return (
-    <aside className="liquid-panel p-5">
+    <aside className="scene-panel p-5">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="truncate text-lg font-semibold text-ink-primary">{application.job.company_name}</h3>

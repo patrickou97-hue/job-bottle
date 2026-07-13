@@ -8,6 +8,7 @@ import { motion, useReducedMotion } from 'motion/react'
 import { getCurrentUserOrNull } from '@/lib/auth'
 import { PLANET_ROUTES, type PlanetRoute } from '@/lib/galaxy-routes'
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client'
+import { markSceneDeparture } from '@/lib/scene-transition'
 import { CorePlanet } from './CorePlanet'
 import { FloatingPlanet } from './FloatingPlanet'
 import { OrbitLines } from './OrbitLines'
@@ -121,6 +122,7 @@ export function SpaceHome() {
     setPlanetTransition({ planet, rect: rect ?? fallbackRect })
     window.setTimeout(
       () => {
+        markSceneDeparture(href)
         router.push(href)
       },
       reducedMotion ? 80 : TRANSITION_MS,

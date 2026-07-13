@@ -166,7 +166,7 @@ export function JobDetailActions({
   }
 
   return (
-    <div className="liquid-panel sticky bottom-4 z-20 p-4">
+    <div className="action-bar sticky bottom-4 z-20 p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-sm font-medium text-ink-primary">

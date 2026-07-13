@@ -87,7 +87,7 @@ export function ResumeEditor({
   return (
     <div className="space-y-5">
       {undo ? (
-        <div className="flex items-center justify-between gap-3 border-l-2 border-[color:var(--aurora)] bg-white/[0.035] px-4 py-3 text-sm text-ink-secondary">
+        <div className="flex items-center justify-between gap-3 border-l-2 border-[color:var(--aurora)] bg-[#eef2f7] px-4 py-3 text-sm text-ink-secondary">
           <span>{undo.label}已应用</span>
           <button type="button" className="text-action inline-flex items-center gap-2" onClick={() => { undo.run(); setUndo(null); }}>
             <RotateCcw aria-hidden="true" className="size-4" />撤销
@@ -338,8 +338,8 @@ function PhotoField({ value, onChange }: { value: string; onChange: (value: stri
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-4 rounded-[14px] bg-white/[0.035] p-4">
-      <div className="flex h-28 w-[86px] items-center justify-center overflow-hidden rounded-[10px] bg-white/[0.07] ring-1 ring-white/[0.08]">
+    <div className="flex flex-wrap items-center gap-4 border-y border-[color:var(--line-ghost)] py-4">
+      <div className="flex h-28 w-[86px] items-center justify-center overflow-hidden rounded-lg bg-[#eef0f3] ring-1 ring-[color:var(--line-ghost)]">
         {value ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={value} alt="简历照片预览" className="h-full w-full object-cover" />
@@ -369,7 +369,7 @@ function PhotoField({ value, onChange }: { value: string; onChange: (value: stri
           {value ? (
             <button
               type="button"
-              className="muted-button pressable inline-flex items-center gap-2 rounded-[10px] px-4 py-2 text-sm text-red-100"
+              className="muted-button pressable inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm text-[color:var(--text-danger)]"
               onClick={() => onChange("")}
             >
               <X aria-hidden="true" className="size-4" />
@@ -377,7 +377,7 @@ function PhotoField({ value, onChange }: { value: string; onChange: (value: stri
             </button>
           ) : null}
         </div>
-        {message ? <p className="mt-2 text-xs text-red-200" role="status">{message}</p> : null}
+        {message ? <p className="mt-2 text-xs text-[color:var(--text-danger)]" role="status">{message}</p> : null}
       </div>
     </div>
   );
@@ -501,12 +501,12 @@ function CollectionEditor<T extends { id: string }>({
       </div>
       {items.length === 0 ? <p className="text-sm text-ink-muted">暂无内容。</p> : null}
       {items.map((item, index) => (
-        <div key={item.id} className="space-y-4 border-t border-white/[0.08] pt-4">
+        <div key={item.id} className="space-y-4 border-t border-[color:var(--line-ghost)] pt-4">
           <div className="flex items-center justify-between gap-3">
             <span className="text-xs text-ink-muted">第 {index + 1} 条</span>
             <button
               type="button"
-              className="text-action pressable rounded-full px-3 py-1 text-xs text-red-200"
+              className="text-action pressable rounded-lg px-3 py-1 text-xs text-[color:var(--text-danger)]"
               onClick={() => onRemove(item.id)}
             >
               删除
@@ -628,10 +628,10 @@ function PolishableItem({ children, onPolish }: { children: React.ReactNode; onP
       <div className="flex justify-end">
         <button
           type="button"
-          className="pressable inline-flex h-9 items-center gap-2 rounded-[10px] border border-[#dce7f8]/35 bg-[linear-gradient(135deg,#12294E_0%,#536D9E_52%,#B9C8E5_100%)] px-4 text-xs font-semibold text-white shadow-[0_8px_24px_rgba(50,78,126,0.32),inset_0_1px_0_rgba(255,255,255,0.28)] transition-[filter,box-shadow,transform] duration-200 hover:brightness-110 hover:shadow-[0_10px_30px_rgba(83,109,158,0.45),inset_0_1px_0_rgba(255,255,255,0.34)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c8d7ee]/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#07142a]"
+          className="pressable inline-flex h-9 items-center gap-2 rounded-lg border border-[#12294e] bg-[#12294e] px-4 text-xs font-semibold text-white transition-colors hover:bg-[#24375c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#12294e]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
           onClick={onPolish}
         >
-          <Sparkles aria-hidden="true" className="size-3.5 text-[#f4f7ff] drop-shadow-[0_0_6px_rgba(255,255,255,0.55)]" />
+          <Sparkles aria-hidden="true" className="size-3.5 text-white" />
           AI 润色
         </button>
       </div>
@@ -671,7 +671,7 @@ function BulletEditor({
         <span className="text-xs font-medium text-ink-muted">{label}</span>
         <button
           type="button"
-          className="text-action pressable rounded-full px-3 py-1 text-xs"
+          className="text-action pressable rounded-lg px-3 py-1 text-xs"
           onClick={() => onChange([...bullets, ""])}
         >
           新增
@@ -713,7 +713,7 @@ function IconButton({
   return (
     <button
       type="button"
-      className="muted-button pressable inline-flex size-8 items-center justify-center rounded-full"
+      className="muted-button pressable inline-flex size-8 items-center justify-center rounded-lg"
       aria-label={label}
       title={label}
       onClick={onClick}

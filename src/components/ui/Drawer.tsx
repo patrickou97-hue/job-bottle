@@ -47,7 +47,7 @@ export function Drawer({
   return (
     <AnimatePresence>
       {open ? (
-        <div className="fixed inset-0 z-50">
+        <div className="theme-work fixed inset-0 z-50">
           <motion.button
             type="button"
             aria-label="关闭"
@@ -63,7 +63,7 @@ export function Drawer({
             role="dialog"
             aria-modal="true"
             aria-labelledby="drawer-title"
-            className="apple-sheet absolute inset-x-0 bottom-0 max-h-[88svh] w-full overflow-y-auto px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-[24px] before:pointer-events-none before:absolute before:bottom-8 before:right-full before:top-8 before:hidden before:w-16 before:bg-gradient-to-l before:from-[rgba(13,29,57,.44)] before:to-transparent md:bottom-4 md:left-auto md:right-4 md:top-4 md:max-h-none md:max-w-xl md:p-7 md:before:block"
+            className="apple-sheet absolute inset-x-0 bottom-0 max-h-[88svh] w-full overflow-y-auto px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 md:bottom-4 md:left-auto md:right-4 md:top-4 md:max-h-none md:max-w-xl md:p-7"
             initial={{ y: reducedMotion ? 0 : "100%", x: 0, opacity: reducedMotion ? 0 : 1 }}
             animate={{ y: 0, x: 0 }}
             exit={{ y: reducedMotion ? 0 : "100%", x: 0, opacity: reducedMotion ? 0 : 1 }}
@@ -75,7 +75,7 @@ export function Drawer({
               <button
                 ref={closeButtonRef}
                 type="button"
-                className="inline-flex size-10 items-center justify-center rounded-full text-ink-secondary transition hover:bg-white/[0.08] hover:text-ink-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--aurora)]"
+                className="inline-flex size-10 items-center justify-center rounded-lg text-ink-secondary transition hover:bg-[color:var(--surface-hover-bg)] hover:text-ink-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--aurora)]"
                 onClick={onClose}
                 aria-label="关闭"
               >

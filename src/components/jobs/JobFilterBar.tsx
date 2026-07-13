@@ -65,7 +65,7 @@ export function JobFilterBar({
   }
 
   return (
-    <aside className="filter-rail relative self-start p-5 xl:sticky xl:top-24">
+    <aside className="relative self-start border-r border-[color:var(--line-ghost)] pr-5 xl:sticky xl:top-24">
       <div className="mb-5">
         <h2 className="section-title text-base">筛选</h2>
       </div>
@@ -76,10 +76,10 @@ export function JobFilterBar({
           <div className="relative">
             <Search
               aria-hidden="true"
-              className="absolute left-0 top-1/2 size-4 -translate-y-1/2 text-nebula-blue/70"
+              className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-nebula-blue/70"
             />
             <Input
-              className="pl-7"
+              className="pl-10"
               value={filters.keyword}
               onChange={(event) => setFilter({ keyword: event.target.value })}
               placeholder="搜索公司或岗位"

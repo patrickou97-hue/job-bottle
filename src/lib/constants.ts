@@ -1,4 +1,4 @@
-export const SITE_NAME = "拾星 Starjob";
+export const SITE_NAME = "拾星 StarJob";
 
 export const APPLICATION_STATUS = [
   "opened",

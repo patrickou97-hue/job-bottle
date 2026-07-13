@@ -131,7 +131,7 @@ export function AdminUsersClient() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-col gap-3 border-y border-white/[0.1] py-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 border-y border-[color:var(--line-ghost)] py-4 sm:flex-row sm:items-center sm:justify-between">
         <label className="relative block w-full max-w-md">
           <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-muted" />
           <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索邮箱、姓名、学校或方向" className="pl-9" />
@@ -144,7 +144,7 @@ export function AdminUsersClient() {
       {visibleUsers.length === 0 ? (
         <div className="empty-state">没有匹配的用户账户。</div>
       ) : (
-        <div className="divide-y divide-white/[0.1] border-y border-white/[0.1]">
+        <div className="divide-y divide-[color:var(--line-ghost)] border-y border-[color:var(--line-ghost)]">
           {visibleUsers.map((user) => {
             const draft = drafts[user.id] ?? { displayName: user.displayName, role: user.role };
             const isSelf = user.id === currentUserId;
@@ -156,7 +156,7 @@ export function AdminUsersClient() {
                   <div className="flex flex-wrap items-center gap-2">
                     {user.role === "admin" ? <Shield aria-hidden="true" className="size-4 text-nebula-blue" /> : <UserRound aria-hidden="true" className="size-4 text-ink-muted" />}
                     <h2 className="truncate text-base font-semibold text-ink-primary">{user.email}</h2>
-                    {isSelf ? <span className="text-xs text-nebula-silver">当前账号</span> : null}
+                    {isSelf ? <span className="text-xs text-[color:var(--aurora)]">当前账号</span> : null}
                     {disabled ? <span className="text-xs text-[#d8a8b7]">已停用</span> : null}
                     {!user.emailConfirmedAt ? <span className="text-xs text-ink-muted">邮箱未确认</span> : null}
                   </div>

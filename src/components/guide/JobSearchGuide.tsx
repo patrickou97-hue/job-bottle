@@ -43,9 +43,9 @@ export function JobSearchGuide() {
         </div>
       </section>
 
-      <div className="border-y border-white/[0.1]">
+      <div className="border-y border-[color:var(--line-ghost)]">
         {STEPS.map((step) => (
-          <details key={step.title} className="group border-b border-white/[0.08] last:border-b-0">
+          <details key={step.title} className="group border-b border-[color:var(--line-ghost)] last:border-b-0">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-5 text-left text-base font-semibold text-ink-primary marker:hidden">
               {step.title}
               <span className="text-xl font-normal text-ink-muted transition group-open:rotate-45" aria-hidden="true">+</span>

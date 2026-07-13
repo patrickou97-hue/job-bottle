@@ -51,6 +51,7 @@
   --text-numeric: var(--ink-mid);
   --text-meta: rgba(201, 197, 228, 0.54);
   --text-danger: rgba(215, 146, 167, 0.9);
+  --text-inverse: #000001;
 
   --surface-subtle-bg: rgba(18, 41, 78, 0.28);
   --surface-subtle-border: rgba(201, 197, 228, 0.1);
@@ -100,4 +101,85 @@
   --font-sans-cn: var(--font-geist-sans), "Mona Sans", "Mona Sans Fallback",
     "MiSans VF", "MiSans", "HarmonyOS Sans SC", "PingFang SC", "Noto Sans SC",
     -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.theme-work {
+  --background: #e9ebef;
+  --foreground: #1d1d1f;
+  --text-primary: #1d1d1f;
+  --text-secondary: #515154;
+  --text-muted: #6e6e73;
+  --text-disabled: #a1a1a6;
+  --text-numeric: #1d1d1f;
+  --text-meta: #6e6e73;
+  --text-danger: #9f2d3f;
+  --ok: #356447;
+  --warn: #8a4b16;
+  --danger: #9f2d3f;
+  --text-inverse: #ffffff;
+  --light-silver: #12294e;
+  --light-muted: #6e6e73;
+  --light-ice: #12294e;
+  --aurora: #12294e;
+  --arcane: #12294e;
+  --line: #d2d2d7;
+  --line-strong: #b7b7bc;
+  --line-ghost: #e8e8ed;
+  --surface-subtle-bg: #eef0f3;
+  --surface-subtle-border: #d9dce2;
+  --surface-read-bg: #f6f7f9;
+  --surface-read-bg-strong: #fafafb;
+  --surface-read-border: #d2d2d7;
+  --surface-read-shadow: none;
+  --surface-hover-bg: #eceff3;
+  --surface-selected-bg: #e4e9f0;
+  --surface-selected-edge: inset 2px 0 0 #12294e;
+  --apple-glass-bg: #f6f7f9;
+  --apple-glass-bg-strong: #fafafb;
+  --apple-glass-border: #d2d2d7;
+  --apple-glass-highlight: transparent;
+  --apple-control-bg: #eef0f3;
+  --apple-control-selected: #fafafb;
+  --apple-separator: #d2d2d7;
+  --apple-shadow-panel: none;
+  --apple-shadow-sheet: 0 18px 50px rgba(0, 0, 0, 0.16);
+  --apple-radius-control: 8px;
+  --apple-radius-panel: 0px;
+  --apple-radius-sheet: 10px;
+}
+
+.theme-scene {
+  --background: #000001;
+  --foreground: rgba(241, 239, 255, 0.94);
+  --text-primary: rgba(241, 239, 255, 0.94);
+  --text-secondary: rgba(201, 197, 228, 0.74);
+  --text-muted: rgba(145, 140, 174, 0.7);
+  --text-disabled: rgba(145, 140, 174, 0.36);
+  --text-numeric: #c9c5e4;
+  --text-meta: rgba(201, 197, 228, 0.54);
+  --text-danger: rgba(215, 146, 167, 0.9);
+  --text-inverse: #000001;
+  --light-silver: #c9c5e4;
+  --light-muted: #918cae;
+  --light-ice: #f1efff;
+  --aurora: #7e7cb5;
+  --arcane: #7e7cb5;
+  --line: rgba(201, 197, 228, 0.15);
+  --line-strong: rgba(201, 197, 228, 0.28);
+  --line-ghost: rgba(231, 226, 255, 0.07);
+  --surface-hover-bg: rgba(126, 124, 181, 0.1);
+  --surface-selected-bg: rgba(126, 124, 181, 0.15);
+  --surface-selected-edge: inset 2px 0 0 rgba(126, 124, 181, 0.56);
+  --apple-glass-bg: rgba(13, 29, 57, 0.72);
+  --apple-glass-bg-strong: rgba(13, 27, 52, 0.9);
+  --apple-glass-border: rgba(231, 226, 255, 0.16);
+  --apple-glass-highlight: rgba(255, 255, 255, 0.1);
+  --apple-control-bg: rgba(241, 239, 255, 0.075);
+  --apple-control-selected: rgba(241, 239, 255, 0.15);
+  --apple-separator: rgba(231, 226, 255, 0.085);
+  --apple-shadow-panel: 0 24px 72px rgba(0, 0, 1, 0.3);
+  --apple-shadow-sheet: 0 34px 120px rgba(0, 0, 1, 0.72);
+  --apple-radius-control: 10px;
+  --apple-radius-panel: 18px;
+  --apple-radius-sheet: 20px;
 }

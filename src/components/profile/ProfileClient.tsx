@@ -234,7 +234,7 @@ export function ProfileClient() {
           </div>
         </section>
         {message ? <div className="info-banner text-sm">{message}</div> : null}
-        <section className="empty-state liquid-panel">
+        <section className="empty-state border-y border-[color:var(--line-ghost)]">
           <div>
             <h2>需要先登录</h2>
             <p>登录后保存资料、简历和投递记录。</p>
@@ -275,8 +275,17 @@ export function ProfileClient() {
 
       {message ? <div className="info-banner text-sm">{message}</div> : null}
 
-      <section className="grid gap-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(340px,0.95fr)]">
-        <article className="apple-panel min-w-0 p-5 sm:p-6">
+      <div className="grid gap-8 lg:grid-cols-[160px_minmax(0,1fr)]">
+        <aside className="self-start lg:sticky lg:top-24">
+          <nav className="flex gap-2 overflow-x-auto border-y border-[color:var(--line-ghost)] py-2 lg:flex-col lg:border-y-0 lg:border-r lg:py-0 lg:pr-5" aria-label="个人中心分区">
+            <a href="#profile-assets" className="text-action min-h-9 px-2 text-sm">投递资产</a>
+            <a href="#profile-details" className="text-action min-h-9 px-2 text-sm">资料与简历</a>
+            <a href="#profile-account" className="text-action min-h-9 px-2 text-sm">账号与反馈</a>
+          </nav>
+        </aside>
+        <div className="min-w-0 space-y-8">
+      <section id="profile-assets" className="grid gap-8 border-t border-[color:var(--line-ghost)] pt-7 lg:grid-cols-[minmax(0,1.05fr)_minmax(340px,0.95fr)]">
+        <article className="min-w-0">
           <div className="flex items-start justify-between gap-4">
             <SectionLead title="投递资产" />
             <Link href="/my" className="text-action text-sm">
@@ -312,7 +321,7 @@ export function ProfileClient() {
           </div>
         </article>
 
-        <article className="apple-panel p-5 sm:p-6">
+        <article className="lg:border-l lg:border-[color:var(--line-ghost)] lg:pl-8">
           <SectionLead title="求职偏好" />
           <div className="mt-5 grid gap-4">
             <ProfileField label="意向地区" icon={<MapPin aria-hidden="true" className="size-4" />}>
@@ -345,8 +354,8 @@ export function ProfileClient() {
         </article>
       </section>
 
-      <section className="grid gap-5 lg:grid-cols-3">
-        <article className="apple-panel p-5">
+      <section id="profile-details" className="grid gap-8 border-t border-[color:var(--line-ghost)] pt-7 lg:grid-cols-3 lg:divide-x lg:divide-[color:var(--line-ghost)]">
+        <article>
           <SectionLead title="基本信息" />
           <div className="mt-5 grid gap-4">
             <ProfileField label="用户名" icon={<UserRound aria-hidden="true" className="size-4" />}>
@@ -372,12 +381,12 @@ export function ProfileClient() {
           </div>
         </article>
 
-        <article className="apple-panel p-5">
+        <article className="lg:pl-8">
           <SectionLead title="简历版本" />
           <div className="mt-5 space-y-3">
             {resumes.length > 0 ? (
               resumes.slice(0, 3).map((resume) => (
-                <Link key={resume.id} href="/resume" className="group block border-b border-white/[0.08] pb-3 last:border-b-0">
+                <Link key={resume.id} href="/resume" className="group block border-b border-[color:var(--line-ghost)] pb-3 last:border-b-0">
                   <p className="truncate text-sm font-semibold text-ink-primary">{resume.title || "未命名简历"}</p>
                   {getResumeTargetLine(resume) ? (
                     <p className="mt-1 truncate text-xs text-ink-muted">{getResumeTargetLine(resume)}</p>
@@ -394,12 +403,12 @@ export function ProfileClient() {
           </Link>
         </article>
 
-        <article className="apple-panel p-5">
+        <article className="lg:pl-8">
           <SectionLead title="匹配岗位" />
           <div className="mt-5 space-y-3">
             {recommendedJobs.length > 0 ? (
               recommendedJobs.map((job) => (
-                <Link key={job.id} href={`/jobs/${job.id}`} className="group block border-b border-white/[0.08] pb-3 last:border-b-0">
+                <Link key={job.id} href={`/jobs/${job.id}`} className="group block border-b border-[color:var(--line-ghost)] pb-3 last:border-b-0">
                   <p className="truncate text-sm font-semibold text-ink-primary">{job.company_name}</p>
                   <p className="mt-1 line-clamp-2 text-xs leading-5 text-ink-muted">{job.job_titles || job.industry || "岗位详情待补充"}</p>
                 </Link>
@@ -415,8 +424,8 @@ export function ProfileClient() {
         </article>
       </section>
 
-      <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
-        <article className="apple-panel p-5">
+      <section id="profile-account" className="grid gap-8 border-t border-[color:var(--line-ghost)] pt-7 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <article>
           <SectionLead title="常用入口" />
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             <GuideLink href="/explore" title="浏览岗位坐标" />
@@ -426,7 +435,7 @@ export function ProfileClient() {
           </div>
         </article>
 
-        <article className="apple-panel p-5">
+        <article className="lg:border-l lg:border-[color:var(--line-ghost)] lg:pl-8">
           <SectionLead title="账号与反馈" />
           <div className="mt-5 space-y-4">
             <InfoLine icon={<Mail aria-hidden="true" className="size-4" />} label="登录邮箱" value={userEmail || "未读取"} />
@@ -454,7 +463,7 @@ export function ProfileClient() {
               </a>
               <button
                 type="button"
-                className="muted-button pressable inline-flex h-10 items-center gap-2 rounded-lg px-4 text-sm text-red-100"
+                className="muted-button pressable inline-flex h-10 items-center gap-2 rounded-lg px-4 text-sm text-[color:var(--text-danger)]"
                 onClick={() => void handleLogout()}
               >
                 <LogOut aria-hidden="true" className="size-4" />
@@ -464,6 +473,8 @@ export function ProfileClient() {
           </div>
         </article>
       </section>
+        </div>
+      </div>
     </div>
   );
 }
@@ -507,10 +518,10 @@ function BottleFact({ label, value }: { label: string; value: string }) {
 
 function TagGroup({ dark = false, empty, values }: { dark?: boolean; empty: string; values: string[] }) {
   if (values.length === 0) {
-    return <span className={cn("rounded-full px-3 py-1 text-xs", dark ? "bg-[#111827]/8 text-[#111827]/58" : "status-pill text-ink-muted")}>{empty}</span>;
+    return <span className={cn("rounded-md px-3 py-1 text-xs", dark ? "bg-[#111827]/8 text-[#111827]/58" : "status-pill text-ink-muted")}>{empty}</span>;
   }
   return values.map((value) => (
-    <span key={value} className={cn("rounded-full px-3 py-1 text-xs", dark ? "bg-[#111827]/10 text-[#111827]/72" : "status-pill text-ink-secondary")}>
+    <span key={value} className={cn("rounded-md px-3 py-1 text-xs", dark ? "bg-[#111827]/10 text-[#111827]/72" : "status-pill text-ink-secondary")}>
       {value}
     </span>
   ));
@@ -536,7 +547,7 @@ function OptionGrid({
             key={option}
             type="button"
             className={cn(
-              "pressable min-h-9 rounded-full px-3 py-1.5 text-xs font-medium transition",
+              "pressable min-h-9 rounded-lg px-3 py-1.5 text-xs font-medium transition",
               dark
                 ? active
                   ? "bg-[#111827] text-[#7E7CB5]"
@@ -570,7 +581,7 @@ function InfoLine({ icon, label, value }: { icon: ReactNode; label: string; valu
 
 function GuideLink({ href, title }: { href: string; title: string }) {
   return (
-    <Link href={href} className="group flex items-center justify-between border-b border-white/[0.08] py-3">
+    <Link href={href} className="group flex items-center justify-between border-b border-[color:var(--line-ghost)] py-3">
       <span className="text-sm font-medium text-ink-primary">{title}</span>
       <ArrowRight aria-hidden="true" className="size-4 text-ink-muted transition group-hover:translate-x-0.5 group-hover:text-ink-primary" />
     </Link>

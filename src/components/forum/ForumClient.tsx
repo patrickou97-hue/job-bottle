@@ -116,7 +116,7 @@ export function ForumClient() {
         </div>
       ) : null}
 
-      <section className="collection-surface overflow-hidden">
+      <section className="list-surface">
         {loading ? (
           <div className="empty-state">
             <span className="loading-line">正在读取讨论</span>

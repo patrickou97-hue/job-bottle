@@ -29,10 +29,10 @@ export function AdminJobTable({
   }
 
   return (
-    <div className="liquid-panel overflow-hidden">
+    <div className="table-surface">
       <div className="overflow-x-auto">
         <table className="min-w-[1100px] w-full text-left text-sm">
-          <thead className="bg-white/[0.04] text-ink-muted">
+          <thead className="bg-[#eef0f3] text-ink-muted">
             <tr>
               <th className="px-4 py-3 font-medium">公司</th>
               <th className="px-4 py-3 font-medium">岗位</th>
@@ -47,7 +47,7 @@ export function AdminJobTable({
             {jobs.map((job) => (
               <tr
                 key={job.id}
-                className={`border-b border-white/5 text-ink-secondary transition hover:bg-nebula-blue/5 ${
+                className={`border-b border-[color:var(--line-ghost)] text-ink-secondary transition hover:bg-[color:var(--surface-hover-bg)] ${
                   duplicateJobIds?.has(job.id) ? "bg-amber-100/[0.035]" : ""
                 }`}
               >
@@ -55,7 +55,7 @@ export function AdminJobTable({
                   <span className="inline-flex items-center gap-2">
                     {job.company_name}
                     {duplicateJobIds?.has(job.id) ? (
-                      <span className="rounded-full bg-amber-100/[0.1] px-2 py-0.5 text-[10px] font-medium text-amber-100/85">疑似重复</span>
+                      <span className="rounded-md bg-[#fff4e8] px-2 py-0.5 text-[10px] font-medium text-[#8a4b16]">疑似重复</span>
                     ) : null}
                   </span>
                 </td>
@@ -67,7 +67,7 @@ export function AdminJobTable({
                 <td className="px-4 py-4">{job.locations || "暂无"}</td>
                 <td className="px-4 py-4">
                   <span
-                    className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${
+                    className={`inline-flex whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium ${
                       job.is_active
                         ? "status-pill text-nebula-silver"
                         : "status-pill text-slate-300"
