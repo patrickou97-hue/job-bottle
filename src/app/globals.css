@@ -88,8 +88,8 @@ select {
 
 .night-card {
   border: 0;
-  background: rgba(18, 41, 78, 0.4);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
+  background: rgba(18, 41, 78, 0.2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.028);
   backdrop-filter: none;
 }
 
@@ -513,11 +513,13 @@ select {
   grid-auto-columns: minmax(max-content, 1fr);
   max-width: 100%;
   gap: 2px;
-  border: 1px solid rgba(231,226,255,.1);
+  border: 1px solid rgba(231,226,255,.12);
   border-radius: 11px;
-  padding: 3px;
-  background: rgba(0,0,1,.28);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+  padding: 4px;
+  background: linear-gradient(180deg, rgba(255,255,255,.018), rgba(255,255,255,.006));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.045), 0 8px 30px rgba(0,0,1,.12);
+  backdrop-filter: none;
+  isolation: isolate;
   overflow-x: auto;
 }
 
@@ -538,19 +540,23 @@ select {
 .apple-segmented__indicator {
   position: absolute;
   inset: 0;
-  border: 1px solid rgba(231,226,255,.12);
   border-radius: 8px;
-  background: linear-gradient(180deg, rgba(241,239,255,.16), rgba(126,124,181,.13));
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 4px 16px rgba(0,0,1,.2);
+  background:
+    radial-gradient(120% 85% at 18% 0%, rgba(255,255,255,.22), transparent 58%),
+    linear-gradient(145deg, rgba(231,226,255,.13), rgba(126,124,181,.095));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.2),
+    inset 0 -1px 0 rgba(255,255,255,.035),
+    0 5px 18px rgba(0,0,1,.2);
+  backdrop-filter: none;
 }
 
 .apple-dock {
-  border: 1px solid var(--apple-glass-border);
-  border-radius: 14px;
-  padding: 6px;
-  background: var(--apple-glass-bg);
-  box-shadow: inset 0 1px 0 var(--apple-glass-highlight), 0 20px 70px rgba(0,0,1,.48);
-  backdrop-filter: blur(30px) saturate(1.3);
+  border: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .apple-sheet {
@@ -569,10 +575,10 @@ select {
 }
 
 .apple-panel {
-  border: 1px solid rgba(231,226,255,.095);
+  border: 1px solid rgba(231,226,255,.06);
   border-radius: var(--apple-radius-panel);
-  background: rgba(18,41,78,.34);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.045);
+  background: linear-gradient(145deg, rgba(255,255,255,.016), transparent 38%), rgba(18,41,78,.13);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.028);
 }
 
 .chip-button:hover {
@@ -601,17 +607,51 @@ select {
 }
 
 .filter-rail {
-  border-top: 1px solid rgba(232, 238, 255, 0.13);
-  border-bottom: 1px solid rgba(232, 238, 255, 0.07);
-  background: transparent;
+  border: 1px solid rgba(231,226,255,.075);
+  border-radius: var(--apple-radius-panel);
+  background: linear-gradient(145deg, rgba(255,255,255,.018), transparent 42%), rgba(5,13,29,.2);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
 }
 
 .collection-surface {
-  border: 1px solid rgba(231,226,255,.09);
+  border: 1px solid rgba(231,226,255,.06);
   border-radius: var(--apple-radius-panel);
-  background: rgba(18, 41, 78, 0.28);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 18px 54px rgba(0,0,1,.16);
+  background: rgba(18, 41, 78, 0.13);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
   overflow: hidden;
+}
+
+.resume-list-item {
+  border: 1px solid transparent;
+  background: transparent;
+}
+
+.resume-list-item:hover {
+  background: rgba(255,255,255,.022);
+}
+
+.resume-list-item[data-selected="true"] {
+  border-color: rgba(231,226,255,.065);
+  background: linear-gradient(145deg, rgba(255,255,255,.055), rgba(126,124,181,.035));
+  box-shadow: inset 2px 0 0 rgba(166,162,211,.52), inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+.nebula-job-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(166, 162, 211, 0.34) transparent;
+}
+
+.nebula-job-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.nebula-job-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.nebula-job-scroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(166, 162, 211, 0.34);
 }
 
 .progress-summary {
@@ -759,9 +799,7 @@ select {
 
 @media (min-width: 1280px) {
   .filter-rail {
-    border-top: 0;
-    border-bottom: 0;
-    border-right: 1px solid rgba(232, 238, 255, 0.1);
+    border: 1px solid rgba(231,226,255,.075);
   }
 }
 

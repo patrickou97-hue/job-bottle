@@ -397,8 +397,8 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/galaxy/NebulaGateway.tsx",
-    mustInclude: ["NebulaDistributionMap", "NebulaCompanyField", "岗位地图维度", "地区", "行业", "职能", "我的投递", "清除选区", "onSelectionChange"],
-    mustNotInclude: ["Math.random", "返回星云入口", "mode === \"gateway\""],
+    mustInclude: ["NebulaDistributionMap", "NebulaCompanyField", "岗位地图维度", "地区", "行业", "职能", "我的投递", "清除选区", "onSelectionChange", "data-nebula-job-list", "overflow-y-auto", "activeJobs.map"],
+    mustNotInclude: ["Math.random", "返回星云入口", "mode === \"gateway\"", "activeJobs.slice"],
     label: "岗位地图直接展示可切换的密度分布并可下钻到公司星体",
   },
   {
@@ -445,7 +445,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/globals.css",
-    mustInclude: [".collection-surface", "border-right: 1px solid", "font-size: clamp(2rem, 3.8vw, 3rem)", ".space-bg--work"],
+    mustInclude: [".collection-surface", ".filter-rail", "border-radius: var(--apple-radius-panel)", ".apple-segmented", ".nebula-job-scroll", "font-size: clamp(2rem, 3.8vw, 3rem)", ".space-bg--work"],
     mustNotInclude: [],
     label: "数据页面使用开放集合与收紧的页面层级，避免统一卡片墙",
   },

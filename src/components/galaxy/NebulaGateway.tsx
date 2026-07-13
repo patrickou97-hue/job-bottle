@@ -128,8 +128,14 @@ export function NebulaGateway({
               <p className="-mt-4 text-lg font-semibold text-ink-primary">{activeNebula.name}</p>
               <p className="mt-1 text-xs text-ink-muted">{activeNebula.count} 个岗位</p>
             </div>
-            <div className={`liquid-panel mt-5 grid overflow-hidden md:grid-cols-[minmax(0,1fr)_310px] ${showCompanyField ? "max-h-[30rem]" : "max-h-[16rem]"}`}>
-              <div className="overflow-y-auto">
+            <div className={`liquid-panel mt-5 grid h-[min(24rem,62vh)] min-h-0 overflow-hidden md:grid-cols-[minmax(0,1fr)_310px] ${showCompanyField ? "h-[min(30rem,68vh)]" : ""}`}>
+              <div
+                data-nebula-job-list
+                role="region"
+                aria-label={`${activeNebula.name}岗位列表`}
+                tabIndex={0}
+                className="nebula-job-scroll min-h-0 touch-pan-y overflow-y-auto overscroll-contain [scrollbar-gutter:stable] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-white/30"
+              >
                 <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/[0.08] bg-[rgba(13,27,52,.92)] px-4 py-3 backdrop-blur-xl">
                   <span className="text-sm font-semibold text-ink-primary">{activeNebula.name}岗位</span>
                   <div className="flex items-center gap-3">
@@ -154,7 +160,7 @@ export function NebulaGateway({
                     onHover={onHoverJob}
                     onApply={onApply}
                   />
-                ) : activeJobs.slice(0, 12).map((job) => (
+                ) : activeJobs.map((job) => (
                   <button
                     key={job.id}
                     type="button"
@@ -171,7 +177,10 @@ export function NebulaGateway({
                   </button>
                 ))}
               </div>
-              <div className="hidden border-l border-white/[0.08] md:block">
+              <div
+                data-nebula-job-detail
+                className="nebula-job-scroll hidden min-h-0 touch-pan-y overflow-y-auto overscroll-contain border-l border-white/[0.08] [scrollbar-gutter:stable] md:block"
+              >
                 <NebulaDetailWindow
                   job={detailJob}
                   application={detailJob ? applicationByJobId.get(detailJob.id) ?? null : null}
@@ -195,10 +204,10 @@ export function NebulaGateway({
       </AnimatePresence>
 
       <div className="pointer-events-none absolute inset-x-0 bottom-5 z-30 flex justify-center px-3">
-        <div className="apple-dock pointer-events-auto max-w-full overflow-x-auto">
+        <div className="pointer-events-auto max-w-full overflow-x-auto">
           <SegmentedControl
             ariaLabel="岗位地图维度"
-            className="border-0 bg-transparent shadow-none"
+            className="liquid-slider"
             options={MAP_MODES}
             value={mode}
             onChange={enterMode}

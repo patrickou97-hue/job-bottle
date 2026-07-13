@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { cn } from "@/lib/utils";
 import type { JobFilters } from "@/lib/types";
 
@@ -64,7 +65,7 @@ export function JobFilterBar({
   }
 
   return (
-    <aside className="filter-rail relative p-5">
+    <aside className="filter-rail relative self-start p-5 xl:sticky xl:top-24">
       <div className="mb-5">
         <h2 className="section-title text-base">筛选</h2>
       </div>
@@ -203,32 +204,23 @@ function LocationFilter({
   const cityOptions = groups.find((group) => group.province === activeCityProvince)?.cities ?? [];
   const selectedProvince = value.startsWith("province:") ? value.slice("province:".length) : "";
   const selectedCity = value.startsWith("city:") ? value.slice("city:".length) : "";
-  const levels: { id: LocationFilterLevel; label: string }[] = [
-    { id: "all", label: "不限" },
-    { id: "nationwide", label: "全国" },
-    { id: "province", label: "省级" },
-    { id: "city", label: "市级" },
+  const levels: { value: LocationFilterLevel; label: string }[] = [
+    { value: "all", label: "不限" },
+    { value: "nationwide", label: "全国" },
+    { value: "province", label: "省级" },
+    { value: "city", label: "市级" },
   ];
 
   return (
     <div>
       <span className="mb-2 block text-sm text-ink-secondary">工作地点</span>
-      <div className="grid grid-cols-4 gap-px overflow-hidden border border-white/[0.1] bg-white/[0.08]" role="group" aria-label="地点层级">
-        {levels.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            aria-pressed={level === item.id}
-            className={cn(
-              "min-h-9 bg-[#08152c] px-2 text-xs transition",
-              level === item.id ? "bg-[#536D9E]/45 font-semibold text-ink-primary" : "text-ink-muted hover:bg-white/[0.05] hover:text-ink-secondary",
-            )}
-            onClick={() => onLevelChange(item.id)}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
+      <SegmentedControl
+        ariaLabel="地点层级"
+        className="liquid-slider w-full"
+        options={levels}
+        value={level}
+        onChange={onLevelChange}
+      />
 
       {level === "nationwide" ? <p className="mt-2 text-xs leading-5 text-ink-muted">匹配标注为全国或全球的岗位</p> : null}
 

@@ -26,7 +26,7 @@ export function ResumeTemplatePicker({
 }) {
   const reducedMotion = useReducedMotion();
   return (
-    <section className="border-y border-white/[0.1] py-5" aria-labelledby="resume-template-heading">
+    <section className="py-5" aria-labelledby="resume-template-heading">
       <h2 id="resume-template-heading" className="mb-4 text-lg font-semibold text-ink-primary">简历版式</h2>
 
       <div className="-mx-1 flex snap-x gap-3 overflow-x-auto px-1 pb-1">
@@ -40,8 +40,8 @@ export function ResumeTemplatePicker({
               aria-pressed={selected}
               className={`group min-w-[166px] snap-start rounded-lg p-2 text-left transition duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--star-apricot)] ${
                 selected
-                  ? "bg-white/[0.1] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]"
-                  : "hover:bg-white/[0.055] active:scale-[0.98]"
+                  ? "bg-white/[0.045] shadow-[inset_0_1px_0_rgba(255,255,255,0.055)]"
+                  : "hover:bg-white/[0.025] active:scale-[0.98]"
               }`}
               onClick={() => onChange(template.id)}
               whileTap={reducedMotion ? undefined : { scale: 0.98 }}
