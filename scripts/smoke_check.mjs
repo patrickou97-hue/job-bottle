@@ -638,9 +638,15 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/lib/forum.ts",
-    mustInclude: ["fetchForumAuthors", "author_role", "Array.from(displayName).slice(0, 3)", "***"],
+    mustInclude: ["fetchForumAuthors", "author_role", "/api/forum/authors", "***"],
     mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY"],
     label: "社区普通作者名称保留前三位并追加三个星号而管理员名称保持可见",
+  },
+  {
+    file: "src/app/api/forum/authors/route.ts",
+    mustInclude: ["createAdminClient", "MAX_AUTHORS_PER_REQUEST", "Array.from(displayName).slice(0, 3)", "profile.role === \"admin\""],
+    mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY"],
+    label: "社区作者接口只从服务端返回脱敏昵称而不开放用户资料表",
   },
   {
     file: "src/components/auth/LoginForm.tsx",

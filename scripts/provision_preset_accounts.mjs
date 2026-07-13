@@ -45,7 +45,12 @@ let created = 0;
 let updated = 0;
 for (const account of accounts) {
   const existing = existingByEmail.get(account.email);
-  const metadata = { display_name: account.username, preset_account: true, preset_username: account.username };
+  const metadata = {
+    display_name: account.username,
+    username: account.username,
+    preset_account: true,
+    preset_username: account.username,
+  };
   const result = existing
     ? await admin.auth.admin.updateUserById(existing.id, {
         password: account.password,

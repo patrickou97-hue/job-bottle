@@ -3,24 +3,24 @@ import type { Database, ForumPost, ForumComment, ForumPostWithComments, ForumPos
 
 /* ── Helper: batch-fetch display names for a set of user IDs ── */
 async function fetchForumAuthors(
-  supabase: SupabaseClient<Database>,
+  _supabase: SupabaseClient<Database>,
   userIds: string[],
 ): Promise<Map<string, { name: string; role: ProfileRole }>> {
   const map = new Map<string, { name: string; role: ProfileRole }>();
   if (userIds.length === 0) return map;
   const unique = [...new Set(userIds)];
-  const { data } = await supabase
-    .from("profiles")
-    .select("id, display_name, role")
-    .in("id", unique);
-  if (data) {
-    for (const row of data as { id: string; display_name: string | null; role: ProfileRole }[]) {
-      const displayName = row.display_name?.trim() || "匿名用户";
-      map.set(row.id, {
-        name: row.role === "admin" ? displayName : `${Array.from(displayName).slice(0, 3).join("")}***`,
-        role: row.role,
-      });
-    }
+  const response = await fetch("/api/forum/authors", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userIds: unique }),
+  }).catch(() => null);
+  if (!response?.ok) return map;
+
+  const result = (await response.json().catch(() => null)) as {
+    authors?: Record<string, { name: string; role: ProfileRole }>;
+  } | null;
+  for (const [id, author] of Object.entries(result?.authors ?? {})) {
+    map.set(id, author);
   }
   return map;
 }
