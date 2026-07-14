@@ -1,5 +1,8 @@
 import { COMPANY_SHORT_LABELS } from "@/lib/company-labels";
 import { formatShanghaiDateTime } from "@/lib/dates";
+import { sanitizeApplicationUrl } from "@/lib/application-url";
+
+export { sanitizeApplicationUrl } from "@/lib/application-url";
 
 export function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
@@ -163,6 +166,6 @@ export function normalizeTagsInput(value: string) {
 
 export function safeOpenUrl(url: string) {
   if (!isValidHttpUrl(url)) return false;
-  const opened = window.open(url, "_blank", "noopener,noreferrer");
+  const opened = window.open(sanitizeApplicationUrl(url), "_blank", "noopener,noreferrer");
   return Boolean(opened);
 }

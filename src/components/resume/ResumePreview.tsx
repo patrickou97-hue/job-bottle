@@ -106,13 +106,19 @@ function ResumePage({ layout, page }: { layout: ResumePreviewLayout; page: numbe
     >
       <rect width={layout.pageWidth} height={layout.pageHeight} fill="#ffffff" />
       {operations.map((operation, index) => (
-        <ResumeOperation key={`${page}-${index}`} operation={operation} />
+        <ResumeOperation key={`${page}-${index}`} operation={operation} fontFamily={layout.fontFamily} />
       ))}
     </svg>
   );
 }
 
-function ResumeOperation({ operation }: { operation: ResumePreviewOperation }) {
+function ResumeOperation({
+  fontFamily,
+  operation,
+}: {
+  fontFamily: string;
+  operation: ResumePreviewOperation;
+}) {
   if (operation.type === "line") {
     return (
       <line
@@ -144,7 +150,7 @@ function ResumeOperation({ operation }: { operation: ResumePreviewOperation }) {
       x={operation.x}
       y={operation.y}
       fill={operation.color}
-      fontFamily="Noto Serif SC Local, Songti SC, STSong, SimSun, serif"
+      fontFamily={`${fontFamily}, Songti SC, STSong, SimSun, serif`}
       fontSize={operation.size}
       fontWeight={operation.weight === "bold" ? 700 : 400}
       lengthAdjust="spacingAndGlyphs"

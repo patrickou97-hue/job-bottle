@@ -327,15 +327,39 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/resume/resumePdf.ts",
-    mustInclude: ["jsPDF", "NotoSerifSC-Regular.ttf", "NotoSerifSC-Bold.ttf", "NEXT_PUBLIC_RESUME_FONT_REGULAR_URL", "NEXT_PUBLIC_RESUME_FONT_BOLD_URL", "FONT_REGULAR_SOURCES", "FONT_BOLD_SOURCES", "getFontSources", "LOCAL_FONT_REGULAR", "LOCAL_FONT_BOLD", "normalizeFontError", "FONT_TIMEOUT_MS = 15_000", "FONT_MAX_ATTEMPTS = 3", "resetResumePdfCaches", "previewMeasurementPdfCache = null", "fontCache = null", "cache: \"no-store\"", "format: \"a4\"", "PAGE_WIDTH = 595.28", "PAGE_HEIGHT = 841.89", "exportResumeToPdf", "createResumePreviewLayout", "ResumePreviewOperation", "previewMeasurementPdfCache", "width: state.pdf.getTextWidth(text)", "addPage(\"a4\", \"portrait\")", "addFileToVFS", "getTemplateOptions", "getResumeTargetLine", "consulting", "technical", "academic", "english_classic", "english_modern", "isEnglishResumeTemplate", "EDUCATION", "Boolean(basics.photoDataUrl) && !isEnglish"],
-    mustNotInclude: ["html2canvas", "window.print", "addPage(\"letter\""],
-    label: "简历 PDF 与网页预览共用矢量 A4 排版坐标和分页规则",
+    mustInclude: ["jsPDF", "NotoSerifSC-Regular-common-v1.ttf", "NotoSerifSC-Bold-common-v1.ttf", "NotoSerifSC-Regular-full-v1.ttf", "NotoSerifSC-Bold-full-v1.ttf", "NEXT_PUBLIC_RESUME_FONT_FULL_REGULAR_URL", "NEXT_PUBLIC_RESUME_FONT_FULL_BOLD_URL", "same-origin-common", "cos-full", "same-origin-full", "FONT_TIMEOUT_MS = 10_000", "resetResumePdfCaches", "selectedFontCache", "fontSourceCache", "previewMeasurementPdfCache", "cache: \"force-cache\"", "format: \"a4\"", "PAGE_WIDTH = 595.28", "PAGE_HEIGHT = 841.89", "exportResumeToPdf", "createResumePreviewLayout", "ResumePreviewOperation", "width: state.pdf.getTextWidth(text)", "addPage(\"a4\", \"portrait\")", "addFileToVFS", "getTemplateOptions", "getResumeTargetLine", "consulting", "technical", "academic", "english_classic", "english_modern", "isEnglishResumeTemplate", "EDUCATION", "Boolean(basics.photoDataUrl) && !isEnglish"],
+    mustNotInclude: ["NEXT_PUBLIC_RESUME_FONT_REGULAR_URL", "NEXT_PUBLIC_RESUME_FONT_BOLD_URL", "html2canvas", "window.print", "addPage(\"letter\""],
+    label: "简历预览与 PDF 共用三级字体选择、矢量 A4 坐标和分页规则",
+  },
+  {
+    file: "src/lib/resume-font-profile.ts",
+    mustInclude: ["collectResumeText", "selectResumeFontProfile", "selectResumeDocumentFontProfile", "codePointAt", "RESUME_FONT_COMMON_RANGES", "customSections"],
+    mustNotInclude: ["fetch("],
+    label: "简历字体 profile 由完整文本和生成的 common 覆盖数据纯函数决定",
+  },
+  {
+    file: "next.config.ts",
+    mustInclude: ["/fonts/resume/:path*", "public, max-age=31536000, immutable"],
+    mustNotInclude: [],
+    label: "版本化简历字体使用仅限字体路径的长期缓存头",
   },
   {
     file: "src/lib/resume-sync.ts",
-    mustInclude: ["fetchMyResumes", "upsertMyResume", "deleteMyResume", "content_json", "__job_bottle_template_id", "minimal", "executive", "consulting", "technical", "academic", "english_classic", "english_modern", "isMissingResumeTableError", "isResumeTemplateConstraintError"],
+    mustInclude: ["fetchMyResumes", "upsertMyResume", "deleteMyResume", "withCloudRetry", "withCloudTimeout", "CLOUD_RETRY_DELAYS_MS", "CLOUD_OPERATION_TIMEOUT_MS = 8_000", "content_json", "__job_bottle_template_id", "minimal", "executive", "consulting", "technical", "academic", "english_classic", "english_modern", "isMissingResumeTableError", "isResumeTemplateConstraintError"],
     mustNotInclude: ["service_role"],
-    label: "简历同步层映射 resumes 表并兼容未运行迁移的本地回退",
+    label: "简历同步层对瞬时失败重试并兼容未运行迁移的本地回退",
+  },
+  {
+    file: "src/lib/application-url.ts",
+    mustInclude: ["sanitizeApplicationUrl", "click_id", "clickid", "cid", "key.toLowerCase()"],
+    mustNotInclude: [],
+    label: "投递链接清洗器大小写不敏感地移除 CID 和 click_id",
+  },
+  {
+    file: "src/lib/utils.ts",
+    mustInclude: ["sanitizeApplicationUrl", "window.open(sanitizeApplicationUrl"],
+    mustNotInclude: [],
+    label: "所有统一投递入口在打开官网前使用链接清洗器",
   },
   {
     file: "supabase/migrations/20260710120000_profile_resume_cloud_repair.sql",
@@ -1258,6 +1282,73 @@ async function checkLocationProbe() {
   console.log("✓ 地点层级探针通过：全国、省级、市级及多地点匹配符合预期");
 }
 
+async function checkResumeFontProbe() {
+  const typescript = await import("typescript");
+  const compilerOptions = {
+    module: typescript.ModuleKind.ES2022,
+    target: typescript.ScriptTarget.ES2022,
+  };
+  const coverageSource = readFileSync(new URL("src/generated/resumeFontCommonCoverage.ts", ROOT), "utf8");
+  const coverageModule = typescript.transpileModule(coverageSource, { compilerOptions }).outputText;
+  const coverageUrl = `data:text/javascript;base64,${Buffer.from(coverageModule).toString("base64")}`;
+  const resumeStub = "export const isEnglishResumeTemplate = (id) => id === 'english_classic' || id === 'english_modern';";
+  const resumeStubUrl = `data:text/javascript;base64,${Buffer.from(resumeStub).toString("base64")}`;
+  const profileSource = readFileSync(new URL("src/lib/resume-font-profile.ts", ROOT), "utf8")
+    .replace("@/generated/resumeFontCommonCoverage", coverageUrl)
+    .replace("@/lib/resume", resumeStubUrl);
+  const profileModule = typescript.transpileModule(profileSource, { compilerOptions }).outputText;
+  const profileUrl = `data:text/javascript;base64,${Buffer.from(profileModule).toString("base64")}`;
+  const profile = await import(profileUrl);
+
+  const sampleResume = {
+    templateId: "compact",
+    targetRole: "产品经理实习生",
+    jobTarget: "互联网产品方向",
+    content: {
+      basics: { name: "王小星", englishName: "Stella Wang", phone: "138 0000 0000", email: "stella@example.com", city: "上海", linkedin: "", github: "", website: "", targetRole: "产品经理实习生" },
+      education: [], work: [], projects: [], skills: [], campus: [], awards: [], certifications: [], languages: [], customSections: [],
+    },
+  };
+
+  if (profile.selectResumeDocumentFontProfile(sampleResume) !== "common") throw new Error("简历字体探针失败：默认简历未选择 common");
+  if (profile.selectResumeFontProfile("ASCII 123，。！？") !== "common") throw new Error("简历字体探针失败：ASCII 或常用标点未选择 common");
+  if (profile.selectResumeFontProfile("\n\t\r") !== "common") throw new Error("简历字体探针失败：控制空白触发了 full");
+  if (profile.selectResumeFontProfile("龘") !== "full") throw new Error("简历字体探针失败：子集外汉字未选择 full");
+  if (profile.selectResumeFontProfile("😀") !== "full") throw new Error("简历字体探针失败：代理对未按 code point 选择 full");
+
+  const fontFiles = [
+    "NotoSerifSC-Regular-common-v1.ttf",
+    "NotoSerifSC-Bold-common-v1.ttf",
+    "NotoSerifSC-Regular-full-v1.ttf",
+    "NotoSerifSC-Bold-full-v1.ttf",
+  ].map((name) => new URL(`public/fonts/resume/${name}`, ROOT));
+  for (const fontFile of fontFiles) {
+    if (!existsSync(fontFile) || statSync(fontFile).size === 0) throw new Error(`简历字体探针失败：字体缺失 ${fontFile.pathname}`);
+  }
+  if (statSync(fontFiles[0]).size >= statSync(fontFiles[2]).size || statSync(fontFiles[1]).size >= statSync(fontFiles[3]).size) {
+    throw new Error("简历字体探针失败：common 字体未小于 full 字体");
+  }
+
+  console.log("✓ 简历字体探针通过：common/full 选择、Unicode 遍历和四个版本化字体均正常");
+}
+
+async function checkApplicationUrlProbe() {
+  const typescript = await import("typescript");
+  const source = readFileSync(new URL("src/lib/application-url.ts", ROOT), "utf8");
+  const transpiled = typescript.transpileModule(source, {
+    compilerOptions: {
+      module: typescript.ModuleKind.ES2022,
+      target: typescript.ScriptTarget.ES2022,
+    },
+  }).outputText;
+  const urlTools = await import(`data:text/javascript;base64,${Buffer.from(transpiled).toString("base64")}`);
+  const cleaned = urlTools.sanitizeApplicationUrl("https://jobs.example.com/apply?CLICK_ID=secret&job=42&cid=legacy#form");
+  if (cleaned !== "https://jobs.example.com/apply?job=42#form") {
+    throw new Error(`投递链接探针失败：清洗结果为 ${cleaned}`);
+  }
+  console.log("✓ 投递链接探针通过：CID/click_id 已移除且其他参数与锚点保留");
+}
+
 async function checkPages(baseUrl) {
   for (const [path, requiredTexts] of Object.entries(REQUIRED_TEXT)) {
     const response = await fetchWithRetry(`${baseUrl}${path}`);
@@ -1303,6 +1394,8 @@ async function main() {
   checkBottleGeometryProbe();
   await checkCategoryProbe();
   await checkLocationProbe();
+  await checkResumeFontProbe();
+  await checkApplicationUrlProbe();
 
   const reusableServer = await findReusableServer();
   if (reusableServer) {

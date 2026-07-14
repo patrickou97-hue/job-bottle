@@ -14,7 +14,7 @@ import { deleteApplication, fetchApplicationHistory, updateApplication } from "@
 import { getCandidateStage } from "@/lib/career-workspace";
 import { fetchMyResumes, isMissingResumeTableError } from "@/lib/resume-sync";
 import { createClient } from "@/lib/supabase/client";
-import { formatDateTime, isValidHttpUrl } from "@/lib/utils";
+import { formatDateTime, isValidHttpUrl, sanitizeApplicationUrl } from "@/lib/utils";
 import { track } from "@/lib/track";
 import { Button } from "@/components/ui/Button";
 import { Drawer } from "@/components/ui/Drawer";
@@ -481,7 +481,7 @@ export function ProgressDrawer({
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between gap-3">
             <a
-              href={isValidHttpUrl(job.apply_url) ? job.apply_url : undefined}
+              href={isValidHttpUrl(job.apply_url) ? sanitizeApplicationUrl(job.apply_url) : undefined}
               target="_blank"
               rel="noreferrer"
               className="text-action text-sm text-nebula-silver aria-disabled:pointer-events-none aria-disabled:opacity-40"

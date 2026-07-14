@@ -9,6 +9,47 @@ import type { Database, ResumeRow } from "@/lib/types";
 
 type ResumeClient = SupabaseClient<Database>;
 const TEMPLATE_META_KEY = "__job_bottle_template_id";
+const CLOUD_RETRY_DELAYS_MS = [450, 1_200] as const;
+const CLOUD_OPERATION_TIMEOUT_MS = 8_000;
+
+function isNonRetryableResumeError(error: unknown) {
+  return isMissingResumeTableError(error) || isResumeTemplateConstraintError(error);
+}
+
+async function withCloudRetry<T>(operation: () => Promise<T>) {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= CLOUD_RETRY_DELAYS_MS.length; attempt += 1) {
+    try {
+      return await withCloudTimeout(operation());
+    } catch (error) {
+      lastError = error;
+      if (isNonRetryableResumeError(error) || attempt === CLOUD_RETRY_DELAYS_MS.length) throw error;
+      await new Promise((resolve) => setTimeout(resolve, CLOUD_RETRY_DELAYS_MS[attempt]));
+    }
+  }
+
+  throw lastError;
+}
+
+function withCloudTimeout<T>(operation: Promise<T>) {
+  return new Promise<T>((resolve, reject) => {
+    const timeout = setTimeout(
+      () => reject(new Error("简历云端请求超时，请稍后重试。")),
+      CLOUD_OPERATION_TIMEOUT_MS,
+    );
+    operation.then(
+      (value) => {
+        clearTimeout(timeout);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timeout);
+        reject(error);
+      },
+    );
+  });
+}
 
 function normalizeContent(value: unknown): ResumeContent {
   const fallback = createEmptyResume().content;
@@ -87,13 +128,15 @@ export function resumeRowToDocument(row: ResumeRow): ResumeDocument {
 }
 
 export async function fetchMyResumes(supabase: ResumeClient) {
-  const { data, error } = await supabase
-    .from("resumes")
-    .select("*")
-    .order("updated_at", { ascending: false });
+  return withCloudRetry(async () => {
+    const { data, error } = await supabase
+      .from("resumes")
+      .select("*")
+      .order("updated_at", { ascending: false });
 
-  if (error) throw error;
-  return (data ?? []).map(resumeRowToDocument);
+    if (error) throw error;
+    return (data ?? []).map(resumeRowToDocument);
+  });
 }
 
 export async function upsertMyResume(
@@ -115,26 +158,22 @@ export async function upsertMyResume(
     updated_at: resume.updatedAt || now,
   };
 
-  let { data, error } = await supabase
-    .from("resumes")
-    .upsert(payload, { onConflict: "id" })
-    .select("*")
-    .single();
-
-  // Older hosted projects may still have a narrower template check constraint.
-  // Keep the selected template inside content_json and retry with the stable
-  // compact value so switching layouts never prevents a cloud save.
-  if (error && isResumeTemplateConstraintError(error) && resume.templateId !== "compact") {
-    ({ data, error } = await supabase
+  await withCloudRetry(async () => {
+    let { error } = await supabase
       .from("resumes")
-      .upsert({ ...payload, template_id: "compact" }, { onConflict: "id" })
-      .select("*")
-      .single());
-  }
+      .upsert(payload, { onConflict: "id" });
 
-  if (error) throw error;
-  if (!data) throw new Error("简历云端保存未返回结果，请稍后重试。");
-  return resumeRowToDocument(data);
+    // Older hosted projects may still have a narrower template check constraint.
+    // Keep the selected template inside content_json and retry with the stable
+    // compact value so switching layouts never prevents a cloud save.
+    if (error && isResumeTemplateConstraintError(error) && resume.templateId !== "compact") {
+      ({ error } = await supabase
+        .from("resumes")
+        .upsert({ ...payload, template_id: "compact" }, { onConflict: "id" }));
+    }
+
+    if (error) throw error;
+  });
 }
 
 export async function deleteMyResume(supabase: ResumeClient, id: string) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Copy, FileText, Plus, Trash2 } from "lucide-react";
 import { ResumeEditor, type EditorSection } from "@/components/resume/ResumeEditor";
 import { ResumePdfExportButton } from "@/components/resume/ResumePdfExportButton";
@@ -47,7 +47,69 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
   const [saveState, setSaveState] = useState("已保存到本地");
   const [storageMode, setStorageMode] = useState<StorageMode>("local");
   const [userId, setUserId] = useState<string | null>(null);
-  const cloudFingerprintRef = useRef("");
+  const cloudFingerprintsRef = useRef(new Map<string, string>());
+  const pendingCloudSavesRef = useRef(new Map<string, { fingerprint: string; resume: ResumeDocument }>());
+  const cloudSaveWorkerRef = useRef<Promise<void> | null>(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const runCloudSaveWorker = useCallback((activeUserId: string) => {
+    function startWorker() {
+      if (cloudSaveWorkerRef.current) return;
+      let completedWithoutError = true;
+
+      cloudSaveWorkerRef.current = (async () => {
+        const supabase = createClient();
+        while (pendingCloudSavesRef.current.size > 0) {
+          const next = pendingCloudSavesRef.current.entries().next().value as
+            | [string, { fingerprint: string; resume: ResumeDocument }]
+            | undefined;
+          if (!next) break;
+          const [resumeId, queued] = next;
+
+          try {
+            await upsertMyResume(supabase, activeUserId, queued.resume);
+            cloudFingerprintsRef.current.set(resumeId, queued.fingerprint);
+            if (pendingCloudSavesRef.current.get(resumeId)?.fingerprint === queued.fingerprint) {
+              pendingCloudSavesRef.current.delete(resumeId);
+            }
+          } catch (error) {
+            completedWithoutError = false;
+            if (pendingCloudSavesRef.current.get(resumeId)?.fingerprint === queued.fingerprint) {
+              pendingCloudSavesRef.current.delete(resumeId);
+            }
+            if (!mountedRef.current) break;
+            if (isResumeTemplateConstraintError(error)) {
+              setStorageMode("local");
+              setSaveState("云端模板库待升级，已保存到本地");
+              pendingCloudSavesRef.current.clear();
+              break;
+            }
+            if (isMissingResumeTableError(error)) {
+              setStorageMode("local");
+              setSaveState("云端简历库未升级，已保存到本地");
+              pendingCloudSavesRef.current.clear();
+              break;
+            }
+            setSaveState("云端同步暂时失败，本地副本已保留");
+          }
+        }
+      })().finally(() => {
+        cloudSaveWorkerRef.current = null;
+        if (!mountedRef.current) return;
+        if (pendingCloudSavesRef.current.size > 0) startWorker();
+        else if (completedWithoutError) setSaveState("已同步到账号");
+      });
+    }
+
+    startWorker();
+  }, []);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -73,36 +135,26 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
       return () => window.clearTimeout(timer);
     }
 
-    const fingerprint = JSON.stringify(resumes);
-    if (fingerprint === cloudFingerprintRef.current) {
+    const dirtyResumes = resumes.filter(
+      (resume) => cloudFingerprintsRef.current.get(resume.id) !== JSON.stringify(resume),
+    );
+    if (dirtyResumes.length === 0) {
       const timer = window.setTimeout(() => setSaveState("已同步到账号"), 120);
       return () => window.clearTimeout(timer);
     }
 
     setSaveState("正在同步");
-    const timer = window.setTimeout(async () => {
-      try {
-        const supabase = createClient();
-        await Promise.all(resumes.map((resume) => upsertMyResume(supabase, userId, resume)));
-        cloudFingerprintRef.current = fingerprint;
-        setSaveState("已同步到账号");
-      } catch (error) {
-        if (isResumeTemplateConstraintError(error)) {
-          setStorageMode("local");
-          setSaveState("云端模板库待升级，已保存到本地");
-          return;
-        }
-        if (isMissingResumeTableError(error)) {
-          setStorageMode("local");
-          setSaveState("云端简历库未升级，已保存到本地");
-          return;
-        }
-        setSaveState("云端同步失败，已保存到本地");
+    const timer = window.setTimeout(() => {
+      for (const resume of dirtyResumes) {
+        const fingerprint = JSON.stringify(resume);
+        if (pendingCloudSavesRef.current.get(resume.id)?.fingerprint === fingerprint) continue;
+        pendingCloudSavesRef.current.set(resume.id, { fingerprint, resume });
       }
+      runCloudSaveWorker(userId);
     }, 700);
 
     return () => window.clearTimeout(timer);
-  }, [loaded, resumes, storageMode, userId]);
+  }, [loaded, resumes, runCloudSaveWorker, storageMode, userId]);
 
   useEffect(() => {
     if (!loaded || !isSupabaseConfigured()) return;
@@ -113,53 +165,51 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
       if (!mounted || !user) return;
       setUserId(user.id);
 
-      const [rows, cloudResumesResult, applicationResult] = await Promise.allSettled([
-        fetchActiveJobs(supabase),
-        fetchMyResumes(supabase),
-        fetchMyApplications(supabase, user.id),
+      void Promise.allSettled([
+        fetchActiveJobs(supabase).then((rows) => mounted && setJobs(rows)),
+        fetchMyApplications(supabase, user.id).then((rows) => mounted && setApplications(rows)),
       ]);
 
-      if (!mounted) return;
+      try {
+        const cloudResumes = await fetchMyResumes(supabase);
+        if (!mounted) return;
+        const localResumes = loadLocalResumes();
+        const mergedResumes = mergeResumeCollections(localResumes, cloudResumes);
+        cloudFingerprintsRef.current = new Map(
+          cloudResumes.map((resume) => [resume.id, JSON.stringify(resume)]),
+        );
+        setStorageMode("cloud");
 
-      if (rows.status === "fulfilled") setJobs(rows.value);
-      if (applicationResult.status === "fulfilled") setApplications(applicationResult.value);
+        if (mergedResumes.length > 0) {
+          setResumes(mergedResumes);
+          setSelectedId((current) =>
+            current && mergedResumes.some((resume) => resume.id === current)
+              ? current
+              : mergedResumes[0]?.id ?? null,
+          );
+          setSaveState(
+            mergedResumes.every(
+              (resume) => cloudFingerprintsRef.current.get(resume.id) === JSON.stringify(resume),
+            )
+              ? "已同步到账号"
+              : "正在合并本地与账号简历",
+          );
+          return;
+        }
 
-      if (cloudResumesResult.status === "rejected") {
-        if (isMissingResumeTableError(cloudResumesResult.reason)) {
+        const initial = [createSampleResume()];
+        setResumes(initial);
+        setSelectedId(initial[0]?.id ?? null);
+        setSaveState("正在同步");
+      } catch (error) {
+        if (!mounted) return;
+        if (isMissingResumeTableError(error)) {
           setStorageMode("local");
           setSaveState("云端简历库未升级，已保存到本地");
           return;
         }
-        setStorageMode("local");
-        setSaveState("云端同步失败，已保存到本地");
-        return;
+        setSaveState("云端读取暂时失败，简历已保存在本地");
       }
-
-      const cloudResumes = cloudResumesResult.value;
-      const localResumes = loadLocalResumes();
-      const mergedResumes = mergeResumeCollections(localResumes, cloudResumes);
-      setStorageMode("cloud");
-
-      if (mergedResumes.length > 0) {
-        cloudFingerprintRef.current = JSON.stringify(cloudResumes);
-        setResumes(mergedResumes);
-        setSelectedId((current) =>
-          current && mergedResumes.some((resume) => resume.id === current)
-            ? current
-            : mergedResumes[0]?.id ?? null,
-        );
-        setSaveState(
-          JSON.stringify(mergedResumes) === JSON.stringify(cloudResumes)
-            ? "已同步到账号"
-            : "正在合并本地与账号简历",
-        );
-        return;
-      }
-
-      const initial = [createSampleResume()];
-      setResumes(initial);
-      setSelectedId(initial[0]?.id ?? null);
-      setSaveState("正在同步");
     }
     void loadCloudData();
     return () => {
@@ -242,6 +292,8 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
   }
 
   function deleteResume(id: string) {
+    cloudFingerprintsRef.current.delete(id);
+    pendingCloudSavesRef.current.delete(id);
     setResumes((current) => {
       const next = current.filter((resume) => resume.id !== id);
       if (next.length === 0) {

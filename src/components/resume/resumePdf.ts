@@ -8,6 +8,10 @@ import type {
   ResumeTemplateId,
 } from "@/lib/resume";
 import { getResumeTargetLine, getResumeTemplateStyle, isEnglishResumeTemplate } from "@/lib/resume";
+import {
+  selectResumeDocumentFontProfile,
+  type ResumeFontProfile,
+} from "@/lib/resume-font-profile";
 
 type JsPdf = import("jspdf").jsPDF;
 
@@ -91,6 +95,7 @@ export type ResumePreviewOperation =
     };
 
 export type ResumePreviewLayout = {
+  fontFamily: string;
   pageCount: number;
   pageHeight: number;
   pageWidth: number;
@@ -103,19 +108,30 @@ const MARGIN_X = 39;
 const TOP = 34;
 const BOTTOM = 34;
 const FONT_FAMILY = "NotoSerifSC";
-const LOCAL_FONT_REGULAR = "/fonts/NotoSerifSC-Regular.ttf";
-const LOCAL_FONT_BOLD = "/fonts/NotoSerifSC-Bold.ttf";
-const FONT_REGULAR_SOURCES = getFontSources(
-  process.env.NEXT_PUBLIC_RESUME_FONT_REGULAR_URL,
-  LOCAL_FONT_REGULAR,
-);
-const FONT_BOLD_SOURCES = getFontSources(
-  process.env.NEXT_PUBLIC_RESUME_FONT_BOLD_URL,
-  LOCAL_FONT_BOLD,
-);
-const FONT_TIMEOUT_MS = 15_000;
-const FONT_MAX_ATTEMPTS = 3;
+const COMMON_FONT_REGULAR = "/fonts/resume/NotoSerifSC-Regular-common-v1.ttf";
+const COMMON_FONT_BOLD = "/fonts/resume/NotoSerifSC-Bold-common-v1.ttf";
+const FULL_FONT_REGULAR = "/fonts/resume/NotoSerifSC-Regular-full-v1.ttf";
+const FULL_FONT_BOLD = "/fonts/resume/NotoSerifSC-Bold-full-v1.ttf";
+const FONT_TIMEOUT_MS = 10_000;
 const BLACK = "#111111";
+
+type ResumeFontSourceName = "same-origin-common" | "cos-full" | "same-origin-full";
+
+type ResumeFontSource = {
+  boldUrl: string;
+  profile: ResumeFontProfile;
+  regularUrl: string;
+  source: ResumeFontSourceName;
+};
+
+type ResumeFontBundle = {
+  bold: string;
+  cacheKey: string;
+  fontFamily: string;
+  profile: ResumeFontProfile;
+  regular: string;
+  source: ResumeFontSourceName;
+};
 
 const COMPACT_OPTIONS: PdfOptions[] = [
   { templateId: "compact", bodySize: 10.1, bulletSize: 9.65, headingSize: 12.2, itemGap: 2.4, lineHeight: 1.15, sectionGap: 3.2 },
@@ -124,12 +140,19 @@ const COMPACT_OPTIONS: PdfOptions[] = [
   { templateId: "compact", bodySize: 8.85, bulletSize: 8.45, headingSize: 11, itemGap: 1.5, lineHeight: 1.05, sectionGap: 2 },
 ];
 
-let fontCache: Promise<{ bold: string; regular: string }> | null = null;
-let previewMeasurementPdfCache: Promise<JsPdf> | null = null;
+const fontSourceCache = new Map<string, Promise<ResumeFontBundle>>();
+const selectedFontCache = new Map<ResumeFontProfile, Promise<ResumeFontBundle>>();
+const previewMeasurementPdfCache = new Map<string, Promise<JsPdf>>();
+const installedFontFaces = new Set<FontFace>();
 
 export function resetResumePdfCaches() {
-  fontCache = null;
-  previewMeasurementPdfCache = null;
+  fontSourceCache.clear();
+  selectedFontCache.clear();
+  previewMeasurementPdfCache.clear();
+  if (typeof document !== "undefined") {
+    for (const face of installedFontFaces) document.fonts.delete(face);
+  }
+  installedFontFaces.clear();
 }
 
 export async function exportResumeToPdf(resume: ResumeDocument) {
@@ -139,7 +162,8 @@ export async function exportResumeToPdf(resume: ResumeDocument) {
 }
 
 export async function createResumePreviewLayout(resume: ResumeDocument): Promise<ResumePreviewLayout> {
-  const pdf = await getPreviewMeasurementPdf();
+  const fonts = await loadResumeFonts(resume);
+  const pdf = await getPreviewMeasurementPdf(fonts);
   const selectedOptions = chooseOptions(resume, pdf);
   const operations: ResumePreviewOperation[] = [];
   const result = renderResume(pdf, resume, selectedOptions, {
@@ -149,6 +173,7 @@ export async function createResumePreviewLayout(resume: ResumeDocument): Promise
   });
 
   return {
+    fontFamily: fonts.fontFamily,
     pageCount: result.page,
     pageHeight: PAGE_HEIGHT,
     pageWidth: PAGE_WIDTH,
@@ -158,7 +183,7 @@ export async function createResumePreviewLayout(resume: ResumeDocument): Promise
 
 async function buildResumePdf(resume: ResumeDocument) {
   const { jsPDF } = await import("jspdf");
-  const fonts = await loadPdfFonts();
+  const fonts = await loadResumeFonts(resume);
   const pdf = createPdf(jsPDF, fonts);
   const selectedOptions = chooseOptions(resume, pdf);
   renderResume(pdf, resume, selectedOptions, { allowPageBreaks: true, draw: true });
@@ -175,22 +200,24 @@ function chooseOptions(resume: ResumeDocument, pdf: JsPdf) {
   return optionSet[optionSet.length - 1];
 }
 
-function getPreviewMeasurementPdf() {
-  if (!previewMeasurementPdfCache) {
-    previewMeasurementPdfCache = Promise.all([import("jspdf"), loadPdfFonts()])
-      .then(([module, fonts]) => createPdf(module.jsPDF, fonts))
+function getPreviewMeasurementPdf(fonts: ResumeFontBundle) {
+  let cached = previewMeasurementPdfCache.get(fonts.cacheKey);
+  if (!cached) {
+    cached = import("jspdf")
+      .then((module) => createPdf(module.jsPDF, fonts))
       .catch((error) => {
-        previewMeasurementPdfCache = null;
+        previewMeasurementPdfCache.delete(fonts.cacheKey);
         throw error;
       });
+    previewMeasurementPdfCache.set(fonts.cacheKey, cached);
   }
 
-  return previewMeasurementPdfCache;
+  return cached;
 }
 
 function createPdf(
   jsPDF: typeof import("jspdf").jsPDF,
-  fonts: { bold: string; regular: string },
+  fonts: ResumeFontBundle,
 ) {
   const pdf = new jsPDF({
     compress: true,
@@ -638,48 +665,91 @@ function drawRight(state: LayoutState, text: string, right: number, y: number) {
   drawText(state, text, right - state.pdf.getTextWidth(text), y);
 }
 
-async function loadPdfFonts() {
-  if (!fontCache) {
-    fontCache = Promise.all([fetchFont(FONT_REGULAR_SOURCES), fetchFont(FONT_BOLD_SOURCES)])
-      .then(([regular, bold]) => ({ bold, regular }))
-      .catch((error) => {
-        fontCache = null;
-        throw error;
-      });
-  }
+async function loadResumeFonts(resume: ResumeDocument) {
+  const profile = selectResumeDocumentFontProfile(resume);
+  const existing = selectedFontCache.get(profile);
+  if (existing) return existing;
 
-  return fontCache;
+  const promise = resolveResumeFontBundle(profile).catch((error) => {
+    selectedFontCache.delete(profile);
+    throw error;
+  });
+  selectedFontCache.set(profile, promise);
+  return promise;
 }
 
-async function fetchFont(sources: string[]) {
-  let lastError: Error | null = null;
+async function resolveResumeFontBundle(profile: ResumeFontProfile) {
+  if (profile === "common") {
+    return loadFontSource({
+      profile,
+      source: "same-origin-common",
+      regularUrl: COMMON_FONT_REGULAR,
+      boldUrl: COMMON_FONT_BOLD,
+    });
+  }
 
-  for (const source of sources) {
-    const maxAttempts = source.startsWith("/") ? FONT_MAX_ATTEMPTS : 1;
-    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-      try {
-        return await fetchFontOnce(source);
-      } catch (error) {
-        lastError = normalizeFontError(error);
-        if (!shouldRetryFontRequest(lastError) || attempt === maxAttempts) break;
-        await waitForFontRetry(attempt);
-      }
+  const cosRegularUrl = process.env.NEXT_PUBLIC_RESUME_FONT_FULL_REGULAR_URL?.trim();
+  const cosBoldUrl = process.env.NEXT_PUBLIC_RESUME_FONT_FULL_BOLD_URL?.trim();
+  if (cosRegularUrl && cosBoldUrl) {
+    try {
+      return await loadFontSource({
+        profile,
+        source: "cos-full",
+        regularUrl: cosRegularUrl,
+        boldUrl: cosBoldUrl,
+      });
+    } catch {
+      // A font pair is atomic: if either COS file fails, use both same-origin files.
     }
   }
 
-  throw lastError ?? new Error("简历字体加载失败，请稍后重新生成。");
+  return loadFontSource({
+    profile,
+    source: "same-origin-full",
+    regularUrl: FULL_FONT_REGULAR,
+    boldUrl: FULL_FONT_BOLD,
+  });
 }
 
-async function fetchFontOnce(path: string) {
+function loadFontSource(source: ResumeFontSource) {
+  const cacheKey = `${source.profile}:${source.source}`;
+  const existing = fontSourceCache.get(cacheKey);
+  if (existing) return existing;
+
+  const promise = Promise.all([
+    fetchFontBuffer(source.regularUrl),
+    fetchFontBuffer(source.boldUrl),
+  ])
+    .then(async ([regularBuffer, boldBuffer]) => {
+      const fontFamily = `StarJobResume-${cacheKey.replace(/[^a-z-]/g, "-")}-v1`;
+      await installAndValidateFontPair(fontFamily, regularBuffer, boldBuffer);
+      return {
+        bold: arrayBufferToBase64(boldBuffer),
+        cacheKey,
+        fontFamily,
+        profile: source.profile,
+        regular: arrayBufferToBase64(regularBuffer),
+        source: source.source,
+      } satisfies ResumeFontBundle;
+    })
+    .catch((error) => {
+      fontSourceCache.delete(cacheKey);
+      throw normalizeFontError(error);
+    });
+  fontSourceCache.set(cacheKey, promise);
+  return promise;
+}
+
+async function fetchFontBuffer(path: string) {
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), FONT_TIMEOUT_MS);
 
   try {
-    const response = await fetch(path, { cache: "no-store", signal: controller.signal });
+    const response = await fetch(path, { cache: "force-cache", signal: controller.signal });
     if (response.status === 404) throw new Error("简历字体文件不存在（404），请联系网站管理员。");
     if (response.status === 403) throw new Error("简历字体访问权限错误（403），请联系网站管理员。");
     if (!response.ok) throw new Error(`简历字体加载失败（HTTP ${response.status}），请稍后重新生成。`);
-    return arrayBufferToBase64(await response.arrayBuffer());
+    return await response.arrayBuffer();
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
       throw new Error("简历字体加载超时，请检查网络后重新生成。");
@@ -691,9 +761,19 @@ async function fetchFontOnce(path: string) {
   }
 }
 
-function getFontSources(configuredUrl: string | undefined, localPath: string) {
-  const remoteUrl = configuredUrl?.trim();
-  return remoteUrl && remoteUrl !== localPath ? [remoteUrl, localPath] : [localPath];
+async function installAndValidateFontPair(
+  fontFamily: string,
+  regularBuffer: ArrayBuffer,
+  boldBuffer: ArrayBuffer,
+) {
+  if (typeof FontFace === "undefined" || typeof document === "undefined") return;
+  const regularFace = new FontFace(fontFamily, regularBuffer.slice(0), { style: "normal", weight: "400" });
+  const boldFace = new FontFace(fontFamily, boldBuffer.slice(0), { style: "normal", weight: "700" });
+  const loadedFaces = await Promise.all([regularFace.load(), boldFace.load()]);
+  for (const face of loadedFaces) {
+    document.fonts.add(face);
+    installedFontFaces.add(face);
+  }
 }
 
 function normalizeFontError(error: unknown) {
@@ -702,16 +782,6 @@ function normalizeFontError(error: unknown) {
   }
   if (error instanceof Error) return error;
   return new Error("简历字体网络请求失败，请检查网络后重新生成。");
-}
-
-function shouldRetryFontRequest(error: Error) {
-  return !error.message.includes("（404）") && !error.message.includes("（403）") && !error.message.includes("HTTP 4");
-}
-
-function waitForFontRetry(attempt: number) {
-  void attempt;
-  const delay = 500 + Math.floor(Math.random() * 501);
-  return new Promise<void>((resolve) => window.setTimeout(resolve, delay));
 }
 
 function arrayBufferToBase64(buffer: ArrayBuffer) {

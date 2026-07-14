@@ -1,6 +1,6 @@
 import { ExternalLink } from "lucide-react";
 import { APPLICATION_STATUS_LABELS } from "@/lib/constants";
-import { formatDateTime, isValidHttpUrl } from "@/lib/utils";
+import { formatDateTime, isValidHttpUrl, safeOpenUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { StatusPill } from "@/components/applications/StatusPill";
 import type { ApplicationWithJob } from "@/lib/types";
@@ -56,7 +56,7 @@ export function ApplicationOrbitDetail({
           variant="secondary"
           className="gap-2"
           disabled={!isValidHttpUrl(application.job.apply_url)}
-          onClick={() => window.open(application.job.apply_url, "_blank", "noopener,noreferrer")}
+          onClick={() => safeOpenUrl(application.job.apply_url)}
         >
           <ExternalLink aria-hidden="true" className="size-4" />
           打开官网

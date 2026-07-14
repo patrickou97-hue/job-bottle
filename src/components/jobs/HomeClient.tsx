@@ -16,7 +16,7 @@ import { queueBottleDrop } from "@/lib/bottle-drop";
 import { fetchMyResumes, isMissingResumeTableError } from "@/lib/resume-sync";
 import { track } from "@/lib/track";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
-import { cn, isValidHttpUrl, safeOpenUrl, formatDateTime } from "@/lib/utils";
+import { cn, isValidHttpUrl, safeOpenUrl, formatDateTime, sanitizeApplicationUrl } from "@/lib/utils";
 import { JobFilterBar } from "@/components/jobs/JobFilterBar";
 import { JobCard } from "@/components/jobs/JobCard";
 import { ApplyReturnConfirm } from "@/components/jobs/ApplyReturnConfirm";
@@ -272,7 +272,7 @@ export function HomeClient() {
         applyWindow.document.body.style.color = "#F1EFFF";
         applyWindow.document.body.style.fontFamily = '-apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif';
         applyWindow.document.body.innerHTML = '<main style="min-height:100vh;display:grid;place-items:center;text-align:center;"><div><p style="font-size:15px;">正在打开投递官网</p><p style="font-size:12px;color:#918CAE;">返回后确认是否完成投递</p></div></main>';
-        applyWindow.location.href = job.apply_url;
+        applyWindow.location.href = sanitizeApplicationUrl(job.apply_url);
         applyWindowNavigated = true;
       } else {
         if (!safeOpenUrl(job.apply_url)) {
