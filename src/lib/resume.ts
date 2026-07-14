@@ -91,7 +91,9 @@ export type ResumeDocument = {
   updatedAt: string;
 };
 
-const STORAGE_KEY = "job_bottle_resumes_v1";
+const LEGACY_STORAGE_KEY = "job_bottle_resumes_v1";
+const GUEST_STORAGE_KEY = "starjob_resumes_guest_v2";
+const USER_STORAGE_KEY_PREFIX = "starjob_resumes_user_v2";
 
 export const RESUME_TEMPLATES: { id: ResumeTemplateId; label: string }[] = [
   { id: "compact", label: "紧凑中文" },
@@ -303,10 +305,14 @@ export function createSampleResume(): ResumeDocument {
   };
 }
 
-export function loadLocalResumes() {
+function getResumeStorageKey(userId?: string | null) {
+  return userId ? `${USER_STORAGE_KEY_PREFIX}:${userId}` : GUEST_STORAGE_KEY;
+}
+
+function readLocalResumes(key: string) {
   if (typeof window === "undefined") return [];
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(key);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
@@ -316,14 +322,56 @@ export function loadLocalResumes() {
   }
 }
 
-export function saveLocalResumes(resumes: ResumeDocument[]) {
+export function loadLocalResumes(userId?: string | null) {
+  const scoped = readLocalResumes(getResumeStorageKey(userId));
+  if (scoped.length > 0 || userId) return scoped;
+  return readLocalResumes(LEGACY_STORAGE_KEY);
+}
+
+export function saveLocalResumes(resumes: ResumeDocument[], userId?: string | null) {
   if (typeof window === "undefined") return false;
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(resumes));
+    window.localStorage.setItem(getResumeStorageKey(userId), JSON.stringify(resumes));
     return true;
   } catch {
     return false;
   }
+}
+
+export function adoptLocalResumesForUser(
+  userId: string,
+  cloudResumes: ResumeDocument[],
+) {
+  if (typeof window === "undefined") return cloudResumes;
+
+  const userResumes = loadLocalResumes(userId);
+  const guestResumes = loadLocalResumes();
+  const knownIds = new Set([
+    ...cloudResumes.map((resume) => resume.id),
+    ...userResumes.map((resume) => resume.id),
+  ]);
+  const now = new Date().toISOString();
+  const adoptedGuests = guestResumes.map((resume) => {
+    if (knownIds.has(resume.id)) return resume;
+    const adopted = {
+      ...resume,
+      id: createResumeId(),
+      createdAt: now,
+      updatedAt: now,
+    };
+    knownIds.add(adopted.id);
+    return adopted;
+  });
+  const merged = mergeResumeCollections(
+    [...userResumes, ...adoptedGuests],
+    cloudResumes,
+  );
+
+  if (saveLocalResumes(merged, userId)) {
+    window.localStorage.removeItem(GUEST_STORAGE_KEY);
+    window.localStorage.removeItem(LEGACY_STORAGE_KEY);
+  }
+  return merged;
 }
 
 export function mergeResumeCollections(

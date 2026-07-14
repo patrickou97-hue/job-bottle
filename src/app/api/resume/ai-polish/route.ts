@@ -4,9 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import { RESUME_POLISH_INSTRUCTIONS, RESUME_POLISH_SECTION_TYPES } from "@/lib/resume-ai";
 
 const REQUEST_TIMEOUT_MS = 35_000;
-const RATE_WINDOW_MS = 10 * 60_000;
-const RATE_LIMIT = 6;
-const rateWindows = new Map<string, number[]>();
 
 const inputSchema = z.object({
   sectionType: z.enum(RESUME_POLISH_SECTION_TYPES),
@@ -66,7 +63,15 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (!takeRateSlot(user.id)) {
+  const { data: rateSlot, error: rateSlotError } = await supabase.rpc("take_resume_ai_rate_slot");
+  if (rateSlotError) {
+    logServerError("resume_ai_rate_slot", rateSlotError);
+    return NextResponse.json(
+      { error: "AI 请求保护服务暂时不可用，请稍后重试" },
+      { status: 503 },
+    );
+  }
+  if (!rateSlot) {
     return NextResponse.json(
       { error: "请求较频繁，请十分钟后再试" },
       { status: 429, headers: { "Retry-After": "600" } },
@@ -98,6 +103,7 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json(repairedResult);
   } catch (error) {
+    logServerError("resume_ai_upstream", error);
     return mapUpstreamError(error);
   }
 }
@@ -208,19 +214,21 @@ function isChangeType(value: unknown): value is "clarity" | "structure" | "relev
   return value === "clarity" || value === "structure" || value === "relevance" || value === "wording" || value === "grammar";
 }
 
-function takeRateSlot(userId: string) {
-  const now = Date.now();
-  const active = (rateWindows.get(userId) ?? []).filter((time) => now - time < RATE_WINDOW_MS);
-  if (active.length >= RATE_LIMIT) return false;
-  active.push(now);
-  rateWindows.set(userId, active);
-  return true;
-}
-
 class UpstreamError extends Error {
   constructor(public status: number, public kind = "http") {
     super(`MiMo upstream ${status}`);
   }
+}
+
+function logServerError(scope: string, error: unknown) {
+  const details = error && typeof error === "object"
+    ? {
+        code: "code" in error ? String(error.code) : undefined,
+        name: "name" in error ? String(error.name) : undefined,
+        status: "status" in error ? Number(error.status) : undefined,
+      }
+    : {};
+  console.error(`[${scope}]`, details);
 }
 
 function mapUpstreamError(error: unknown) {

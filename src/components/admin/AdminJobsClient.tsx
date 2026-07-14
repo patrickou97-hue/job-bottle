@@ -6,6 +6,7 @@ import { Filter, Search, Upload } from "lucide-react";
 import { fetchAllJobsForAdmin } from "@/lib/jobs";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { findDuplicateJobGroups } from "@/lib/job-dedupe";
+import { sanitizeApplicationUrl } from "@/lib/application-url";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -93,11 +94,15 @@ export function AdminJobsClient() {
       return;
     }
     const supabase = createClient();
+    const sanitizedPayload = {
+      ...payload,
+      apply_url: sanitizeApplicationUrl(payload.apply_url),
+    };
     if (id) {
-      const { error } = await supabase.from("jobs").update(payload).eq("id", id);
+      const { error } = await supabase.from("jobs").update(sanitizedPayload).eq("id", id);
       if (error) throw error;
     } else {
-      const { error } = await supabase.from("jobs").insert(payload);
+      const { error } = await supabase.from("jobs").insert(sanitizedPayload);
       if (error) throw error;
     }
     setEditing(null);

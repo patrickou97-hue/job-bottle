@@ -249,13 +249,13 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/lib/resume.ts",
-    mustInclude: ["ResumeDocument", "ResumeContent", "createSampleResume", "loadLocalResumes", "linkedJobId", "photoDataUrl", "compact", "classic", "modern", "consulting", "technical", "academic", "english_classic", "english_modern", "紧凑中文", "经典商科", "现代单栏", "咨询投研", "技术简洁", "学术研究", "English Classic", "English Modern", "isEnglishResumeTemplate", "createResumeId", "isResumeId", "getResumeTargetLine"],
-    mustNotInclude: [],
-    label: "简历制作器定义结构化简历模型、多模板和本地持久化",
+    mustInclude: ["ResumeDocument", "ResumeContent", "createSampleResume", "loadLocalResumes", "adoptLocalResumesForUser", "GUEST_STORAGE_KEY", "USER_STORAGE_KEY_PREFIX", "createResumeId", "linkedJobId", "photoDataUrl", "compact", "classic", "modern", "consulting", "technical", "academic", "english_classic", "english_modern", "紧凑中文", "经典商科", "现代单栏", "咨询投研", "技术简洁", "学术研究", "English Classic", "English Modern", "isEnglishResumeTemplate", "isResumeId", "getResumeTargetLine"],
+    mustNotInclude: ["const STORAGE_KEY = \"job_bottle_resumes_v1\""],
+    label: "简历制作器定义结构化模型、多模板和按账号隔离的本地持久化",
   },
   {
     file: "src/components/resume/ResumeBuilderClient.tsx",
-    mustInclude: ["ResumeEditor", "ResumePreview", "ResumePdfExportButton", "ResumePageTitle", "AI-Powered", "Snell Roundhand", "inline-block", "px-2", "新建简历", "实时预览", "共用同一套 A4 排版坐标", "prepareTargetResume", "创建岗位版本", "打开岗位版本", "linkedJobId: targetJob.id", "primaryRole", "targetRole: primaryRole", "linkedJobContext={targetJob}", "saveLocalResumes", "mergeResumeCollections", "fetchMyResumes", "upsertMyResume", "正在合并本地与账号简历", "已同步到账号", "请谨慎审核 AI 输出的简历信息"],
+    mustInclude: ["ResumeEditor", "ResumePreview", "ResumePdfExportButton", "ResumePageTitle", "AI-Powered", "Snell Roundhand", "inline-block", "px-2", "新建简历", "实时预览", "共用同一套 A4 排版坐标", "prepareTargetResume", "创建岗位版本", "打开岗位版本", "linkedJobId: targetJob.id", "primaryRole", "targetRole: primaryRole", "linkedJobContext={targetJob}", "saveLocalResumes", "adoptLocalResumesForUser", "fetchMyResumes", "upsertMyResume", "MAX_BACKGROUND_SYNC_ATTEMPTS", "isResumeOwnershipConflictError", "onAuthStateChange", "visibilitychange", "正在合并本地与账号简历", "已同步到账号", "请谨慎审核 AI 输出的简历信息"],
     mustNotInclude: ["requestAnimationFrame"],
     label: "简历制作器提供列表、编辑、预览、本地保存和账号同步",
   },
@@ -339,13 +339,13 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "next.config.ts",
-    mustInclude: ["/fonts/resume/:path*", "public, max-age=31536000, immutable"],
+    mustInclude: ["/fonts/resume/:path*", "public, max-age=31536000, immutable", "Content-Security-Policy", "X-Content-Type-Options", "X-Frame-Options", "Referrer-Policy", "Permissions-Policy", "frame-ancestors 'none'"],
     mustNotInclude: [],
     label: "版本化简历字体使用仅限字体路径的长期缓存头",
   },
   {
     file: "src/lib/resume-sync.ts",
-    mustInclude: ["fetchMyResumes", "upsertMyResume", "deleteMyResume", "withCloudRetry", "withCloudTimeout", "CLOUD_RETRY_DELAYS_MS", "CLOUD_OPERATION_TIMEOUT_MS = 8_000", "content_json", "__job_bottle_template_id", "minimal", "executive", "consulting", "technical", "academic", "english_classic", "english_modern", "isMissingResumeTableError", "isResumeTemplateConstraintError"],
+    mustInclude: ["fetchMyResumes", "upsertMyResume", "deleteMyResume", "withCloudRetry", "withCloudTimeout", "CLOUD_RETRY_DELAYS_MS", "CLOUD_OPERATION_TIMEOUT_MS = 8_000", "content_json", "__job_bottle_template_id", "minimal", "executive", "consulting", "technical", "academic", "english_classic", "english_modern", "isMissingResumeTableError", "isResumeTemplateConstraintError", "isResumeOwnershipConflictError", "getResumeSyncErrorMessage", "PGRST301"],
     mustNotInclude: ["service_role"],
     label: "简历同步层对瞬时失败重试并兼容未运行迁移的本地回退",
   },
@@ -569,7 +569,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/resume/ai-polish/route.ts",
-    mustInclude: ["MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL", "auth.getUser", "REQUEST_TIMEOUT_MS", "takeRateSlot", "不得虚构", "不得把普通参与描述夸大", "不得把“协助”“参与”“支持”", "不强行补结果", "warnings 中指出", "必须返回严格 JSON", "resultSchema", "parseResult", "normalizeResultCandidate", "typeof change === \"string\"", "title: source.title", "subtitle: source.subtitle", "原文未改变"],
+    mustInclude: ["MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL", "auth.getUser", "REQUEST_TIMEOUT_MS", "take_resume_ai_rate_slot", "logServerError", "不得虚构", "不得把普通参与描述夸大", "不得把“协助”“参与”“支持”", "不强行补结果", "warnings 中指出", "必须返回严格 JSON", "resultSchema", "parseResult", "normalizeResultCandidate", "typeof change === \"string\"", "title: source.title", "subtitle: source.subtitle", "原文未改变"],
     mustNotInclude: ["NEXT_PUBLIC_MIMO", "console.log", "SUPABASE_SERVICE_ROLE_KEY"],
     label: "简历分段润色仅在服务端调用 MiMo 并限制幻觉、输入、超时和频率",
   },
@@ -656,6 +656,18 @@ const SOURCE_INVARIANTS = [
     mustInclude: ["create table if not exists public.events", "events_insert_own", "events_select_admin_all"],
     mustNotInclude: ["service_role"],
     label: "v4 events 埋点迁移存在",
+  },
+  {
+    file: "supabase/migrations/20260714120000_production_debug_repairs.sql",
+    mustInclude: ["create table if not exists public.status_history", "create table if not exists public.reports", "create table if not exists public.events", "create table if not exists public.resume_ai_rate_events", "take_resume_ai_rate_slot", "pg_advisory_xact_lock", "status_history_select_own", "events_insert_own", "reports_insert_own", "set comment_count =", "strip_application_tracking_params", "array[U&'\\5176\\4ED6']::text[]"],
+    mustNotInclude: ["drop table", "delete from public.user_applications", "SUPABASE_SERVICE_ROLE_KEY"],
+    label: "生产补齐迁移以幂等方式恢复状态历史、埋点、举报、AI 限流和数据一致性",
+  },
+  {
+    file: "scripts/import_forum_seed.mjs",
+    mustInclude: ["storedCommentsResult", "storedLikesResult", "comment_count:", "like_count:", "countResults"],
+    mustNotInclude: ["NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY"],
+    label: "论坛种子导入后按真实评论和点赞记录重新核对计数",
   },
   {
     file: "supabase/migrations/20260704030000_security_audit_followup.sql",

@@ -57,7 +57,10 @@ export async function POST(request: NextRequest) {
       { authors },
       { headers: { "Cache-Control": "private, max-age=60" } },
     );
-  } catch {
+  } catch (error) {
+    console.error("[forum_authors]", {
+      code: error && typeof error === "object" && "code" in error ? String(error.code) : undefined,
+    });
     return NextResponse.json(
       { error: "作者信息读取失败，请稍后重试。" },
       { status: 500 },

@@ -1,6 +1,7 @@
 import { parse } from "papaparse";
 import { readSheet, type Row } from "read-excel-file/browser";
 import { normalizeJobCategories } from "@/lib/categories";
+import { sanitizeApplicationUrl } from "@/lib/application-url";
 import { getJobMergeFingerprint } from "@/lib/job-dedupe";
 import { splitToTags, isValidHttpUrl } from "@/lib/utils";
 import type { CsvImportPreviewRow } from "@/lib/types";
@@ -85,7 +86,7 @@ function normalizeImportRows(rows: NumberedRawRow[]) {
 
   return rows.map(({ row, rowNumber }) => {
     const company = pick(row, headerAliases.company_name);
-    const applyUrl = pick(row, headerAliases.apply_url);
+    const applyUrl = sanitizeApplicationUrl(pick(row, headerAliases.apply_url));
     const industry = pick(row, headerAliases.industry);
     const batchType = pick(row, headerAliases.batch_type);
     const locations = pick(row, headerAliases.locations);

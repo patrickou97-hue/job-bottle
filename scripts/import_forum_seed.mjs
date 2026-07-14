@@ -155,6 +155,47 @@ if (commentError) throw commentError;
 
 const postIds = posts.map((post) => post.id);
 const commentIds = comments.map((comment) => comment.id);
+const likeFilters = [`post_id.in.(${postIds.join(",")})`];
+if (commentIds.length > 0) likeFilters.push(`comment_id.in.(${commentIds.join(",")})`);
+const [storedCommentsResult, storedLikesResult] = await Promise.all([
+  supabase
+    .from("forum_comments")
+    .select("id,post_id")
+    .in("post_id", postIds),
+  supabase
+    .from("forum_likes")
+    .select("post_id,comment_id")
+    .or(likeFilters.join(",")),
+]);
+
+if (storedCommentsResult.error) throw storedCommentsResult.error;
+if (storedLikesResult.error) throw storedLikesResult.error;
+
+const storedComments = storedCommentsResult.data ?? [];
+const storedLikes = storedLikesResult.data ?? [];
+const countUpdates = [
+  ...posts.map((post) =>
+    supabase
+      .from("forum_posts")
+      .update({
+        comment_count: storedComments.filter((comment) => comment.post_id === post.id).length,
+        like_count: storedLikes.filter((like) => like.post_id === post.id).length,
+      })
+      .eq("id", post.id),
+  ),
+  ...comments.map((comment) =>
+    supabase
+      .from("forum_comments")
+      .update({
+        like_count: storedLikes.filter((like) => like.comment_id === comment.id).length,
+      })
+      .eq("id", comment.id),
+  ),
+];
+const countResults = await Promise.all(countUpdates);
+const countError = countResults.find((result) => result.error)?.error;
+if (countError) throw countError;
+
 const [{ count: postCount, error: postCountError }, { count: commentCount, error: commentCountError }] =
   await Promise.all([
     supabase

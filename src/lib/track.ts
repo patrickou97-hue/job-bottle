@@ -11,11 +11,14 @@ export async function track(event: string, props: TrackProps = {}) {
     const user = await getCurrentUserOrNull(supabase);
     if (!user) return;
 
-    await supabase.from("events").insert({
+    const { error } = await supabase.from("events").insert({
       user_id: user.id,
       event,
       props,
     });
+    if (error) {
+      console.warn("[analytics_write]", { code: error.code });
+    }
   } catch {
     // Analytics must never block product actions.
   }

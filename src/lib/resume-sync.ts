@@ -113,6 +113,38 @@ export function isResumeTemplateConstraintError(error: unknown) {
   return code === "23514" && (message.includes("resumes_template_id_check") || message.includes("template_id"));
 }
 
+export function isResumeOwnershipConflictError(error: unknown) {
+  const code = typeof error === "object" && error ? String("code" in error ? error.code : "") : "";
+  const message =
+    typeof error === "object" && error ? String("message" in error ? error.message : "") : "";
+  const normalized = message.toLowerCase();
+
+  return code === "23505" || code === "42501" || normalized.includes("row-level security");
+}
+
+export function getResumeSyncErrorMessage(error: unknown) {
+  const code = typeof error === "object" && error ? String("code" in error ? error.code : "") : "";
+  const message =
+    typeof error === "object" && error ? String("message" in error ? error.message : "") : "";
+  const normalized = message.toLowerCase();
+
+  if (
+    code === "401" ||
+    code === "PGRST301" ||
+    normalized.includes("jwt") ||
+    normalized.includes("not authenticated")
+  ) {
+    return "登录状态已失效，本地副本已保留，请重新登录";
+  }
+  if (code === "23503") {
+    return "简历关联的岗位已失效，本地副本已保留";
+  }
+  if (normalized.includes("超时") || normalized.includes("timeout") || normalized.includes("network")) {
+    return "云端连接超时，本地副本已保留，稍后会自动重试";
+  }
+  return "云端同步暂时失败，本地副本已保留，稍后会自动重试";
+}
+
 export function resumeRowToDocument(row: ResumeRow): ResumeDocument {
   return {
     id: row.id,

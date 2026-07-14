@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { User } from "@supabase/supabase-js";
 import { Copy, FileText, Plus, Trash2 } from "lucide-react";
 import { ResumeEditor, type EditorSection } from "@/components/resume/ResumeEditor";
 import { ResumePdfExportButton } from "@/components/resume/ResumePdfExportButton";
@@ -10,12 +11,13 @@ import { Button } from "@/components/ui/Button";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { fetchMyApplications } from "@/lib/applications";
 import {
+  adoptLocalResumesForUser,
   createEmptyResume,
+  createResumeId,
   createSampleResume,
   getResumeTemplateMeta,
   getResumeTargetLine,
   loadLocalResumes,
-  mergeResumeCollections,
   saveLocalResumes,
   touchResume,
   type ResumeDocument,
@@ -24,7 +26,9 @@ import {
 import {
   deleteMyResume,
   fetchMyResumes,
+  getResumeSyncErrorMessage,
   isMissingResumeTableError,
+  isResumeOwnershipConflictError,
   isResumeTemplateConstraintError,
   upsertMyResume,
 } from "@/lib/resume-sync";
@@ -36,6 +40,13 @@ import { track } from "@/lib/track";
 
 type StorageMode = "local" | "cloud";
 type TargetJobContext = { company: string; id: string; role: string };
+type PendingCloudSave = {
+  attempts: number;
+  fingerprint: string;
+  resume: ResumeDocument;
+};
+
+const MAX_BACKGROUND_SYNC_ATTEMPTS = 3;
 
 export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJobContext | null }) {
   const [resumes, setResumes] = useState<ResumeDocument[]>([]);
@@ -44,46 +55,52 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
   const [jobs, setJobs] = useState<Job[]>([]);
   const [applications, setApplications] = useState<ApplicationWithJob[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [authResolved, setAuthResolved] = useState(false);
   const [saveState, setSaveState] = useState("已保存到本地");
   const [storageMode, setStorageMode] = useState<StorageMode>("local");
   const [userId, setUserId] = useState<string | null>(null);
   const cloudFingerprintsRef = useRef(new Map<string, string>());
-  const pendingCloudSavesRef = useRef(new Map<string, { fingerprint: string; resume: ResumeDocument }>());
+  const pendingCloudSavesRef = useRef(new Map<string, PendingCloudSave>());
   const cloudSaveWorkerRef = useRef<Promise<void> | null>(null);
+  const cloudRetryTimerRef = useRef<number | null>(null);
+  const activeUserIdRef = useRef<string | null>(null);
+  const hydratingUserIdRef = useRef<string | null>(null);
   const mountedRef = useRef(true);
 
   useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
+      if (cloudRetryTimerRef.current) window.clearTimeout(cloudRetryTimerRef.current);
     };
   }, []);
 
   const runCloudSaveWorker = useCallback((activeUserId: string) => {
     function startWorker() {
       if (cloudSaveWorkerRef.current) return;
-      let completedWithoutError = true;
+      if (cloudRetryTimerRef.current) {
+        window.clearTimeout(cloudRetryTimerRef.current);
+        cloudRetryTimerRef.current = null;
+      }
+      let failedCount = 0;
+      let savedCount = 0;
+      let shouldRetry = false;
 
       cloudSaveWorkerRef.current = (async () => {
         const supabase = createClient();
-        while (pendingCloudSavesRef.current.size > 0) {
-          const next = pendingCloudSavesRef.current.entries().next().value as
-            | [string, { fingerprint: string; resume: ResumeDocument }]
-            | undefined;
-          if (!next) break;
-          const [resumeId, queued] = next;
+        const batch = Array.from(pendingCloudSavesRef.current.entries());
+        for (const [resumeId, queued] of batch) {
+          if (activeUserIdRef.current !== activeUserId) break;
 
           try {
             await upsertMyResume(supabase, activeUserId, queued.resume);
+            savedCount += 1;
             cloudFingerprintsRef.current.set(resumeId, queued.fingerprint);
             if (pendingCloudSavesRef.current.get(resumeId)?.fingerprint === queued.fingerprint) {
               pendingCloudSavesRef.current.delete(resumeId);
             }
           } catch (error) {
-            completedWithoutError = false;
-            if (pendingCloudSavesRef.current.get(resumeId)?.fingerprint === queued.fingerprint) {
-              pendingCloudSavesRef.current.delete(resumeId);
-            }
+            failedCount += 1;
             if (!mountedRef.current) break;
             if (isResumeTemplateConstraintError(error)) {
               setStorageMode("local");
@@ -97,19 +114,74 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
               pendingCloudSavesRef.current.clear();
               break;
             }
-            setSaveState("云端同步暂时失败，本地副本已保留");
+            if (isResumeOwnershipConflictError(error)) {
+              const now = new Date().toISOString();
+              const adoptedResume = {
+                ...queued.resume,
+                id: createResumeId(),
+                createdAt: now,
+                updatedAt: now,
+              };
+              pendingCloudSavesRef.current.delete(resumeId);
+              cloudFingerprintsRef.current.delete(resumeId);
+              setResumes((current) =>
+                current.map((resume) => (resume.id === resumeId ? adoptedResume : resume)),
+              );
+              setSelectedId((current) => (current === resumeId ? adoptedResume.id : current));
+              setSaveState("已为当前账号创建独立简历副本，正在同步");
+              continue;
+            }
+
+            const current = pendingCloudSavesRef.current.get(resumeId);
+            if (current?.fingerprint === queued.fingerprint) {
+              const attempts = queued.attempts + 1;
+              pendingCloudSavesRef.current.set(resumeId, { ...queued, attempts });
+              shouldRetry ||= attempts < MAX_BACKGROUND_SYNC_ATTEMPTS;
+            }
+            setSaveState(getResumeSyncErrorMessage(error));
           }
         }
       })().finally(() => {
         cloudSaveWorkerRef.current = null;
         if (!mountedRef.current) return;
-        if (pendingCloudSavesRef.current.size > 0) startWorker();
-        else if (completedWithoutError) setSaveState("已同步到账号");
+        const hasFreshPendingSave = Array.from(pendingCloudSavesRef.current.values()).some(
+          (item) => item.attempts === 0,
+        );
+        if (pendingCloudSavesRef.current.size > 0 && (shouldRetry || hasFreshPendingSave)) {
+          const maxAttempts = Math.max(
+            ...Array.from(pendingCloudSavesRef.current.values(), (item) => item.attempts),
+          );
+          const delay = hasFreshPendingSave
+            ? 0
+            : Math.min(30_000, 2_000 * 2 ** Math.max(0, maxAttempts - 1));
+          cloudRetryTimerRef.current = window.setTimeout(startWorker, delay);
+        } else if (failedCount === 0 && pendingCloudSavesRef.current.size === 0) {
+          setSaveState("已同步到账号");
+        } else if (savedCount > 0) {
+          setSaveState("部分简历同步失败，本地副本已保留");
+        }
       });
     }
 
     startWorker();
   }, []);
+
+  useEffect(() => {
+    function retryPendingCloudSaves() {
+      const activeUserId = activeUserIdRef.current;
+      if (!activeUserId || pendingCloudSavesRef.current.size === 0) return;
+      runCloudSaveWorker(activeUserId);
+    }
+    function retryWhenVisible() {
+      if (document.visibilityState === "visible") retryPendingCloudSaves();
+    }
+    window.addEventListener("online", retryPendingCloudSaves);
+    document.addEventListener("visibilitychange", retryWhenVisible);
+    return () => {
+      window.removeEventListener("online", retryPendingCloudSaves);
+      document.removeEventListener("visibilitychange", retryWhenVisible);
+    };
+  }, [runCloudSaveWorker]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -125,7 +197,8 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
 
   useEffect(() => {
     if (!loaded) return;
-    const savedLocally = saveLocalResumes(resumes);
+    if (!authResolved && isSupabaseConfigured()) return;
+    const savedLocally = saveLocalResumes(resumes, userId);
 
     if (storageMode !== "cloud" || !userId || !isSupabaseConfigured()) {
       const timer = window.setTimeout(
@@ -148,22 +221,27 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
       for (const resume of dirtyResumes) {
         const fingerprint = JSON.stringify(resume);
         if (pendingCloudSavesRef.current.get(resume.id)?.fingerprint === fingerprint) continue;
-        pendingCloudSavesRef.current.set(resume.id, { fingerprint, resume });
+        pendingCloudSavesRef.current.set(resume.id, { attempts: 0, fingerprint, resume });
       }
       runCloudSaveWorker(userId);
     }, 700);
 
     return () => window.clearTimeout(timer);
-  }, [loaded, resumes, runCloudSaveWorker, storageMode, userId]);
+  }, [authResolved, loaded, resumes, runCloudSaveWorker, storageMode, userId]);
 
   useEffect(() => {
     if (!loaded || !isSupabaseConfigured()) return;
     const supabase = createClient();
     let mounted = true;
-    async function loadCloudData() {
-      const user = await getCurrentUserOrNull(supabase);
-      if (!mounted || !user) return;
-      setUserId(user.id);
+    async function loadCloudData(userFromSession?: User) {
+      const user = userFromSession ?? await getCurrentUserOrNull(supabase);
+      if (!mounted) return;
+      if (!user) {
+        setAuthResolved(true);
+        return;
+      }
+      if (activeUserIdRef.current === user.id || hydratingUserIdRef.current === user.id) return;
+      hydratingUserIdRef.current = user.id;
 
       void Promise.allSettled([
         fetchActiveJobs(supabase).then((rows) => mounted && setJobs(rows)),
@@ -173,11 +251,12 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
       try {
         const cloudResumes = await fetchMyResumes(supabase);
         if (!mounted) return;
-        const localResumes = loadLocalResumes();
-        const mergedResumes = mergeResumeCollections(localResumes, cloudResumes);
+        const mergedResumes = adoptLocalResumesForUser(user.id, cloudResumes);
         cloudFingerprintsRef.current = new Map(
           cloudResumes.map((resume) => [resume.id, JSON.stringify(resume)]),
         );
+        activeUserIdRef.current = user.id;
+        setUserId(user.id);
         setStorageMode("cloud");
 
         if (mergedResumes.length > 0) {
@@ -209,11 +288,52 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
           return;
         }
         setSaveState("云端读取暂时失败，简历已保存在本地");
+      } finally {
+        if (hydratingUserIdRef.current === user.id) hydratingUserIdRef.current = null;
+        if (mounted) setAuthResolved(true);
       }
     }
     void loadCloudData();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT" && !session) {
+        const guestResumes = loadLocalResumes();
+        const initial = guestResumes.length > 0 ? guestResumes : [createSampleResume()];
+        activeUserIdRef.current = null;
+        hydratingUserIdRef.current = null;
+        pendingCloudSavesRef.current.clear();
+        cloudFingerprintsRef.current.clear();
+        setUserId(null);
+        setStorageMode("local");
+        setResumes(initial);
+        setSelectedId(initial[0]?.id ?? null);
+        setAuthResolved(true);
+        setSaveState("登录状态已退出，后续修改将保存在本地");
+        return;
+      }
+      if (session?.user) {
+        if (activeUserIdRef.current && activeUserIdRef.current !== session.user.id) {
+          const guestResumes = loadLocalResumes();
+          activeUserIdRef.current = null;
+          hydratingUserIdRef.current = null;
+          pendingCloudSavesRef.current.clear();
+          cloudFingerprintsRef.current.clear();
+          setAuthResolved(false);
+          setUserId(null);
+          setStorageMode("local");
+          setResumes(guestResumes);
+          setSelectedId(guestResumes[0]?.id ?? null);
+        }
+        void loadCloudData(session.user);
+      }
+    });
+    function retryCloudLoad() {
+      if (!activeUserIdRef.current) void loadCloudData();
+    }
+    window.addEventListener("online", retryCloudLoad);
     return () => {
       mounted = false;
+      window.removeEventListener("online", retryCloudLoad);
+      subscription.unsubscribe();
     };
   }, [loaded]);
 
@@ -458,7 +578,7 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
               </div>
               <ResumePdfExportButton
                 resume={selectedResume}
-                preserveDraft={() => saveLocalResumes(resumes)}
+                preserveDraft={() => saveLocalResumes(resumes, userId)}
               />
             </div>
             <div className="pb-4">

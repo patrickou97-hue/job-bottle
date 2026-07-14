@@ -430,6 +430,10 @@ export type Database = {
         Args: Record<string, never>;
         Returns: boolean;
       };
+      take_resume_ai_rate_slot: {
+        Args: Record<string, never>;
+        Returns: boolean;
+      };
       merge_duplicate_jobs: {
         Args: Record<string, never>;
         Returns: {

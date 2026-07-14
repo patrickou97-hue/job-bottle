@@ -38,7 +38,10 @@ export async function PATCH(request: NextRequest) {
     }
 
     return NextResponse.json({ post });
-  } catch {
+  } catch (error) {
+    console.error("[forum_pin]", {
+      code: error && typeof error === "object" && "code" in error ? String(error.code) : undefined,
+    });
     return NextResponse.json({ error: "置顶状态保存失败，请稍后重试。" }, { status: 500 });
   }
 }
