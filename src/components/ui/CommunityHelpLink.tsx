@@ -16,7 +16,7 @@ export function CommunityHelpLink({
       onClick={onClick}
       className={`text-action pressable min-h-10 text-sm font-medium underline decoration-[color:var(--line)] underline-offset-4 hover:decoration-[color:var(--aurora)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--aurora)] ${className}`}
     >
-      去求职社区了解如何使用「拾星」
+      去拾星指南查看使用教程
     </Link>
   );
 }

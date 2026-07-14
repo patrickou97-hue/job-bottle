@@ -4,19 +4,17 @@ import { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { getCurrentUserOrNull } from "@/lib/auth";
-import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { createPost } from "@/lib/forum";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
 
-const FORUM_CATEGORIES = ["讨论", "经验", "求助", "分享"] as const;
+const GUIDE_CATEGORIES = ["公告", "教程", "分享"] as const;
 
 const schema = z.object({
   title: z.string().min(1, "请输入标题").max(120, "标题不超过120字"),
-  category: z.enum(FORUM_CATEGORIES),
+  category: z.enum(GUIDE_CATEGORIES),
   content: z.string().min(1, "请输入内容").max(5000, "内容不超过5000字"),
   tags: z.string(),
 });
@@ -41,31 +39,23 @@ export function NewPostForm({ onCreated, onCancel }: NewPostFormProps) {
     resolver: zodResolver(schema),
     defaultValues: {
       title: "",
-      category: "讨论",
+      category: "公告",
       content: "",
       tags: "",
     },
   });
 
   async function onSubmit(values: FormValues) {
-    if (!isSupabaseConfigured()) return;
     setSubmitting(true);
     setError("");
     try {
-      const supabase = createClient();
-      const user = await getCurrentUserOrNull(supabase);
-      if (!user) {
-        setError("请先登录。");
-        return;
-      }
-
       const tags = values.tags
         .split(/[,，、\s]+/)
         .map((t) => t.trim())
         .filter(Boolean)
         .slice(0, 8);
 
-      await createPost(supabase, user.id, {
+      await createPost({
         title: values.title,
         content: values.content,
         category: values.category,
@@ -73,8 +63,8 @@ export function NewPostForm({ onCreated, onCancel }: NewPostFormProps) {
       });
 
       onCreated();
-    } catch {
-      setError("发布失败，请检查网络后重试。");
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "发布失败，请检查网络后重试。");
     } finally {
       setSubmitting(false);
     }
@@ -82,7 +72,10 @@ export function NewPostForm({ onCreated, onCancel }: NewPostFormProps) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-      <h2 className="section-title">发布</h2>
+      <div>
+        <h2 className="section-title">发布指南内容</h2>
+        <p className="mt-1 text-sm leading-6 text-ink-muted">选择内容类型，帮助用户快速判断这是产品公告、操作教程还是求职经验。</p>
+      </div>
 
       <div>
         <label className="mb-1 block text-xs font-medium text-ink-muted">
@@ -103,7 +96,7 @@ export function NewPostForm({ onCreated, onCancel }: NewPostFormProps) {
           name="category"
           render={({ field }) => (
             <Select value={field.value} onChange={field.onChange}>
-              {FORUM_CATEGORIES.map((cat) => (
+              {GUIDE_CATEGORIES.map((cat) => (
                 <option key={cat} value={cat}>
                   {cat}
                 </option>
@@ -118,7 +111,7 @@ export function NewPostForm({ onCreated, onCancel }: NewPostFormProps) {
           内容
         </label>
         <Textarea
-          placeholder="写下你想发布的内容"
+          placeholder="写下公告、操作步骤或经验正文"
           rows={6}
           {...register("content")}
         />
@@ -132,7 +125,7 @@ export function NewPostForm({ onCreated, onCancel }: NewPostFormProps) {
           标签（可选，逗号分隔）
         </label>
         <Input
-          placeholder="如：秋招, 面试, 内推"
+          placeholder="如：使用教程, 简历, 投递"
           {...register("tags")}
         />
       </div>
@@ -145,7 +138,7 @@ export function NewPostForm({ onCreated, onCancel }: NewPostFormProps) {
 
       <div className="flex gap-3">
         <Button type="submit" disabled={submitting}>
-          {submitting ? "发布中" : "发布"}
+          {submitting ? "发布中" : "发布内容"}
         </Button>
         <Button type="button" variant="secondary" onClick={onCancel}>
           取消

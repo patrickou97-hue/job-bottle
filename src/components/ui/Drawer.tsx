@@ -12,11 +12,13 @@ export function Drawer({
   title,
   children,
   onClose,
+  showHelpLink = true,
 }: {
   open: boolean;
   title: string;
   children: ReactNode;
   onClose: () => void;
+  showHelpLink?: boolean;
 }) {
   const panelRef = useRef<HTMLElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -84,9 +86,11 @@ export function Drawer({
               </button>
             </div>
             {children}
-            <div className="mt-6 border-t border-[color:var(--line-ghost)] pt-4">
-              <CommunityHelpLink onClick={onClose} />
-            </div>
+            {showHelpLink ? (
+              <div className="mt-6 border-t border-[color:var(--line-ghost)] pt-4">
+                <CommunityHelpLink onClick={onClose} />
+              </div>
+            ) : null}
           </motion.aside>
         </div>
       ) : null}

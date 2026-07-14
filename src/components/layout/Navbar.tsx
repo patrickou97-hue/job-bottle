@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BriefcaseIcon, ChatCircleIcon, FileTextIcon, FlaskIcon, ListChecksIcon, ShieldCheckIcon, SignOutIcon, UserCircleIcon } from "@phosphor-icons/react";
+import { BriefcaseIcon, FileTextIcon, FlaskIcon, ListChecksIcon, ShieldCheckIcon, SignOutIcon, UserCircleIcon } from "@phosphor-icons/react";
+import { BookOpen } from "lucide-react";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { getCurrentUserOrNull } from "@/lib/auth";
@@ -16,7 +17,7 @@ const navItems = [
   { href: "/explore", label: "岗位坐标" },
   { href: "/my", label: "投递管理" },
   { href: "/resume", label: "简历制作" },
-  { href: "/forum", label: "求职社区" },
+  { href: "/forum", label: "拾星指南" },
   { href: "/bottle", label: "星瓶" },
   { href: "/profile", label: "个人中心" },
 ];
@@ -25,7 +26,7 @@ const mobileNavItems = [
   { href: "/explore", label: "岗位", icon: BriefcaseIcon },
   { href: "/my", label: "投递", icon: ListChecksIcon },
   { href: "/resume", label: "简历", icon: FileTextIcon },
-  { href: "/forum", label: "社区", icon: ChatCircleIcon },
+  { href: "/forum", label: "指南", icon: BookOpen },
   { href: "/bottle", label: "星瓶", icon: FlaskIcon },
   { href: "/profile", label: "个人", icon: UserCircleIcon },
 ];

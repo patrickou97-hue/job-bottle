@@ -11,7 +11,7 @@ import { Drawer } from "@/components/ui/Drawer";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import type { ForumPostView } from "@/lib/types";
 
-const CATEGORIES = ["全部", "讨论", "经验", "求助", "分享"] as const;
+const CATEGORIES = ["全部", "公告", "教程", "分享"] as const;
 
 export function ForumClient() {
   const [posts, setPosts] = useState<ForumPostView[]>([]);
@@ -20,7 +20,6 @@ export function ForumClient() {
   const [activeCategory, setActiveCategory] = useState<string>("全部");
   const [showForm, setShowForm] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserIsAdmin, setCurrentUserIsAdmin] = useState(false);
 
   async function loadPosts() {
@@ -33,7 +32,6 @@ export function ForumClient() {
       }
       const supabase = createClient();
       const user = await getCurrentUserOrNull(supabase);
-      setCurrentUserId(user?.id ?? null);
       if (user) {
         const { data: profile } = await supabase
           .from("profiles")
@@ -46,11 +44,11 @@ export function ForumClient() {
       }
       const result = await fetchPosts(supabase, {
         category: activeCategory,
-        limit: 50,
+        limit: 100,
       });
       setPosts(result);
     } catch {
-      setMessage("读取讨论帖失败，请稍后再试。");
+      setMessage("读取指南内容失败，请稍后再试。");
     } finally {
       setLoading(false);
     }
@@ -95,28 +93,33 @@ export function ForumClient() {
   return (
     <div className="observatory-page space-y-8">
       <section className="page-hero">
-        <div>
-          <h1 className="page-title">求职社区</h1>
+        <div className="max-w-2xl">
+          <h1 className="page-title">拾星指南</h1>
+          <p className="mt-3 text-sm leading-7 text-ink-secondary sm:text-base">
+            查看产品公告、使用教程和经过整理的求职经验。内容由拾星官方持续维护。
+          </p>
         </div>
-        <div className="flex items-end justify-start md:justify-end">
-          <Button onClick={() => setShowForm((v) => !v)}>
-            {showForm ? "收起" : "发布"}
-          </Button>
-        </div>
+        {currentUserIsAdmin ? (
+          <div className="flex items-end justify-start md:justify-end">
+            <Button onClick={() => setShowForm((value) => !value)}>
+              {showForm ? "收起编辑器" : "发布内容"}
+            </Button>
+          </div>
+        ) : null}
       </section>
 
-      <Drawer open={showForm} title="发布讨论" onClose={() => setShowForm(false)}>
-          <NewPostForm onCreated={handleCreated} onCancel={() => setShowForm(false)} />
+      <Drawer open={showForm} title="发布指南内容" onClose={() => setShowForm(false)} showHelpLink={false}>
+        <NewPostForm onCreated={handleCreated} onCancel={() => setShowForm(false)} />
       </Drawer>
 
       <section className="flex flex-wrap items-center justify-between gap-4">
         <SegmentedControl
-          ariaLabel="讨论分类"
+          ariaLabel="指南分类"
           options={CATEGORIES.map((category) => ({ value: category, label: category }))}
           value={activeCategory}
           onChange={setActiveCategory}
         />
-        <span className="section-meta">{posts.length} 条内容</span>
+        <span className="section-meta">{posts.length} 篇内容</span>
       </section>
 
       {message ? (
@@ -128,13 +131,13 @@ export function ForumClient() {
       <section className="list-surface">
         {loading ? (
           <div className="empty-state">
-            <span className="loading-line">正在读取讨论</span>
+            <span className="loading-line">正在读取指南</span>
           </div>
         ) : posts.length === 0 ? (
           <div className="empty-state">
             <div>
-              <h2>暂无经验内容</h2>
-              <p>分享一条面试复盘、投递经验或准备方法。</p>
+              <h2>暂无指南内容</h2>
+              <p>{currentUserIsAdmin ? "点击“发布内容”添加第一篇公告或教程。" : "官方内容正在整理中，请稍后再来。"}</p>
             </div>
           </div>
         ) : (
@@ -142,7 +145,6 @@ export function ForumClient() {
             <PostCard
               key={post.id}
               post={post}
-              currentUserId={currentUserId}
               isAdmin={currentUserIsAdmin}
               expanded={expandedId === post.id}
               onToggle={() =>

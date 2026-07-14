@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { ProfileRole } from "@/lib/types";
 
 const MAX_AUTHORS_PER_REQUEST = 100;
 const UUID_PATTERN =
@@ -9,8 +8,7 @@ const UUID_PATTERN =
 
 type AuthorProfile = {
   id: string;
-  display_name: string | null;
-  role: ProfileRole;
+  role: "admin";
 };
 
 export async function POST(request: NextRequest) {
@@ -36,21 +34,17 @@ export async function POST(request: NextRequest) {
     const admin = createAdminClient();
     const { data, error } = await admin
       .from("profiles")
-      .select("id, display_name, role")
-      .in("id", userIds);
+      .select("id, role")
+      .in("id", userIds)
+      .eq("role", "admin");
 
     if (error) throw error;
 
     const authors = Object.fromEntries(
-      ((data ?? []) as AuthorProfile[]).map((profile) => {
-        const displayName = profile.display_name?.trim() || "匿名用户";
-        const name =
-          profile.role === "admin"
-            ? displayName
-            : `${Array.from(displayName).slice(0, 3).join("")}***`;
-
-        return [profile.id, { name, role: profile.role }];
-      }),
+      ((data ?? []) as AuthorProfile[]).map((profile) => [
+        profile.id,
+        { name: "拾星官方", role: profile.role },
+      ]),
     );
 
     return NextResponse.json(

@@ -18,7 +18,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "管理员权限读取失败，请稍后重试。" }, { status: 500 });
     }
     if (profile?.role !== "admin") {
-      return NextResponse.json({ error: "只有管理员可以置顶社区内容。" }, { status: 403 });
+      return NextResponse.json({ error: "只有管理员可以设置指南重点内容。" }, { status: 403 });
     }
 
     const input = await request.json().catch(() => null) as Record<string, unknown> | null;
@@ -42,6 +42,6 @@ export async function PATCH(request: NextRequest) {
     console.error("[forum_pin]", {
       code: error && typeof error === "object" && "code" in error ? String(error.code) : undefined,
     });
-    return NextResponse.json({ error: "置顶状态保存失败，请稍后重试。" }, { status: 500 });
+    return NextResponse.json({ error: "重点状态保存失败，请稍后重试。" }, { status: 500 });
   }
 }

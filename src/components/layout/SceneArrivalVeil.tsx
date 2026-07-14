@@ -8,7 +8,7 @@ const DESTINATION_LABELS: Record<string, string> = {
   "/explore": "进入岗位坐标",
   "/my": "进入投递管理",
   "/resume": "进入简历制作",
-  "/forum": "进入求职社区",
+  "/forum": "进入拾星指南",
   "/profile": "进入个人中心",
   "/guide": "进入秋招流程",
   "/login": "进入登录",

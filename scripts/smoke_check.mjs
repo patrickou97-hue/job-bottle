@@ -51,9 +51,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/lib/forum.ts",
-    mustInclude: ["readError", "if (readError) throw readError", "if (error) throw error"],
-    mustNotInclude: [],
-    label: "社区点赞读写错误不会被静默当成成功",
+    mustInclude: ["/api/admin/forum/posts", "role === \"admin\"", "author_name: \"拾星官方\"", "normalizeGuideCategory"],
+    mustNotInclude: ["createComment", "toggleLike", ".from(\"forum_likes\")"],
+    label: "拾星指南只展示管理员内容且移除社区互动写入",
   },
   {
     file: "src/components/galaxy/GalaxyMapClient.tsx",
@@ -165,7 +165,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/lib/planet-routes.ts",
-    mustInclude: ["label: '岗位坐标'", "label: '投递管理'", "label: '简历制作'", "label: '求职社区'", "label: '星瓶'"],
+    mustInclude: ["label: '岗位坐标'", "label: '投递管理'", "label: '简历制作'", "label: '拾星指南'", "label: '星瓶'"],
     mustNotInclude: ["label: '岗位池'", "label: '经验库'", "label: '我的星瓶'"],
     label: "首页行星入口使用统一一级模块名称",
   },
@@ -267,7 +267,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/layout/Navbar.tsx",
-    mustInclude: ["岗位坐标", "投递管理", "简历制作", "求职社区", "星瓶", "个人中心", "mobileNavItems", "grid-cols-6", "移动主导航", "bottom-0", "primary-nav-indicator", "mobile-nav-indicator"],
+    mustInclude: ["岗位坐标", "投递管理", "简历制作", "拾星指南", "星瓶", "个人中心", "mobileNavItems", "grid-cols-6", "移动主导航", "bottom-0", "primary-nav-indicator", "mobile-nav-indicator"],
     mustNotInclude: ["找岗位", "求职交流", "label: \"我的\"", "label: \"首页\""],
     label: "桌面与移动端均直接展示六个一级模块",
   },
@@ -611,9 +611,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/ui/CommunityHelpLink.tsx",
-    mustInclude: ["href=\"/forum\"", "去求职社区了解如何使用「拾星」", "focus-visible:ring-2"],
+    mustInclude: ["href=\"/forum\"", "去拾星指南查看使用教程", "focus-visible:ring-2"],
     mustNotInclude: ["target=\"_blank\""],
-    label: "所有业务弹窗复用可访问的求职社区使用帮助入口",
+    label: "所有业务弹窗复用可访问的拾星指南教程入口",
   },
   {
     file: "src/components/capture/CaptureOrbit.tsx",
@@ -664,12 +664,6 @@ const SOURCE_INVARIANTS = [
     label: "生产补齐迁移以幂等方式恢复状态历史、埋点、举报、AI 限流和数据一致性",
   },
   {
-    file: "scripts/import_forum_seed.mjs",
-    mustInclude: ["storedCommentsResult", "storedLikesResult", "comment_count:", "like_count:", "countResults"],
-    mustNotInclude: ["NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY"],
-    label: "论坛种子导入后按真实评论和点赞记录重新核对计数",
-  },
-  {
     file: "supabase/migrations/20260704030000_security_audit_followup.sql",
     mustInclude: [
       "set search_path = public, pg_temp",
@@ -686,21 +680,21 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/forum/PostCard.tsx",
-    mustInclude: ["AnimatePresence", "motion.article", "useReducedMotion", "aria-expanded={expanded}", "aria-controls={contentId}", "onToggle();", "正在读取评论", "SignalStrengthTicks", "lastActivityAt: post.created_at", "发布于 {formatDateTime(post.created_at)}", "置顶帖子", "取消置顶", "全站置顶", "setPostPinned", "isAdmin", "data-pinned={post.is_pinned}", "编辑帖子", "保存修改", "updatePost", "isOwner && !editing"],
-    mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY", "<Drawer open={expanded}"],
-    label: "社区帖子原位展开、作者可编辑且仅向管理员展示醒目的全站置顶操作",
+    mustInclude: ["AnimatePresence", "motion.article", "useReducedMotion", "aria-expanded={expanded}", "aria-controls={contentId}", "onClick={onToggle}", "发布于 {formatDateTime(post.created_at)}", "重点推荐", "设为重点", "取消重点", "setPostPinned", "isAdmin", "data-pinned={post.is_pinned}", "编辑内容", "保存修改", "updatePost", "拾星官方", "阅读全文"],
+    mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY", "createComment", "toggleLike", "发布评论", "<Drawer open={expanded}"],
+    label: "拾星指南原位展开并只向管理员提供内容维护操作",
   },
   {
     file: "src/lib/forum.ts",
-    mustInclude: ["fetchForumAuthors", "author_role", "/api/forum/authors", "***"],
-    mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY"],
-    label: "社区普通作者名称保留前三位并追加三个星号而管理员名称保持可见",
+    mustInclude: ["fetchForumAuthors", "author_role", "/api/forum/authors", "role === \"admin\"", "拾星官方"],
+    mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY", "匿名用户***"],
+    label: "拾星指南在客户端只保留管理员发布内容",
   },
   {
     file: "src/app/api/forum/authors/route.ts",
-    mustInclude: ["createAdminClient", "MAX_AUTHORS_PER_REQUEST", "Array.from(displayName).slice(0, 3)", "profile.role === \"admin\""],
+    mustInclude: ["createAdminClient", "MAX_AUTHORS_PER_REQUEST", ".eq(\"role\", \"admin\")", "拾星官方"],
     mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY"],
-    label: "社区作者接口只从服务端返回脱敏昵称而不开放用户资料表",
+    label: "指南作者接口只从服务端确认管理员身份而不开放用户资料表",
   },
   {
     file: "src/components/auth/LoginForm.tsx",
@@ -716,9 +710,21 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/admin/forum/pin/route.ts",
-    mustInclude: ["auth.getUser", "profile?.role !== \"admin\"", "只有管理员可以置顶社区内容", "is_pinned"],
+    mustInclude: ["auth.getUser", "profile?.role !== \"admin\"", "只有管理员可以设置指南重点内容", "is_pinned"],
     mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY", ".update({ is_pinned: false })", ".neq(\"id\", input.postId)"],
-    label: "社区置顶接口服务端复核管理员身份且允许多个帖子同时置顶",
+    label: "指南重点接口服务端复核管理员身份且允许多篇内容同时突出",
+  },
+  {
+    file: "src/app/api/admin/forum/posts/route.ts",
+    mustInclude: ["getAdminUser", "profile?.role !== \"admin\"", "createAdminClient", "GUIDE_CATEGORIES", "只有管理员可以发布指南内容", "export async function POST", "export async function PATCH", "export async function DELETE"],
+    mustNotInclude: ["NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY", "display_name", "forum_comments", "forum_likes"],
+    label: "指南发布编辑删除由受保护的管理员 API 执行",
+  },
+  {
+    file: "supabase/migrations/20260714200000_forum_to_guide_center.sql",
+    mustInclude: ["delete from public.forum_posts", "profile.role = 'admin'", "delete from public.forum_likes", "delete from public.forum_comments", "delete from public.reports", "'公告', '教程', '分享'", "enforce_guide_admin_author", "forum_posts_insert_admin", "forum_posts_update_admin", "forum_posts_delete_admin_only"],
+    mustNotInclude: ["drop table", "profiles_select_public", "service_role"],
+    label: "论坛转指南迁移清理普通用户内容和互动并把写权限收紧到管理员",
   },
   {
     file: "supabase/migrations/20260713193000_forum_admin_pinning.sql",
@@ -786,7 +792,7 @@ const REQUIRED_TEXT = {
   "/galaxy/industry": ["行业星系", "互联网星云", "金融星云"],
   "/jobs": ["岗位坐标", "正在加载岗位"],
   "/login": ["正在打开登录"],
-  "/forum": ["求职社区"],
+  "/forum": ["拾星指南"],
   "/admin": ["管理后台"],
 };
 

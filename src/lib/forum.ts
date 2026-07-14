@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database, ForumPost, ForumComment, ForumPostWithComments, ForumPostView, ProfileRole } from "@/lib/types";
+import type { Database, ForumPost, ForumPostView, ProfileRole } from "@/lib/types";
 
 /* ── Helper: batch-fetch display names for a set of user IDs ── */
 async function fetchForumAuthors(
@@ -36,10 +36,6 @@ export async function fetchPosts(
     .order("is_pinned", { ascending: false })
     .order("created_at", { ascending: false });
 
-  if (options?.category && options.category !== "全部") {
-    query = query.eq("category", options.category);
-  }
-
   const limit = options?.limit ?? 20;
   const offset = options?.offset ?? 0;
   query = query.range(offset, offset + limit - 1);
@@ -53,205 +49,62 @@ export async function fetchPosts(
     posts.map((p) => p.user_id),
   );
 
-  return posts.map((p) => ({
-    ...p,
-    author_name: authors.get(p.user_id)?.name ?? (p.is_pinned ? "拾星管理员" : "匿名用户***"),
-    author_role: authors.get(p.user_id)?.role ?? (p.is_pinned ? "admin" : "user"),
-  })) satisfies ForumPostView[];
+  const guidePosts = posts
+    .filter((post) => authors.get(post.user_id)?.role === "admin")
+    .map((post) => ({
+      ...post,
+      category: normalizeGuideCategory(post.category),
+      author_name: "拾星官方",
+      author_role: "admin" as const,
+      like_count: 0,
+      comment_count: 0,
+    })) satisfies ForumPostView[];
+
+  if (options?.category && options.category !== "全部") {
+    return guidePosts.filter((post) => post.category === options.category);
+  }
+  return guidePosts;
 }
 
-/* ── Fetch single post with comments ── */
-export async function fetchPost(supabase: SupabaseClient<Database>, postId: string) {
-  const { data, error } = await supabase
-    .from("forum_posts")
-    .select("*")
-    .eq("id", postId)
-    .single();
-  if (error) throw error;
-  const post = data as ForumPost;
-
-  const { data: commentRows, error: commentsError } = await supabase
-    .from("forum_comments")
-    .select("*")
-    .eq("post_id", postId)
-    .order("created_at", { ascending: true });
-  if (commentsError) throw commentsError;
-
-  const comments = (commentRows ?? []) as ForumComment[];
-  const allUserIds = [post.user_id, ...comments.map((c) => c.user_id)];
-  const authors = await fetchForumAuthors(supabase, allUserIds);
-
-  return {
-    ...post,
-    author_name: authors.get(post.user_id)?.name ?? (post.is_pinned ? "拾星管理员" : "匿名用户***"),
-    author_role: authors.get(post.user_id)?.role ?? (post.is_pinned ? "admin" : "user"),
-    comments: comments.map((c) => ({
-      ...c,
-      author_name: authors.get(c.user_id)?.name ?? "匿名用户***",
-      author_role: authors.get(c.user_id)?.role ?? "user",
-    })),
-  } as ForumPostWithComments;
+function normalizeGuideCategory(category: string) {
+  if (category === "公告" || category === "教程" || category === "分享") return category;
+  if (category === "经验") return "分享";
+  if (category === "求助") return "教程";
+  return "公告";
 }
 
-/* ── Create post ── */
+async function requestGuideMutation(method: "POST" | "PATCH" | "DELETE", body: Record<string, unknown>) {
+  const response = await fetch("/api/admin/forum/posts", {
+    method,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const result = await response.json().catch(() => null) as {
+    error?: string;
+    post?: ForumPost;
+    deleted?: boolean;
+  } | null;
+  if (!response.ok) throw new Error(result?.error ?? "指南内容保存失败。");
+  return result;
+}
+
 export async function createPost(
-  supabase: SupabaseClient<Database>,
-  userId: string,
   data: { title: string; content: string; category: string; tags: string[] },
 ) {
-  const { data: post, error } = await supabase
-    .from("forum_posts")
-    .insert({ user_id: userId, ...data })
-    .select("*")
-    .single();
-  if (error) throw error;
-
-  const authors = await fetchForumAuthors(supabase, [userId]);
-  return {
-    ...(post as ForumPost),
-    author_name: authors.get(userId)?.name ?? "匿名用户***",
-    author_role: authors.get(userId)?.role ?? "user",
-  };
+  const result = await requestGuideMutation("POST", data);
+  if (!result?.post) throw new Error("指南内容发布失败。");
+  return result.post;
 }
 
-/* ── Update post ── */
 export async function updatePost(
-  supabase: SupabaseClient<Database>,
-  userId: string,
   postId: string,
   data: { title?: string; content?: string; category?: string; tags?: string[] },
 ) {
-  const { error } = await supabase
-    .from("forum_posts")
-    .update(data)
-    .eq("id", postId)
-    .eq("user_id", userId)
-    .select("id")
-    .single();
-  if (error) throw error;
+  await requestGuideMutation("PATCH", { postId, ...data });
 }
 
-/* ── Delete post ── */
-export async function deletePost(
-  supabase: SupabaseClient<Database>,
-  userId: string,
-  postId: string) {
-  const { error } = await supabase
-    .from("forum_posts")
-    .delete()
-    .eq("id", postId)
-    .eq("user_id", userId);
-  if (error) throw error;
-}
-
-/* ── Create comment ── */
-export async function createComment(
-  supabase: SupabaseClient<Database>,
-  userId: string,
-  postId: string,
-  content: string,
-) {
-  const { data: comment, error } = await supabase
-    .from("forum_comments")
-    .insert({ post_id: postId, user_id: userId, content })
-    .select("*")
-    .single();
-  if (error) throw error;
-
-  const authors = await fetchForumAuthors(supabase, [userId]);
-  return {
-    ...(comment as ForumComment),
-    author_name: authors.get(userId)?.name ?? "匿名用户***",
-    author_role: authors.get(userId)?.role ?? "user",
-  };
-}
-
-/* ── Delete comment ── */
-export async function deleteComment(
-  supabase: SupabaseClient<Database>,
-  userId: string,
-  commentId: string,
-) {
-  const { error } = await supabase
-    .from("forum_comments")
-    .delete()
-    .eq("id", commentId)
-    .eq("user_id", userId);
-  if (error) throw error;
-}
-
-/* ── Toggle like ── */
-export async function toggleLike(
-  supabase: SupabaseClient<Database>,
-  userId: string,
-  postId?: string,
-  commentId?: string,
-) {
-  if (postId) {
-    const { data: existing, error: readError } = await supabase
-      .from("forum_likes")
-      .select("user_id")
-      .eq("user_id", userId)
-      .eq("post_id", postId)
-      .maybeSingle();
-    if (readError) throw readError;
-    if (existing) {
-      const { error } = await supabase.from("forum_likes").delete().eq("user_id", userId).eq("post_id", postId);
-      if (error) throw error;
-      return false;
-    }
-    const { error } = await supabase.from("forum_likes").insert({ user_id: userId, post_id: postId });
-    if (error) throw error;
-    return true;
-  }
-  if (commentId) {
-    const { data: existing, error: readError } = await supabase
-      .from("forum_likes")
-      .select("user_id")
-      .eq("user_id", userId)
-      .eq("comment_id", commentId)
-      .maybeSingle();
-    if (readError) throw readError;
-    if (existing) {
-      const { error } = await supabase.from("forum_likes").delete().eq("user_id", userId).eq("comment_id", commentId);
-      if (error) throw error;
-      return false;
-    }
-    const { error } = await supabase.from("forum_likes").insert({ user_id: userId, comment_id: commentId });
-    if (error) throw error;
-    return true;
-  }
-  return false;
-}
-
-/* ── Fetch user like status ── */
-export async function fetchUserLike(
-  supabase: SupabaseClient<Database>,
-  userId: string,
-  postId?: string,
-  commentId?: string,
-) {
-  if (postId) {
-    const { data, error } = await supabase
-      .from("forum_likes")
-      .select("user_id")
-      .eq("user_id", userId)
-      .eq("post_id", postId)
-      .maybeSingle();
-    if (error) throw error;
-    return Boolean(data);
-  }
-  if (commentId) {
-    const { data, error } = await supabase
-      .from("forum_likes")
-      .select("user_id")
-      .eq("user_id", userId)
-      .eq("comment_id", commentId)
-      .maybeSingle();
-    if (error) throw error;
-    return Boolean(data);
-  }
-  return false;
+export async function deletePost(postId: string) {
+  await requestGuideMutation("DELETE", { postId });
 }
 
 /* ── Admin-only pinning (server rechecks the authenticated profile role) ── */

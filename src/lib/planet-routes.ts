@@ -61,8 +61,8 @@ export const PLANET_ROUTES: PlanetRoute[] = [
   },
   {
     id: 'forum',
-    label: '求职社区',
-    description: '查看和分享求职经验',
+    label: '拾星指南',
+    description: '查看公告、教程和经验分享',
     href: '/forum',
     orbitRadius: 800,
     orbitDuration: 138,

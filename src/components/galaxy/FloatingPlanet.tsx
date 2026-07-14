@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'motion/react'
-import { Briefcase, FileText, LogIn, MessageSquare, ScrollText, Shield, Sparkles } from 'lucide-react'
+import { BookOpen, Briefcase, FileText, LogIn, ScrollText, Shield, Sparkles } from 'lucide-react'
 import type { PlanetRoute } from '@/lib/galaxy-routes'
 import { OrbMaterial, type OrbMaterialVariant } from '@/components/visual/OrbMaterial'
 
@@ -22,7 +22,7 @@ function PlanetGlyph({ planet }: { planet: PlanetRoute }) {
   if (planet.id === 'jobs') return <Briefcase className={className} />
   if (planet.id === 'applications') return <FileText className={className} />
   if (planet.id === 'resume') return <ScrollText className={className} />
-  if (planet.id === 'forum') return <MessageSquare className={className} />
+  if (planet.id === 'forum') return <BookOpen className={className} />
   if (planet.id === 'admin') return <Shield className={className} />
   if (planet.id === 'auth') return <LogIn className={className} />
   return <Sparkles className={className} />
