@@ -15,6 +15,10 @@ delete from public.forum_likes;
 delete from public.forum_comments;
 delete from public.reports;
 
+-- 先移除旧分类约束，随后才能把管理员内容改为公告/教程。
+alter table public.forum_posts
+  drop constraint if exists forum_posts_category_check;
+
 update public.forum_posts
 set category = case
   when category in ('经验', '分享') then '分享'
@@ -81,9 +85,6 @@ set content = replace(content,
   '8. 在社区阅读经验、提出问题，也可以分享自己的复盘。',
   '8. 在拾星指南查看公告、教程和经验分享。')
 where content like '%8. 在社区阅读经验、提出问题，也可以分享自己的复盘。%';
-
-alter table public.forum_posts
-  drop constraint if exists forum_posts_category_check;
 
 alter table public.forum_posts
   add constraint forum_posts_category_check
