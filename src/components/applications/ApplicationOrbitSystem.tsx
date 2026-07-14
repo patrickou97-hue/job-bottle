@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { X } from "lucide-react";
 import {
   ORBIT_BAND_CONFIG,
@@ -43,7 +43,8 @@ export function ApplicationOrbitSystem({
     ? getOrbitBandForStatus(selectedApplication.status as OrbitStatus)
     : null;
   const expandedApplications = expandedBand ? grouped.get(expandedBand) ?? [] : [];
-  const orbitScale = useResponsiveOrbitScale();
+  const orbitPlaneRef = useRef<HTMLDivElement>(null);
+  const orbitScale = useResponsiveOrbitScale(orbitPlaneRef);
 
   return (
     <section className="relative overflow-hidden">
@@ -57,13 +58,15 @@ export function ApplicationOrbitSystem({
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_330px]">
         <div className="theme-scene visualization-canvas relative mx-auto h-[460px] w-full max-w-[840px] overflow-hidden sm:h-[600px] lg:h-[760px] xl:max-w-none">
-          <div className="pointer-events-none absolute inset-0 opacity-18 [background-image:radial-gradient(circle,rgba(201,197,228,.28)_0_1px,transparent_1.5px)] [background-size:92px_92px]" />
-          <div className="absolute inset-0 grid place-items-center">
-            <div className="relative aspect-square h-[min(90vw,720px)] max-h-[720px] w-[min(90vw,720px)] sm:h-[min(92%,720px)] sm:w-[min(92%,720px)]">
+          <OrbitSceneBackdrop />
+          <div className="application-orbit-stage absolute inset-0 grid place-items-center">
+            <div ref={orbitPlaneRef} className="application-orbit-plane relative aspect-square">
               <OrbitTrackLayer activeBand={activeBand} scale={orbitScale} />
-              <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center text-center text-xs text-nebula-silver">
-                <RadarCore active={applications.length > 0} />
-                <span className="mt-3 block text-[11px]">
+              <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 size-0 text-center text-xs text-nebula-silver">
+                <div className="absolute left-0 top-0 flex -translate-x-1/2 -translate-y-1/2 leading-none">
+                  <RadarCore active={applications.length > 0} />
+                </div>
+                <span className="absolute left-0 top-[4.2rem] block -translate-x-1/2 whitespace-nowrap text-[11px]">
                   投递中 <span className="font-display text-base text-ink-primary tabular-nums">{applications.length}</span>
                 </span>
               </div>
@@ -154,6 +157,18 @@ export function ApplicationOrbitSystem({
   );
 }
 
+function OrbitSceneBackdrop() {
+  return (
+    <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+      <div className="space-bg__image" />
+      <div className="space-bg__vignette opacity-75" />
+      <div className="space-bg__stars space-bg__stars--far" />
+      <div className="space-bg__stars space-bg__stars--near opacity-45" />
+      <div className="space-bg__noise" />
+    </div>
+  );
+}
+
 function OrbitTrackLayer({ activeBand, scale }: { activeBand: OrbitBand | null; scale: number }) {
   return (
     <div className="pointer-events-none absolute left-1/2 top-1/2 size-0">
@@ -170,8 +185,8 @@ function OrbitTrackLayer({ activeBand, scale }: { activeBand: OrbitBand | null; 
               height: radius * 2,
               marginLeft: -radius,
               marginTop: -radius,
-              borderColor: active ? "rgba(201,197,228,0.2)" : `rgba(145,140,174,${config.opacity * 0.16})`,
-              boxShadow: active ? "0 0 26px rgba(126,124,181,0.12)" : "none",
+              borderColor: active ? "rgba(232,201,121,0.42)" : `rgba(201,197,228,${0.08 + config.opacity * 0.2})`,
+              boxShadow: active ? "0 0 28px rgba(183,134,40,0.16)" : "inset 0 0 18px rgba(126,124,181,0.025)",
             }}
           />
         );
@@ -180,26 +195,21 @@ function OrbitTrackLayer({ activeBand, scale }: { activeBand: OrbitBand | null; 
   );
 }
 
-function useResponsiveOrbitScale() {
+function useResponsiveOrbitScale(planeRef: RefObject<HTMLDivElement | null>) {
   const [scale, setScale] = useState(0.86);
 
   useEffect(() => {
+    const plane = planeRef.current;
+    if (!plane) return;
     const update = () => {
-      const width = window.innerWidth;
-      if (width < 420) {
-        setScale(0.42);
-      } else if (width < 640) {
-        setScale(0.5);
-      } else if (width < 1024) {
-        setScale(0.62);
-      } else {
-        setScale(0.86);
-      }
+      const size = Math.min(plane.clientWidth, plane.clientHeight);
+      setScale(Math.min(0.92, Math.max(0.36, size / 780)));
     };
     update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, []);
+    const observer = new ResizeObserver(update);
+    observer.observe(plane);
+    return () => observer.disconnect();
+  }, [planeRef]);
 
   return scale;
 }

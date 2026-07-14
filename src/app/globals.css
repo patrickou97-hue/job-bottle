@@ -531,6 +531,15 @@ html[data-scene-transition="arrived"] .scene-arrival-veil__stars {
   background: #071326;
 }
 
+.application-orbit-stage {
+  container-type: size;
+}
+
+.application-orbit-plane {
+  width: min(90cqw, 90cqh, 720px);
+  height: min(90cqw, 90cqh, 720px);
+}
+
 .scene-panel {
   overflow: hidden;
   border: 1px solid var(--apple-glass-border);

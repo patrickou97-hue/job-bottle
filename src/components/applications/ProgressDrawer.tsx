@@ -334,14 +334,14 @@ export function ProgressDrawer({
         <section className={ended ? "opacity-40 transition-opacity" : "transition-opacity"}>
           <div className="mb-4 text-sm font-medium text-ink-primary">状态轨道</div>
           <div className="relative px-1 pb-9 pt-4">
-            <div className="absolute left-2 right-2 top-7 h-px bg-[color:var(--line)]" />
+            <div className="absolute left-7 right-7 top-7 h-[2px] rounded-full bg-[rgba(183,134,40,0.24)] shadow-[0_0_12px_rgba(183,134,40,0.12)]" />
             <div
-              className="absolute left-2 top-7 h-px bg-aurum-300/70 transition-[width] duration-300 ease-out motion-reduce:transition-none"
+              className="absolute left-7 top-7 h-[2px] rounded-full bg-[#B78628] shadow-[0_0_12px_rgba(183,134,40,0.3)] transition-[width] duration-300 ease-out motion-reduce:transition-none"
               style={{
                 width:
                   progressIndex <= 0
                     ? 0
-                    : `calc(${(progressIndex / (APPLICATION_PROGRESS_STATUS.length - 1)) * 100}% - 16px)`,
+                    : `calc(${(progressIndex / (APPLICATION_PROGRESS_STATUS.length - 1)) * 100}% - ${(progressIndex / (APPLICATION_PROGRESS_STATUS.length - 1)) * 56}px)`,
               }}
             />
             <div className="relative flex items-start justify-between">
@@ -362,11 +362,11 @@ export function ProgressDrawer({
                   >
                     <span className="flex h-6 items-center justify-center">
                       {active ? (
-                        <span className="h-3 w-3 rotate-45 rounded-[3px] bg-aurum-300 shadow-[0_0_18px_rgba(126,124,181,0.52)] motion-safe:animate-pulse" />
+                        <span className="h-3.5 w-3.5 rotate-45 rounded-[3px] border border-[#E8C979] bg-[#C9973C] shadow-[0_0_18px_rgba(183,134,40,0.42)] motion-safe:animate-pulse" />
                       ) : done ? (
-                        <span className="h-1.5 w-1.5 rounded-full bg-aurum-300" />
+                        <span className="h-2.5 w-2.5 rounded-full border border-[#D9B75F] bg-[#B78628] shadow-[0_0_8px_rgba(183,134,40,0.26)]" />
                       ) : (
-                        <span className="h-1.5 w-1.5 rounded-full ring-1 ring-white/28" />
+                        <span className="h-2 w-2 rounded-full bg-white ring-1 ring-[#B78628]/45" />
                       )}
                     </span>
                     <span

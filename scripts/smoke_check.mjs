@@ -481,19 +481,19 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/ApplicationOrbitSystem.tsx",
-    mustInclude: ["投递中", "ApplicationOrbitRing", "ApplicationOrbitDetail", "OrbMaterial", "OrbitTrackLayer", "pointer-events-none absolute left-1/2 top-1/2 z-10", "absolute z-20"],
+    mustInclude: ["投递中", "ApplicationOrbitRing", "ApplicationOrbitDetail", "OrbMaterial", "OrbitTrackLayer", "OrbitSceneBackdrop", "pointer-events-none absolute left-1/2 top-1/2 z-10 size-0", "absolute z-20"],
     mustNotInclude: ["CaptureOrbit", "timeline", "ApplicationOrbitLegend", "投递引力核心", "接递引力核心"],
     label: "投递主视觉使用同心投递轨道",
   },
   {
     file: "src/components/applications/ApplicationOrbitRing.tsx",
-    mustInclude: ["getOrbitPoint", "x: path.map", "y: path.map", "showTrack", "pointer-events-none absolute left-1/2 top-1/2 z-20", "pointer-events-auto -translate-x-1/2"],
+    mustInclude: ["getOrbitPoint", "suppressHydrationWarning", "x: path.map", "y: path.map", "showTrack", "pointer-events-none absolute left-1/2 top-1/2 z-20", "pointer-events-auto size-16 -translate-x-1/2"],
     mustNotInclude: ["rotate: 360", "translateX(${radius}px)", "rotate(${angle}deg)"],
     label: "投递轨道星体使用数学坐标运动而非旋转文字父层",
   },
   {
     file: "src/components/applications/ApplicationOrbitSystem.tsx",
-    mustInclude: ["OrbitTrackLayer", "aspect-square", "showTrack={false}", "ORBIT_BANDS.map", "getOrbitBandForStatus"],
+    mustInclude: ["OrbitTrackLayer", "application-orbit-plane", "ResizeObserver", "size / 780", "aspect-square", "showTrack={false}", "ORBIT_BANDS.map", "getOrbitBandForStatus"],
     mustNotInclude: ["scaleY"],
     label: "投递轨道按四个视觉轨道带绘制同心圆",
   },

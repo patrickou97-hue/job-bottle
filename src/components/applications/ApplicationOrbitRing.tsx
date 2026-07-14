@@ -69,7 +69,7 @@ export function ApplicationOrbitRing({
               duration={config.duration}
               reducedMotion={Boolean(reducedMotion)}
             >
-              <div className="pointer-events-auto -translate-x-1/2 -translate-y-1/2">
+              <div className="pointer-events-auto size-16 -translate-x-1/2 -translate-y-1/2">
                 {application ? (
                   <ApplicationOrbitStar
                     application={application}
@@ -121,7 +121,7 @@ function OrbitSlot({
   });
 
   return (
-    <motion.div className="absolute size-0" style={{ x, y }}>
+    <motion.div suppressHydrationWarning className="absolute size-0" style={{ x, y }}>
       {children}
     </motion.div>
   );

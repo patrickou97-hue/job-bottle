@@ -71,8 +71,11 @@ export function ApplicationOrbitStar({
 
 function getApplicationOrbVariant(status: ApplicationStatus): OrbMaterialVariant {
   if (status === "opened") return "blue";
-  if (status === "applied" || status === "written_test") return "violet";
-  if (status === "first_round" || status === "second_round" || status === "final_round") return "rose";
+  if (status === "applied") return "violet";
+  if (status === "written_test") return "cyan";
+  if (status === "first_round") return "rose";
+  if (status === "second_round") return "apricot";
+  if (status === "final_round") return "cream";
   if (status === "offer") return "gold";
   return "muted";
 }
