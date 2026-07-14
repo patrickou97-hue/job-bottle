@@ -475,9 +475,15 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/profile/ProfileClient.tsx",
-    mustInclude: ["个人中心", "SectionLead", "基本信息", "匹配岗位", "查看秋招流程"],
-    mustNotInclude: ["eyebrow=", "个人中心 · 用户管理"],
-    label: "个人中心移除模板化眉题，保留资料、匹配岗位和流程入口",
+    mustInclude: ["个人中心", "SectionLead", "基本信息", "匹配岗位", "账号与反馈"],
+    mustNotInclude: ["eyebrow=", "个人中心 · 用户管理", "常用入口", "查看秋招流程"],
+    label: "个人中心移除模板化眉题，并将常用入口迁移至拾星指南",
+  },
+  {
+    file: "src/components/forum/ForumClient.tsx",
+    mustInclude: ["QUICK_LINKS", "常用入口", "浏览岗位坐标", "处理投递进度", "管理简历", "查看秋招流程"],
+    mustNotInclude: [],
+    label: "拾星指南在文章列表前提供常用入口",
   },
   {
     file: "src/app/globals.css",

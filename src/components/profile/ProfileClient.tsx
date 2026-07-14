@@ -424,18 +424,8 @@ export function ProfileClient() {
         </article>
       </section>
 
-      <section id="profile-account" className="grid gap-8 border-t border-[color:var(--line-ghost)] pt-7 lg:grid-cols-[minmax(0,1fr)_380px]">
-        <article>
-          <SectionLead title="常用入口" />
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            <GuideLink href="/explore" title="浏览岗位坐标" />
-            <GuideLink href="/my" title="处理投递进度" />
-            <GuideLink href="/resume" title="管理简历" />
-            <GuideLink href="/guide" title="查看秋招流程" />
-          </div>
-        </article>
-
-        <article className="lg:border-l lg:border-[color:var(--line-ghost)] lg:pl-8">
+      <section id="profile-account" className="border-t border-[color:var(--line-ghost)] pt-7">
+        <article className="max-w-xl">
           <SectionLead title="账号与反馈" />
           <div className="mt-5 space-y-4">
             <InfoLine icon={<Mail aria-hidden="true" className="size-4" />} label="登录邮箱" value={userEmail || "未读取"} />
@@ -576,15 +566,6 @@ function InfoLine({ icon, label, value }: { icon: ReactNode; label: string; valu
         <span className="mt-1 block truncate text-sm text-ink-primary">{value}</span>
       </span>
     </div>
-  );
-}
-
-function GuideLink({ href, title }: { href: string; title: string }) {
-  return (
-    <Link href={href} className="group flex items-center justify-between border-b border-[color:var(--line-ghost)] py-3">
-      <span className="text-sm font-medium text-ink-primary">{title}</span>
-      <ArrowRight aria-hidden="true" className="size-4 text-ink-muted transition group-hover:translate-x-0.5 group-hover:text-ink-primary" />
-    </Link>
   );
 }
 

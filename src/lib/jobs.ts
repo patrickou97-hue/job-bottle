@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { JOB_CATEGORIES, jobMatchesSelectedCategories, normalizeJobCategories } from "@/lib/categories";
+import { sanitizeApplicationUrl } from "@/lib/application-url";
 import { splitToTags } from "@/lib/utils";
 import { matchesLocationFilter } from "@/lib/locations";
 import type { Database, Job, JobFilters, JobFormValues } from "@/lib/types";
@@ -239,7 +240,7 @@ export function toJobPayload(values: JobFormValues) {
     job_titles: values.job_titles.trim() || null,
     job_categories: normalizedCategories.categories,
     locations: values.locations.trim() || null,
-    apply_url: values.apply_url.trim(),
+    apply_url: sanitizeApplicationUrl(values.apply_url.trim()),
     notes: values.notes.trim() || null,
     responsibilities: values.responsibilities.trim() || null,
     must_have: values.must_have.trim() || null,

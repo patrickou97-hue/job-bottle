@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
+import { ArrowRight } from "lucide-react";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { fetchPosts } from "@/lib/forum";
@@ -12,6 +14,13 @@ import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import type { ForumPostView } from "@/lib/types";
 
 const CATEGORIES = ["全部", "公告", "教程", "分享"] as const;
+
+const QUICK_LINKS = [
+  { href: "/explore", title: "浏览岗位坐标" },
+  { href: "/my", title: "处理投递进度" },
+  { href: "/resume", title: "管理简历" },
+  { href: "/guide", title: "查看秋招流程" },
+] as const;
 
 export function ForumClient() {
   const [posts, setPosts] = useState<ForumPostView[]>([]);
@@ -111,6 +120,21 @@ export function ForumClient() {
       <Drawer open={showForm} title="发布指南内容" onClose={() => setShowForm(false)} showHelpLink={false}>
         <NewPostForm onCreated={handleCreated} onCancel={() => setShowForm(false)} />
       </Drawer>
+
+      <section aria-labelledby="guide-shortcuts-title" className="border-y border-[color:var(--line-ghost)] py-5 sm:py-6">
+        <div className="flex items-baseline justify-between gap-4">
+          <h2 id="guide-shortcuts-title" className="text-lg font-semibold text-ink-primary">常用入口</h2>
+          <span className="text-xs text-ink-muted">从这里继续处理当前进度</span>
+        </div>
+        <div className="mt-3 grid gap-x-6 sm:grid-cols-2">
+          {QUICK_LINKS.map((link) => (
+            <Link key={link.href} href={link.href} className="group flex min-h-14 items-center justify-between border-b border-[color:var(--line-ghost)] py-3">
+              <span className="text-sm font-medium text-ink-primary">{link.title}</span>
+              <ArrowRight aria-hidden="true" className="size-4 shrink-0 text-ink-muted transition-transform group-hover:translate-x-0.5 group-hover:text-ink-primary" />
+            </Link>
+          ))}
+        </div>
+      </section>
 
       <section className="flex flex-wrap items-center justify-between gap-4">
         <SegmentedControl
