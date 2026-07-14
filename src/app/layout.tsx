@@ -15,8 +15,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.starjob.space"),
   title: "拾星 StarJob",
+  applicationName: "拾星 StarJob",
   description: "面向学生秋招投递的岗位信息管理与进度记录工具。",
+  manifest: "/manifest.webmanifest",
 };
 
 export default function RootLayout({
