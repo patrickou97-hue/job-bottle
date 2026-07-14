@@ -14,6 +14,7 @@ import {
 } from "@/lib/resume-font-profile";
 
 type JsPdf = import("jspdf").jsPDF;
+type ResumeJsPdf = JsPdf & { __resumeFontFamily?: string };
 
 type PdfOptions = {
   bodySize: number;
@@ -225,11 +226,16 @@ function createPdf(
     orientation: "portrait",
     unit: "pt",
   });
-  pdf.addFileToVFS("NotoSerifSC-Regular.ttf", fonts.regular);
-  pdf.addFileToVFS("NotoSerifSC-Bold.ttf", fonts.bold);
-  pdf.addFont("NotoSerifSC-Regular.ttf", FONT_FAMILY, "normal");
-  pdf.addFont("NotoSerifSC-Bold.ttf", FONT_FAMILY, "bold");
-  pdf.setFont(FONT_FAMILY, "normal");
+  const bundleId = fonts.cacheKey.replace(/[^a-z0-9-]/gi, "-");
+  const fontFamily = `${FONT_FAMILY}-${bundleId}`;
+  const regularFileName = `NotoSerifSC-${bundleId}-Regular.ttf`;
+  const boldFileName = `NotoSerifSC-${bundleId}-Bold.ttf`;
+  pdf.addFileToVFS(regularFileName, fonts.regular);
+  pdf.addFileToVFS(boldFileName, fonts.bold);
+  pdf.addFont(regularFileName, fontFamily, "normal");
+  pdf.addFont(boldFileName, fontFamily, "bold");
+  (pdf as ResumeJsPdf).__resumeFontFamily = fontFamily;
+  pdf.setFont(fontFamily, "normal");
   pdf.setTextColor(BLACK);
   return pdf;
 }
@@ -577,7 +583,7 @@ function setFont(
   weight: "bold" | "normal",
   color = BLACK,
 ) {
-  state.pdf.setFont(FONT_FAMILY, weight);
+  state.pdf.setFont((state.pdf as ResumeJsPdf).__resumeFontFamily ?? FONT_FAMILY, weight);
   state.pdf.setFontSize(size);
   state.pdf.setTextColor(color);
   state.fontSize = size;
