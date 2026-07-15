@@ -62,8 +62,9 @@
   - `e110bde` — `fix: correct extension download link`
   - `2cc9af1` — `fix: sharpen extension product visual`
   - `3acc952` — `feat: add resume import and feedback center`
-- 当前生产基线为提交 `3acc95279032a7325299e3ae4b171046cdf68f64`；Vercel deployment `dpl_HG6Uw7vXqpEek1zCYTbYaUpD9SQ5`，状态 `READY`。
-- 生产 `/extension`、`/extension/guide`、`/resume`、`/profile`、`/feedback` 均返回 HTTP 200；未登录扩展资料与简历导入 API 均按预期返回 401。
+  - `f212d51` — `feat: add bilingual resume workflows`
+- 中英文简历功能首次生产部署对应提交 `f212d51d518105196837cb791639149dbafbfc77`；Vercel deployment `dpl_7KYfhEaVeJJKscj9qEUAxXygNbkU`，状态 `READY`。
+- 生产 `/extension`、`/extension/guide`、`/resume`、`/profile`、`/feedback` 均返回 HTTP 200；未登录扩展资料、简历导入与整份简历翻译 API 均按预期返回 401。
 - 本轮没有 migration、hosted DDL 或 Supabase 数据写入。
 - 仍待人工验收：真实登录用户导入 PDF / DOCX 后的 AI 字段对照、最终 A4 视觉，以及已登录个人中心的生产视觉。
 
