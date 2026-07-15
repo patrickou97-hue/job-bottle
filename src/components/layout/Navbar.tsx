@@ -17,6 +17,7 @@ const navItems = [
   { href: "/explore", label: "岗位坐标" },
   { href: "/my", label: "投递管理" },
   { href: "/resume", label: "简历制作" },
+  { href: "/extension", label: "网申助手", beta: true },
   { href: "/forum", label: "拾星指南" },
   { href: "/bottle", label: "星瓶" },
   { href: "/profile", label: "个人中心" },
@@ -111,8 +112,18 @@ export function Navbar({ appearance = "work" }: { appearance?: "scene" | "work" 
           {navItems.map((item) => {
             const active = pathname.startsWith(item.href);
             return (
-              <Link key={item.href} href={item.href} className={navClass(item.href)} aria-current={active ? "page" : undefined} onClick={(event) => handleSceneLink(event, item.href)}>
-                {item.label}
+              <Link
+                key={item.href}
+                href={item.href}
+                className={navClass(item.href)}
+                aria-label={item.beta ? `${item.label} Beta` : item.label}
+                aria-current={active ? "page" : undefined}
+                onClick={(event) => handleSceneLink(event, item.href)}
+              >
+                <span className={cn("relative inline-flex items-center", item.beta && "pr-2")}>
+                  {item.label}
+                  {item.beta ? <span className="nav-beta" aria-hidden="true">BETA</span> : null}
+                </span>
                 {active ? (
                   <motion.span
                     layoutId="primary-nav-indicator"

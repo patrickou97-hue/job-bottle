@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "拾星网申助手",
+  "version": "0.1.6",
+  "description": "使用拾星简历填写当前网申页面。数据保存在本机，填写后由你确认提交。",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "拾星网申助手",
+    "default_icon": {
+      "16": "assets/icon16.png",
+      "48": "assets/icon48.png",
+      "128": "assets/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "assets/icon16.png",
+    "48": "assets/icon48.png",
+    "128": "assets/icon128.png"
+  },
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://www.starjob.space/*",
+    "https://starjob.space/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.starjob.space/extension*",
+        "https://starjob.space/extension*"
+      ],
+      "js": ["sync-bridge.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+}

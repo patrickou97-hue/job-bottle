@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:extension": "node scripts/build_resume_extension.mjs",
+    "build:extension:dev": "node scripts/build_resume_extension_dev.mjs",
     "start": "next start",
     "lint": "eslint",
     "smoke": "node scripts/smoke_check.mjs"

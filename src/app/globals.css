@@ -795,6 +795,53 @@ html[data-scene-transition="arrived"] .scene-arrival-veil__stars {
   color: var(--light-silver);
 }
 
+.nav-beta {
+  position: absolute;
+  top: -0.68rem;
+  right: -0.1rem;
+  background: linear-gradient(112deg, #f2f7fc 0%, #a9bdd2 45%, #6887a7 100%);
+  background-clip: text;
+  color: transparent;
+  font-size: 0.5rem;
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  filter: drop-shadow(0 1px 0 rgba(18, 41, 78, 0.12));
+  -webkit-background-clip: text;
+}
+
+.extension-page,
+.extension-guide {
+  padding-top: 1.5rem;
+}
+
+.extension-product-visual {
+  display: grid;
+  place-items: center;
+}
+
+.extension-product-visual img {
+  display: block;
+  width: 100%;
+  filter: drop-shadow(0 30px 28px rgba(18, 41, 78, 0.18));
+}
+
+.extension-guide__checklist > div + div {
+  border-top: 1px solid var(--line-ghost);
+}
+
+@media (max-width: 767px) {
+  .extension-page,
+  .extension-guide {
+    padding-top: 0.75rem;
+  }
+
+  .extension-hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .filter-rail {
   border: 1px solid rgba(231,226,255,.075);
   border-radius: var(--apple-radius-panel);

@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
-import { Copy, FileText, Plus, Trash2 } from "lucide-react";
+import { Copy, FileText, Plus, Puzzle, Trash2 } from "lucide-react";
 import { ResumeEditor, type EditorSection } from "@/components/resume/ResumeEditor";
 import { ResumePdfExportButton } from "@/components/resume/ResumePdfExportButton";
 import { ResumePreview } from "@/components/resume/ResumePreview";
@@ -462,6 +463,10 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
           <span className="status-pill rounded-md px-3 py-2 text-sm text-ink-secondary">
             {saveState}
           </span>
+          <Link href="/extension" className="muted-button pressable inline-flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-semibold">
+            <Puzzle aria-hidden="true" className="size-4" />
+            网申助手
+          </Link>
           <Button onClick={createResume} className="gap-2">
             <Plus aria-hidden="true" className="size-4" />
             新建简历

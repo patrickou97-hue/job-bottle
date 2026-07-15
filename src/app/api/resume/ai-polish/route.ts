@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { createHash } from "node:crypto";
 import { createClient } from "@/lib/supabase/server";
 import { RESUME_POLISH_INSTRUCTIONS, RESUME_POLISH_SECTION_TYPES } from "@/lib/resume-ai";
 
-const REQUEST_TIMEOUT_MS = 35_000;
+const REQUEST_TIMEOUT_MS = 18_000;
+const RESPONSE_CACHE_TTL_MS = 10 * 60 * 1_000;
+const MAX_OUTPUT_TOKENS = 2_200;
 
 const inputSchema = z.object({
   sectionType: z.enum(RESUME_POLISH_SECTION_TYPES),
@@ -32,6 +35,11 @@ const resultSchema = z.object({
   suggestions: z.array(z.string().trim().min(1).max(500)).max(12),
   warnings: z.array(z.string().trim().min(1).max(500)).max(12),
 }).strict();
+
+type PolishResult = z.infer<typeof resultSchema>;
+type CachedPolish = { expiresAt: number; result: PolishResult };
+const globalPolishCache = globalThis as typeof globalThis & { __starjobResumePolishCache?: Map<string, CachedPolish> };
+const polishCache = globalPolishCache.__starjobResumePolishCache ??= new Map<string, CachedPolish>();
 
 export async function POST(request: NextRequest) {
   const contentLength = Number(request.headers.get("content-length") ?? 0);
@@ -63,6 +71,13 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const cacheKey = createPolishCacheKey(user.id, parsed.data);
+  const cached = polishCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return NextResponse.json(cached.result, { headers: { "Cache-Control": "no-store", "X-StarJob-AI-Cache": "HIT" } });
+  }
+  if (cached) polishCache.delete(cacheKey);
+
   const { data: rateSlot, error: rateSlotError } = await supabase.rpc("take_resume_ai_rate_slot");
   if (rateSlotError) {
     logServerError("resume_ai_rate_slot", rateSlotError);
@@ -86,22 +101,11 @@ export async function POST(request: NextRequest) {
       messages: buildMessages(parsed.data),
     });
     const firstResult = parseResult(first, parsed.data.content);
-    if (firstResult) return NextResponse.json(firstResult);
-
-    const repaired = await callMimo({
-      apiKey,
-      baseUrl,
-      model,
-      messages: [
-        { role: "system", content: "把输入修复为符合指定结构的严格 JSON。不得新增事实，不得返回 Markdown。" },
-        { role: "user", content: `${RESULT_SHAPE}\n待修复内容：\n${first.slice(0, 12_000)}` },
-      ],
-    });
-    const repairedResult = parseResult(repaired, parsed.data.content);
-    if (!repairedResult) {
+    if (!firstResult) {
       return NextResponse.json({ error: "AI 返回格式无法识别，原文未改变，请重新生成" }, { status: 502 });
     }
-    return NextResponse.json(repairedResult);
+    rememberPolishResult(cacheKey, firstResult);
+    return NextResponse.json(firstResult, { headers: { "Cache-Control": "no-store", "X-StarJob-AI-Cache": "MISS" } });
   } catch (error) {
     logServerError("resume_ai_upstream", error);
     return mapUpstreamError(error);
@@ -130,7 +134,14 @@ async function callMimo({
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ model, messages, temperature: 0.2, stream: false }),
+      body: JSON.stringify({
+        model,
+        messages,
+        temperature: 0.1,
+        stream: false,
+        max_tokens: MAX_OUTPUT_TOKENS,
+        response_format: { type: "json_object" },
+      }),
       signal: controller.signal,
       cache: "no-store",
     });
@@ -161,12 +172,28 @@ function buildMessages(input: z.infer<typeof inputSchema>): ChatMessage[] {
         `语言：${input.language}`,
         `润色目标：${input.instruction}`,
         `目标岗位：${input.targetRole || "未提供"}`,
-        `岗位信息：${input.jobDescription || "未提供"}`,
+        `岗位信息：${input.jobDescription.slice(0, 2_400) || "未提供"}`,
         `当前段落：${JSON.stringify(input.content)}`,
         RESULT_SHAPE,
       ].join("\n"),
     },
   ];
+}
+
+function createPolishCacheKey(userId: string, input: z.infer<typeof inputSchema>) {
+  return createHash("sha256").update(`${userId}\0${JSON.stringify(input)}`).digest("hex");
+}
+
+function rememberPolishResult(cacheKey: string, result: PolishResult) {
+  const now = Date.now();
+  for (const [key, cached] of polishCache) {
+    if (cached.expiresAt <= now) polishCache.delete(key);
+  }
+  if (polishCache.size >= 200) {
+    const oldestKey = polishCache.keys().next().value;
+    if (oldestKey) polishCache.delete(oldestKey);
+  }
+  polishCache.set(cacheKey, { expiresAt: now + RESPONSE_CACHE_TTL_MS, result });
 }
 
 function parseResult(content: string, source: z.infer<typeof inputSchema>["content"]) {
@@ -246,32 +273,11 @@ function mapUpstreamError(error: unknown) {
 const RESULT_SHAPE = `只返回以下严格 JSON：
 {"summary":"string","revised":{"title":"string","subtitle":"string","bullets":["string"]},"changes":[{"type":"clarity|structure|relevance|wording|grammar","description":"string"}],"suggestions":["string"],"warnings":["string"]}`;
 
-const SYSTEM_PROMPT = `你是一名严谨的简历优化顾问，负责对用户提供的单段简历经历进行专业润色。
-
-你的目标是：
-- 提高表达的清晰度、专业性和信息密度
-- 强化行动、方法、结果之间的逻辑
-- 提升与目标岗位的匹配度
-- 保留用户原始事实，不改变经历本身
-- 避免空泛、夸张、机械和明显的 AI 表达
-
-你必须严格遵守以下规则：
-
-1. 只能基于用户提供的内容进行改写。
-2. 不得虚构公司、学校、职位、项目、客户、技能、奖项、数字、结果或职责。
-3. 不得自行添加百分比、金额、人数、排名、增长率、节省成本、提升效率等量化结果。
-4. 原文缺少量化信息时，只能在 suggestions 中提示用户补充，不能代替用户编造。
-5. 不得改变时间、组织名称、岗位名称、项目名称和角色身份。title 和 subtitle 必须原样返回。
-6. 不得把普通参与描述夸大为主导、负责、推动、独立完成或领导，除非原文明确支持。
-7. 不得把“协助”“参与”“支持”等表述擅自升级为更高责任等级。
-8. 每条 bullet 应尽量包含：做了什么、如何做、产生了什么结果或业务价值。
-9. 如果原文没有结果，只优化行动和方法，不强行补结果。
-10. 优先使用准确的行动动词，但避免使用“显著提升”“大幅优化”“全面推动”“深度赋能”“成功实现”等夸张词，除非原文有明确事实依据。
-11. 删除重复、空泛、口语化和无信息量的表述。
-12. 避免使用“负责相关工作”“积极参与”“认真完成”“提升了综合能力”“积累了丰富经验”等套话。
-13. 中文简历应使用自然、克制、专业的中文。
-14. 英文简历应使用职业化英文，优先使用简洁的动作动词和结果导向表达，避免中式英文。
-15. 保持原文核心含义不变。
-16. 如果原文存在语义不清、事实冲突或信息不足，保守处理，并在 warnings 中指出。
-17. 不要输出 Markdown，不要输出代码块，不要输出额外解释。
-18. 必须返回严格 JSON。`;
+const SYSTEM_PROMPT = `你是严谨的简历编辑，只润色用户给出的单段经历并返回严格 JSON。
+规则：
+1. 保留全部事实、时间、组织、岗位、项目和责任等级；title、subtitle 原样返回。
+2. 不得虚构数字、成果、客户、技能或职责，不把“协助/参与/支持”升级为主导或负责。
+3. 优化清晰度、专业性、行动方法和岗位相关性；没有结果时不强补结果，只在 suggestions 提醒。
+4. 删除重复套话和夸张 AI 表达，中文自然克制，英文简洁职业。
+5. 信息不足或冲突时保守处理并写入 warnings。
+6. 不输出 Markdown、代码块或额外解释。`;

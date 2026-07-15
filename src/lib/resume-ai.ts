@@ -49,7 +49,7 @@ export type ResumePolishResult = {
 
 export async function requestResumePolish(input: ResumePolishRequest) {
   const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), 45_000);
+  const timeout = window.setTimeout(() => controller.abort(), 22_000);
   try {
     const response = await fetch("/api/resume/ai-polish", {
       method: "POST",

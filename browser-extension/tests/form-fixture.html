@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>拾星网申助手测试表单</title>
+    <style>
+      body { font-family: sans-serif; padding: 24px; }
+      label { display: block; margin: 10px 0; }
+      input, textarea, select { width: 320px; min-height: 32px; }
+      .ant-picker-dropdown { display: none; width: 220px; min-height: 80px; padding: 8px; border: 1px solid #ddd; }
+      .ant-picker-dropdown.is-open { display: block; }
+      .ant-picker-cell { display: block; width: 40px; height: 32px; }
+    </style>
+  </head>
+  <body>
+    <form>
+      <label>姓名 <input id="candidate-name" autocomplete="name" /></label>
+      <label>电子邮箱 <input id="candidate-email" type="email" /></label>
+      <label>手机号 <input id="candidate-phone" type="tel" value="保留已有号码" /></label>
+      <fieldset>
+        <legend>教育经历</legend>
+        <div class="form-item"><label>学校</label><input id="school" name="education[0].schoolName" /></div>
+        <label>学历
+          <select id="degree"><option value="">请选择</option><option value="本科">本科</option><option value="硕士">硕士</option></select>
+        </label>
+        <label>专业 <input id="major" /></label>
+        <label>入学时间 <input id="education-start" type="month" /></label>
+        <div class="form-item"><label>经历描述</label><textarea id="education-description" name="education[0].description"></textarea></div>
+      </fieldset>
+      <fieldset>
+        <legend>工作经历</legend>
+        <label>工作经历概览 <textarea id="work-overview" name="workDescriptionSummary"></textarea></label>
+        <section>
+          <h3>实习经历-1</h3>
+          <label>公司 <input id="company" name="workExperience[1].companyName" /></label>
+          <input id="company-search" aria-label="公司名称搜索" />
+          <label>职位 <input id="job-title" name="workExperience[1].position" /></label>
+          <label>开始日期 <input id="work-start" name="workExperience[1].startDate" placeholder="请选择开始日期" readonly /></label>
+          <label>结束日期 <input id="work-end" name="workExperience[1].endDate" placeholder="请选择结束日期" readonly /></label>
+          <label>经历描述 <textarea id="work-description" name="workExperience[1].description"></textarea></label>
+        </section>
+        <section>
+          <h3>实习经历-2</h3>
+          <label>公司 <input id="company-2" name="workExperience[2].companyName" value="保留手动填写的公司" /></label>
+          <label>职位 <input id="job-title-2" name="workExperience[2].position" /></label>
+          <label>开始日期 <input id="work-start-2" name="workExperience[2].startDate" placeholder="请选择开始日期" readonly /></label>
+          <label>结束日期 <input id="work-end-2" name="workExperience[2].endDate" placeholder="请选择结束日期" readonly /></label>
+          <label>经历描述 <textarea id="work-description-2" name="workExperience[2].description"></textarea></label>
+        </section>
+        <section>
+          <h3>实习经历-3</h3>
+          <label>公司 <input id="company-3" name="workExperience[3].companyName" /></label>
+          <label>职位 <input id="job-title-3" name="workExperience[3].position" /></label>
+          <label>开始日期 <input id="work-start-3" name="workExperience[3].startDate" placeholder="请选择开始日期" readonly /></label>
+          <label>结束日期 <input id="work-end-3" name="workExperience[3].endDate" placeholder="请选择结束日期" readonly /></label>
+          <label>经历描述 <textarea id="work-description-3" name="workExperience[3].description"></textarea></label>
+        </section>
+        <section>
+          <h3>实习经历-4</h3>
+          <label>公司 <input id="company-4" name="workExperience[4].companyName" /></label>
+          <label>职位 <input id="job-title-4" name="workExperience[4].position" /></label>
+          <label>开始日期 <input id="work-start-4" name="workExperience[4].startDate" placeholder="请选择开始日期" readonly /></label>
+          <label>结束日期 <input id="work-end-4" name="workExperience[4].endDate" placeholder="请选择结束日期" readonly /></label>
+          <label>经历描述 <textarea id="work-description-4" name="workExperience[4].description"></textarea></label>
+        </section>
+      </fieldset>
+      <fieldset>
+        <legend>项目经历</legend>
+        <section>
+          <label>项目名称 <input id="project-name" name="projectExperience[1].name" /></label>
+          <label>项目角色 <input id="project-role" name="projectExperience[1].role" /></label>
+          <div><label>起止时间</label><span class="ant-picker" id="project-start-picker"><input id="project-start" name="projectExperience[1].valueA" placeholder="请选择" readonly /></span> - <input id="project-end" name="projectExperience[1].valueB" placeholder="请选择" readonly /></div>
+          <label>描述 <textarea id="project-description" name="projectExperience[2].description"></textarea></label>
+        </section>
+        <section>
+          <label>项目名称 <input id="project-name-2" name="projectExperience[2].name" /></label>
+          <label>项目角色 <input id="project-role-2" name="projectExperience[2].role" /></label>
+          <div><label>日期范围</label><input id="project-start-2" name="projectExperience[2].valueA" placeholder="请选择" readonly /> - <input id="project-end-2" name="projectExperience[2].valueB" placeholder="请选择" readonly /></div>
+          <label>描述 <textarea id="project-description-2" name="projectExperience[1].description"></textarea></label>
+        </section>
+      </fieldset>
+      <fieldset>
+        <legend>获奖</legend>
+        <section>
+          <label>获奖名称 <input id="award-title" name="workExperience[1].position" /></label>
+          <label>获奖时间 <input id="award-date" name="award[1].date" /></label>
+          <label>描述 <textarea id="award-description" name="workDescription"></textarea></label>
+        </section>
+      </fieldset>
+      <fieldset>
+        <legend>证书</legend>
+        <div class="form-item"><label>证书</label><input id="certificate-title" name="certificates[0].name" /></div>
+        <div class="form-item"><label>成绩</label><input id="certificate-score" name="certificates[0].score" type="tel" /></div>
+        <div class="form-item"><label>发证日期</label><input id="certificate-date" name="certificates[0].issueDate" type="tel" /></div>
+      </fieldset>
+      <label>身份证号 <input id="national-id" /></label>
+      <label>上传附件简历 <input id="resume-file" type="file" /></label>
+    </form>
+    <div class="ant-picker-dropdown" id="project-date-panel"><div role="grid"><button type="button" class="ant-picker-cell" role="gridcell" title="2024-09-01">1</button></div></div>
+    <pre id="result">pending</pre>
+    <script>
+      window.chrome = {
+        storage: {
+          local: {
+            get: async () => ({
+              activeResumeId: "resume-1",
+              fillMode: "merge",
+              starjobResumes: [{
+                id: "resume-1",
+                title: "产品运营-校招版",
+                targetRole: "产品运营",
+                content: {
+                  basics: { name: "王小星", englishName: "Stella Wang", phone: "13800000000", email: "stella@starjob.space", city: "上海", linkedin: "", github: "", website: "", targetRole: "产品运营" },
+                  education: [{ school: "拾星大学", degree: "本科", major: "信息管理", startDate: "2023-09", endDate: "2027-06", gpa: "3.7", courses: "数据分析、公司金融", honors: "一等奖学金" }],
+                  work: [
+                    { company: "星河科技", title: "产品实习生", location: "上海", startDate: "2025-06", endDate: "2025-09", current: false, bullets: ["梳理用户反馈", "参与需求评审"] },
+                    { company: "远航咨询", title: "商业分析实习生", location: "北京", startDate: "2024-07", endDate: "2024-10", current: false, bullets: ["完成行业研究", "整理访谈纪要"] },
+                    { company: "山海证券", title: "投行实习生", location: "深圳", startDate: "2024-03", endDate: "2024-06", current: false, bullets: ["核验申报材料", "整理行业数据"] },
+                    { company: "云帆银行", title: "风险管理实习生", location: "重庆", startDate: "2023-07", endDate: "2023-09", current: false, bullets: ["分析授信数据", "识别异常风险"] }
+                  ],
+                  projects: [
+                    { name: "校园信息平台", role: "产品负责人", startDate: "2024-09", endDate: "2025-01", bullets: ["完成需求分析"], keywords: "Figma, SQL" },
+                    { name: "星图数据项目", role: "数据分析", startDate: "2024-03", endDate: "2024-06", bullets: ["建立指标看板"], keywords: "Excel, SQL" }
+                  ],
+                  skills: [{ category: "工具", skills: ["Figma", "SQL"] }],
+                  campus: [], awards: [{ title: "全国商业分析挑战赛一等奖", bullets: ["负责模型设计与答辩"] }], certifications: [{ title: "CFA 一级", bullets: ["优秀"] }], languages: [], customSections: []
+                }
+              }]
+            })
+          }
+        }
+      };
+      document.querySelector("#project-start-picker").addEventListener("click", () => {
+        document.querySelector("#project-date-panel").classList.add("is-open");
+      });
+      document.querySelector("#project-date-panel .ant-picker-cell").addEventListener("click", () => {
+        const input = document.querySelector("#project-start");
+        input.value = "2024-09";
+        input.dataset.pickerUsed = "true";
+        document.querySelector("#project-date-panel").classList.remove("is-open");
+      });
+    </script>
+    <script src="../starjob-resume-assistant/fill.js"></script>
+    <script>
+      window.setTimeout(() => {
+        const actual = {
+          name: document.querySelector("#candidate-name").value,
+          email: document.querySelector("#candidate-email").value,
+          phone: document.querySelector("#candidate-phone").value,
+          school: document.querySelector("#school").value,
+          degree: document.querySelector("#degree").value,
+          major: document.querySelector("#major").value,
+          educationStart: document.querySelector("#education-start").value,
+          educationDescription: document.querySelector("#education-description").value,
+          workOverview: document.querySelector("#work-overview").value,
+          company: document.querySelector("#company").value,
+          companySearch: document.querySelector("#company-search").value,
+          jobTitle: document.querySelector("#job-title").value,
+          workStart: document.querySelector("#work-start").value,
+          workEnd: document.querySelector("#work-end").value,
+          workDescription: document.querySelector("#work-description").value,
+          company2: document.querySelector("#company-2").value,
+          jobTitle2: document.querySelector("#job-title-2").value,
+          workStart2: document.querySelector("#work-start-2").value,
+          workEnd2: document.querySelector("#work-end-2").value,
+          workDescription2: document.querySelector("#work-description-2").value,
+          company3: document.querySelector("#company-3").value,
+          jobTitle3: document.querySelector("#job-title-3").value,
+          workDescription3: document.querySelector("#work-description-3").value,
+          company4: document.querySelector("#company-4").value,
+          jobTitle4: document.querySelector("#job-title-4").value,
+          workDescription4: document.querySelector("#work-description-4").value,
+          projectName: document.querySelector("#project-name").value,
+          projectRole: document.querySelector("#project-role").value,
+          projectStart: document.querySelector("#project-start").value,
+          projectPickerUsed: document.querySelector("#project-start").dataset.pickerUsed || "",
+          projectEnd: document.querySelector("#project-end").value,
+          projectDescription: document.querySelector("#project-description").value,
+          projectName2: document.querySelector("#project-name-2").value,
+          projectRole2: document.querySelector("#project-role-2").value,
+          projectStart2: document.querySelector("#project-start-2").value,
+          projectEnd2: document.querySelector("#project-end-2").value,
+          projectDescription2: document.querySelector("#project-description-2").value,
+          awardTitle: document.querySelector("#award-title").value,
+          awardDate: document.querySelector("#award-date").value,
+          awardDescription: document.querySelector("#award-description").value,
+          certificateTitle: document.querySelector("#certificate-title").value,
+          certificateScore: document.querySelector("#certificate-score").value,
+          certificateDate: document.querySelector("#certificate-date").value,
+          nationalId: document.querySelector("#national-id").value,
+          filledCount: document.querySelectorAll("[data-starjob-filled='true']").length
+        };
+        const passed = actual.name === "王小星"
+          && actual.email === "stella@starjob.space"
+          && actual.phone === "保留已有号码"
+          && actual.school === "拾星大学"
+          && actual.degree === "本科"
+          && actual.major === "信息管理"
+          && actual.educationStart === "2023-09"
+          && actual.educationDescription.includes("数据分析")
+          && !actual.educationDescription.includes("梳理用户反馈")
+          && actual.workOverview.includes("梳理用户反馈")
+          && actual.company === "星河科技"
+          && actual.companySearch === "星河科技"
+          && actual.jobTitle === "产品实习生"
+          && actual.workStart === "2025-06-01"
+          && actual.workEnd === "2025-09-01"
+          && actual.workDescription.includes("梳理用户反馈")
+          && actual.company2 === "保留手动填写的公司"
+          && actual.jobTitle2 === "商业分析实习生"
+          && actual.workStart2 === "2024-07-01"
+          && actual.workEnd2 === "2024-10-01"
+          && actual.workDescription2.includes("完成行业研究")
+          && actual.company3 === "山海证券"
+          && actual.jobTitle3 === "投行实习生"
+          && actual.workDescription3.includes("核验申报材料")
+          && actual.company4 === "云帆银行"
+          && actual.jobTitle4 === "风险管理实习生"
+          && actual.workDescription4.includes("分析授信数据")
+          && !actual.workDescription4.includes("梳理用户反馈")
+          && actual.projectName === "校园信息平台"
+          && actual.projectRole === "产品负责人"
+          && actual.projectStart === "2024-09"
+          && actual.projectPickerUsed === "true"
+          && actual.projectEnd === "2025-01"
+          && actual.projectDescription.includes("完成需求分析")
+          && !actual.projectDescription.includes("建立指标看板")
+          && actual.projectName2 === "星图数据项目"
+          && actual.projectRole2 === "数据分析"
+          && actual.projectStart2 === "2024-03"
+          && actual.projectEnd2 === "2024-06"
+          && actual.projectDescription2.includes("建立指标看板")
+          && !actual.projectDescription2.includes("完成需求分析")
+          && actual.awardTitle === "全国商业分析挑战赛一等奖"
+          && actual.awardDate === ""
+          && actual.awardDescription.includes("负责模型设计与答辩")
+          && !actual.awardTitle.includes("实习")
+          && actual.certificateTitle === "CFA 一级"
+          && actual.certificateScore === "优秀"
+          && actual.certificateDate === ""
+          && actual.nationalId === ""
+          && actual.filledCount >= 42;
+        document.querySelector("#result").textContent = JSON.stringify({ passed, actual });
+        document.title = passed ? "STARJOB_EXTENSION_TEST_PASS" : "STARJOB_EXTENSION_TEST_FAIL";
+      }, 250);
+    </script>
+  </body>
+</html>
