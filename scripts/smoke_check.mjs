@@ -363,19 +363,19 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/resume/import/route.ts",
-    mustInclude: ["auth.getUser", "take_resume_ai_rate_slot", "MIMO_API_KEY", "response_format", "json_object", "localDraft", "sourceText", "preserveDeterministicBasics", "language", "zh-CN", "en-US", "不得虚构", "区块", "Cache-Control", "no-store"],
+    mustInclude: ["auth.getUser", "take_resume_ai_rate_slot", "MIMO_API_KEY", "response_format", "json_object", "localDraft", "sourceText", "preserveDeterministicBasics", "language", "zh-CN", "en-US", "不得虚构", "区块", "Cache-Control", "no-store", "maxDuration = 45", "REQUEST_TIMEOUT_MS = 38_000", "buildLocalReviewHints", "bulletCount", "elapsedMs", "你仍可直接导入程序解析结果"],
     mustNotInclude: ["createAdminClient", "SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_", "request.formData", "console.log"],
     label: "AI 只复核提取文字与本地候选并以严格 JSON 返回完整简历草稿",
   },
   {
     file: "src/components/resume/ResumeImportDialog.tsx",
-    mustInclude: ["本地读取 · AI 复核 · 确认生成", "extractResumeFileText", "parseResumeTextLocally", "不会上传原文件", "交给 AI 复核", "英文简历", "中文简历", "生成{review.draft.language"],
+    mustInclude: ["本地读取 · AI 复核 · 确认生成", "extractResumeFileText", "parseResumeTextLocally", "不会上传原文件", "交给 AI 复核", "英文简历", "中文简历", "直接导入解析结果", "导入 AI 复核结果", "AI 超时或失败不会清除当前解析结果", "ResumeImportMode"],
     mustNotInclude: ["request.formData", "window.location.reload"],
     label: "简历导入必须先预览程序结果和 AI 警告再由用户确认生成",
   },
   {
     file: "src/components/resume/ResumeBuilderClient.tsx",
-    mustInclude: ["ResumeCreateDialog", "ResumeImportDialog", "createResumeFromImport", "createResumeFromTranslation", "requestResumeTranslation", "resume_import_created", "resume_translation_created", "导入简历", "新建简历", "AI 转英文", "AI 转中文", "原简历保持不变", "showImportDialog", "showCreateDialog"],
+    mustInclude: ["ResumeCreateDialog", "ResumeImportDialog", "createResumeFromImport", "createResumeFromTranslation", "requestResumeTranslation", "resume_import_created", "resume_translation_created", "review_mode", "程序解析结果", "AI 复核结果", "导入简历", "新建简历", "AI 转英文", "AI 转中文", "原简历保持不变", "showImportDialog", "showCreateDialog"],
     mustNotInclude: ["router.refresh()", "window.location.reload()"],
     label: "简历制作器接入语言新建、自动分配导入模板和不覆盖原文的 AI 双语译本",
   },

@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 
-const REQUEST_TIMEOUT_MS = 22_000;
+export const maxDuration = 45;
+
+const REQUEST_TIMEOUT_MS = 38_000;
 const MAX_OUTPUT_TOKENS = 4_500;
 
 const text = (max: number) => z.string().trim().max(max);
@@ -107,6 +109,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "智能导入请求较频繁，请十分钟后再试" }, { status: 429, headers: { "Retry-After": "600" } });
   }
 
+  const startedAt = Date.now();
   try {
     const content = await callMimo({
       apiKey,
@@ -116,11 +119,13 @@ export async function POST(request: NextRequest) {
     });
     const result = parseResult(content, parsed.data.localDraft);
     if (!result) {
+      logImportTiming("invalid_result", parsed.data, Date.now() - startedAt);
       return NextResponse.json({ error: "AI 返回的简历结构无法识别，未创建简历，请重试" }, { status: 502 });
     }
+    logImportTiming("success", parsed.data, Date.now() - startedAt);
     return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
-    logServerError("resume_import_upstream", error);
+    logServerError("resume_import_upstream", error, parsed.data, Date.now() - startedAt);
     return mapUpstreamError(error);
   }
 }
@@ -172,7 +177,7 @@ function buildMessages(input: z.infer<typeof inputSchema>): ChatMessage[] {
       role: "user",
       content: [
         `文件名：${input.fileName}`,
-        `程序本地识别草稿：${JSON.stringify(input.localDraft)}`,
+        `程序本地识别线索（仅包含字段锚点与条目数量）：${JSON.stringify(buildLocalReviewHints(input.localDraft))}`,
         "以下是从用户文件直接提取的原文：",
         "<resume_text>",
         input.sourceText,
@@ -181,6 +186,31 @@ function buildMessages(input: z.infer<typeof inputSchema>): ChatMessage[] {
       ].join("\n"),
     },
   ];
+}
+
+function buildLocalReviewHints(draft: z.infer<typeof draftSchema>) {
+  const compact = <T extends Record<string, unknown>>(value: T) => Object.fromEntries(
+    Object.entries(value).filter(([, item]) => item !== "" && item !== null && item !== undefined),
+  );
+  const anchors = <T extends { bullets: string[] }>(items: T[]) => items.map(({ bullets: itemBullets, ...item }) => ({
+    ...compact(item),
+    bulletCount: itemBullets.length,
+  }));
+  return {
+    language: draft.language,
+    title: draft.title,
+    targetRole: draft.targetRole,
+    basics: compact(draft.basics),
+    education: draft.education.map(compact),
+    work: anchors(draft.work),
+    projects: anchors(draft.projects),
+    skills: draft.skills.map((item) => ({ category: item.category, skillCount: item.skills.length })),
+    campus: anchors(draft.campus),
+    awards: anchors(draft.awards),
+    certifications: anchors(draft.certifications),
+    languages: anchors(draft.languages),
+    customSections: anchors(draft.customSections),
+  };
 }
 
 function parseResult(content: string, localDraft: z.infer<typeof draftSchema>) {
@@ -228,20 +258,45 @@ class UpstreamError extends Error {
   }
 }
 
-function logServerError(scope: string, error: unknown) {
+function logServerError(scope: string, error: unknown, input?: z.infer<typeof inputSchema>, elapsedMs?: number) {
   const details = error && typeof error === "object"
     ? {
         code: "code" in error ? String(error.code) : undefined,
         name: "name" in error ? String(error.name) : undefined,
         status: "status" in error ? Number(error.status) : undefined,
+        elapsedMs,
+        ...(input ? getImportMetrics(input) : {}),
       }
     : {};
   console.error(`[${scope}]`, details);
 }
 
+function logImportTiming(outcome: "success" | "invalid_result", input: z.infer<typeof inputSchema>, elapsedMs: number) {
+  console.info("[resume_import_timing]", { outcome, elapsedMs, ...getImportMetrics(input) });
+}
+
+function getImportMetrics(input: z.infer<typeof inputSchema>) {
+  const bulletCount = [
+    ...input.localDraft.work,
+    ...input.localDraft.projects,
+    ...input.localDraft.campus,
+    ...input.localDraft.awards,
+    ...input.localDraft.certifications,
+    ...input.localDraft.languages,
+    ...input.localDraft.customSections,
+  ].reduce((total, item) => total + item.bullets.length, 0);
+  return {
+    sourceChars: input.sourceText.length,
+    educationCount: input.localDraft.education.length,
+    workCount: input.localDraft.work.length,
+    projectCount: input.localDraft.projects.length,
+    bulletCount,
+  };
+}
+
 function mapUpstreamError(error: unknown) {
   if (error instanceof DOMException && error.name === "AbortError") {
-    return NextResponse.json({ error: "智能导入请求超时，未创建简历，请重试" }, { status: 504 });
+    return NextResponse.json({ error: "AI 复核超时，你仍可直接导入程序解析结果，或稍后重试" }, { status: 504 });
   }
   if (error instanceof UpstreamError) {
     if (error.status === 401 || error.status === 403) return NextResponse.json({ error: "AI 服务鉴权失败，请联系管理员检查配置" }, { status: 502 });

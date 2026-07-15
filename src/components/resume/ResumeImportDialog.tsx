@@ -16,12 +16,14 @@ type ImportReview = {
   warnings: string[];
 };
 
+export type ResumeImportMode = "program" | "ai";
+
 export function ResumeImportDialog({
   onClose,
   onImport,
 }: {
   onClose: () => void;
-  onImport: (draft: ImportedResumeDraft) => void;
+  onImport: (draft: ImportedResumeDraft, mode: ResumeImportMode) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState("");
@@ -154,6 +156,9 @@ export function ResumeImportDialog({
               </div>
             </div>
             {localResult.warnings.length > 0 ? <WarningList items={localResult.warnings} /> : null}
+            <p className="mt-4 text-xs leading-5 text-ink-muted">
+              你可以直接导入程序解析结果，也可以等待 AI 复核后再导入。AI 超时或失败不会清除当前解析结果。
+            </p>
           </section>
         ) : null}
 
@@ -181,12 +186,17 @@ export function ResumeImportDialog({
         <footer className="mt-6 flex flex-wrap items-center justify-end gap-3 border-t border-[color:var(--line-ghost)] pt-5">
           <Button variant="secondary" onClick={onClose} disabled={stage !== "idle"}>取消</Button>
           {localResult ? (
+            <Button variant="secondary" disabled={stage !== "idle"} onClick={() => onImport(localResult.draft, "program")}>
+              直接导入解析结果
+            </Button>
+          ) : null}
+          {localResult ? (
             <Button variant="secondary" className="gap-2" disabled={stage !== "idle"} onClick={() => void requestReview()}>
               {stage === "reviewing" ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> : review ? <FileSearch aria-hidden="true" className="size-4" /> : <Sparkles aria-hidden="true" className="size-4" />}
               {stage === "reviewing" ? "AI 正在复核" : review ? "重新复核" : "交给 AI 复核"}
             </Button>
           ) : null}
-          {review ? <Button onClick={() => onImport(review.draft)}>生成{review.draft.language === "en-US" ? "英文" : "中文"}简历</Button> : null}
+          {review ? <Button onClick={() => onImport(review.draft, "ai")}>导入 AI 复核结果</Button> : null}
         </footer>
       </section>
     </div>

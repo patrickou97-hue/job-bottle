@@ -6,7 +6,7 @@ import type { User } from "@supabase/supabase-js";
 import { Copy, FileText, FileUp, Languages, LoaderCircle, Plus, Puzzle, Trash2 } from "lucide-react";
 import { ResumeCreateDialog } from "@/components/resume/ResumeCreateDialog";
 import { ResumeEditor, type EditorSection } from "@/components/resume/ResumeEditor";
-import { ResumeImportDialog } from "@/components/resume/ResumeImportDialog";
+import { ResumeImportDialog, type ResumeImportMode } from "@/components/resume/ResumeImportDialog";
 import { ResumePdfExportButton } from "@/components/resume/ResumePdfExportButton";
 import { ResumePreview } from "@/components/resume/ResumePreview";
 import { ResumeTemplatePicker } from "@/components/resume/ResumeTemplatePicker";
@@ -382,13 +382,17 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
     setShowCreateDialog(false);
   }
 
-  function importResume(draft: ImportedResumeDraft) {
+  function importResume(draft: ImportedResumeDraft, mode: ResumeImportMode) {
     const next = createResumeFromImport(draft);
     setResumes((current) => [next, ...current]);
     setSelectedId(next.id);
     setActiveSection("basic");
     setShowImportDialog(false);
-    setSaveState(storageMode === "cloud" ? "已生成，正在同步到账号" : "已生成并保存到本地");
+    setSaveState(
+      storageMode === "cloud"
+        ? `${mode === "ai" ? "AI 复核结果" : "程序解析结果"}已导入，正在同步到账号`
+        : `${mode === "ai" ? "AI 复核结果" : "程序解析结果"}已导入并保存到本地`,
+    );
     void track("resume_import_created", {
       resume_id: next.id,
       source: "file",
@@ -396,6 +400,7 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
       work_count: next.content.work.length,
       project_count: next.content.projects.length,
       language: draft.language,
+      review_mode: mode,
     });
   }
 
