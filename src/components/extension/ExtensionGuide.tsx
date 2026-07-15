@@ -42,7 +42,7 @@ export function ExtensionGuide() {
           <h1 className="page-title">安装拾星网申助手</h1>
           <p className="page-subtitle mt-4">完成一次安装和简历同步，之后在网申页打开扩展即可填写。</p>
         </div>
-        <a href="https://pan.baidu.com/s/1WhabI64zCSOXyn4zIAKMsw?pwd=SXZS" target="_blank" rel="noreferrer" className="gold-button pressable inline-flex h-11 w-fit items-center gap-2 rounded-lg px-4 text-sm font-semibold">
+        <a href="https://pan.baidu.com/s/11xaueV0f0D_pFt_czk_MHw?pwd=SXZS" target="_blank" rel="noreferrer" className="gold-button pressable inline-flex h-11 w-fit items-center gap-2 rounded-lg px-4 text-sm font-semibold">
           <ArrowDownIcon aria-hidden="true" className="size-4" />
           获取安装包
         </a>
