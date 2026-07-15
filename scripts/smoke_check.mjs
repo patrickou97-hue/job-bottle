@@ -800,8 +800,8 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/extension/ExtensionHubClient.tsx",
-    mustInclude: ["一份简历，投向更多可能", "常见网申字段按页面顺序填入", "starjob-resume-assistant-iphone17pm.png", "iPhone 17 Pro Max", "获取安装包", "https://pan.baidu.com/s/10QoSAiNpFOch881oCniEjA?pwd=SXZS"],
-    mustNotInclude: ["简历写一次，网申少重复", "starjob-resume-assistant-popup.png", "https://pan.baidu.com/s/18t2FPlnjktr3zTG9eE1k2g?pwd=SXZS", "https://pan.baidu.com/s/1WhabI64zCSOXyn4zIAKMsw?pwd=SXZS", "https://pan.baidu.com/s/11xaueV0f0D_pFt_czk_MHw?pwd=SXZS"],
+    mustInclude: ["<span className=\"block\">一份简历，</span>", "<span className=\"block\">投向更多可能</span>", "调用拾星网申工具填写常用字段。你只需检查后提交。", "starjob-resume-assistant-iphone17pm.png", "iPhone 17 Pro Max", "获取安装包", "https://pan.baidu.com/s/10QoSAiNpFOch881oCniEjA?pwd=SXZS"],
+    mustNotInclude: ["一份简历，投向更多可能", "常见网申字段按页面顺序填入", "你只需检查，再决定提交", "简历写一次，网申少重复", "starjob-resume-assistant-popup.png", "https://pan.baidu.com/s/18t2FPlnjktr3zTG9eE1k2g?pwd=SXZS", "https://pan.baidu.com/s/1WhabI64zCSOXyn4zIAKMsw?pwd=SXZS", "https://pan.baidu.com/s/11xaueV0f0D_pFt_czk_MHw?pwd=SXZS"],
     label: "网申助手首屏使用更克制的价值表达与带灵动岛的设备实机展示",
   },
   {
@@ -884,7 +884,7 @@ const REQUIRED_TEXT = {
   "/jobs": ["岗位坐标", "正在加载岗位"],
   "/login": ["正在打开登录"],
   "/forum": ["拾星指南"],
-  "/extension": ["一份简历，投向更多可能", "获取安装包", "同步到扩展"],
+  "/extension": ["一份简历，", "投向更多可能", "调用拾星网申工具填写常用字段", "获取安装包", "同步到扩展"],
   "/extension/guide": ["安装拾星网申助手", "加载已解压的扩展", "同步简历"],
   "/admin": ["管理后台"],
 };

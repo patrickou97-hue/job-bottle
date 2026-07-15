@@ -131,11 +131,12 @@ export function ExtensionHubClient() {
     <div className="observatory-page extension-page space-y-16">
       <section className="extension-hero grid items-center gap-10 border-b border-[color:var(--line-ghost)] pb-12 lg:grid-cols-[minmax(0,1.08fr)_minmax(340px,0.92fr)]">
         <div className="max-w-2xl">
-          <h1 className="max-w-[11ch] text-4xl font-semibold leading-[1.08] tracking-[-0.035em] text-ink-primary sm:text-5xl">
-            一份简历，投向更多可能
+          <h1 className="text-4xl font-semibold leading-[1.08] tracking-[-0.035em] text-ink-primary sm:text-5xl">
+            <span className="block">一份简历，</span>
+            <span className="block">投向更多可能</span>
           </h1>
           <p className="mt-5 max-w-[46ch] text-base leading-8 text-ink-secondary">
-            将拾星简历同步到浏览器，常见网申字段按页面顺序填入。你只需检查，再决定提交。
+            将拾星简历同步到浏览器，调用拾星网申工具填写常用字段。你只需检查后提交。
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <a href={DOWNLOAD_URL} target="_blank" rel="noreferrer" className="gold-button pressable inline-flex h-11 items-center gap-2 rounded-lg px-4 text-sm font-semibold">
