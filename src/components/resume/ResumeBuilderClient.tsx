@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
-import { Copy, FileText, FileUp, Plus, Puzzle, Trash2 } from "lucide-react";
+import { Copy, FileText, FileUp, Languages, LoaderCircle, Plus, Puzzle, Trash2 } from "lucide-react";
+import { ResumeCreateDialog } from "@/components/resume/ResumeCreateDialog";
 import { ResumeEditor, type EditorSection } from "@/components/resume/ResumeEditor";
 import { ResumeImportDialog } from "@/components/resume/ResumeImportDialog";
 import { ResumePdfExportButton } from "@/components/resume/ResumePdfExportButton";
@@ -19,10 +20,12 @@ import {
   createSampleResume,
   getResumeTemplateMeta,
   getResumeTargetLine,
+  getResumeLanguage,
   loadLocalResumes,
   saveLocalResumes,
   touchResume,
   type ResumeDocument,
+  type ResumeLanguage,
   type ResumeTemplateId,
 } from "@/lib/resume";
 import {
@@ -40,6 +43,10 @@ import type { ApplicationWithJob, Job } from "@/lib/types";
 import { formatDateTime } from "@/lib/utils";
 import { track } from "@/lib/track";
 import { createResumeFromImport, type ImportedResumeDraft } from "@/lib/resume-import";
+import {
+  createResumeFromTranslation,
+  requestResumeTranslation,
+} from "@/lib/resume-translation";
 
 type StorageMode = "local" | "cloud";
 type TargetJobContext = { company: string; id: string; role: string };
@@ -63,6 +70,8 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
   const [storageMode, setStorageMode] = useState<StorageMode>("local");
   const [userId, setUserId] = useState<string | null>(null);
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [translating, setTranslating] = useState(false);
   const cloudFingerprintsRef = useRef(new Map<string, string>());
   const pendingCloudSavesRef = useRef(new Map<string, PendingCloudSave>());
   const cloudSaveWorkerRef = useRef<Promise<void> | null>(null);
@@ -361,16 +370,20 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
     updateResume(touchResume({ ...selectedResume, templateId }));
   }
 
-  function createResume() {
-    const next = createEmptyResume();
-    next.title = `简历版本 ${resumes.length + 1}`;
+  function createResume(language: ResumeLanguage, templateId: ResumeTemplateId) {
+    const next = createEmptyResume(language);
+    next.title = language === "en-US"
+      ? `English Resume ${resumes.length + 1}`
+      : `简历版本 ${resumes.length + 1}`;
+    next.templateId = templateId;
     setResumes((current) => [next, ...current]);
     setSelectedId(next.id);
     setActiveSection("basic");
+    setShowCreateDialog(false);
   }
 
   function importResume(draft: ImportedResumeDraft) {
-    const next = createResumeFromImport(draft, selectedResume.templateId);
+    const next = createResumeFromImport(draft);
     setResumes((current) => [next, ...current]);
     setSelectedId(next.id);
     setActiveSection("basic");
@@ -382,7 +395,45 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
       education_count: next.content.education.length,
       work_count: next.content.work.length,
       project_count: next.content.projects.length,
+      language: draft.language,
     });
+  }
+
+  async function translateResume() {
+    if (translating) return;
+    const hasTranslatableContent =
+      Object.values(selectedResume.content.basics).some((value) => typeof value === "string" && value.trim()) ||
+      selectedResume.content.education.length > 0 ||
+      selectedResume.content.work.length > 0 ||
+      selectedResume.content.projects.length > 0 ||
+      selectedResume.content.skills.length > 0 ||
+      selectedResume.content.campus.length > 0 ||
+      selectedResume.content.awards.length > 0;
+    if (!hasTranslatableContent) {
+      setSaveState("当前简历还没有可翻译内容");
+      return;
+    }
+    const sourceLanguage = getResumeLanguage(selectedResume.templateId);
+    const targetLanguage: ResumeLanguage = sourceLanguage === "en-US" ? "zh-CN" : "en-US";
+    setTranslating(true);
+    setSaveState(targetLanguage === "en-US" ? "AI 正在生成英文译本" : "AI 正在生成中文译本");
+    try {
+      const result = await requestResumeTranslation(selectedResume, targetLanguage);
+      const next = createResumeFromTranslation(selectedResume, result.translated, targetLanguage);
+      setResumes((current) => [next, ...current]);
+      setSelectedId(next.id);
+      setActiveSection("basic");
+      setSaveState(result.warnings.length > 0 ? "译本已生成，请重点检查专有名词" : "译本已生成，原简历保持不变");
+      void track("resume_translation_created", {
+        source_resume_id: selectedResume.id,
+        resume_id: next.id,
+        target_language: targetLanguage,
+      });
+    } catch (error) {
+      setSaveState(error instanceof Error ? error.message : "AI 翻译失败，原简历未改变");
+    } finally {
+      setTranslating(false);
+    }
   }
 
   function prepareTargetResume() {
@@ -490,7 +541,7 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
             <FileUp aria-hidden="true" className="size-4" />
             导入简历
           </Button>
-          <Button onClick={createResume} className="gap-2">
+          <Button onClick={() => setShowCreateDialog(true)} className="gap-2">
             <Plus aria-hidden="true" className="size-4" />
             新建简历
           </Button>
@@ -501,6 +552,13 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
         <ResumeImportDialog
           onClose={() => setShowImportDialog(false)}
           onImport={importResume}
+        />
+      ) : null}
+
+      {showCreateDialog ? (
+        <ResumeCreateDialog
+          onClose={() => setShowCreateDialog(false)}
+          onCreate={createResume}
         />
       ) : null}
 
@@ -572,6 +630,20 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
               <div className="flex items-center gap-2">
                 <button
                   type="button"
+                  className="muted-button pressable inline-flex h-9 items-center gap-2 rounded-lg px-3 text-xs font-semibold disabled:pointer-events-none disabled:opacity-55"
+                  disabled={translating}
+                  title="AI 翻译会创建独立副本，不覆盖当前简历"
+                  onClick={() => void translateResume()}
+                >
+                  {translating ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> : <Languages aria-hidden="true" className="size-4" />}
+                  {translating
+                    ? "正在翻译"
+                    : getResumeLanguage(selectedResume.templateId) === "en-US"
+                      ? "AI 转中文"
+                      : "AI 转英文"}
+                </button>
+                <button
+                  type="button"
                   className="muted-button pressable inline-flex size-9 items-center justify-center rounded-lg"
                   aria-label="复制简历"
                   title="复制简历"
@@ -591,7 +663,11 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
               </div>
             </div>
             <div className="mb-6">
-              <ResumeTemplatePicker selectedTemplateId={selectedResume.templateId} onChange={updateTemplate} />
+              <ResumeTemplatePicker
+                language={getResumeLanguage(selectedResume.templateId)}
+                selectedTemplateId={selectedResume.templateId}
+                onChange={updateTemplate}
+              />
             </div>
             <ResumeEditor
               resume={selectedResume}

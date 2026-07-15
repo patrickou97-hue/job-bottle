@@ -8,6 +8,8 @@ export type ResumeTemplateId =
   | "english_classic"
   | "english_modern";
 
+export type ResumeLanguage = "zh-CN" | "en-US";
+
 export type ResumeBasics = {
   name: string;
   englishName: string;
@@ -135,6 +137,31 @@ export function isEnglishResumeTemplate(templateId: ResumeTemplateId) {
   return templateId === "english_classic" || templateId === "english_modern";
 }
 
+export function getResumeLanguage(templateId: ResumeTemplateId): ResumeLanguage {
+  return isEnglishResumeTemplate(templateId) ? "en-US" : "zh-CN";
+}
+
+export function getResumeTemplatesForLanguage(language: ResumeLanguage) {
+  return RESUME_TEMPLATES.filter((template) => getResumeLanguage(template.id) === language);
+}
+
+export function getDefaultResumeTemplate(language: ResumeLanguage): ResumeTemplateId {
+  return language === "en-US" ? "english_classic" : "compact";
+}
+
+export function getEquivalentTemplateForLanguage(
+  templateId: ResumeTemplateId,
+  language: ResumeLanguage,
+): ResumeTemplateId {
+  if (getResumeLanguage(templateId) === language) return templateId;
+  if (language === "en-US") {
+    return templateId === "modern" || templateId === "technical"
+      ? "english_modern"
+      : "english_classic";
+  }
+  return templateId === "english_modern" ? "modern" : "classic";
+}
+
 export function createId(prefix: string) {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return `${prefix}_${crypto.randomUUID()}`;
@@ -168,15 +195,15 @@ export function getResumeTargetLine(resume: ResumeDocument) {
   return /^(通用|通用版|用于通用匹配)$/.test(target) ? "" : target;
 }
 
-export function createEmptyResume(): ResumeDocument {
+export function createEmptyResume(language: ResumeLanguage = "zh-CN"): ResumeDocument {
   const now = new Date().toISOString();
   return {
     id: createResumeId(),
-    title: "未命名简历",
+    title: language === "en-US" ? "Untitled Resume" : "未命名简历",
     targetRole: "",
     jobTarget: "",
     linkedJobId: null,
-    templateId: "compact",
+    templateId: getDefaultResumeTemplate(language),
     content: {
       basics: {
         name: "",

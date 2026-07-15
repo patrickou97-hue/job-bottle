@@ -161,7 +161,7 @@ export function ResumeImportDialog({
           <section className="border-t border-[color:var(--line-ghost)] py-5">
             <div className="flex items-center gap-2 text-sm font-semibold text-ink-primary">
               <Check aria-hidden="true" className="size-4 text-[#4f7c65]" />
-              AI 已完成结构复核
+              AI 已完成结构复核 · {review.draft.language === "en-US" ? "英文简历" : "中文简历"}
             </div>
             <p className="mt-2 text-sm leading-6 text-ink-secondary">{review.summary}</p>
             <div className="mt-5 grid grid-cols-3 border-y border-[color:var(--line-ghost)] py-4 sm:grid-cols-6">
@@ -186,7 +186,7 @@ export function ResumeImportDialog({
               {stage === "reviewing" ? "AI 正在复核" : review ? "重新复核" : "交给 AI 复核"}
             </Button>
           ) : null}
-          {review ? <Button onClick={() => onImport(review.draft)}>生成拾星简历</Button> : null}
+          {review ? <Button onClick={() => onImport(review.draft)}>生成{review.draft.language === "en-US" ? "英文" : "中文"}简历</Button> : null}
         </footer>
       </section>
     </div>

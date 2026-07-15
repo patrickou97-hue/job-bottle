@@ -249,7 +249,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/lib/resume.ts",
-    mustInclude: ["ResumeDocument", "ResumeContent", "createSampleResume", "loadLocalResumes", "adoptLocalResumesForUser", "GUEST_STORAGE_KEY", "USER_STORAGE_KEY_PREFIX", "createResumeId", "linkedJobId", "photoDataUrl", "compact", "classic", "modern", "consulting", "technical", "academic", "english_classic", "english_modern", "紧凑中文", "经典商科", "现代单栏", "咨询投研", "技术简洁", "学术研究", "English Classic", "English Modern", "isEnglishResumeTemplate", "isResumeId", "getResumeTargetLine"],
+    mustInclude: ["ResumeDocument", "ResumeContent", "ResumeLanguage", "createSampleResume", "createEmptyResume(language", "loadLocalResumes", "adoptLocalResumesForUser", "GUEST_STORAGE_KEY", "USER_STORAGE_KEY_PREFIX", "createResumeId", "linkedJobId", "photoDataUrl", "compact", "classic", "modern", "consulting", "technical", "academic", "english_classic", "english_modern", "紧凑中文", "经典商科", "现代单栏", "咨询投研", "技术简洁", "学术研究", "English Classic", "English Modern", "isEnglishResumeTemplate", "getResumeLanguage", "getDefaultResumeTemplate", "getEquivalentTemplateForLanguage", "isResumeId", "getResumeTargetLine"],
     mustNotInclude: ["const STORAGE_KEY = \"job_bottle_resumes_v1\""],
     label: "简历制作器定义结构化模型、多模板和按账号隔离的本地持久化",
   },
@@ -357,27 +357,51 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/lib/resume-import.ts",
-    mustInclude: ["parseResumeTextLocally", "createResumeFromImport", "splitSections", "extractDateRange", "教育背景", "工作经历", "项目经历", "createId"],
+    mustInclude: ["parseResumeTextLocally", "createResumeFromImport", "detectResumeLanguage", "getDefaultResumeTemplate", "splitSections", "extractDateRange", "教育背景", "工作经历", "项目经历", "createId", "英文简历", "中文简历"],
     mustNotInclude: ["fetch(", "MIMO_API_KEY", "SUPABASE_SERVICE_ROLE_KEY"],
     label: "简历导入先用确定性规则识别基础字段和硬区块再生成平台结构",
   },
   {
     file: "src/app/api/resume/import/route.ts",
-    mustInclude: ["auth.getUser", "take_resume_ai_rate_slot", "MIMO_API_KEY", "response_format", "json_object", "localDraft", "sourceText", "preserveDeterministicBasics", "不得虚构", "区块", "Cache-Control", "no-store"],
+    mustInclude: ["auth.getUser", "take_resume_ai_rate_slot", "MIMO_API_KEY", "response_format", "json_object", "localDraft", "sourceText", "preserveDeterministicBasics", "language", "zh-CN", "en-US", "不得虚构", "区块", "Cache-Control", "no-store"],
     mustNotInclude: ["createAdminClient", "SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_", "request.formData", "console.log"],
     label: "AI 只复核提取文字与本地候选并以严格 JSON 返回完整简历草稿",
   },
   {
     file: "src/components/resume/ResumeImportDialog.tsx",
-    mustInclude: ["本地读取 · AI 复核 · 确认生成", "extractResumeFileText", "parseResumeTextLocally", "不会上传原文件", "交给 AI 复核", "生成拾星简历"],
+    mustInclude: ["本地读取 · AI 复核 · 确认生成", "extractResumeFileText", "parseResumeTextLocally", "不会上传原文件", "交给 AI 复核", "英文简历", "中文简历", "生成{review.draft.language"],
     mustNotInclude: ["request.formData", "window.location.reload"],
     label: "简历导入必须先预览程序结果和 AI 警告再由用户确认生成",
   },
   {
     file: "src/components/resume/ResumeBuilderClient.tsx",
-    mustInclude: ["ResumeImportDialog", "createResumeFromImport", "resume_import_created", "导入简历", "showImportDialog"],
+    mustInclude: ["ResumeCreateDialog", "ResumeImportDialog", "createResumeFromImport", "createResumeFromTranslation", "requestResumeTranslation", "resume_import_created", "resume_translation_created", "导入简历", "新建简历", "AI 转英文", "AI 转中文", "原简历保持不变", "showImportDialog", "showCreateDialog"],
     mustNotInclude: ["router.refresh()", "window.location.reload()"],
-    label: "简历制作器把确认后的导入结果接入现有本地保存和账号同步链路",
+    label: "简历制作器接入语言新建、自动分配导入模板和不覆盖原文的 AI 双语译本",
+  },
+  {
+    file: "src/components/resume/ResumeCreateDialog.tsx",
+    mustInclude: ["中文简历", "English Resume", "先选择中文或英文", "getDefaultResumeTemplate", "ResumeTemplatePicker", "使用此模板创建"],
+    mustNotInclude: ["shadow-", "bg-gradient"],
+    label: "新建简历必须先选择语言并从对应模板中创建",
+  },
+  {
+    file: "src/components/resume/ResumeTemplatePicker.tsx",
+    mustInclude: ["getResumeLanguage", "ResumeLanguage", "English templates", "中文模板", "templates.map"],
+    mustNotInclude: [],
+    label: "简历模板选择器只显示当前简历语言对应的版式",
+  },
+  {
+    file: "src/lib/resume-translation.ts",
+    mustInclude: ["createResumeTranslationSource", "requestResumeTranslation", "createResumeFromTranslation", "getEquivalentTemplateForLanguage", "linkedJobId: null", "photoDataUrl", "原简历未改变"],
+    mustNotInclude: ["MIMO_API_KEY", "SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_"],
+    label: "整份简历翻译只发送可翻译结构并生成保留精确联系方式的独立副本",
+  },
+  {
+    file: "src/app/api/resume/translate/route.ts",
+    mustInclude: ["auth.getUser", "take_resume_ai_rate_slot", "MIMO_API_KEY", "response_format", "json_object", "hasMatchingStructure", "preserveDeterministicStructure", "不得润色", "Cache-Control", "no-store"],
+    mustNotInclude: ["createAdminClient", "SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_", "console.log"],
+    label: "整份简历 AI 翻译在服务端校验登录、频率、结构和确定性日期字段",
   },
   {
     file: "package.json",
@@ -1495,10 +1519,15 @@ async function checkResumeImportProbe() {
   const resumeSource = readFileSync(new URL("src/lib/resume.ts", ROOT), "utf8");
   const resumeModule = typescript.transpileModule(resumeSource, { compilerOptions }).outputText;
   const resumeUrl = `data:text/javascript;base64,${Buffer.from(resumeModule).toString("base64")}`;
+  const resumeRuntime = await import(resumeUrl);
   const importSource = readFileSync(new URL("src/lib/resume-import.ts", ROOT), "utf8")
     .replace("@/lib/resume", resumeUrl);
   const importModule = typescript.transpileModule(importSource, { compilerOptions }).outputText;
   const importer = await import(`data:text/javascript;base64,${Buffer.from(importModule).toString("base64")}`);
+  const translationSource = readFileSync(new URL("src/lib/resume-translation.ts", ROOT), "utf8")
+    .replace("@/lib/resume", resumeUrl);
+  const translationModule = typescript.transpileModule(translationSource, { compilerOptions }).outputText;
+  const translator = await import(`data:text/javascript;base64,${Buffer.from(translationModule).toString("base64")}`);
   const sourceText = `王小星
 求职意向：产品经理实习生
 13800000000 stella@example.com https://github.com/stella
@@ -1521,6 +1550,7 @@ async function checkResumeImportProbe() {
 荣誉奖项
 校级一等奖学金`;
   const parsed = importer.parseResumeTextLocally(sourceText, "王小星-产品简历.pdf");
+  if (parsed.draft.language !== "zh-CN") throw new Error(`简历导入探针失败：中文简历语言识别为 ${parsed.draft.language}`);
   if (parsed.draft.basics.name !== "王小星") throw new Error(`简历导入探针失败：姓名为 ${parsed.draft.basics.name}`);
   if (parsed.draft.basics.email !== "stella@example.com") throw new Error("简历导入探针失败：邮箱未识别");
   if (parsed.draft.basics.phone !== "13800000000") throw new Error("简历导入探针失败：手机号未识别");
@@ -1532,7 +1562,53 @@ async function checkResumeImportProbe() {
   if (!document.id || document.content.work[0]?.company !== "拾星科技" || document.content.projects[0]?.name !== "秋招信息助手") {
     throw new Error("简历导入探针失败：拾星简历结构转换异常");
   }
-  console.log("✓ 简历导入探针通过：本地字段识别、硬区块解析和平台结构转换正常");
+  const englishText = `Stella Wang
+Target Role: Product Manager Intern
+stella@example.com https://github.com/stella
+
+Education
+Fudan University | Bachelor | Information Systems | 2023.09 - 2027.06
+
+Work Experience
+StarJob | Product Intern | Shanghai | 2025.06 - 2025.09
+- Collected user feedback and supported product requirement analysis.
+- Validated the application tracking workflow with the engineering team.
+
+Projects
+Graduate Recruitment Assistant | Product Lead | 2025.01 - 2025.05
+- Designed the job filtering prototype and completed usability testing.
+
+Skills
+Product: User Research, Figma, SQL`;
+  const englishParsed = importer.parseResumeTextLocally(englishText, "Stella-Wang-Resume.pdf");
+  if (englishParsed.draft.language !== "en-US") throw new Error(`简历导入探针失败：英文简历语言识别为 ${englishParsed.draft.language}`);
+  const englishDocument = importer.createResumeFromImport(englishParsed.draft);
+  if (englishDocument.templateId !== "english_classic") throw new Error("简历导入探针失败：英文简历未分配英文模板");
+  if (resumeRuntime.getResumeTemplatesForLanguage("zh-CN").length !== 6 || resumeRuntime.getResumeTemplatesForLanguage("en-US").length !== 2) {
+    throw new Error("简历语言探针失败：中英文模板集合不正确");
+  }
+
+  document.content.basics.photoDataUrl = "data:image/png;base64,private-photo";
+  document.content.basics.linkedin = "linkedin.com/in/private-profile";
+  const translatable = translator.createResumeTranslationSource(document);
+  const serializedSource = JSON.stringify(translatable);
+  if (serializedSource.includes("private-photo") || serializedSource.includes("private-profile") || serializedSource.includes("stella@example.com") || serializedSource.includes("13800000000")) {
+    throw new Error("简历翻译探针失败：联系方式、照片或链接进入 AI 翻译载荷");
+  }
+  const translatedDraft = structuredClone(translatable);
+  translatedDraft.title = "Stella Wang · Product Resume";
+  translatedDraft.targetRole = "Product Manager Intern";
+  translatedDraft.basics.targetRole = "Product Manager Intern";
+  translatedDraft.work[0].title = "Product Intern";
+  translatedDraft.work[0].bullets = translatedDraft.work[0].bullets.map((_, index) => `Translated work bullet ${index + 1}`);
+  const translatedDocument = translator.createResumeFromTranslation(document, translatedDraft, "en-US");
+  if (translatedDocument.id === document.id || translatedDocument.templateId !== "english_classic" || translatedDocument.linkedJobId !== null) {
+    throw new Error("简历翻译探针失败：译本未生成独立英文模板副本");
+  }
+  if (translatedDocument.content.basics.phone !== document.content.basics.phone || translatedDocument.content.basics.photoDataUrl !== document.content.basics.photoDataUrl) {
+    throw new Error("简历翻译探针失败：精确联系方式或照片未在本地副本中保留");
+  }
+  console.log("✓ 简历导入与翻译探针通过：语言识别、模板分配、隐私载荷和独立译本转换正常");
 }
 
 async function checkApplicationUrlProbe() {

@@ -3,7 +3,12 @@
 import type { CSSProperties } from "react";
 import { Check } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
-import { RESUME_TEMPLATES, type ResumeTemplateId } from "@/lib/resume";
+import {
+  getResumeLanguage,
+  RESUME_TEMPLATES,
+  type ResumeLanguage,
+  type ResumeTemplateId,
+} from "@/lib/resume";
 import { layoutTransition } from "@/lib/motion";
 
 const TEMPLATE_SWATCHES: Record<ResumeTemplateId, { accent: string; header: string; rule: string }> = {
@@ -18,19 +23,27 @@ const TEMPLATE_SWATCHES: Record<ResumeTemplateId, { accent: string; header: stri
 };
 
 export function ResumeTemplatePicker({
+  language,
   selectedTemplateId,
   onChange,
 }: {
+  language?: ResumeLanguage;
   selectedTemplateId: ResumeTemplateId;
   onChange: (templateId: ResumeTemplateId) => void;
 }) {
   const reducedMotion = useReducedMotion();
+  const templates = language
+    ? RESUME_TEMPLATES.filter((template) => getResumeLanguage(template.id) === language)
+    : RESUME_TEMPLATES;
   return (
     <section className="py-5" aria-labelledby="resume-template-heading">
-      <h2 id="resume-template-heading" className="mb-4 text-lg font-semibold text-ink-primary">简历版式</h2>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h2 id="resume-template-heading" className="text-lg font-semibold text-ink-primary">简历版式</h2>
+        {language ? <span className="text-xs text-ink-muted">{language === "en-US" ? "English templates" : "中文模板"}</span> : null}
+      </div>
 
       <div className="-mx-1 flex snap-x gap-3 overflow-x-auto px-1 pb-1">
-        {RESUME_TEMPLATES.map((template) => {
+        {templates.map((template) => {
           const selected = template.id === selectedTemplateId;
           return (
             <motion.button

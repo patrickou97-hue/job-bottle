@@ -1,7 +1,10 @@
 import {
   createEmptyResume,
   createId,
+  getDefaultResumeTemplate,
+  getResumeLanguage,
   type ResumeDocument,
+  type ResumeLanguage,
   type ResumeTemplateId,
 } from "@/lib/resume";
 
@@ -18,6 +21,7 @@ export type ImportedResumeBasics = {
 };
 
 export type ImportedResumeDraft = {
+  language: ResumeLanguage;
   title: string;
   targetRole: string;
   basics: ImportedResumeBasics;
@@ -78,6 +82,7 @@ type KnownSection = typeof SECTION_ALIASES[number][0];
 
 export function parseResumeTextLocally(sourceText: string, fileName = "导入简历"): ResumeImportLocalResult {
   const normalizedText = normalizeExtractedText(sourceText);
+  const language = detectResumeLanguage(normalizedText);
   const lines = normalizedText.split("\n").map((line) => line.trim()).filter(Boolean);
   const sections = splitSections(lines);
   const email = normalizedText.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] ?? "";
@@ -91,6 +96,7 @@ export function parseResumeTextLocally(sourceText: string, fileName = "导入简
   const targetRole = findTargetRole(headerLines);
 
   const draft = createEmptyImportedDraft(stripFileExtension(fileName));
+  draft.language = language;
   draft.targetRole = targetRole;
   draft.basics = {
     ...draft.basics,
@@ -112,6 +118,7 @@ export function parseResumeTextLocally(sourceText: string, fileName = "导入简
   draft.languages = parseLooseSection("语言能力", sections.languages);
 
   const signals = [
+    language === "en-US" ? "英文简历" : "中文简历",
     name && "姓名",
     email && "邮箱",
     phone && "手机号",
@@ -130,16 +137,19 @@ export function parseResumeTextLocally(sourceText: string, fileName = "导入简
 
 export function createResumeFromImport(
   draft: ImportedResumeDraft,
-  templateId: ResumeTemplateId = "compact",
+  templateId: ResumeTemplateId = getDefaultResumeTemplate(draft.language),
 ): ResumeDocument {
-  const base = createEmptyResume();
+  const safeTemplateId = getResumeLanguage(templateId) === draft.language
+    ? templateId
+    : getDefaultResumeTemplate(draft.language);
+  const base = createEmptyResume(draft.language);
   const now = new Date().toISOString();
   const cleanTitle = draft.title.trim() || `${draft.basics.name || "导入"}的简历`;
   return {
     ...base,
     title: cleanTitle,
     targetRole: draft.targetRole.trim(),
-    templateId,
+    templateId: safeTemplateId,
     createdAt: now,
     updatedAt: now,
     content: {
@@ -163,6 +173,7 @@ export function createResumeFromImport(
 
 export function createEmptyImportedDraft(title = "导入简历"): ImportedResumeDraft {
   return {
+    language: "zh-CN",
     title,
     targetRole: "",
     basics: {
@@ -186,6 +197,13 @@ export function createEmptyImportedDraft(title = "导入简历"): ImportedResume
     languages: [],
     customSections: [],
   };
+}
+
+export function detectResumeLanguage(sourceText: string): ResumeLanguage {
+  const chineseCharacters = sourceText.match(/[\u3400-\u9fff]/g)?.length ?? 0;
+  const latinLetters = sourceText.match(/[A-Za-z]/g)?.length ?? 0;
+  if (chineseCharacters >= 12 && chineseCharacters * 2 >= latinLetters) return "zh-CN";
+  return latinLetters > chineseCharacters ? "en-US" : "zh-CN";
 }
 
 function normalizeExtractedText(value: string) {

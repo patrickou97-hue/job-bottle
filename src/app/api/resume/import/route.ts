@@ -48,6 +48,7 @@ const projectSchema = z.object({
 const skillSchema = z.object({ category: text(120), skills: z.array(text(120)).max(30) }).strict();
 const customSectionSchema = z.object({ title: text(180), bullets }).strict();
 const draftSchema = z.object({
+  language: z.enum(["zh-CN", "en-US"]),
   title: text(180),
   targetRole: text(180),
   basics: basicsSchema,
@@ -251,7 +252,7 @@ function mapUpstreamError(error: unknown) {
 }
 
 const RESULT_SHAPE = `只返回以下严格 JSON，不要 Markdown：
-{"summary":"string","draft":{"title":"string","targetRole":"string","basics":{"name":"string","englishName":"string","phone":"string","email":"string","city":"string","linkedin":"string","github":"string","website":"string","targetRole":"string"},"education":[{"school":"string","degree":"string","major":"string","startDate":"string","endDate":"string","gpa":"string","courses":"string","honors":"string"}],"work":[{"company":"string","title":"string","location":"string","startDate":"string","endDate":"string","current":false,"bullets":["string"]}],"projects":[{"name":"string","role":"string","startDate":"string","endDate":"string","bullets":["string"],"keywords":"string"}],"skills":[{"category":"string","skills":["string"]}],"campus":[{"title":"string","bullets":["string"]}],"awards":[{"title":"string","bullets":["string"]}],"certifications":[{"title":"string","bullets":["string"]}],"languages":[{"title":"string","bullets":["string"]}],"customSections":[{"title":"string","bullets":["string"]}]},"warnings":["string"]}`;
+{"summary":"string","draft":{"language":"zh-CN|en-US","title":"string","targetRole":"string","basics":{"name":"string","englishName":"string","phone":"string","email":"string","city":"string","linkedin":"string","github":"string","website":"string","targetRole":"string"},"education":[{"school":"string","degree":"string","major":"string","startDate":"string","endDate":"string","gpa":"string","courses":"string","honors":"string"}],"work":[{"company":"string","title":"string","location":"string","startDate":"string","endDate":"string","current":false,"bullets":["string"]}],"projects":[{"name":"string","role":"string","startDate":"string","endDate":"string","bullets":["string"],"keywords":"string"}],"skills":[{"category":"string","skills":["string"]}],"campus":[{"title":"string","bullets":["string"]}],"awards":[{"title":"string","bullets":["string"]}],"certifications":[{"title":"string","bullets":["string"]}],"languages":[{"title":"string","bullets":["string"]}],"customSections":[{"title":"string","bullets":["string"]}]},"warnings":["string"]}`;
 
 const SYSTEM_PROMPT = `你是拾星简历导入校对器。程序已经先从用户自己的文件提取文本并生成本地草稿；你的任务是依据原文复核、拆分并映射为拾星简历结构。
 规则：
@@ -261,4 +262,5 @@ const SYSTEM_PROMPT = `你是拾星简历导入校对器。程序已经先从用
 4. 可以规范日期格式和去除项目符号，可以把同一段连续文字拆成 bullet；不得润色事实、增加结果或升级责任等级。
 5. 无法确认的字段返回空字符串；不确定的映射写入 warnings。不要把简历页眉页脚、页码或联系方式误当经历。
 6. title 使用文件名或“姓名 · 目标岗位”；targetRole 只有原文明确写出求职意向时才填写。
-7. 始终返回完整 JSON；没有内容的数组返回 []。`;
+7. language 必须根据原文主要叙述语言返回 zh-CN 或 en-US；中英混合时按经历描述、项目描述等正文占比判断，不按邮箱、URL 或学校英文名判断。
+8. 始终返回完整 JSON；没有内容的数组返回 []。`;
