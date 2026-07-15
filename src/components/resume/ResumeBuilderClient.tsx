@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
-import { Copy, FileText, Plus, Puzzle, Trash2 } from "lucide-react";
+import { Copy, FileText, FileUp, Plus, Puzzle, Trash2 } from "lucide-react";
 import { ResumeEditor, type EditorSection } from "@/components/resume/ResumeEditor";
+import { ResumeImportDialog } from "@/components/resume/ResumeImportDialog";
 import { ResumePdfExportButton } from "@/components/resume/ResumePdfExportButton";
 import { ResumePreview } from "@/components/resume/ResumePreview";
 import { ResumeTemplatePicker } from "@/components/resume/ResumeTemplatePicker";
@@ -38,6 +39,7 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import type { ApplicationWithJob, Job } from "@/lib/types";
 import { formatDateTime } from "@/lib/utils";
 import { track } from "@/lib/track";
+import { createResumeFromImport, type ImportedResumeDraft } from "@/lib/resume-import";
 
 type StorageMode = "local" | "cloud";
 type TargetJobContext = { company: string; id: string; role: string };
@@ -60,6 +62,7 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
   const [saveState, setSaveState] = useState("已保存到本地");
   const [storageMode, setStorageMode] = useState<StorageMode>("local");
   const [userId, setUserId] = useState<string | null>(null);
+  const [showImportDialog, setShowImportDialog] = useState(false);
   const cloudFingerprintsRef = useRef(new Map<string, string>());
   const pendingCloudSavesRef = useRef(new Map<string, PendingCloudSave>());
   const cloudSaveWorkerRef = useRef<Promise<void> | null>(null);
@@ -366,6 +369,22 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
     setActiveSection("basic");
   }
 
+  function importResume(draft: ImportedResumeDraft) {
+    const next = createResumeFromImport(draft, selectedResume.templateId);
+    setResumes((current) => [next, ...current]);
+    setSelectedId(next.id);
+    setActiveSection("basic");
+    setShowImportDialog(false);
+    setSaveState(storageMode === "cloud" ? "已生成，正在同步到账号" : "已生成并保存到本地");
+    void track("resume_import_created", {
+      resume_id: next.id,
+      source: "file",
+      education_count: next.content.education.length,
+      work_count: next.content.work.length,
+      project_count: next.content.projects.length,
+    });
+  }
+
   function prepareTargetResume() {
     if (!targetJob || !selectedResume) return;
     if (targetResume) {
@@ -467,12 +486,23 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
             <Puzzle aria-hidden="true" className="size-4" />
             网申助手
           </Link>
+          <Button variant="secondary" onClick={() => setShowImportDialog(true)} className="gap-2">
+            <FileUp aria-hidden="true" className="size-4" />
+            导入简历
+          </Button>
           <Button onClick={createResume} className="gap-2">
             <Plus aria-hidden="true" className="size-4" />
             新建简历
           </Button>
         </div>
       </section>
+
+      {showImportDialog ? (
+        <ResumeImportDialog
+          onClose={() => setShowImportDialog(false)}
+          onImport={importResume}
+        />
+      ) : null}
 
       {targetJob ? (
         <section className="flex flex-col gap-4 border-y border-[color:var(--line-ghost)] py-5 sm:flex-row sm:items-center sm:justify-between">

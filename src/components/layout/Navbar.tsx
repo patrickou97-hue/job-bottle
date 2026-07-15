@@ -21,6 +21,7 @@ const navItems = [
   { href: "/forum", label: "拾星指南" },
   { href: "/bottle", label: "星瓶" },
   { href: "/profile", label: "个人中心" },
+  { href: "/feedback", label: "反馈" },
 ];
 
 const mobileNavItems = [
@@ -159,9 +160,23 @@ export function Navbar({ appearance = "work" }: { appearance?: "scene" | "work" 
           )}
         </div>
 
-        <Link href={profile ? "/profile" : "/login"} className="ml-auto text-sm text-ink-secondary md:hidden" onClick={(event) => handleSceneLink(event, profile ? "/profile" : "/login")}>
-          {profile ? profile.display_name || "个人中心" : "登录"}
-        </Link>
+        <div className="ml-auto flex items-center gap-3 text-sm md:hidden">
+          <Link
+            href="/feedback"
+            className={cn("transition", pathname.startsWith("/feedback") ? "text-ink-primary" : "text-ink-secondary")}
+            onClick={(event) => handleSceneLink(event, "/feedback")}
+          >
+            反馈
+          </Link>
+          <span aria-hidden="true" className="h-3 w-px bg-[color:var(--line-soft)]" />
+          <Link
+            href={profile ? "/profile" : "/login"}
+            className={cn("transition", pathname.startsWith("/profile") ? "text-ink-primary" : "text-ink-secondary")}
+            onClick={(event) => handleSceneLink(event, profile ? "/profile" : "/login")}
+          >
+            {profile ? "个人中心" : "登录"}
+          </Link>
+        </div>
         </div>
       </header>
       <nav

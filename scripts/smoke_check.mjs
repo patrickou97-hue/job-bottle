@@ -267,9 +267,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/layout/Navbar.tsx",
-    mustInclude: ["岗位坐标", "投递管理", "简历制作", "href: \"/extension\"", "label: \"网申助手\"", "BETA", "nav-beta", "拾星指南", "星瓶", "个人中心", "mobileNavItems", "grid-cols-6", "移动主导航", "bottom-0", "primary-nav-indicator", "mobile-nav-indicator"],
+    mustInclude: ["岗位坐标", "投递管理", "简历制作", "href: \"/extension\"", "label: \"网申助手\"", "BETA", "nav-beta", "拾星指南", "星瓶", "个人中心", "href: \"/feedback\"", "label: \"反馈\"", "mobileNavItems", "grid-cols-6", "移动主导航", "bottom-0", "primary-nav-indicator", "mobile-nav-indicator", "profile ? \"个人中心\" : \"登录\""],
     mustNotInclude: ["找岗位", "求职交流", "label: \"我的\"", "label: \"首页\""],
-    label: "桌面与移动端均直接展示六个一级模块",
+    label: "桌面顶部独立展示反馈入口且移动端保持原六项主导航",
   },
   {
     file: "src/components/resume/ResumePreview.tsx",
@@ -348,6 +348,42 @@ const SOURCE_INVARIANTS = [
     mustInclude: ["fetchMyResumes", "upsertMyResume", "deleteMyResume", "withCloudRetry", "withCloudTimeout", "CLOUD_RETRY_DELAYS_MS", "CLOUD_OPERATION_TIMEOUT_MS = 8_000", "content_json", "__job_bottle_template_id", "minimal", "executive", "consulting", "technical", "academic", "english_classic", "english_modern", "isMissingResumeTableError", "isResumeTemplateConstraintError", "isResumeOwnershipConflictError", "getResumeSyncErrorMessage", "PGRST301"],
     mustNotInclude: ["service_role"],
     label: "简历同步层对瞬时失败重试并兼容未运行迁移的本地回退",
+  },
+  {
+    file: "src/lib/resume-file-reader.ts",
+    mustInclude: ["MAX_FILE_SIZE", "pdfjs-dist/legacy/build/pdf.mjs", "pdf.worker.min.mjs", "mammoth", "extractRawText", "file.text()", "PDF、DOCX 或 TXT"],
+    mustNotInclude: ["fetch(", "FormData", "FileReader.readAsDataURL"],
+    label: "已有简历文件先在浏览器本地提取文字且不上传原文件",
+  },
+  {
+    file: "src/lib/resume-import.ts",
+    mustInclude: ["parseResumeTextLocally", "createResumeFromImport", "splitSections", "extractDateRange", "教育背景", "工作经历", "项目经历", "createId"],
+    mustNotInclude: ["fetch(", "MIMO_API_KEY", "SUPABASE_SERVICE_ROLE_KEY"],
+    label: "简历导入先用确定性规则识别基础字段和硬区块再生成平台结构",
+  },
+  {
+    file: "src/app/api/resume/import/route.ts",
+    mustInclude: ["auth.getUser", "take_resume_ai_rate_slot", "MIMO_API_KEY", "response_format", "json_object", "localDraft", "sourceText", "preserveDeterministicBasics", "不得虚构", "区块", "Cache-Control", "no-store"],
+    mustNotInclude: ["createAdminClient", "SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_", "request.formData", "console.log"],
+    label: "AI 只复核提取文字与本地候选并以严格 JSON 返回完整简历草稿",
+  },
+  {
+    file: "src/components/resume/ResumeImportDialog.tsx",
+    mustInclude: ["本地读取 · AI 复核 · 确认生成", "extractResumeFileText", "parseResumeTextLocally", "不会上传原文件", "交给 AI 复核", "生成拾星简历"],
+    mustNotInclude: ["request.formData", "window.location.reload"],
+    label: "简历导入必须先预览程序结果和 AI 警告再由用户确认生成",
+  },
+  {
+    file: "src/components/resume/ResumeBuilderClient.tsx",
+    mustInclude: ["ResumeImportDialog", "createResumeFromImport", "resume_import_created", "导入简历", "showImportDialog"],
+    mustNotInclude: ["router.refresh()", "window.location.reload()"],
+    label: "简历制作器把确认后的导入结果接入现有本地保存和账号同步链路",
+  },
+  {
+    file: "package.json",
+    mustInclude: ["pdfjs-dist", "mammoth"],
+    mustNotInclude: [],
+    label: "浏览器简历导入依赖受控的 PDF 与 DOCX 文本提取库",
   },
   {
     file: "src/lib/application-url.ts",
@@ -475,9 +511,15 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/profile/ProfileClient.tsx",
-    mustInclude: ["个人中心", "SectionLead", "基本信息", "匹配岗位", "账号与反馈"],
-    mustNotInclude: ["eyebrow=", "个人中心 · 用户管理", "常用入口", "查看秋招流程"],
-    label: "个人中心移除模板化眉题，并将常用入口迁移至拾星指南",
+    mustInclude: ["个人中心", "ProfileSection", "基本资料", "求职偏好", "简历与匹配", "投递进展", "title=\"账号\"", "lg:grid-cols-[190px_minmax(0,1fr)]"],
+    mustNotInclude: ["eyebrow=", "个人中心 · 用户管理", "账号与反馈", "反馈内容", "FEEDBACK_TYPES", "常用入口", "查看秋招流程", "个人中心分区", "profile-assets", "star-bottle-image2.png", "BottleFact"],
+    label: "个人中心按资料、偏好、简历匹配、投递和账号顺序使用开放式平铺布局",
+  },
+  {
+    file: "src/components/feedback/FeedbackClient.tsx",
+    mustInclude: ["反馈", "告诉我们您的建议与反馈，这对我们非常重要", "问题类型", "具体情况", "反馈内容", "发送反馈", "隐私说明", "FEEDBACK_TYPES", "mailto:", "不会自动发送简历正文"],
+    mustNotInclude: ["rounded-2xl", "shadow-", "bg-gradient"],
+    label: "反馈独立为一级开放式页面并保留问题分类、邮件确认和隐私说明",
   },
   {
     file: "src/components/forum/ForumClient.tsx",
@@ -876,6 +918,7 @@ const REQUIRED_TEXT = {
   "/explore": ["岗位坐标", "正在加载岗位"],
   "/my": ["投递管理", "当前阶段"],
   "/profile": ["个人中心"],
+  "/feedback": ["反馈", "告诉我们您的建议与反馈，这对我们非常重要", "问题类型", "发送反馈"],
   "/bottle": ["星瓶"],
   "/resume": ["简历制作"],
   "/galaxy": ["岗位星系", "地区星系", "行业星系"],
@@ -1443,6 +1486,55 @@ async function checkResumeFontProbe() {
   console.log("✓ 简历字体探针通过：common/full 选择、Unicode 遍历和四个版本化字体均正常");
 }
 
+async function checkResumeImportProbe() {
+  const typescript = await import("typescript");
+  const compilerOptions = {
+    module: typescript.ModuleKind.ES2022,
+    target: typescript.ScriptTarget.ES2022,
+  };
+  const resumeSource = readFileSync(new URL("src/lib/resume.ts", ROOT), "utf8");
+  const resumeModule = typescript.transpileModule(resumeSource, { compilerOptions }).outputText;
+  const resumeUrl = `data:text/javascript;base64,${Buffer.from(resumeModule).toString("base64")}`;
+  const importSource = readFileSync(new URL("src/lib/resume-import.ts", ROOT), "utf8")
+    .replace("@/lib/resume", resumeUrl);
+  const importModule = typescript.transpileModule(importSource, { compilerOptions }).outputText;
+  const importer = await import(`data:text/javascript;base64,${Buffer.from(importModule).toString("base64")}`);
+  const sourceText = `王小星
+求职意向：产品经理实习生
+13800000000 stella@example.com https://github.com/stella
+
+教育背景
+复旦大学 | 信息管理与信息系统 | 本科 | 2023.09 - 2027.06 | GPA 3.8/4.0
+
+工作经历
+拾星科技 | 产品实习生 | 上海 | 2025.06 - 2025.09
+- 参与岗位管理需求梳理，整理用户反馈。
+- 协助验证投递流程。
+
+项目经历
+秋招信息助手 | 产品负责人 | 2025.01 - 2025.05
+- 设计岗位筛选原型并完成测试。
+
+专业技能
+产品：用户访谈、Figma、SQL
+
+荣誉奖项
+校级一等奖学金`;
+  const parsed = importer.parseResumeTextLocally(sourceText, "王小星-产品简历.pdf");
+  if (parsed.draft.basics.name !== "王小星") throw new Error(`简历导入探针失败：姓名为 ${parsed.draft.basics.name}`);
+  if (parsed.draft.basics.email !== "stella@example.com") throw new Error("简历导入探针失败：邮箱未识别");
+  if (parsed.draft.basics.phone !== "13800000000") throw new Error("简历导入探针失败：手机号未识别");
+  if (parsed.draft.targetRole !== "产品经理实习生") throw new Error("简历导入探针失败：求职意向未识别");
+  if (parsed.draft.education.length !== 1 || parsed.draft.work.length !== 1 || parsed.draft.projects.length !== 1) {
+    throw new Error("简历导入探针失败：教育、工作或项目区块未保持独立");
+  }
+  const document = importer.createResumeFromImport(parsed.draft);
+  if (!document.id || document.content.work[0]?.company !== "拾星科技" || document.content.projects[0]?.name !== "秋招信息助手") {
+    throw new Error("简历导入探针失败：拾星简历结构转换异常");
+  }
+  console.log("✓ 简历导入探针通过：本地字段识别、硬区块解析和平台结构转换正常");
+}
+
 async function checkApplicationUrlProbe() {
   const typescript = await import("typescript");
   const source = readFileSync(new URL("src/lib/application-url.ts", ROOT), "utf8");
@@ -1505,6 +1597,7 @@ async function main() {
   checkBottleGeometryProbe();
   await checkCategoryProbe();
   await checkLocationProbe();
+  await checkResumeImportProbe();
   await checkResumeFontProbe();
   await checkApplicationUrlProbe();
 
