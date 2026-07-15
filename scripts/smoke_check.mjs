@@ -800,14 +800,14 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/extension/ExtensionHubClient.tsx",
-    mustInclude: ["一份简历，投向更多可能", "常见网申字段按页面顺序填入", "starjob-resume-assistant-iphone17pm.png", "iPhone 17 Pro Max", "获取安装包", "https://pan.baidu.com/s/11xaueV0f0D_pFt_czk_MHw?pwd=SXZS"],
-    mustNotInclude: ["简历写一次，网申少重复", "starjob-resume-assistant-popup.png", "https://pan.baidu.com/s/18t2FPlnjktr3zTG9eE1k2g?pwd=SXZS", "https://pan.baidu.com/s/1WhabI64zCSOXyn4zIAKMsw?pwd=SXZS"],
+    mustInclude: ["一份简历，投向更多可能", "常见网申字段按页面顺序填入", "starjob-resume-assistant-iphone17pm.png", "iPhone 17 Pro Max", "获取安装包", "https://pan.baidu.com/s/10QoSAiNpFOch881oCniEjA?pwd=SXZS"],
+    mustNotInclude: ["简历写一次，网申少重复", "starjob-resume-assistant-popup.png", "https://pan.baidu.com/s/18t2FPlnjktr3zTG9eE1k2g?pwd=SXZS", "https://pan.baidu.com/s/1WhabI64zCSOXyn4zIAKMsw?pwd=SXZS", "https://pan.baidu.com/s/11xaueV0f0D_pFt_czk_MHw?pwd=SXZS"],
     label: "网申助手首屏使用更克制的价值表达与带灵动岛的设备实机展示",
   },
   {
     file: "src/components/extension/ExtensionGuide.tsx",
-    mustInclude: ["https://pan.baidu.com/s/11xaueV0f0D_pFt_czk_MHw?pwd=SXZS", "百度网盘提取码：SXZS"],
-    mustNotInclude: ["https://pan.baidu.com/s/18t2FPlnjktr3zTG9eE1k2g?pwd=SXZS", "https://pan.baidu.com/s/1WhabI64zCSOXyn4zIAKMsw?pwd=SXZS"],
+    mustInclude: ["https://pan.baidu.com/s/10QoSAiNpFOch881oCniEjA?pwd=SXZS", "百度网盘提取码：SXZS"],
+    mustNotInclude: ["https://pan.baidu.com/s/18t2FPlnjktr3zTG9eE1k2g?pwd=SXZS", "https://pan.baidu.com/s/1WhabI64zCSOXyn4zIAKMsw?pwd=SXZS", "https://pan.baidu.com/s/11xaueV0f0D_pFt_czk_MHw?pwd=SXZS"],
     label: "网申助手下载页与安装教程共用最新百度网盘地址",
   },
   {

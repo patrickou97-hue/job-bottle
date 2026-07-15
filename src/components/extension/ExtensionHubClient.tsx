@@ -11,7 +11,7 @@ import {
 } from "@phosphor-icons/react";
 
 const CHANNEL = "starjob-resume-assistant";
-const DOWNLOAD_URL = "https://pan.baidu.com/s/11xaueV0f0D_pFt_czk_MHw?pwd=SXZS";
+const DOWNLOAD_URL = "https://pan.baidu.com/s/10QoSAiNpFOch881oCniEjA?pwd=SXZS";
 
 type SyncState = "idle" | "checking" | "syncing" | "success" | "missing" | "auth" | "empty" | "error";
 
