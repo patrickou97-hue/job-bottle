@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, FileText, List, Orbit, RefreshCw, Search, Columns3 } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
@@ -43,8 +43,11 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
   const [loading, setLoading] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
   const [message, setMessage] = useState("");
+  const loadRequestRef = useRef(0);
 
   async function loadData() {
+    const requestId = loadRequestRef.current + 1;
+    loadRequestRef.current = requestId;
     setLoading(true);
     setMessage("");
     try {
@@ -67,12 +70,14 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
           throw error;
         }),
       ]);
+      if (requestId !== loadRequestRef.current) return;
       setApplications(applicationRows);
       setResumes(resumeResult);
     } catch {
+      if (requestId !== loadRequestRef.current) return;
       setMessage("读取投递失败，请稍后再试。");
     } finally {
-      setLoading(false);
+      if (requestId === loadRequestRef.current) setLoading(false);
     }
   }
 
@@ -80,7 +85,10 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
     const timer = window.setTimeout(() => {
       void loadData();
     }, 0);
-    return () => window.clearTimeout(timer);
+    return () => {
+      window.clearTimeout(timer);
+      loadRequestRef.current += 1;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loginNextPath]);
 
@@ -291,7 +299,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
               ) : (
                 <div className="grid overflow-hidden border-y border-[color:var(--line-ghost)] xl:grid-cols-4 xl:divide-x xl:divide-[color:var(--line-ghost)]">
                   {columns.map((column) => (
-                    <section key={column.id} className="min-h-60 bg-white p-4">
+                    <section key={column.id} className="min-h-60 p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <h3 className="text-sm font-semibold text-ink-primary">{column.label}</h3>

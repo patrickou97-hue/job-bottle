@@ -2,10 +2,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { JOB_CATEGORIES, jobMatchesSelectedCategories, normalizeJobCategories } from "@/lib/categories";
 import { sanitizeApplicationUrl } from "@/lib/application-url";
 import { splitToTags } from "@/lib/utils";
-import { matchesLocationFilter } from "@/lib/locations";
-import type { Database, Job, JobFilters, JobFormValues } from "@/lib/types";
+import { matchesLocationFilter, normalizeProvinceName, PROVINCE_CITIES } from "@/lib/locations";
+import type { Database, Job, JobFilters, JobFormValues, Profile } from "@/lib/types";
 
 const DEFAULT_JOBS_TIMEOUT_MS = 7000;
+export const RECENT_JOB_WINDOW_DAYS = 7;
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string) {
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
@@ -144,6 +145,54 @@ export function filterJobs(jobs: Job[], filters: JobFilters) {
   });
 
   return sortJobs(filtered, filters.sortBy);
+}
+
+export function isRecentlyListedJob(
+  job: Job,
+  now = Date.now(),
+  windowDays = RECENT_JOB_WINDOW_DAYS,
+) {
+  const createdAt = new Date(job.created_at).getTime();
+  if (!Number.isFinite(createdAt)) return false;
+  const cutoff = now - windowDays * 24 * 60 * 60 * 1000;
+  return createdAt >= cutoff && createdAt <= now + 5 * 60 * 1000;
+}
+
+export function hasJobPreferences(profile: Profile | null) {
+  return Boolean(profile && (
+    (profile.preferred_regions?.length ?? 0) > 0 ||
+    (profile.target_roles?.length ?? 0) > 0
+  ));
+}
+
+export function jobMatchesProfilePreferences(job: Job, profile: Profile | null) {
+  if (!profile || !hasJobPreferences(profile)) return false;
+  const regions = (profile.preferred_regions ?? []).map((item) => item.trim()).filter(Boolean);
+  const roles = (profile.target_roles ?? []).map((item) => item.trim()).filter(Boolean);
+  const locationText = job.locations ?? "";
+  const nationwide = /全国|全球/.test(locationText);
+  const regionMatched = regions.length === 0 || nationwide || regions.some((region) => {
+    const normalized = normalizeProvinceName(region);
+    if (PROVINCE_CITIES[normalized]) {
+      return matchesLocationFilter(locationText, `province:${normalized}`);
+    }
+    return matchesLocationFilter(locationText, `city:${normalized}`) || locationText.includes(region);
+  });
+  const roleText = [
+    job.job_titles ?? "",
+    job.industry ?? "",
+    ...(job.job_categories ?? []),
+  ].join(" ").toLowerCase();
+  const roleMatched = roles.length === 0 || roles.some((role) => {
+    const normalizedRole = role.toLowerCase();
+    if (roleText.includes(normalizedRole)) return true;
+    return getJobCategories(job).some((category) => {
+      const categoryStem = category.replace(/类$/u, "").toLowerCase();
+      return normalizedRole.includes(categoryStem) || categoryStem.includes(normalizedRole);
+    });
+  });
+
+  return regionMatched && roleMatched;
 }
 
 function sortJobs(jobs: Job[], sortBy: JobFilters["sortBy"]) {

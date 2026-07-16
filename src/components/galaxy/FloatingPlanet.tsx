@@ -94,7 +94,6 @@ export function FloatingPlanet({
 	          animate={{
 	            scale: entering ? 0.86 : hovered ? 1.04 : 1,
 	            opacity: entering ? 0 : 1,
-	            filter: hovered ? 'brightness(1.15)' : 'brightness(1)',
 	          }}
 	          transition={{ duration: entering ? 0.42 : 0.24, ease: 'easeOut' }}
 	        >

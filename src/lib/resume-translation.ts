@@ -83,8 +83,11 @@ export function createResumeTranslationSource(resume: ResumeDocument): ResumeTra
 export async function requestResumeTranslation(
   resume: ResumeDocument,
   targetLanguage: ResumeLanguage,
+  externalSignal?: AbortSignal,
 ) {
   const controller = new AbortController();
+  const cancelFromOutside = () => controller.abort("cancelled");
+  externalSignal?.addEventListener("abort", cancelFromOutside, { once: true });
   const timeout = window.setTimeout(() => controller.abort(), 38_000);
   try {
     const response = await fetch("/api/resume/translate", {
@@ -106,12 +109,14 @@ export async function requestResumeTranslation(
     }
     return payload;
   } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") {
+    if (controller.signal.aborted) {
+      if (externalSignal?.aborted) throw new Error("已取消 AI 翻译，原简历未改变");
       throw new Error("AI 翻译请求超时，原简历未改变，请重试");
     }
     throw error;
   } finally {
     window.clearTimeout(timeout);
+    externalSignal?.removeEventListener("abort", cancelFromOutside);
   }
 }
 

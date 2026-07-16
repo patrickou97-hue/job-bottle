@@ -48,15 +48,21 @@ export function BottleStage({
     const context = canvas.getContext("2d");
     if (!context) return;
     const ctx = context;
+    let metrics = { height: 0, ratio: 1, width: 0 };
 
     const startedAt = performance.now();
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
       const ratio = Math.min(window.devicePixelRatio || 1, 2);
-      canvas.width = Math.max(1, Math.floor(rect.width * ratio));
-      canvas.height = Math.max(1, Math.floor(rect.height * ratio));
-      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-      return rect;
+      const pixelWidth = Math.max(1, Math.floor(rect.width * ratio));
+      const pixelHeight = Math.max(1, Math.floor(rect.height * ratio));
+      metrics = { height: rect.height, ratio, width: rect.width };
+      if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+        canvas.width = pixelWidth;
+        canvas.height = pixelHeight;
+        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      }
+      scheduleDraw();
     };
 
     function scheduleDraw() {
@@ -66,24 +72,25 @@ export function BottleStage({
     scheduleDrawRef.current = scheduleDraw;
 
     function draw(now: number) {
-      const rect = resize();
       frame = 0;
-      ctx.clearRect(0, 0, rect.width, rect.height);
+      const { height, width } = metrics;
+      if (width <= 0 || height <= 0) return;
+      ctx.clearRect(0, 0, width, height);
 
       const falling = fallingId && !reducedMotion;
       const elapsed = Math.min(1, (now - startedAt) / 800);
       const eased = 1 - Math.pow(1 - elapsed, 2);
       const bounce = elapsed > 0.72 ? Math.sin((elapsed - 0.72) * Math.PI * 7) * 4 * (1 - elapsed) : 0;
 
-      clipToBottleInterior(ctx, rect.width, rect.height);
-      drawBottleAtmosphere(ctx, rect.width, rect.height);
+      clipToBottleInterior(ctx, width, height);
+      drawBottleAtmosphere(ctx, width, height);
       drawableApplications.forEach((application) => {
         const position = positions.get(application.id);
         if (!position) return;
-        const targetX = (position.xPct / 100) * rect.width;
-        const targetY = (position.yPct / 100) * rect.height;
-        const startX = (spawnX / 100) * rect.width;
-        const startY = (spawnY / 100) * rect.height;
+        const targetX = (position.xPct / 100) * width;
+        const targetY = (position.yPct / 100) * height;
+        const startX = (spawnX / 100) * width;
+        const startY = (spawnY / 100) * height;
         const isFalling = application.id === fallingId && falling;
         const depth = 0.46 + position.yPct / 180;
         const shimmer = Math.sin(now / 320 + position.rotate) * Math.min(2.6, Math.abs(shakeRef.current.x) * 0.12);
@@ -108,10 +115,8 @@ export function BottleStage({
       }
     }
 
-    frame = window.requestAnimationFrame(draw);
-    const observer = new ResizeObserver(() => {
-      if (!frame) frame = window.requestAnimationFrame(draw);
-    });
+    resize();
+    const observer = new ResizeObserver(resize);
     observer.observe(canvas);
 
     return () => {

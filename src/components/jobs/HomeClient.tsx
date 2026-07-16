@@ -7,7 +7,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Archive, Sparkles } from "lucide-react";
 import { EMPTY_JOB_FILTERS } from "@/lib/constants";
 import { parseJobCategoriesParam, serializeJobCategories } from "@/lib/categories";
-import { fetchActiveJobs, filterJobs, getJobFacetOptions } from "@/lib/jobs";
+import {
+  fetchActiveJobs,
+  filterJobs,
+  getJobFacetOptions,
+  hasJobPreferences,
+  isRecentlyListedJob,
+  jobMatchesProfilePreferences,
+} from "@/lib/jobs";
 import { fetchMyApplications, updateApplication, upsertApplication } from "@/lib/applications";
 import { getCandidateStage, getDeadlineInfo, getFitLabel, getMaterialReadiness } from "@/lib/career-workspace";
 import { getLocationFilterLabel } from "@/lib/locations";
@@ -30,6 +37,7 @@ import { useCaptureMotion } from "@/components/capture/useCaptureMotion";
 import type {
   ApplicationWithJob,
   Job,
+  JobDiscoveryScope,
   JobFilters,
   Profile,
   UserApplication,
@@ -57,6 +65,7 @@ export function HomeClient() {
     categories: parseJobCategoriesParam(searchParams.get("cats")),
   }));
   const [jobView, setJobView] = useState<JobViewMode>("all");
+  const [discoveryScope, setDiscoveryScope] = useState<JobDiscoveryScope>("all");
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [selectedApplication, setSelectedApplication] =
@@ -71,9 +80,12 @@ export function HomeClient() {
   const [confirmBusy, setConfirmBusy] = useState(false);
   const applyPageWasHiddenRef = useRef(false);
   const applyConfirmFallbackRef = useRef<number | null>(null);
+  const loadRequestRef = useRef(0);
   const { capturedJob, startCapture, clearCapture } = useCaptureMotion();
 
   async function loadData() {
+    const requestId = loadRequestRef.current + 1;
+    loadRequestRef.current = requestId;
     setLoading(true);
     setMessage("");
     try {
@@ -88,6 +100,7 @@ export function HomeClient() {
         fetchActiveJobs(supabase),
         getCurrentUserOrNull(supabase),
       ]);
+      if (requestId !== loadRequestRef.current) return;
       setJobs(jobRows);
 
       if (user) {
@@ -100,6 +113,7 @@ export function HomeClient() {
             throw error;
           }),
         ]);
+        if (requestId !== loadRequestRef.current) return;
         setProfile(profileResult.data as Profile | null);
         setApplications(applicationRows);
         setResumes(resumeRows);
@@ -110,9 +124,12 @@ export function HomeClient() {
         setProfile(null);
       }
     } catch {
-      setMessage("无法连接数据库，请确认数据库环境变量已经配置。");
+      if (requestId !== loadRequestRef.current) return;
+      setMessage(typeof navigator !== "undefined" && !navigator.onLine
+        ? "当前处于离线状态。筛选条件已保留，联网后可再次加载岗位。"
+        : "岗位数据暂时无法读取，请检查网络后重试。");
     } finally {
-      setLoading(false);
+      if (requestId === loadRequestRef.current) setLoading(false);
     }
   }
 
@@ -120,7 +137,10 @@ export function HomeClient() {
     const timer = window.setTimeout(() => {
       void loadData();
     }, 0);
-    return () => window.clearTimeout(timer);
+    return () => {
+      window.clearTimeout(timer);
+      loadRequestRef.current += 1;
+    };
   }, []);
 
   useEffect(() => {
@@ -154,10 +174,24 @@ export function HomeClient() {
   }, [applications]);
 
   const facets = useMemo(() => getJobFacetOptions(jobs), [jobs]);
-  const matchingJobs = useMemo(() => filterJobs(jobs, filters), [jobs, filters]);
+  const recentJobs = useMemo(() => jobs.filter((job) => isRecentlyListedJob(job)), [jobs]);
+  const preferenceAvailable = hasJobPreferences(profile);
+  const recentPreferenceJobs = useMemo(
+    () => recentJobs.filter((job) => jobMatchesProfilePreferences(job, profile)),
+    [profile, recentJobs],
+  );
+  const discoveryJobs = discoveryScope === "recent"
+    ? recentJobs
+    : discoveryScope === "recent_preference"
+      ? recentPreferenceJobs
+      : jobs;
+  const matchingJobs = useMemo(
+    () => filterJobs(discoveryJobs, filters),
+    [discoveryJobs, filters],
+  );
   const mapMatchingJobs = useMemo(
-    () => filterJobs(jobs, { ...filters, location: "" }),
-    [filters, jobs],
+    () => filterJobs(discoveryJobs, { ...filters, location: "" }),
+    [discoveryJobs, filters],
   );
   const baseVisibleJobs = useMemo(() => {
     if (jobView === "applied") {
@@ -179,8 +213,8 @@ export function HomeClient() {
   }, [applicationByJobId, jobView, mapMatchingJobs]);
   const filteredJobs = baseVisibleJobs;
   const activeFilterChips = useMemo(
-    () => getActiveFilterChips(filters, jobView),
-    [filters, jobView],
+    () => getActiveFilterChips(filters, jobView, discoveryScope),
+    [discoveryScope, filters, jobView],
   );
   const radarStats = useMemo(() => {
     const companyCount = new Set(filteredJobs.map((job) => job.company_name)).size;
@@ -428,10 +462,13 @@ export function HomeClient() {
       <JobRadarHeader
         stats={radarStats}
         jobView={jobView}
-        onJobViewChange={setJobView}
+        onJobViewChange={(nextView) => {
+          setJobView(nextView);
+        }}
         activeFilterChips={activeFilterChips}
         onClear={() => {
           setFilters(EMPTY_JOB_FILTERS);
+          setDiscoveryScope("all");
           setJobView("all");
           setFocusedJobId(null);
         }}
@@ -472,6 +509,12 @@ export function HomeClient() {
           filters={filters}
           facets={facets}
           onChange={handleFiltersChange}
+          discoveryScope={discoveryScope}
+          onDiscoveryScopeChange={setDiscoveryScope}
+          recentCount={recentJobs.length}
+          recentPreferenceCount={recentPreferenceJobs.length}
+          hasPreferences={preferenceAvailable}
+          isAuthenticated={Boolean(currentUserId)}
         />
 
         <section id="job-list" className="min-w-0">
@@ -712,7 +755,11 @@ function StatNumber({ value, label }: { value: number; label: string }) {
   );
 }
 
-function getActiveFilterChips(filters: JobFilters, jobView: JobViewMode) {
+function getActiveFilterChips(
+  filters: JobFilters,
+  jobView: JobViewMode,
+  discoveryScope: JobDiscoveryScope,
+) {
   const chips: string[] = [];
   const keyword = filters.keyword.trim();
   if (keyword) chips.push(`关键词：${keyword}`);
@@ -723,6 +770,8 @@ function getActiveFilterChips(filters: JobFilters, jobView: JobViewMode) {
   if (filters.sortBy === "start_date_desc") chips.push("最新开启");
   if (filters.sortBy === "start_date_asc") chips.push("开启时间优先");
   if (filters.sortBy === "company_asc") chips.push("公司名称排序");
+  if (discoveryScope === "recent") chips.push("近 7 天新上");
+  if (discoveryScope === "recent_preference") chips.push("近 7 天 · 符合偏好");
   if (jobView === "unapplied") chips.push("只看未投递");
   if (jobView === "applied") chips.push("只看已投递");
   return chips;

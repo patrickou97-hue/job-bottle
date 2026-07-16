@@ -60,28 +60,31 @@ export function ProgressDrawer({
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const messageTimerRef = useRef<number | null>(null);
   const saveRequestRef = useRef(0);
+  const applicationId = application?.id ?? null;
 
   useEffect(() => {
-    if (!application) return;
+    if (!open) return;
+    const currentApplication = application;
+    if (!currentApplication) return;
     let cancelled = false;
     const timer = window.setTimeout(() => {
       if (cancelled) return;
-      setStatus(application.status);
-      setSavedStatus(application.status);
-      setNote(application.progress_note ?? "");
-      setSavedNote(application.progress_note ?? "");
-      const nextCandidateStage = getCandidateStage(application);
+      setStatus(currentApplication.status);
+      setSavedStatus(currentApplication.status);
+      setNote(currentApplication.progress_note ?? "");
+      setSavedNote(currentApplication.progress_note ?? "");
+      const nextCandidateStage = getCandidateStage(currentApplication);
       const nextWorkflow = {
-        account: application.application_account ?? "",
+        account: currentApplication.application_account ?? "",
         candidateStage: nextCandidateStage,
-        channel: application.application_channel ?? "",
-        contactName: application.contact_name ?? "",
-        customStageLabel: application.custom_stage_label ?? "",
-        nextAction: application.next_action ?? "",
-        nextActionAt: toDateTimeLocal(application.next_action_at),
-        priority: application.priority ?? 0,
-        resumeId: application.resume_id ?? "",
-        reviewNote: application.review_note ?? "",
+        channel: currentApplication.application_channel ?? "",
+        contactName: currentApplication.contact_name ?? "",
+        customStageLabel: currentApplication.custom_stage_label ?? "",
+        nextAction: currentApplication.next_action ?? "",
+        nextActionAt: toDateTimeLocal(currentApplication.next_action_at),
+        priority: currentApplication.priority ?? 0,
+        resumeId: currentApplication.resume_id ?? "",
+        reviewNote: currentApplication.review_note ?? "",
       };
       setCandidateStage(nextCandidateStage);
       setPriority(nextWorkflow.priority);
@@ -99,7 +102,7 @@ export function ProgressDrawer({
       setHistoryState("loading");
       const supabase = createClient();
       void Promise.allSettled([
-        fetchApplicationHistory(supabase, application.id),
+        fetchApplicationHistory(supabase, currentApplication.id),
         fetchMyResumes(supabase),
       ]).then(([historyResult, resumeResult]) => {
         if (cancelled) return;
@@ -122,7 +125,11 @@ export function ProgressDrawer({
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [application]);
+    // Rehydrate only when the drawer opens or switches records. Parent-level
+    // optimistic updates replace the object for the same id and must not wipe
+    // fields the user typed while the request was in flight.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [applicationId, open]);
 
   useEffect(() => {
     return () => {
@@ -151,7 +158,7 @@ export function ProgressDrawer({
   const isDirty = status !== savedStatus || note.trim() !== savedNote.trim() || workflowDirty;
 
   async function saveProgress(nextStatus = status, nextNote = note, successMessage = "已保存") {
-    if (!application) return false;
+    if (!application || saving) return false;
     const requestId = saveRequestRef.current + 1;
     saveRequestRef.current = requestId;
     const previousStatus = status;
@@ -228,11 +235,13 @@ export function ProgressDrawer({
   }
 
   async function handleStatusChange(nextStatus: ApplicationStatus) {
+    if (saving) return;
     if (nextStatus === status && note.trim() === savedNote.trim()) return;
     await saveProgress(nextStatus, note, "已保存");
   }
 
   async function handleNoteBlur() {
+    if (saving) return;
     if (note.trim() === savedNote.trim() && status === savedStatus) return;
     await saveProgress(status, note, "已保存");
   }
@@ -357,6 +366,7 @@ export function ProgressDrawer({
                     className="group flex w-12 flex-col items-center gap-3 text-center outline-none"
                     aria-current={active ? "step" : undefined}
                     aria-label={`设为${APPLICATION_STATUS_LABELS[item]}`}
+                    disabled={saving}
                     onClick={() => void handleStatusChange(item)}
                     onKeyDown={(event) => handleNodeKeyDown(event, index)}
                   >
@@ -391,6 +401,7 @@ export function ProgressDrawer({
                 <button
                   type="button"
                   className="text-action inline-flex text-xs"
+                  disabled={saving}
                   onClick={() => void handleStatusChange(item)}
                 >
                   {APPLICATION_STATUS_LABELS[item]}

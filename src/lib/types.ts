@@ -98,6 +98,8 @@ export type JobFilters = {
   sortBy: "start_date_desc" | "updated_desc" | "start_date_asc" | "company_asc";
 };
 
+export type JobDiscoveryScope = "all" | "recent" | "recent_preference";
+
 export type JobWithApplication = Job & {
   application?: UserApplication | null;
 };

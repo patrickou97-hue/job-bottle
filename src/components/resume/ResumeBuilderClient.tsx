@@ -72,18 +72,22 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [translating, setTranslating] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const cloudFingerprintsRef = useRef(new Map<string, string>());
   const pendingCloudSavesRef = useRef(new Map<string, PendingCloudSave>());
+  const deletedResumeIdsRef = useRef(new Set<string>());
   const cloudSaveWorkerRef = useRef<Promise<void> | null>(null);
   const cloudRetryTimerRef = useRef<number | null>(null);
   const activeUserIdRef = useRef<string | null>(null);
   const hydratingUserIdRef = useRef<string | null>(null);
   const mountedRef = useRef(true);
+  const translationAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
+      translationAbortRef.current?.abort();
       if (cloudRetryTimerRef.current) window.clearTimeout(cloudRetryTimerRef.current);
     };
   }, []);
@@ -104,9 +108,17 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
         const batch = Array.from(pendingCloudSavesRef.current.entries());
         for (const [resumeId, queued] of batch) {
           if (activeUserIdRef.current !== activeUserId) break;
+          if (deletedResumeIdsRef.current.has(resumeId)) {
+            pendingCloudSavesRef.current.delete(resumeId);
+            continue;
+          }
 
           try {
             await upsertMyResume(supabase, activeUserId, queued.resume);
+            if (deletedResumeIdsRef.current.has(resumeId)) {
+              pendingCloudSavesRef.current.delete(resumeId);
+              continue;
+            }
             savedCount += 1;
             cloudFingerprintsRef.current.set(resumeId, queued.fingerprint);
             if (pendingCloudSavesRef.current.get(resumeId)?.fingerprint === queued.fingerprint) {
@@ -358,6 +370,11 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
     ? resumes.find((resume) => resume.linkedJobId === targetJob.id) ?? null
     : null;
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => setPendingDeleteId(null), 0);
+    return () => window.clearTimeout(timer);
+  }, [selectedId]);
+
   function updateResume(nextResume: ResumeDocument) {
     setSaveState("正在保存");
     setResumes((current) =>
@@ -405,7 +422,10 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
   }
 
   async function translateResume() {
-    if (translating) return;
+    if (translating) {
+      translationAbortRef.current?.abort();
+      return;
+    }
     const hasTranslatableContent =
       Object.values(selectedResume.content.basics).some((value) => typeof value === "string" && value.trim()) ||
       selectedResume.content.education.length > 0 ||
@@ -422,8 +442,15 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
     const targetLanguage: ResumeLanguage = sourceLanguage === "en-US" ? "zh-CN" : "en-US";
     setTranslating(true);
     setSaveState(targetLanguage === "en-US" ? "AI 正在生成英文译本" : "AI 正在生成中文译本");
+    const controller = new AbortController();
+    translationAbortRef.current = controller;
+    const progressTimer = window.setTimeout(() => {
+      if (mountedRef.current && !controller.signal.aborted) {
+        setSaveState("AI 仍在翻译，原简历和已填内容均已安全保留");
+      }
+    }, 10_000);
     try {
-      const result = await requestResumeTranslation(selectedResume, targetLanguage);
+      const result = await requestResumeTranslation(selectedResume, targetLanguage, controller.signal);
       const next = createResumeFromTranslation(selectedResume, result.translated, targetLanguage);
       setResumes((current) => [next, ...current]);
       setSelectedId(next.id);
@@ -437,6 +464,8 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
     } catch (error) {
       setSaveState(error instanceof Error ? error.message : "AI 翻译失败，原简历未改变");
     } finally {
+      window.clearTimeout(progressTimer);
+      if (translationAbortRef.current === controller) translationAbortRef.current = null;
       setTranslating(false);
     }
   }
@@ -487,7 +516,7 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
     setSelectedId(copy.id);
   }
 
-  function deleteResume(id: string) {
+  function removeResumeFromState(id: string) {
     cloudFingerprintsRef.current.delete(id);
     pendingCloudSavesRef.current.delete(id);
     setResumes((current) => {
@@ -500,16 +529,41 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
       if (selectedId === id) setSelectedId(next[0].id);
       return next;
     });
-    if (storageMode === "cloud" && userId && isSupabaseConfigured()) {
-      const supabase = createClient();
-      void deleteMyResume(supabase, id).catch((error) => {
-        if (isMissingResumeTableError(error)) {
-          setStorageMode("local");
-          setSaveState("云端简历库未升级，已保存到本地");
-          return;
-        }
-        setSaveState("删除同步失败，本地已删除");
-      });
+  }
+
+  async function deleteResume(id: string) {
+    if (pendingDeleteId !== id) {
+      setPendingDeleteId(id);
+      setSaveState("再次点击删除即可确认，当前简历尚未删除");
+      return;
+    }
+    setPendingDeleteId(null);
+
+    if (storageMode !== "cloud" || !userId || !isSupabaseConfigured()) {
+      removeResumeFromState(id);
+      setSaveState("简历已从当前浏览器删除");
+      return;
+    }
+
+    deletedResumeIdsRef.current.add(id);
+    pendingCloudSavesRef.current.delete(id);
+    setSaveState("正在从账号删除简历");
+    try {
+      await cloudSaveWorkerRef.current;
+      await deleteMyResume(createClient(), id);
+      removeResumeFromState(id);
+      setSaveState("简历已删除");
+    } catch (error) {
+      deletedResumeIdsRef.current.delete(id);
+      if (isMissingResumeTableError(error)) {
+        setStorageMode("local");
+        setSaveState("云端简历库未升级，当前简历未删除");
+        return;
+      }
+      setSaveState("删除失败，当前简历和已填内容均已保留，请检查网络后重试");
+      return;
+    } finally {
+      deletedResumeIdsRef.current.delete(id);
     }
   }
 
@@ -636,13 +690,12 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
                 <button
                   type="button"
                   className="muted-button pressable inline-flex h-9 items-center gap-2 rounded-lg px-3 text-xs font-semibold disabled:pointer-events-none disabled:opacity-55"
-                  disabled={translating}
-                  title="AI 翻译会创建独立副本，不覆盖当前简历"
+                  title={translating ? "取消本次翻译，原简历不会改变" : "AI 翻译会创建独立副本，不覆盖当前简历"}
                   onClick={() => void translateResume()}
                 >
                   {translating ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> : <Languages aria-hidden="true" className="size-4" />}
                   {translating
-                    ? "正在翻译"
+                    ? "取消翻译"
                     : getResumeLanguage(selectedResume.templateId) === "en-US"
                       ? "AI 转中文"
                       : "AI 转英文"}
@@ -658,12 +711,13 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
                 </button>
                 <button
                   type="button"
-                  className="muted-button pressable inline-flex size-9 items-center justify-center rounded-lg text-[color:var(--text-danger)]"
-                  aria-label="删除简历"
-                  title="删除简历"
-                  onClick={() => deleteResume(selectedResume.id)}
+                  className={`muted-button pressable inline-flex h-9 items-center justify-center gap-2 rounded-lg px-2.5 text-[color:var(--text-danger)] ${pendingDeleteId === selectedResume.id ? "bg-[#9f2d3f]/10" : ""}`}
+                  aria-label={pendingDeleteId === selectedResume.id ? "再次确认删除简历" : "删除简历"}
+                  title={pendingDeleteId === selectedResume.id ? "再次点击确认删除" : "删除简历"}
+                  onClick={() => void deleteResume(selectedResume.id)}
                 >
                   <Trash2 aria-hidden="true" className="size-4" />
+                  {pendingDeleteId === selectedResume.id ? <span className="text-xs font-medium">确认删除</span> : null}
                 </button>
               </div>
             </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { LoaderCircle, RefreshCw, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { CommunityHelpLink } from "@/components/ui/CommunityHelpLink";
@@ -49,6 +49,8 @@ export function ResumePolishDialog({
   const [result, setResult] = useState<ResumePolishResult | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const requestAbortRef = useRef<AbortController | null>(null);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -57,6 +59,14 @@ export function ResumePolishDialog({
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      requestAbortRef.current?.abort();
+    };
+  }, []);
 
   const bulletIndex = scope === "all" ? null : Number(scope);
   const sourceBullets = bulletIndex === null
@@ -70,6 +80,8 @@ export function ResumePolishDialog({
     }
     setBusy(true);
     setError("");
+    const controller = new AbortController();
+    requestAbortRef.current = controller;
     try {
       const next = await requestResumePolish({
         sectionType: target.sectionType,
@@ -78,13 +90,21 @@ export function ResumePolishDialog({
         jobDescription,
         language,
         instruction,
-      });
+      }, controller.signal);
+      if (!mountedRef.current) return;
       setResult(next);
     } catch (requestError) {
+      if (!mountedRef.current) return;
       setError(requestError instanceof Error ? requestError.message : "AI 润色失败，请稍后重试");
     } finally {
-      setBusy(false);
+      if (requestAbortRef.current === controller) requestAbortRef.current = null;
+      if (mountedRef.current) setBusy(false);
     }
+  }
+
+  function closeDialog() {
+    requestAbortRef.current?.abort();
+    onClose();
   }
 
   return (
@@ -102,7 +122,7 @@ export function ResumePolishDialog({
             <h2 id="resume-polish-title" className="mt-1 text-xl font-semibold text-ink-primary">AI 润色</h2>
             <p className="mt-2 text-sm leading-6 text-ink-secondary">仅处理当前段落，不会发送联系方式、照片或整份简历</p>
           </div>
-          <button type="button" className="muted-button pressable inline-flex size-9 shrink-0 items-center justify-center rounded-lg" aria-label="关闭" onClick={onClose}>
+          <button type="button" className="muted-button pressable inline-flex size-9 shrink-0 items-center justify-center rounded-lg" aria-label="关闭" onClick={closeDialog}>
             <X aria-hidden="true" className="size-4" />
           </button>
         </header>
@@ -139,11 +159,11 @@ export function ResumePolishDialog({
         {error ? <p className="mt-5 border-l-2 border-[#9f2d3f] pl-3 text-sm text-[color:var(--text-danger)]">{error}</p> : null}
 
         <footer className="mt-6 flex flex-wrap items-center justify-end gap-3 border-t border-[color:var(--line-ghost)] pt-5">
-          <CommunityHelpLink className="mr-auto" onClick={onClose} />
-          <Button variant="secondary" onClick={onClose}>保留原文</Button>
-          <Button variant="secondary" className="gap-2" disabled={busy} onClick={generate}>
+          <CommunityHelpLink className="mr-auto" onClick={closeDialog} />
+          <Button variant="secondary" onClick={closeDialog}>保留原文</Button>
+          <Button variant="secondary" className="gap-2" onClick={busy ? () => requestAbortRef.current?.abort() : generate}>
             {busy ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> : result ? <RefreshCw aria-hidden="true" className="size-4" /> : <Sparkles aria-hidden="true" className="size-4" />}
-            {busy ? "正在润色" : result ? "重新生成" : "生成润色"}
+            {busy ? "取消润色" : result ? "重新生成" : "生成润色"}
           </Button>
           {result ? <Button onClick={() => onApply(result, bulletIndex)}>应用修改</Button> : null}
         </footer>

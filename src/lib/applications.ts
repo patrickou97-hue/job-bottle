@@ -7,6 +7,7 @@ import type {
 } from "@/lib/types";
 
 export type ApplicationUpdateValues = Database["public"]["Tables"]["user_applications"]["Update"];
+const APPLICATION_REQUEST_TIMEOUT_MS = 12_000;
 
 const LEGACY_UPDATE_KEYS = ["status", "progress_note", "note", "interview_round", "applied_at"] as const;
 const WORKFLOW_UPDATE_KEYS = [
@@ -26,11 +27,12 @@ export async function fetchMyApplications(
   supabase: SupabaseClient<Database>,
   userId: string,
 ) {
-  const { data, error } = await supabase
+  const { data, error } = await runApplicationRequest(async (signal) => await supabase
     .from("user_applications")
     .select("*, job:jobs(*)")
     .eq("user_id", userId)
-    .order("updated_at", { ascending: false });
+    .order("updated_at", { ascending: false })
+    .abortSignal(signal));
 
   if (error) throw error;
   return (data ?? []) as unknown as ApplicationWithJob[];
@@ -42,17 +44,18 @@ export async function upsertApplication(
   jobId: string,
   candidateStage: "evaluating" | "saved" | "preparing" = "evaluating",
 ) {
-  const { data: existing, error: existingError } = await supabase
+  const { data: existing, error: existingError } = await runApplicationRequest(async (signal) => await supabase
     .from("user_applications")
     .select("*")
     .eq("user_id", userId)
     .eq("job_id", jobId)
-    .maybeSingle();
+    .abortSignal(signal)
+    .maybeSingle());
 
   if (existingError) throw existingError;
   if (existing) return existing as UserApplication;
 
-  const { data, error } = await supabase
+  const { data, error } = await runApplicationRequest(async (signal) => await supabase
     .from("user_applications")
     .insert({
       user_id: userId,
@@ -61,7 +64,8 @@ export async function upsertApplication(
       candidate_stage: candidateStage,
     })
     .select("*")
-    .single();
+    .abortSignal(signal)
+    .single());
 
   if (!error) return data as UserApplication;
   if (getErrorCode(error) === "23505") {
@@ -69,11 +73,12 @@ export async function upsertApplication(
   }
   if (!isMissingApplicationWorkflowColumnsError(error)) throw error;
 
-  const { data: legacyData, error: legacyError } = await supabase
+  const { data: legacyData, error: legacyError } = await runApplicationRequest(async (signal) => await supabase
     .from("user_applications")
     .insert({ user_id: userId, job_id: jobId, status: "opened" })
     .select("*")
-    .single();
+    .abortSignal(signal)
+    .single());
 
   if (legacyError && getErrorCode(legacyError) === "23505") {
     return fetchExistingApplication(supabase, userId, jobId);
@@ -87,12 +92,13 @@ export async function updateApplication(
   id: string,
   values: ApplicationUpdateValues,
 ) {
-  const { data, error } = await supabase
+  const { data, error } = await runApplicationRequest(async (signal) => await supabase
     .from("user_applications")
     .update(values)
     .eq("id", id)
     .select("*")
-    .single();
+    .abortSignal(signal)
+    .single());
 
   if (!error) return data as UserApplication;
   if (!isMissingApplicationWorkflowColumnsError(error)) throw error;
@@ -111,12 +117,13 @@ export async function updateApplication(
     throw new Error("投递详情字段尚未升级。请先执行最新 Supabase migration，再保存这些信息。");
   }
 
-  const { data: legacyData, error: legacyError } = await supabase
+  const { data: legacyData, error: legacyError } = await runApplicationRequest(async (signal) => await supabase
     .from("user_applications")
     .update(legacyValues)
     .eq("id", id)
     .select("*")
-    .single();
+    .abortSignal(signal)
+    .single());
 
   if (legacyError) throw legacyError;
   return legacyData as UserApplication;
@@ -126,11 +133,12 @@ export async function fetchApplicationHistory(
   supabase: SupabaseClient<Database>,
   applicationId: string,
 ) {
-  const { data, error } = await supabase
+  const { data, error } = await runApplicationRequest(async (signal) => await supabase
     .from("status_history")
     .select("*")
     .eq("application_id", applicationId)
-    .order("changed_at", { ascending: false });
+    .order("changed_at", { ascending: false })
+    .abortSignal(signal));
 
   if (error) throw error;
   return (data ?? []) as StatusHistory[];
@@ -140,7 +148,11 @@ export async function deleteApplication(
   supabase: SupabaseClient<Database>,
   id: string,
 ) {
-  const { error } = await supabase.from("user_applications").delete().eq("id", id);
+  const { error } = await runApplicationRequest(async (signal) => await supabase
+    .from("user_applications")
+    .delete()
+    .eq("id", id)
+    .abortSignal(signal));
   if (error) throw error;
 }
 
@@ -163,12 +175,28 @@ async function fetchExistingApplication(
   userId: string,
   jobId: string,
 ) {
-  const { data, error } = await supabase
+  const { data, error } = await runApplicationRequest(async (signal) => await supabase
     .from("user_applications")
     .select("*")
     .eq("user_id", userId)
     .eq("job_id", jobId)
-    .single();
+    .abortSignal(signal)
+    .single());
   if (error) throw error;
   return data as UserApplication;
+}
+
+async function runApplicationRequest<T>(operation: (signal: AbortSignal) => PromiseLike<T>) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), APPLICATION_REQUEST_TIMEOUT_MS);
+  try {
+    return await operation(controller.signal);
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new Error("网络响应超时，你填写的内容仍保留在当前页面。请检查网络后重试。");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 }

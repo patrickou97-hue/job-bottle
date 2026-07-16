@@ -209,6 +209,8 @@ export async function upsertMyResume(
 }
 
 export async function deleteMyResume(supabase: ResumeClient, id: string) {
-  const { error } = await supabase.from("resumes").delete().eq("id", id);
-  if (error) throw error;
+  await withCloudRetry(async () => {
+    const { error } = await supabase.from("resumes").delete().eq("id", id);
+    if (error) throw error;
+  });
 }

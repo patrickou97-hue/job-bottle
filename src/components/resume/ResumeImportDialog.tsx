@@ -26,11 +26,25 @@ export function ResumeImportDialog({
   onImport: (draft: ImportedResumeDraft, mode: ResumeImportMode) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const reviewAbortRef = useRef<AbortController | null>(null);
+  const reviewTimersRef = useRef<number[]>([]);
+  const mountedRef = useRef(true);
   const [fileName, setFileName] = useState("");
   const [localResult, setLocalResult] = useState<ResumeImportLocalResult | null>(null);
   const [review, setReview] = useState<ImportReview | null>(null);
   const [stage, setStage] = useState<"idle" | "reading" | "reviewing">("idle");
   const [error, setError] = useState("");
+  const [reviewHint, setReviewHint] = useState("");
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      reviewAbortRef.current?.abort("closed");
+      reviewTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+      reviewTimersRef.current = [];
+    };
+  }, []);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -66,8 +80,22 @@ export function ResumeImportDialog({
 
   async function requestReview() {
     if (!localResult) return;
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      setError("当前处于离线状态。程序解析结果仍可直接导入，联网后再使用 AI 复核。");
+      return;
+    }
+    reviewAbortRef.current?.abort("replaced");
+    clearReviewTimers();
+    const controller = new AbortController();
+    reviewAbortRef.current = controller;
     setStage("reviewing");
     setError("");
+    setReviewHint("AI 正在核对字段与经历区块");
+    reviewTimersRef.current = [
+      window.setTimeout(() => mountedRef.current && setReviewHint("复杂简历需要更久，程序解析结果已安全保留"), 10_000),
+      window.setTimeout(() => mountedRef.current && setReviewHint("仍在等待 AI 返回，你也可以直接导入程序结果"), 26_000),
+      window.setTimeout(() => controller.abort("timeout"), 43_000),
+    ];
     try {
       const response = await fetch("/api/resume/import", {
         method: "POST",
@@ -77,6 +105,7 @@ export function ResumeImportDialog({
           sourceText: localResult.normalizedText,
           localDraft: localResult.draft,
         }),
+        signal: controller.signal,
       });
       const payload = await response.json().catch(() => null) as (ImportReview & { error?: string }) | null;
       if (!response.ok || !payload?.draft) {
@@ -84,10 +113,37 @@ export function ResumeImportDialog({
       }
       setReview(payload);
     } catch (reviewError) {
-      setError(reviewError instanceof Error ? reviewError.message : "智能复核失败，请稍后重试");
+      if (!mountedRef.current || controller.signal.reason === "closed") return;
+      if (controller.signal.aborted) {
+        setError(controller.signal.reason === "timeout"
+          ? "AI 复核等待超时。程序解析结果仍可直接导入，也可以稍后重试。"
+          : "本次 AI 复核已取消，程序解析结果仍然保留。");
+      } else {
+        setError(reviewError instanceof Error ? reviewError.message : "智能复核失败，请稍后重试");
+      }
     } finally {
-      setStage("idle");
+      clearReviewTimers();
+      if (reviewAbortRef.current === controller) reviewAbortRef.current = null;
+      if (mountedRef.current) {
+        setStage("idle");
+        setReviewHint("");
+      }
     }
+  }
+
+  function clearReviewTimers() {
+    reviewTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+    reviewTimersRef.current = [];
+  }
+
+  function closeDialog() {
+    reviewAbortRef.current?.abort("closed");
+    onClose();
+  }
+
+  function importDraft(draft: ImportedResumeDraft, mode: ResumeImportMode) {
+    reviewAbortRef.current?.abort("closed");
+    onImport(draft, mode);
   }
 
   const finalDraft = review?.draft ?? localResult?.draft ?? null;
@@ -110,7 +166,7 @@ export function ResumeImportDialog({
               支持 PDF、DOCX 和 TXT，文件不超过 8 MB。浏览器先读取文字，只将提取出的文字和本地候选发送给 AI；不会上传原文件，也不会自动创建或覆盖简历。
             </p>
           </div>
-          <button type="button" className="muted-button pressable inline-flex size-9 shrink-0 items-center justify-center rounded-lg" aria-label="关闭" disabled={stage !== "idle"} onClick={onClose}>
+          <button type="button" className="muted-button pressable inline-flex size-9 shrink-0 items-center justify-center rounded-lg" aria-label="关闭" disabled={stage === "reading"} onClick={closeDialog}>
             <X aria-hidden="true" className="size-4" />
           </button>
         </header>
@@ -159,6 +215,12 @@ export function ResumeImportDialog({
             <p className="mt-4 text-xs leading-5 text-ink-muted">
               你可以直接导入程序解析结果，也可以等待 AI 复核后再导入。AI 超时或失败不会清除当前解析结果。
             </p>
+            {stage === "reviewing" && reviewHint ? (
+              <div className="mt-4 flex items-center gap-2 text-xs text-nebula-silver" role="status" aria-live="polite">
+                <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
+                {reviewHint}
+              </div>
+            ) : null}
           </section>
         ) : null}
 
@@ -184,9 +246,9 @@ export function ResumeImportDialog({
         {error ? <p className="border-l-2 border-[#9f2d3f] pl-3 text-sm leading-6 text-[color:var(--text-danger)]">{error}</p> : null}
 
         <footer className="mt-6 flex flex-wrap items-center justify-end gap-3 border-t border-[color:var(--line-ghost)] pt-5">
-          <Button variant="secondary" onClick={onClose} disabled={stage !== "idle"}>取消</Button>
+          <Button variant="secondary" onClick={closeDialog} disabled={stage === "reading"}>{stage === "reviewing" ? "取消 AI 复核" : "取消"}</Button>
           {localResult ? (
-            <Button variant="secondary" disabled={stage !== "idle"} onClick={() => onImport(localResult.draft, "program")}>
+            <Button variant="secondary" disabled={stage === "reading"} onClick={() => importDraft(localResult.draft, "program")}>
               直接导入解析结果
             </Button>
           ) : null}
@@ -196,7 +258,7 @@ export function ResumeImportDialog({
               {stage === "reviewing" ? "AI 正在复核" : review ? "重新复核" : "交给 AI 复核"}
             </Button>
           ) : null}
-          {review ? <Button onClick={() => onImport(review.draft, "ai")}>导入 AI 复核结果</Button> : null}
+          {review ? <Button disabled={stage === "reading"} onClick={() => importDraft(review.draft, "ai")}>导入 AI 复核结果</Button> : null}
         </footer>
       </section>
     </div>

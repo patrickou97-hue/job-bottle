@@ -47,8 +47,10 @@ export type ResumePolishResult = {
   warnings: string[];
 };
 
-export async function requestResumePolish(input: ResumePolishRequest) {
+export async function requestResumePolish(input: ResumePolishRequest, externalSignal?: AbortSignal) {
   const controller = new AbortController();
+  const cancelFromOutside = () => controller.abort("cancelled");
+  externalSignal?.addEventListener("abort", cancelFromOutside, { once: true });
   const timeout = window.setTimeout(() => controller.abort(), 22_000);
   try {
     const response = await fetch("/api/resume/ai-polish", {
@@ -66,12 +68,14 @@ export async function requestResumePolish(input: ResumePolishRequest) {
     }
     return payload;
   } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") {
+    if (controller.signal.aborted) {
+      if (externalSignal?.aborted) throw new Error("已取消 AI 润色，原文未改变");
       throw new Error("AI 润色请求超时，原文未改变，请重试");
     }
     throw error;
   } finally {
     window.clearTimeout(timeout);
+    externalSignal?.removeEventListener("abort", cancelFromOutside);
   }
 }
 

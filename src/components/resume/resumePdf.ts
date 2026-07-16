@@ -285,6 +285,8 @@ function renderHeader(state: LayoutState, resume: ResumeDocument, options: PdfOp
   const photoWidth = 58;
   const photoHeight = 72;
   const headerTop = state.y;
+  const photoY = headerTop - 7;
+  const photoBottom = photoY + photoHeight;
   const isLeftAligned = templateStyle.header === "left";
   const headerColor = isLeftAligned ? templateStyle.accent : BLACK;
   const displayName = isEnglish ? basics.englishName || basics.name || "Your Name" : addNameSpacing(basics.name || "姓名");
@@ -292,7 +294,6 @@ function renderHeader(state: LayoutState, resume: ResumeDocument, options: PdfOp
 
   if (hasPhoto) {
     const photoX = state.right - photoWidth;
-    const photoY = headerTop - 7;
     if (state.draw) {
       try {
         state.pdf.addImage(basics.photoDataUrl, "JPEG", photoX, photoY, photoWidth, photoHeight);
@@ -338,8 +339,17 @@ function renderHeader(state: LayoutState, resume: ResumeDocument, options: PdfOp
       y = drawWrappedAt(state, links, state.left, y, hasPhoto ? 390 : 505, 8.7, "normal") + 1;
     }
 
-    drawLine(state, state.left, y + 4, state.right, y + 4, templateStyle.accent, 0.8);
-    state.y = Math.max(y + 15, headerTop + (hasPhoto ? 78 : 58));
+    const headerContentBottom = Math.max(y, hasPhoto ? photoBottom : headerTop + 43);
+    drawLine(
+      state,
+      state.left,
+      headerContentBottom + 4,
+      state.right,
+      headerContentBottom + 4,
+      templateStyle.accent,
+      0.8,
+    );
+    state.y = headerContentBottom + 15;
     return;
   }
 

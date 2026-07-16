@@ -1,6 +1,7 @@
 "use client";
 
 import { Search } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { EMPTY_JOB_FILTERS } from "@/lib/constants";
 import {
@@ -15,12 +16,18 @@ import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { cn } from "@/lib/utils";
-import type { JobFilters } from "@/lib/types";
+import type { JobDiscoveryScope, JobFilters } from "@/lib/types";
 
 export function JobFilterBar({
   filters,
   facets,
   onChange,
+  discoveryScope,
+  onDiscoveryScopeChange,
+  recentCount,
+  recentPreferenceCount,
+  hasPreferences,
+  isAuthenticated,
 }: {
   filters: JobFilters;
   facets: {
@@ -31,6 +38,12 @@ export function JobFilterBar({
     tags: string[];
   };
   onChange: (filters: JobFilters) => void;
+  discoveryScope: JobDiscoveryScope;
+  onDiscoveryScopeChange: (scope: JobDiscoveryScope) => void;
+  recentCount: number;
+  recentPreferenceCount: number;
+  hasPreferences: boolean;
+  isAuthenticated: boolean;
 }) {
   const locationGroups = useMemo(() => buildLocationGroups(facets.locations), [facets.locations]);
   const initialLocation = getLocationFilterLabel(filters.location);
@@ -61,6 +74,7 @@ export function JobFilterBar({
   function clearFilters() {
     setLocationLevel("all");
     setCityProvince(locationGroups[0]?.province ?? "");
+    onDiscoveryScopeChange("all");
     onChange(EMPTY_JOB_FILTERS);
   }
 
@@ -79,6 +93,39 @@ export function JobFilterBar({
       </div>
 
       <div className="space-y-5">
+        <div>
+          <label htmlFor="job-discovery-scope" className="mb-2 block text-sm text-ink-secondary">
+            快捷查看
+          </label>
+          <Select
+            id="job-discovery-scope"
+            value={discoveryScope}
+            onChange={(event) => onDiscoveryScopeChange(event.target.value as JobDiscoveryScope)}
+          >
+            <option value="all">全部岗位</option>
+            <option value="recent">近 7 天新上 · {recentCount}</option>
+            <option value="recent_preference" disabled={!hasPreferences}>
+              近 7 天 · 符合偏好 · {recentPreferenceCount}
+            </option>
+          </Select>
+          <p className="mt-2 text-xs leading-5 text-ink-muted">
+            {hasPreferences ? (
+              "新上按本站收录时间计算；偏好同时匹配已填写的意向地区与岗位。"
+            ) : (
+              <>
+                新上按本站收录时间计算。{isAuthenticated ? "填写" : "登录并填写"}
+                <Link
+                  href={isAuthenticated ? "/profile" : "/login?next=%2Fprofile"}
+                  className="mx-1 text-action underline-offset-4 hover:underline"
+                >
+                  求职偏好
+                </Link>
+                后可启用匹配。
+              </>
+            )}
+          </p>
+        </div>
+
         <label className="block">
           <span className="mb-2 block text-sm text-ink-secondary">关键词</span>
           <div className="relative">

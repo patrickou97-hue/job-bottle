@@ -45,7 +45,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/lib/applications.ts",
-    mustInclude: ["getErrorCode(error) === \"23505\"", "getErrorCode(legacyError) === \"23505\"", "fetchExistingApplication"],
+    mustInclude: ["getErrorCode(error) === \"23505\"", "getErrorCode(legacyError) === \"23505\"", "fetchExistingApplication", "APPLICATION_REQUEST_TIMEOUT_MS", ".abortSignal(signal)", "网络响应超时，你填写的内容仍保留"],
     mustNotInclude: [],
     label: "重复点击收录岗位时可从唯一键竞争中恢复",
   },
@@ -111,8 +111,8 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/BottleStage.tsx",
-    mustInclude: ["canvasRef", "drawApplicationStar", "drawBottleAtmosphere", "BOTTLE_INNER_PATH", "clipToBottleInterior", "/assets/star-bottle-image2.png", "useReducedMotion", "aspect-[2/3]"],
-    mustNotInclude: ["Matter", "matter-js", "StackedStar"],
+    mustInclude: ["canvasRef", "drawApplicationStar", "drawBottleAtmosphere", "BOTTLE_INNER_PATH", "clipToBottleInterior", "/assets/star-bottle-image2.png", "useReducedMotion", "aspect-[2/3]", "let metrics", "canvas.width !== pixelWidth", "new ResizeObserver(resize)"],
+    mustNotInclude: ["Matter", "matter-js", "StackedStar", "const rect = resize();"],
     label: "星瓶使用 canvas 星层和简化落瓶动画且不引入物理引擎",
   },
   {
@@ -248,6 +248,12 @@ const SOURCE_INVARIANTS = [
     label: "岗位类别归一化函数集中定义",
   },
   {
+    file: "src/lib/jobs.ts",
+    mustInclude: ["RECENT_JOB_WINDOW_DAYS = 7", "isRecentlyListedJob", "job.created_at", "hasJobPreferences", "jobMatchesProfilePreferences", "regionMatched && roleMatched", "/全国|全球/"],
+    mustNotInclude: ["isRecentlyListedJob(job.updated_at", "new Date(job.updated_at).getTime() >= cutoff"],
+    label: "近七天岗位按收录时间计算且偏好匹配要求已填写维度同时命中",
+  },
+  {
     file: "src/lib/resume.ts",
     mustInclude: ["ResumeDocument", "ResumeContent", "ResumeLanguage", "createSampleResume", "createEmptyResume(language", "loadLocalResumes", "adoptLocalResumesForUser", "GUEST_STORAGE_KEY", "USER_STORAGE_KEY_PREFIX", "createResumeId", "linkedJobId", "photoDataUrl", "compact", "classic", "modern", "consulting", "technical", "academic", "english_classic", "english_modern", "紧凑中文", "经典商科", "现代单栏", "咨询投研", "技术简洁", "学术研究", "English Classic", "English Modern", "isEnglishResumeTemplate", "getResumeLanguage", "getDefaultResumeTemplate", "getEquivalentTemplateForLanguage", "isResumeId", "getResumeTargetLine"],
     mustNotInclude: ["const STORAGE_KEY = \"job_bottle_resumes_v1\""],
@@ -327,7 +333,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/resume/resumePdf.ts",
-    mustInclude: ["jsPDF", "NotoSerifSC-Regular-common-v1.ttf", "NotoSerifSC-Bold-common-v1.ttf", "NotoSerifSC-Regular-full-v1.ttf", "NotoSerifSC-Bold-full-v1.ttf", "NEXT_PUBLIC_RESUME_FONT_FULL_REGULAR_URL", "NEXT_PUBLIC_RESUME_FONT_FULL_BOLD_URL", "same-origin-common", "cos-full", "same-origin-full", "FONT_TIMEOUT_MS = 10_000", "resetResumePdfCaches", "selectedFontCache", "fontSourceCache", "previewMeasurementPdfCache", "bundleId", "__resumeFontFamily", "regularFileName", "boldFileName", "cache: \"force-cache\"", "format: \"a4\"", "PAGE_WIDTH = 595.28", "PAGE_HEIGHT = 841.89", "exportResumeToPdf", "createResumePreviewLayout", "ResumePreviewOperation", "width: state.pdf.getTextWidth(text)", "addPage(\"a4\", \"portrait\")", "addFileToVFS", "getTemplateOptions", "getResumeTargetLine", "consulting", "technical", "academic", "english_classic", "english_modern", "isEnglishResumeTemplate", "EDUCATION", "Boolean(basics.photoDataUrl) && !isEnglish"],
+    mustInclude: ["jsPDF", "NotoSerifSC-Regular-common-v1.ttf", "NotoSerifSC-Bold-common-v1.ttf", "NotoSerifSC-Regular-full-v1.ttf", "NotoSerifSC-Bold-full-v1.ttf", "NEXT_PUBLIC_RESUME_FONT_FULL_REGULAR_URL", "NEXT_PUBLIC_RESUME_FONT_FULL_BOLD_URL", "same-origin-common", "cos-full", "same-origin-full", "FONT_TIMEOUT_MS = 10_000", "resetResumePdfCaches", "selectedFontCache", "fontSourceCache", "previewMeasurementPdfCache", "bundleId", "__resumeFontFamily", "regularFileName", "boldFileName", "cache: \"force-cache\"", "format: \"a4\"", "PAGE_WIDTH = 595.28", "PAGE_HEIGHT = 841.89", "exportResumeToPdf", "createResumePreviewLayout", "ResumePreviewOperation", "width: state.pdf.getTextWidth(text)", "addPage(\"a4\", \"portrait\")", "addFileToVFS", "getTemplateOptions", "getResumeTargetLine", "consulting", "technical", "academic", "english_classic", "english_modern", "isEnglishResumeTemplate", "EDUCATION", "Boolean(basics.photoDataUrl) && !isEnglish", "const photoBottom = photoY + photoHeight", "Math.max(y, hasPhoto ? photoBottom", "state.y = headerContentBottom + 15"],
     mustNotInclude: ["NEXT_PUBLIC_RESUME_FONT_REGULAR_URL", "NEXT_PUBLIC_RESUME_FONT_BOLD_URL", "html2canvas", "window.print", "addPage(\"letter\""],
     label: "简历预览与 PDF 共用三级字体选择、矢量 A4 坐标和分页规则",
   },
@@ -369,13 +375,13 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/resume/ResumeImportDialog.tsx",
-    mustInclude: ["本地读取 · AI 复核 · 确认生成", "extractResumeFileText", "parseResumeTextLocally", "不会上传原文件", "交给 AI 复核", "英文简历", "中文简历", "直接导入解析结果", "导入 AI 复核结果", "AI 超时或失败不会清除当前解析结果", "ResumeImportMode"],
+    mustInclude: ["本地读取 · AI 复核 · 确认生成", "extractResumeFileText", "parseResumeTextLocally", "不会上传原文件", "交给 AI 复核", "英文简历", "中文简历", "直接导入解析结果", "导入 AI 复核结果", "AI 超时或失败不会清除当前解析结果", "ResumeImportMode", "AbortController", "43_000", "当前处于离线状态", "取消 AI 复核", "程序解析结果已安全保留"],
     mustNotInclude: ["request.formData", "window.location.reload"],
     label: "简历导入必须先预览程序结果和 AI 警告再由用户确认生成",
   },
   {
     file: "src/components/resume/ResumeBuilderClient.tsx",
-    mustInclude: ["ResumeCreateDialog", "ResumeImportDialog", "createResumeFromImport", "createResumeFromTranslation", "requestResumeTranslation", "resume_import_created", "resume_translation_created", "review_mode", "程序解析结果", "AI 复核结果", "导入简历", "新建简历", "AI 转英文", "AI 转中文", "原简历保持不变", "showImportDialog", "showCreateDialog"],
+    mustInclude: ["ResumeCreateDialog", "ResumeImportDialog", "createResumeFromImport", "createResumeFromTranslation", "requestResumeTranslation", "resume_import_created", "resume_translation_created", "review_mode", "程序解析结果", "AI 复核结果", "导入简历", "新建简历", "AI 转英文", "AI 转中文", "原简历保持不变", "showImportDialog", "showCreateDialog", "deletedResumeIdsRef", "await cloudSaveWorkerRef.current", "再次点击删除即可确认", "取消翻译"],
     mustNotInclude: ["router.refresh()", "window.location.reload()"],
     label: "简历制作器接入语言新建、自动分配导入模板和不覆盖原文的 AI 双语译本",
   },
@@ -511,9 +517,15 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/jobs/HomeClient.tsx",
-    mustInclude: ["ChinaJobMap", "岗位地图", "岗位清单", "按省份查看", "正在绘制全国岗位分布", "mapMatchingJobs", "location: \"\"", "selectedLocation={filters.location}", "handleFiltersChange({ ...filters, location })", "CaptureAnimation", "candidateStage", "\"evaluating\"", "\"saved\"", "\"preparing\"", "focusJob", "encodeURIComponent(\"/explore\")", "href=\"/my\"", "最新开启", "ApplyReturnConfirm", "visibilitychange", "keep_opened", "useSearchParams", "\"cats\"", "window.history.replaceState"],
-    mustNotInclude: ["NebulaGateway", "nebulaSelection", "按行业探索", "queueBottleDrop(application.id);\n      if (applyWindow)", "encodeURIComponent(\"/jobs\")", "href=\"/my-applications\"", "router.replace(query ? `/explore?${query}` : \"/explore\""],
+    mustInclude: ["ChinaJobMap", "岗位地图", "岗位清单", "按省份查看", "正在绘制全国岗位分布", "mapMatchingJobs", "location: \"\"", "selectedLocation={filters.location}", "handleFiltersChange({ ...filters, location })", "CaptureAnimation", "candidateStage", "\"evaluating\"", "\"saved\"", "\"preparing\"", "focusJob", "encodeURIComponent(\"/explore\")", "href=\"/my\"", "最新开启", "ApplyReturnConfirm", "visibilitychange", "keep_opened", "useSearchParams", "\"cats\"", "window.history.replaceState", "discoveryScope", "recentJobs", "recentPreferenceJobs", "filteredJobs.map"],
+    mustNotInclude: ["NebulaGateway", "nebulaSelection", "按行业探索", "queueBottleDrop(application.id);\n      if (applyWindow)", "encodeURIComponent(\"/jobs\")", "href=\"/my-applications\"", "router.replace(query ? `/explore?${query}` : \"/explore\"", "JOB_LIST_PAGE_SIZE", "displayedJobs", "IntersectionObserver", ">继续加载<"],
     label: "全国地图与线性清单共用地点筛选并保留捕获和官网返回确认闭环",
+  },
+  {
+    file: "src/components/jobs/JobFilterBar.tsx",
+    mustInclude: ["快捷查看", "近 7 天新上", "近 7 天 · 符合偏好", "按本站收录时间计算", "求职偏好", "disabled={!hasPreferences}"],
+    mustNotInclude: ["无限滚动", "继续加载"],
+    label: "岗位筛选提供可解释的新上与偏好快捷范围且偏好为空时不制造假匹配",
   },
   {
     file: "src/components/jobs/ApplyReturnConfirm.tsx",
@@ -623,6 +635,8 @@ const SOURCE_INVARIANTS = [
       "handleNodeKeyDown",
       "saveRequestRef",
       "optimisticApplication",
+      "if (!application || saving) return false",
+      "Rehydrate only when the drawer opens or switches records",
       "投递渠道",
       "投递账号",
       "使用简历",
