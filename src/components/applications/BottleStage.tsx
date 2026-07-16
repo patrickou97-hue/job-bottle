@@ -275,14 +275,6 @@ function drawApplicationStar(
   drawFivePointStarPath(context, size * 0.54, size * 0.24);
   context.stroke();
 
-  context.strokeStyle = palette.spark;
-  context.lineWidth = 0.8;
-  context.beginPath();
-  context.moveTo(-size * 0.22, 0);
-  context.lineTo(size * 0.22, 0);
-  context.moveTo(0, -size * 0.22);
-  context.lineTo(0, size * 0.22);
-  context.stroke();
   context.restore();
 }
 
@@ -314,7 +306,6 @@ function getStarPalette(status: ApplicationStatus) {
     fillMid: string;
     fillEnd: string;
     stroke: string;
-    spark: string;
   }> = {
     opened: {
       alpha: 0.86,
@@ -326,7 +317,6 @@ function getStarPalette(status: ApplicationStatus) {
       fillMid: "#6F9BC9",
       fillEnd: "#12294E",
       stroke: "rgba(190,224,255,0.58)",
-      spark: "rgba(230,244,255,0.64)",
     },
     applied: {
       alpha: 0.84,
@@ -338,7 +328,6 @@ function getStarPalette(status: ApplicationStatus) {
       fillMid: "#9188C8",
       fillEnd: "#12294E",
       stroke: "rgba(231,226,255,0.48)",
-      spark: "rgba(241,239,255,0.48)",
     },
     written_test: {
       alpha: 0.88,
@@ -350,7 +339,6 @@ function getStarPalette(status: ApplicationStatus) {
       fillMid: "#6DAEBA",
       fillEnd: "#244C68",
       stroke: "rgba(215,249,249,0.58)",
-      spark: "rgba(237,255,255,0.66)",
     },
     first_round: {
       alpha: 0.9,
@@ -362,7 +350,6 @@ function getStarPalette(status: ApplicationStatus) {
       fillMid: "#7F5568",
       fillEnd: "#564A71",
       stroke: "rgba(242,222,233,0.54)",
-      spark: "rgba(242,222,233,0.56)",
     },
     second_round: {
       alpha: 0.93,
@@ -374,7 +361,6 @@ function getStarPalette(status: ApplicationStatus) {
       fillMid: "#B57A5B",
       fillEnd: "#564A71",
       stroke: "rgba(255,229,210,0.62)",
-      spark: "rgba(255,241,229,0.68)",
     },
     final_round: {
       alpha: 0.96,
@@ -386,7 +372,6 @@ function getStarPalette(status: ApplicationStatus) {
       fillMid: "#D0AF70",
       fillEnd: "#7F5568",
       stroke: "rgba(255,242,207,0.68)",
-      spark: "rgba(255,249,230,0.74)",
     },
     offer: {
       alpha: 1,
@@ -398,7 +383,6 @@ function getStarPalette(status: ApplicationStatus) {
       fillMid: "#C9973C",
       fillEnd: "#5B3A16",
       stroke: "rgba(255,232,153,0.82)",
-      spark: "rgba(255,249,220,0.9)",
     },
     rejected: {
       alpha: 0.42,
@@ -410,7 +394,6 @@ function getStarPalette(status: ApplicationStatus) {
       fillMid: "#564A71",
       fillEnd: "#12294E",
       stroke: "rgba(201,197,228,0.22)",
-      spark: "rgba(201,197,228,0.2)",
     },
     withdrawn: {
       alpha: 0.36,
@@ -422,7 +405,6 @@ function getStarPalette(status: ApplicationStatus) {
       fillMid: "#12294E",
       fillEnd: "#000001",
       stroke: "rgba(201,197,228,0.2)",
-      spark: "rgba(201,197,228,0.18)",
     },
   };
 

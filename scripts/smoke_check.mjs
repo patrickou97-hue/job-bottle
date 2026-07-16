@@ -112,8 +112,8 @@ const SOURCE_INVARIANTS = [
   {
     file: "src/components/applications/BottleStage.tsx",
     mustInclude: ["canvasRef", "drawApplicationStar", "drawBottleAtmosphere", "BOTTLE_INNER_PATH", "clipToBottleInterior", "/assets/star-bottle-image2.png", "useReducedMotion", "aspect-[2/3]", "let metrics", "canvas.width !== pixelWidth", "new ResizeObserver(resize)"],
-    mustNotInclude: ["Matter", "matter-js", "StackedStar", "const rect = resize();"],
-    label: "星瓶使用 canvas 星层和简化落瓶动画且不引入物理引擎",
+    mustNotInclude: ["Matter", "matter-js", "StackedStar", "const rect = resize();", "context.moveTo(-size * 0.22, 0)", "palette.spark"],
+    label: "星瓶使用无中心十字的 canvas 星层和简化落瓶动画且不引入物理引擎",
   },
   {
     file: "src/lib/bottleShape.ts",
