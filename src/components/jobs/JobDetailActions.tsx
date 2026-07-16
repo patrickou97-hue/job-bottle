@@ -7,7 +7,7 @@ import { getCurrentUserOrNull } from "@/lib/auth";
 import { updateApplication, upsertApplication } from "@/lib/applications";
 import { getApplicationStageLabel, getCandidateStage, getJobPrimaryAction } from "@/lib/career-workspace";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
-import { isValidHttpUrl, safeOpenUrl } from "@/lib/utils";
+import { isValidHttpUrl, safeOpenUrl, sanitizeApplicationUrl } from "@/lib/utils";
 import { track } from "@/lib/track";
 import { Button } from "@/components/ui/Button";
 import { StatusPill } from "@/components/applications/StatusPill";
@@ -61,9 +61,14 @@ export function JobDetailActions({
 
   async function handlePrimaryAction() {
     setMessage("");
+    let applyWindow: Window | null = null;
+    let applyWindowNavigated = false;
     if (!isSupabaseConfigured()) {
       setMessage("数据库暂未连接，稍后再试。");
       return;
+    }
+    if (!application && isValidHttpUrl(job.apply_url)) {
+      applyWindow = window.open("", "_blank");
     }
     if (application?.status === "opened" && getCandidateStage(application) === "preparing") {
       if (!isValidHttpUrl(job.apply_url)) {
@@ -84,18 +89,29 @@ export function JobDetailActions({
       const supabase = createClient();
       const user = await getCurrentUserOrNull(supabase);
       if (!user) {
+        applyWindow?.close();
         setMessage("登录后收录岗位。");
         return;
       }
       if (!application) {
-        const nextApplication = await upsertApplication(supabase, user.id, job.id, "evaluating");
+        if (!isValidHttpUrl(job.apply_url)) {
+          applyWindow?.close();
+          setMessage("投递链接格式不正确，暂未加入星瓶。请通过反馈告诉我们。");
+          return;
+        }
+        const nextApplication = await upsertApplication(supabase, user.id, job.id, "preparing");
         setApplication(nextApplication);
         void track("job_saved", { job_id: job.id });
-        setMessage(
-          nextApplication.candidate_stage === "evaluating"
-            ? "已加入星瓶。先评估岗位，再决定是否投入准备。"
-            : "已加入星瓶。当前数据库尚未升级，候选阶段暂按“准备中”显示。",
-        );
+        if (applyWindow) {
+          applyWindow.opener = null;
+          applyWindow.location.href = sanitizeApplicationUrl(job.apply_url);
+          applyWindowNavigated = true;
+        } else if (!safeOpenUrl(job.apply_url)) {
+          setMessage("已加入星瓶，但浏览器阻止了官网窗口。请允许本站打开新窗口后重试。");
+          return;
+        }
+        armApplyConfirmation();
+        setMessage("已加入星瓶并打开官网。返回后确认是否完成投递。");
         return;
       }
 
@@ -111,6 +127,7 @@ export function JobDetailActions({
         setMessage("已进入准备中。建议先创建岗位简历，再记录投递。");
       }
     } catch (error) {
+      if (!applyWindowNavigated) applyWindow?.close();
       setMessage(error instanceof Error ? error.message : "岗位操作失败，当前记录和已填内容都已保留，请稍后重试。");
     } finally {
       setBusy(false);
@@ -174,7 +191,7 @@ export function JobDetailActions({
             {application ? getApplicationStageLabel(application) : "先收藏，再决定是否投递"}
           </div>
           <div className="mt-1 text-xs text-ink-muted">
-            {application ? <StatusPill status={application.status} label={getApplicationStageLabel(application)} /> : "登录后加入星瓶，不会直接打开官网。"}
+            {application ? <StatusPill status={application.status} label={getApplicationStageLabel(application)} /> : "登录后加入星瓶，并直接打开投递官网。"}
           </div>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">

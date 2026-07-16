@@ -517,9 +517,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/jobs/HomeClient.tsx",
-    mustInclude: ["ChinaJobMap", "岗位地图", "岗位清单", "按省份查看", "正在绘制全国岗位分布", "mapMatchingJobs", "location: \"\"", "selectedLocation={filters.location}", "handleFiltersChange({ ...filters, location })", "CaptureAnimation", "candidateStage", "\"evaluating\"", "\"saved\"", "\"preparing\"", "focusJob", "encodeURIComponent(\"/explore\")", "href=\"/my\"", "最新开启", "ApplyReturnConfirm", "visibilitychange", "keep_opened", "useSearchParams", "\"cats\"", "window.history.replaceState", "discoveryScope", "recentJobs", "recentPreferenceJobs", "filteredJobs.map"],
-    mustNotInclude: ["NebulaGateway", "nebulaSelection", "按行业探索", "queueBottleDrop(application.id);\n      if (applyWindow)", "encodeURIComponent(\"/jobs\")", "href=\"/my-applications\"", "router.replace(query ? `/explore?${query}` : \"/explore\"", "JOB_LIST_PAGE_SIZE", "displayedJobs", "IntersectionObserver", ">继续加载<"],
-    label: "全国地图与线性清单共用地点筛选并保留捕获和官网返回确认闭环",
+    mustInclude: ["ChinaJobMap", "岗位地图", "岗位清单", "按省份查看", "正在绘制全国岗位分布", "mapMatchingJobs", "location: \"\"", "selectedLocation={filters.location}", "handleFiltersChange({ ...filters, location })", "CaptureAnimation", "candidateStage", "\"evaluating\"", "\"saved\"", "\"preparing\"", "upsertApplication(supabase, user.id, job.id, \"preparing\")", "openApplicationWebsite(job, applyWindow)", "已加入星瓶并打开官网", "focusJob", "encodeURIComponent(\"/explore\")", "href=\"/my\"", "最新开启", "ApplyReturnConfirm", "visibilitychange", "keep_opened", "useSearchParams", "\"cats\"", "window.history.replaceState", "discoveryScope", "recentJobs", "recentPreferenceJobs", "filteredJobs.map"],
+    mustNotInclude: ["NebulaGateway", "nebulaSelection", "按行业探索", "已加入星瓶。先评估岗位", "encodeURIComponent(\"/jobs\")", "href=\"/my-applications\"", "router.replace(query ? `/explore?${query}` : \"/explore\"", "JOB_LIST_PAGE_SIZE", "displayedJobs", "IntersectionObserver", ">继续加载<"],
+    label: "全国地图与线性清单共用筛选，首次加入星瓶后直接打开官网并保留返回确认闭环",
   },
   {
     file: "src/components/jobs/JobFilterBar.tsx",
@@ -583,9 +583,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/jobs/JobDetailActions.tsx",
-    mustInclude: ["加入星瓶", "getJobPrimaryAction", "candidateStage", "upsertApplication", "safeOpenUrl", "ApplyReturnConfirm", "keep_opened", "withdrawn"],
-    mustNotInclude: ["router.push(`/login"],
-    label: "岗位详情收录操作为点位登录提示并支持回到页面后确认投递",
+    mustInclude: ["加入星瓶", "getJobPrimaryAction", "candidateStage", "upsertApplication(supabase, user.id, job.id, \"preparing\")", "safeOpenUrl", "sanitizeApplicationUrl", "已加入星瓶并打开官网", "ApplyReturnConfirm", "keep_opened", "withdrawn"],
+    mustNotInclude: ["router.push(`/login", "登录后加入星瓶，不会直接打开官网。"],
+    label: "岗位详情首次收录后直接打开官网并支持回到页面确认投递",
   },
   {
     file: "src/components/applications/ApplicationOrbitSystem.tsx",

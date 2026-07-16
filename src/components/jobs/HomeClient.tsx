@@ -242,8 +242,10 @@ export function HomeClient() {
       }
       const existingBeforeAuth = applications.find((item) => item.job_id === job.id);
       if (
-        existingBeforeAuth?.status === "opened"
-        && getCandidateStage(existingBeforeAuth) === "preparing"
+        (!existingBeforeAuth || (
+          existingBeforeAuth.status === "opened"
+          && getCandidateStage(existingBeforeAuth) === "preparing"
+        ))
         && isValidHttpUrl(job.apply_url)
       ) {
         applyWindow = window.open("", "_blank");
@@ -260,16 +262,25 @@ export function HomeClient() {
 
       const existing = applications.find((item) => item.job_id === job.id);
       if (!existing) {
-        const application = await upsertApplication(supabase, user.id, job.id, "evaluating");
+        if (!isValidHttpUrl(job.apply_url)) {
+          applyWindow?.close();
+          setMessage("投递链接格式不正确，暂未加入星瓶。请通过反馈告诉我们。");
+          return;
+        }
+        const application = await upsertApplication(supabase, user.id, job.id, "preparing");
         setApplications((current) => [{ ...application, job }, ...current]);
         queueBottleDrop(application.id);
         startCapture(job);
         void track("job_saved", { job_id: job.id });
-        setMessage(
-          application.candidate_stage === "evaluating"
-            ? "已加入星瓶。先评估岗位，再决定是否投入准备。"
-            : "已加入星瓶。当前数据库尚未升级，候选阶段暂按“准备中”显示。",
-        );
+        if (!openApplicationWebsite(job, applyWindow)) return;
+        applyWindowNavigated = Boolean(applyWindow);
+        armApplyConfirmation({
+          applicationId: application.id,
+          jobId: job.id,
+          companyName: job.company_name,
+          progressNote: application.progress_note,
+        });
+        setMessage("已加入星瓶并打开官网。返回后确认是否完成投递。");
         return;
       }
 
@@ -298,22 +309,8 @@ export function HomeClient() {
         return;
       }
 
-      if (applyWindow) {
-        applyWindow.opener = null;
-        applyWindow.document.title = "正在打开投递官网";
-        applyWindow.document.body.style.margin = "0";
-        applyWindow.document.body.style.background = "#000001";
-        applyWindow.document.body.style.color = "#F1EFFF";
-        applyWindow.document.body.style.fontFamily = '-apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif';
-        applyWindow.document.body.innerHTML = '<main style="min-height:100vh;display:grid;place-items:center;text-align:center;"><div><p style="font-size:15px;">正在打开投递官网</p><p style="font-size:12px;color:#918CAE;">返回后确认是否完成投递</p></div></main>';
-        applyWindow.location.href = sanitizeApplicationUrl(job.apply_url);
-        applyWindowNavigated = true;
-      } else {
-        if (!safeOpenUrl(job.apply_url)) {
-          setMessage("浏览器阻止了新窗口，请允许本站打开投递页面后重试。");
-          return;
-        }
-      }
+      if (!openApplicationWebsite(job, applyWindow)) return;
+      applyWindowNavigated = Boolean(applyWindow);
       armApplyConfirmation({
         applicationId: existing.id,
         jobId: job.id,
@@ -325,6 +322,23 @@ export function HomeClient() {
       if (!applyWindowNavigated) applyWindow?.close();
       setMessage(error instanceof Error ? error.message : "岗位操作失败，当前记录和已填内容都已保留，请稍后重试。");
     }
+  }
+
+  function openApplicationWebsite(job: Job, applyWindow: Window | null) {
+    if (applyWindow) {
+      applyWindow.opener = null;
+      applyWindow.document.title = "正在打开投递官网";
+      applyWindow.document.body.style.margin = "0";
+      applyWindow.document.body.style.background = "#000001";
+      applyWindow.document.body.style.color = "#F1EFFF";
+      applyWindow.document.body.style.fontFamily = '-apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif';
+      applyWindow.document.body.innerHTML = '<main style="min-height:100vh;display:grid;place-items:center;text-align:center;"><div><p style="font-size:15px;">正在打开投递官网</p><p style="font-size:12px;color:#918CAE;">返回后确认是否完成投递</p></div></main>';
+      applyWindow.location.href = sanitizeApplicationUrl(job.apply_url);
+      return true;
+    }
+    if (safeOpenUrl(job.apply_url)) return true;
+    setMessage("浏览器阻止了新窗口，请允许本站打开投递页面后重试。");
+    return false;
   }
 
   function handleFiltersChange(nextFilters: JobFilters) {
