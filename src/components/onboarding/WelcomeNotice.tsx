@@ -1,22 +1,36 @@
 "use client";
 
 import Link from "next/link";
-import { Check, LockKeyhole, Sparkles, X } from "lucide-react";
+import { Check, LockKeyhole, Megaphone, Sparkles, X } from "lucide-react";
+import type { User } from "@supabase/supabase-js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { CommunityHelpLink } from "@/components/ui/CommunityHelpLink";
 import { getCurrentUserOrNull } from "@/lib/auth";
+import { formatShanghaiDate } from "@/lib/dates";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 const GUEST_NOTICE_KEY = "shi-xing:guest-welcome-seen:2026-07-13";
 const USER_NOTICE_KEY_PREFIX = "shi-xing:user-welcome-seen:2026-07-13:";
 const USER_NOTICE_METADATA_KEY = "welcome_notice_seen_at";
+const ANNOUNCEMENT_SEEN_KEY_PREFIX = "shi-xing:announcement-seen:";
+const ANNOUNCEMENT_SEEN_ID_KEY = "latest_announcement_seen_id";
+const ANNOUNCEMENT_SEEN_AT_KEY = "latest_announcement_seen_at";
 
-type NoticeKind = "guest" | "user";
+type NoticeKind = "guest" | "user" | "announcement";
+
+type AnnouncementSummary = {
+  id: string;
+  title: string;
+  content: string;
+  tags: string[];
+  createdAt: string;
+};
 
 export function WelcomeNotice() {
   const [notice, setNotice] = useState<NoticeKind | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [announcement, setAnnouncement] = useState<AnnouncementSummary | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
 
@@ -29,6 +43,20 @@ export function WelcomeNotice() {
       return;
     }
 
+    if (notice === "announcement" && userId && announcement) {
+      writeStorage(`${ANNOUNCEMENT_SEEN_KEY_PREFIX}${userId}:${announcement.id}`);
+      setNotice(null);
+      if (isSupabaseConfigured()) {
+        await createClient().auth.updateUser({
+          data: {
+            [ANNOUNCEMENT_SEEN_ID_KEY]: announcement.id,
+            [ANNOUNCEMENT_SEEN_AT_KEY]: new Date().toISOString(),
+          },
+        });
+      }
+      return;
+    }
+
     if (userId) {
       writeStorage(`${USER_NOTICE_KEY_PREFIX}${userId}`);
       setNotice(null);
@@ -38,10 +66,29 @@ export function WelcomeNotice() {
         });
       }
     }
-  }, [notice, userId]);
+  }, [announcement, notice, userId]);
 
   useEffect(() => {
     let mounted = true;
+
+    async function resolveUserNotice(user: User) {
+      if (!mounted) return;
+      setUserId(user.id);
+      const localUserSeen = readStorage(`${USER_NOTICE_KEY_PREFIX}${user.id}`);
+      const accountSeen = Boolean(user.user_metadata?.[USER_NOTICE_METADATA_KEY]);
+      if (!localUserSeen && !accountSeen) {
+        setNotice("user");
+        return;
+      }
+
+      const response = await fetch("/api/announcements/latest", { cache: "no-store" }).catch(() => null);
+      if (!mounted || !response?.ok) return;
+      const payload = await response.json().catch(() => null) as { announcement?: AnnouncementSummary | null } | null;
+      const nextAnnouncement = payload?.announcement ?? null;
+      if (!nextAnnouncement || readStorage(`${ANNOUNCEMENT_SEEN_KEY_PREFIX}${user.id}:${nextAnnouncement.id}`)) return;
+      setAnnouncement(nextAnnouncement);
+      setNotice("announcement");
+    }
 
     async function resolveNotice() {
       const guestSeen = readStorage(GUEST_NOTICE_KEY);
@@ -58,16 +105,24 @@ export function WelcomeNotice() {
         if (!guestSeen) setNotice("guest");
         return;
       }
-
-      setUserId(user.id);
-      const localUserSeen = readStorage(`${USER_NOTICE_KEY_PREFIX}${user.id}`);
-      const accountSeen = Boolean(user.user_metadata?.[USER_NOTICE_METADATA_KEY]);
-      if (!localUserSeen && !accountSeen) setNotice("user");
+      await resolveUserNotice(user);
     }
 
     void resolveNotice();
+    const supabase = isSupabaseConfigured() ? createClient() : null;
+    const { data: authListener } = supabase?.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT") {
+        setNotice(null);
+        setAnnouncement(null);
+        setUserId(null);
+      }
+      if (event === "SIGNED_IN" && session?.user) {
+        window.setTimeout(() => void resolveUserNotice(session.user), 0);
+      }
+    }) ?? { data: { subscription: null } };
     return () => {
       mounted = false;
+      authListener.subscription?.unsubscribe();
     };
   }, []);
 
@@ -107,6 +162,7 @@ export function WelcomeNotice() {
   if (!notice) return null;
 
   const isUserWelcome = notice === "user";
+  const isAnnouncement = notice === "announcement";
 
   return (
     <div
@@ -129,7 +185,7 @@ export function WelcomeNotice() {
           ref={closeButtonRef}
           type="button"
           className="muted-button pressable absolute right-4 top-4 inline-flex size-9 items-center justify-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--aurora)] sm:right-6 sm:top-6"
-          aria-label="关闭介绍"
+          aria-label={isAnnouncement ? "关闭公告" : "关闭介绍"}
           onClick={() => void dismiss()}
         >
           <X aria-hidden="true" className="size-4" />
@@ -137,27 +193,43 @@ export function WelcomeNotice() {
 
         <div className="pr-12">
           <div className="mb-5 inline-flex size-11 items-center justify-center rounded-lg border border-[color:var(--star-apricot)]/35 bg-[color:var(--star-apricot)]/10 text-[color:var(--star-apricot)]">
-            {isUserWelcome ? <Sparkles aria-hidden="true" className="size-5" /> : <LockKeyhole aria-hidden="true" className="size-5" />}
+            {isAnnouncement
+              ? <Megaphone aria-hidden="true" className="size-5" />
+              : isUserWelcome
+                ? <Sparkles aria-hidden="true" className="size-5" />
+                : <LockKeyhole aria-hidden="true" className="size-5" />}
           </div>
           <h2 id="welcome-notice-title" className="text-2xl font-semibold tracking-[-0.02em] text-ink-primary sm:text-3xl">
-            {isUserWelcome ? "欢迎来到拾星" : "认识一下拾星"}
+            {isAnnouncement ? announcement?.title : isUserWelcome ? "欢迎来到拾星" : "认识一下拾星"}
           </h2>
           <p id="welcome-notice-description" className="mt-3 max-w-xl text-sm leading-7 text-ink-secondary sm:text-[15px]">
-            {isUserWelcome
+            {isAnnouncement
+              ? `拾星公告 · ${announcement ? formatShanghaiDate(announcement.createdAt) : "刚刚更新"}`
+              : isUserWelcome
               ? "把散落的岗位、材料和求职进度收进一个清晰的工作台。"
               : "拾星是一款面向求职者的求职管理工具，帮助你减少重复整理信息的时间，更清楚地判断下一步应该做什么。"}
           </p>
         </div>
 
-        {isUserWelcome ? <UserWelcomeContent /> : <GuestWelcomeContent />}
+        {isAnnouncement && announcement
+          ? <AnnouncementContent announcement={announcement} />
+          : isUserWelcome
+            ? <UserWelcomeContent />
+            : <GuestWelcomeContent />}
 
         <footer className="mt-7 flex flex-col gap-3 border-t border-[color:var(--line-ghost)] pt-5 sm:flex-row sm:items-center">
-          <CommunityHelpLink
-            className="justify-center sm:mr-auto sm:justify-start"
-            onClick={() => void dismiss()}
-          />
+          {isAnnouncement ? (
+            <Link href="/forum" className="text-action justify-center text-sm sm:mr-auto sm:justify-start" onClick={() => void dismiss()}>
+              查看全部拾星指南
+            </Link>
+          ) : (
+            <CommunityHelpLink
+              className="justify-center sm:mr-auto sm:justify-start"
+              onClick={() => void dismiss()}
+            />
+          )}
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center">
-            {!isUserWelcome ? (
+            {!isUserWelcome && !isAnnouncement ? (
               <Link
                 href="/login?mode=register"
                 className="text-action pressable inline-flex h-10 items-center justify-center px-4 text-sm font-medium"
@@ -172,6 +244,21 @@ export function WelcomeNotice() {
           </div>
         </footer>
       </section>
+    </div>
+  );
+}
+
+function AnnouncementContent({ announcement }: { announcement: AnnouncementSummary }) {
+  return (
+    <div className="mt-7 space-y-5">
+      <div className="whitespace-pre-wrap text-sm leading-7 text-ink-secondary sm:text-[15px]">
+        {announcement.content}
+      </div>
+      {announcement.tags.length ? (
+        <div className="flex flex-wrap gap-x-4 gap-y-2 border-t border-[color:var(--line-ghost)] pt-4 text-xs text-ink-muted">
+          {announcement.tags.map((tag) => <span key={tag}>#{tag}</span>)}
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -9,7 +9,7 @@ export default function AdminUsersPage() {
           <div>
             <p className="page-kicker">账户与权限</p>
             <h1 className="page-title">用户管理</h1>
-            <p className="page-description">查看账户状态、求职资料和使用情况，管理用户身份与登录权限。</p>
+            <p className="page-description">查看全站账户和最近登录活跃度，按用户状态快速筛选，并管理身份与登录权限。</p>
           </div>
         </section>
         <AdminUsersClient />

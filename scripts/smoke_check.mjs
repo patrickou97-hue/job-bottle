@@ -679,15 +679,27 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/admin/users/route.ts",
-    mustInclude: ["requireAdmin", "auth.getUser", "createAdminClient", "listUsers", "updateUserById", "不能停用或降级当前管理员账号", "ban_duration"],
+    mustInclude: ["requireAdmin", "auth.getUser", "createAdminClient", "listAllAuthUsers", "listUsers", "buildMetrics", "active24h", "active3d", "last_sign_in_at", "matchesFilters", "totalFiltered", "updateUserById", "不能停用或降级当前管理员账号", "ban_duration"],
     mustNotInclude: ["NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY"],
-    label: "管理员用户 API 在服务端复核身份并管理角色和登录权限",
+    label: "管理员用户 API 在服务端复核身份并提供全量登录活跃指标、筛选和权限管理",
   },
   {
     file: "src/components/admin/AdminUsersClient.tsx",
-    mustInclude: ["用户账户", "账户身份", "普通用户", "管理员", "停用账户", "恢复登录", "确认停用"],
+    mustInclude: ["用户总数", "最近 24h 活跃", "最近 3 日活跃", "按最近登录统计", "搜索邮箱、姓名、学校、方向或用户 ID", "最近活跃优先", "用户账户", "账户身份", "普通用户", "管理员", "停用账户", "恢复登录", "确认停用"],
     mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY", "deleteUser"],
-    label: "管理员用户页展示账户状态和使用情况并提供非破坏性身份管理",
+    label: "管理员用户页用全局事实带和可组合筛选展示账户并提供非破坏性身份管理",
+  },
+  {
+    file: "src/app/api/announcements/latest/route.ts",
+    mustInclude: ["auth.getUser", "createAdminClient", "forum_posts", ".eq(\"category\", \"公告\")", "profile.role === \"admin\"", "accountCreatedAt >= announcementCreatedAt", "latest_announcement_seen_id", "private, no-store"],
+    mustNotInclude: ["NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY", "email", "password"],
+    label: "最新公告接口只向登录老用户返回尚未阅读的管理员公告",
+  },
+  {
+    file: "src/components/onboarding/WelcomeNotice.tsx",
+    mustInclude: ["announcement", "SIGNED_IN", "/api/announcements/latest", "ANNOUNCEMENT_SEEN_KEY_PREFIX", "latest_announcement_seen_id", "查看全部拾星指南", "关闭公告"],
+    mustNotInclude: ["dangerouslySetInnerHTML", "SUPABASE_SERVICE_ROLE_KEY"],
+    label: "登录后公告与首次欢迎共用单一弹层并按用户和公告记录已读状态",
   },
   {
     file: "src/components/ui/Drawer.tsx",
