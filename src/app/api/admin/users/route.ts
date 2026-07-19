@@ -71,7 +71,12 @@ export async function PATCH(request: NextRequest) {
   if ("response" in access) return access.response;
 
   try {
-    const input = validateUpdate(await request.json().catch(() => null));
+    const body = await request.json().catch(() => null);
+    if (isConfirmEmailUpdate(body)) {
+      return await confirmUserEmail(body.id);
+    }
+
+    const input = validateUpdate(body);
     if (input.id === access.userId && (input.disabled || input.role !== "admin")) {
       return NextResponse.json({ error: "不能停用或降级当前管理员账号。" }, { status: 400 });
     }
@@ -123,6 +128,37 @@ export async function PATCH(request: NextRequest) {
   }
 }
 
+async function confirmUserEmail(id: string) {
+  const admin = createAdminClient();
+  const { data: previousAuth, error: previousAuthError } = await admin.auth.admin.getUserById(id);
+  if (previousAuthError) throw previousAuthError;
+
+  const [{ data: profile, error: profileError }, applicationCountResult, resumeCountResult] = await Promise.all([
+    admin.from("profiles").select("id,display_name,role,school,target_roles").eq("id", id).maybeSingle(),
+    admin.from("user_applications").select("id", { count: "exact", head: true }).eq("user_id", id),
+    admin.from("resumes").select("id", { count: "exact", head: true }).eq("user_id", id),
+  ]);
+  if (profileError) throw profileError;
+  if (applicationCountResult.error) throw applicationCountResult.error;
+  if (resumeCountResult.error) throw resumeCountResult.error;
+
+  let user = previousAuth.user;
+  if (!user.email_confirmed_at) {
+    const { data, error } = await admin.auth.admin.updateUserById(id, { email_confirm: true });
+    if (error) throw error;
+    user = data.user;
+  }
+
+  return NextResponse.json({
+    user: toSummary(
+      user,
+      (profile as AdminProfile | null) ?? undefined,
+      applicationCountResult.count ?? 0,
+      resumeCountResult.count ?? 0,
+    ),
+  });
+}
+
 async function requireAdmin() {
   try {
     const supabase = await createClient();
@@ -160,6 +196,12 @@ function validateUpdate(value: unknown): AdminUserUpdate & { id: string } {
     role: role as ProfileRole,
     disabled: input.disabled,
   };
+}
+
+function isConfirmEmailUpdate(value: unknown): value is { id: string; action: "confirm_email" } {
+  if (!value || typeof value !== "object") return false;
+  const input = value as Record<string, unknown>;
+  return typeof input.id === "string" && Boolean(input.id) && input.action === "confirm_email";
 }
 
 function toSummary(user: User, profile: AdminProfile | undefined, applicationCount: number, resumeCount: number): AdminUserSummary {

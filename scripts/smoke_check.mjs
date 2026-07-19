@@ -679,13 +679,13 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/admin/users/route.ts",
-    mustInclude: ["requireAdmin", "auth.getUser", "createAdminClient", "listAllAuthUsers", "listUsers", "buildMetrics", "active24h", "active3d", "last_sign_in_at", "matchesFilters", "totalFiltered", "updateUserById", "不能停用或降级当前管理员账号", "ban_duration"],
+    mustInclude: ["requireAdmin", "auth.getUser", "createAdminClient", "listAllAuthUsers", "listUsers", "buildMetrics", "active24h", "active3d", "last_sign_in_at", "matchesFilters", "totalFiltered", "updateUserById", "不能停用或降级当前管理员账号", "ban_duration", "email_confirm: true"],
     mustNotInclude: ["NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY"],
     label: "管理员用户 API 在服务端复核身份并提供全量登录活跃指标、筛选和权限管理",
   },
   {
     file: "src/components/admin/AdminUsersClient.tsx",
-    mustInclude: ["用户总数", "最近 24h 活跃", "最近 3 日活跃", "按最近登录统计", "搜索邮箱、姓名、学校、方向或用户 ID", "最近活跃优先", "用户账户", "账户身份", "普通用户", "管理员", "停用账户", "恢复登录", "确认停用"],
+    mustInclude: ["用户总数", "最近 24h 活跃", "最近 3 日活跃", "按最近登录统计", "搜索邮箱、姓名、学校、方向或用户 ID", "最近活跃优先", "用户账户", "账户身份", "普通用户", "管理员", "停用账户", "恢复登录", "确认停用", "设为已确认", "确认邮箱"],
     mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY", "deleteUser"],
     label: "管理员用户页用全局事实带和可组合筛选展示账户并提供非破坏性身份管理",
   },

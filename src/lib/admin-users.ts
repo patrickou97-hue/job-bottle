@@ -81,6 +81,17 @@ export async function updateAdminUser(id: string, input: AdminUserUpdate) {
   return payload as { user: AdminUserSummary };
 }
 
+export async function confirmAdminUserEmail(id: string) {
+  const response = await fetch("/api/admin/users", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, action: "confirm_email" }),
+  });
+  const payload = await readJson(response);
+  if (!response.ok) throw new Error(getErrorMessage(payload, "邮箱确认状态更新失败，原状态未改变。"));
+  return payload as { user: AdminUserSummary };
+}
+
 async function readJson(response: Response) {
   return response.json().catch(() => ({})) as Promise<unknown>;
 }

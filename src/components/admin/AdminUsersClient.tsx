@@ -12,6 +12,7 @@ import {
   RotateCcw,
   Search,
   Shield,
+  ShieldCheck,
   UserRound,
   UsersRound,
 } from "lucide-react";
@@ -19,6 +20,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import {
+  confirmAdminUserEmail,
   fetchAdminUsers,
   updateAdminUser,
   type AdminUserActivityFilter,
@@ -60,6 +62,7 @@ export function AdminUsersClient() {
   const [message, setMessage] = useState("");
   const [savingId, setSavingId] = useState("");
   const [confirmDisableId, setConfirmDisableId] = useState("");
+  const [confirmEmailId, setConfirmEmailId] = useState("");
   const [confirmRoleId, setConfirmRoleId] = useState("");
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const hasLoadedRef = useRef(false);
@@ -158,6 +161,42 @@ export function AdminUsersClient() {
     }
     setConfirmDisableId(user.id);
     setMessage(`再次点击“确认停用”将阻止 ${user.email} 登录，现有数据会保留。`);
+  }
+
+  function requestEmailConfirmation(user: AdminUserSummary) {
+    if (user.emailConfirmedAt) return;
+    if (confirmEmailId !== user.id) {
+      setConfirmEmailId(user.id);
+      setMessage(`再次点击“确认邮箱”将跳过验证邮件，把 ${user.email} 设为已确认。`);
+      return;
+    }
+    void confirmEmail(user);
+  }
+
+  async function confirmEmail(user: AdminUserSummary) {
+    setSavingId(user.id);
+    setMessage("");
+    try {
+      const result = await confirmAdminUserEmail(user.id);
+      setUsers((current) => status === "unconfirmed"
+        ? current.filter((item) => item.id !== user.id)
+        : current.map((item) => item.id === user.id ? result.user : item));
+      if (status === "unconfirmed") {
+        const nextTotal = Math.max(0, totalFiltered - 1);
+        const nextTotalPages = Math.max(1, Math.ceil(nextTotal / pageSize));
+        setTotalFiltered(nextTotal);
+        setTotalPages(nextTotalPages);
+        if (page > nextTotalPages) setPage(nextTotalPages);
+      }
+      setConfirmEmailId("");
+      setMessage(result.user.bannedUntil
+        ? `${result.user.email} 的邮箱状态已正常，账户仍处于停用状态。`
+        : `${result.user.email} 的邮箱状态已正常。`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "邮箱确认状态更新失败，原状态未改变。");
+    } finally {
+      setSavingId("");
+    }
   }
 
   function resetFilters() {
@@ -334,6 +373,16 @@ export function AdminUsersClient() {
                 </div>
 
                 <div className="flex flex-wrap gap-2 lg:justify-end">
+                  {!user.emailConfirmedAt ? (
+                    <Button
+                      variant="secondary"
+                      disabled={refreshing || savingId === user.id}
+                      onClick={() => requestEmailConfirmation(user)}
+                    >
+                      <ShieldCheck aria-hidden="true" className="size-4" />
+                      {confirmEmailId === user.id ? "确认邮箱" : "设为已确认"}
+                    </Button>
+                  ) : null}
                   <Button variant="secondary" disabled={!dirty || refreshing || savingId === user.id} onClick={() => requestSaveUser(user)}>
                     <Check aria-hidden="true" className="size-4" />
                     {confirmRoleId === user.id ? "确认身份" : "保存身份"}
