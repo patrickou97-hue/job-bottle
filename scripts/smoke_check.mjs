@@ -321,9 +321,15 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/auth/LoginForm.tsx",
-    mustInclude: ["mode", "register", "reason", "resume-download", "getSafeNextPath", "data.session", "返回简历制作"],
-    mustNotInclude: ["router.push(searchParams.get(\"next\")"],
+    mustInclude: ["mode", "register", "reason", "resume-download", "getSafeNextPath", "data.session", "返回简历制作", "placeholder=\"2027\""],
+    mustNotInclude: ["router.push(searchParams.get(\"next\")", "placeholder=\"成都\"", "西南财经大学", "金融学"],
     label: "注册登录可安全返回来源页并兼容邮箱确认流程",
+  },
+  {
+    file: "src/lib/profile-options.ts",
+    mustInclude: ["PROFILE_ROLE_OPTIONS", "金融", "银行", "证券", "基金", "保险", "投行", "投研", "行研", "量化", "咨询", "战略", "商业分析", "数据分析", "产品", "运营", "市场", "销售", "风控", "审计", "财务", "人力", "软件研发", "硬件工程", "供应链", "生产制造", "设计", "法务", "职能", "管培生", "教师"],
+    mustNotInclude: [],
+    label: "注册和个人中心提供完整且向后兼容的求职方向选项",
   },
   {
     file: "src/lib/resume.ts",
@@ -913,6 +919,36 @@ const SOURCE_INVARIANTS = [
     mustInclude: ["starjob-resume-assistant-local", "http://localhost:3000", "http://127.0.0.1:3000", "本地测试", "LOCAL-TEST.txt"],
     mustNotInclude: ["public/downloads", "拾星网申助手-v0.1.7.zip", "SUPABASE_SERVICE_ROLE_KEY"],
     label: "本地扩展构建单独放宽 localhost 且不覆盖正式发布包",
+  },
+  {
+    file: "src/app/robots.ts",
+    mustInclude: ["disallow: [\"/api/\"]", "sitemap: `${SITE_URL}/sitemap.xml`", "host: SITE_URL"],
+    mustNotInclude: ["/login", "/admin", "/profile"],
+    label: "robots 公开站点地图并只拦截无搜索价值的 API",
+  },
+  {
+    file: "src/app/sitemap.ts",
+    mustInclude: ["/explore", "/forum", "/guide", "/extension/guide", "isJobOpenForSearch", "/jobs/${job.id}"],
+    mustNotInclude: ["/admin", "/login", "/profile", "/resume", "/api"],
+    label: "网站地图只收录公开页面和仍然有效的岗位详情",
+  },
+  {
+    file: "src/app/jobs/[id]/page.tsx",
+    mustInclude: ["alternates: { canonical }", "application/ld+json", "buildJobPosting", "isJobOpenForSearch", "summary_large_image"],
+    mustNotInclude: ["@type\": \"JobPosting\""],
+    label: "岗位详情提供 canonical、分享信息和单页 JobPosting",
+  },
+  {
+    file: "src/app/admin/layout.tsx",
+    mustInclude: ["index: false", "follow: false"],
+    mustNotInclude: [],
+    label: "管理后台统一禁止搜索引擎收录",
+  },
+  {
+    file: "docs/seo/starjob-guide-drafts-2026-07-19.md",
+    mustInclude: ["待审核，未发布", "2027 届秋招什么时候开始", "秋招岗位信息在哪里找", "网申简历怎么填写", "校招投递进度怎么管理", "应届生简历怎么写", "网申助手安全吗", "如何避免错过秋招截止时间"],
+    mustNotInclude: [],
+    label: "七篇搜索指南作为未公开草稿等待产品审核",
   },
 ];
 const REQUIRED_FILES = [
@@ -1670,6 +1706,37 @@ async function checkPages(baseUrl) {
   }
 }
 
+async function checkSeoEndpoints(baseUrl) {
+  const robotsResponse = await fetchWithRetry(`${baseUrl}/robots.txt`);
+  const robots = await robotsResponse.text();
+  if (!robotsResponse.ok || !robots.includes("Sitemap: https://www.starjob.space/sitemap.xml") || !robots.includes("Disallow: /api/")) {
+    throw new Error("SEO 探针失败：robots.txt 未正确声明 sitemap 或 API 抓取规则");
+  }
+
+  const sitemapResponse = await fetchWithRetry(`${baseUrl}/sitemap.xml`);
+  const sitemap = await sitemapResponse.text();
+  if (!sitemapResponse.ok || !sitemap.includes("https://www.starjob.space/explore") || sitemap.includes("https://www.starjob.space/admin")) {
+    throw new Error("SEO 探针失败：sitemap.xml 缺少公开页面或混入私密页面");
+  }
+
+  const loginResponse = await fetchWithRetry(`${baseUrl}/login`);
+  const loginHtml = await loginResponse.text();
+  if (!loginHtml.includes('name="robots" content="noindex, nofollow"')) {
+    throw new Error("SEO 探针失败：登录页缺少 noindex, nofollow");
+  }
+
+  const jobMatch = sitemap.match(/https:\/\/www\.starjob\.space\/jobs\/([^<]+)/);
+  if (jobMatch) {
+    const jobResponse = await fetchWithRetry(`${baseUrl}/jobs/${jobMatch[1]}`);
+    const jobHtml = await jobResponse.text();
+    if (!jobHtml.includes('rel="canonical" href="https://www.starjob.space/jobs/') || !jobHtml.includes('"@type":"JobPosting"')) {
+      throw new Error("SEO 探针失败：岗位详情缺少 canonical 或 JobPosting");
+    }
+  }
+
+  console.log("✓ SEO 探针通过：robots、sitemap、私密页 noindex 与岗位结构化数据正常");
+}
+
 async function findReusableServer() {
   const candidates = [
     process.env.SMOKE_BASE_URL,
@@ -1707,6 +1774,7 @@ async function main() {
   if (reusableServer) {
     console.log(`✓ 复用已有本地站点：${reusableServer}`);
     await checkPages(reusableServer);
+    await checkSeoEndpoints(reusableServer);
     console.log("✓ 冒烟检查通过");
     return;
   }
@@ -1735,6 +1803,7 @@ async function main() {
   try {
     await fetchWithRetry(baseUrl, {}, 60);
     await checkPages(baseUrl);
+    await checkSeoEndpoints(baseUrl);
     console.log("✓ 冒烟检查通过");
   } catch (error) {
     console.error(output.slice(-4000));

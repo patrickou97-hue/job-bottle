@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { PageShell } from "@/components/layout/PageShell";
+
+export const metadata: Metadata = {
+  title: "登录",
+  robots: { index: false, follow: false },
+};
 
 export default function LoginPage() {
   return (

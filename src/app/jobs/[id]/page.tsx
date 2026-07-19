@@ -7,6 +7,7 @@ import { CompanyBadge } from "@/components/jobs/CompanyBadge";
 import { PageShell } from "@/components/layout/PageShell";
 import { formatShanghaiDateTime } from "@/lib/dates";
 import { fetchJobById, fetchRelatedJobs } from "@/lib/jobs";
+import { buildJobPosting, DEFAULT_SHARE_IMAGE, getJobDisplayTitle, getJobSeoDescription, isJobOpenForSearch } from "@/lib/seo";
 import { createClient } from "@/lib/supabase/server";
 import type { Job, UserApplication } from "@/lib/types";
 
@@ -19,9 +20,27 @@ export async function generateMetadata({ params }: JobDetailPageProps): Promise<
   const supabase = await createClient();
   const job = await fetchJobById(supabase, id);
   if (!job) return { title: "岗位详情 | 拾星" };
+  const title = `${getJobDisplayTitle(job)}校招`;
+  const description = getJobSeoDescription(job);
+  const canonical = `/jobs/${job.id}`;
   return {
-    title: `${job.company_name} ${job.job_titles || "岗位"} | 拾星`,
-    description: [job.company_name, job.job_titles, job.locations, job.batch_type].filter(Boolean).join(" · "),
+    title,
+    description,
+    alternates: { canonical },
+    robots: isJobOpenForSearch(job) ? undefined : { index: false, follow: true },
+    openGraph: {
+      type: "website",
+      title,
+      description,
+      url: canonical,
+      images: [{ url: job.logo_url || DEFAULT_SHARE_IMAGE, alt: `${job.company_name}校招岗位` }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [job.logo_url || DEFAULT_SHARE_IMAGE],
+    },
   };
 }
 
@@ -30,6 +49,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
   const supabase = await createClient();
   const job = await fetchJobById(supabase, id);
   if (!job) notFound();
+  const jobPosting = buildJobPosting(job);
 
   const [{ data: auth }, related] = await Promise.all([
     supabase.auth.getUser(),
@@ -40,6 +60,12 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
 
   return (
     <PageShell>
+      {jobPosting ? (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jobPosting).replace(/</g, "\\u003c") }}
+        />
+      ) : null}
       <main className="observatory-page mx-auto max-w-5xl space-y-8">
         <Link
           href="/explore"

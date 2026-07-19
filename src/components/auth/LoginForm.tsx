@@ -174,7 +174,7 @@ export function LoginForm() {
           <div className="grid gap-5 sm:grid-cols-2">
             <label className="block">
               <span className="mb-2 block text-sm text-ink-secondary">所在城市</span>
-              <Input type="text" placeholder="成都" {...register("city")} />
+              <Input type="text" {...register("city")} />
               {errors.city ? (
                 <span className="mt-2 block text-xs text-[color:var(--text-danger)]">{errors.city.message}</span>
               ) : null}
@@ -188,14 +188,14 @@ export function LoginForm() {
             </label>
             <label className="block">
               <span className="mb-2 block text-sm text-ink-secondary">学校</span>
-              <Input type="text" placeholder="西南财经大学" {...register("school")} />
+              <Input type="text" {...register("school")} />
               {errors.school ? (
                 <span className="mt-2 block text-xs text-[color:var(--text-danger)]">{errors.school.message}</span>
               ) : null}
             </label>
             <label className="block">
               <span className="mb-2 block text-sm text-ink-secondary">专业</span>
-              <Input type="text" placeholder="金融学" {...register("major")} />
+              <Input type="text" {...register("major")} />
               {errors.major ? (
                 <span className="mt-2 block text-xs text-[color:var(--text-danger)]">{errors.major.message}</span>
               ) : null}

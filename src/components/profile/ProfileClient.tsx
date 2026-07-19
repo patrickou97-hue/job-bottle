@@ -285,7 +285,7 @@ export function ProfileClient() {
               <Input value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="可选" />
             </ProfileField>
             <ProfileField label="所在城市" icon={<MapPin aria-hidden="true" className="size-4" />}>
-              <Input value={city} onChange={(event) => setCity(event.target.value)} placeholder="成都" />
+              <Input value={city} onChange={(event) => setCity(event.target.value)} />
             </ProfileField>
             <ProfileField label="毕业年份" icon={<BookOpen aria-hidden="true" className="size-4" />}>
               <Input value={graduationYear} onChange={(event) => setGraduationYear(event.target.value)} placeholder="2027" />

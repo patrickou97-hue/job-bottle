@@ -1,5 +1,11 @@
+import type { Metadata } from "next";
 import { UserShell } from "@/components/layout/UserShell";
 import { ResumeBuilderClient } from "@/components/resume/ResumeBuilderClient";
+
+export const metadata: Metadata = {
+  title: "简历制作",
+  robots: { index: false, follow: false },
+};
 
 type ResumePageProps = {
   searchParams: Promise<{
