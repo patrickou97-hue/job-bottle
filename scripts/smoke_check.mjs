@@ -709,9 +709,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/ui/Drawer.tsx",
-    mustInclude: ["theme-work", "apple-sheet", "rounded-lg", "var(--surface-hover-bg)", "aria-modal=\"true\"", "Escape", "returnFocusRef", "CommunityHelpLink"],
+    mustInclude: ["theme-work", "apple-sheet", "rounded-lg", "var(--surface-hover-bg)", "aria-modal=\"true\"", "Escape", "returnFocusRef", "CommunityHelpLink", "data-drawer-scroll", "min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain", "md:h-[calc(100svh-2rem)]", "-webkit-overflow-scrolling:touch"],
     mustNotInclude: ["border-l", "<Button"],
-    label: "投递侧滑容器使用实体工作面并保留焦点管理与键盘关闭",
+    label: "投递侧滑容器使用独立纵向滚动区并保留焦点管理与键盘关闭",
   },
   {
     file: "src/components/ui/CommunityHelpLink.tsx",

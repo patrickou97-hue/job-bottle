@@ -66,14 +66,14 @@ export function Drawer({
             role="dialog"
             aria-modal="true"
             aria-labelledby="drawer-title"
-            className="apple-sheet absolute inset-x-0 bottom-0 max-h-[88svh] w-full overflow-y-auto px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 md:bottom-4 md:left-auto md:right-4 md:top-4 md:max-h-none md:max-w-xl md:p-7"
+            className="apple-sheet absolute inset-x-0 bottom-0 flex max-h-[88svh] w-full flex-col overflow-hidden md:bottom-4 md:left-auto md:right-4 md:top-4 md:h-[calc(100svh-2rem)] md:max-h-[calc(100svh-2rem)] md:max-w-xl"
             initial={{ y: reducedMotion ? 0 : "100%", x: 0, opacity: reducedMotion ? 0 : 1 }}
             animate={{ y: 0, x: 0 }}
             exit={{ y: reducedMotion ? 0 : "100%", x: 0, opacity: reducedMotion ? 0 : 1 }}
             transition={reducedMotion ? { duration: motionDuration.instant } : { type: "spring", stiffness: 340, damping: 34, mass: 0.9 }}
           >
-            <div className="mb-2 flex justify-center md:hidden"><span className="apple-sheet-handle" /></div>
-            <div className="mb-6 flex items-center justify-between gap-4">
+            <div className="flex shrink-0 justify-center pt-3 md:hidden"><span className="apple-sheet-handle" /></div>
+            <div className="flex shrink-0 items-center justify-between gap-4 px-5 pb-5 pt-3 md:px-7 md:pb-6 md:pt-7">
               <h2 id="drawer-title" className="text-xl font-semibold text-ink-primary">{title}</h2>
               <button
                 ref={closeButtonRef}
@@ -85,12 +85,17 @@ export function Drawer({
                 <XIcon aria-hidden="true" className="size-4" weight="bold" />
               </button>
             </div>
-            {children}
-            {showHelpLink ? (
-              <div className="mt-6 border-t border-[color:var(--line-ghost)] pt-4">
-                <CommunityHelpLink onClick={onClose} />
-              </div>
-            ) : null}
+            <div
+              data-drawer-scroll
+              className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] [-webkit-overflow-scrolling:touch] md:px-7 md:pb-7"
+            >
+              {children}
+              {showHelpLink ? (
+                <div className="mt-6 border-t border-[color:var(--line-ghost)] pt-4">
+                  <CommunityHelpLink onClick={onClose} />
+                </div>
+              ) : null}
+            </div>
           </motion.aside>
         </div>
       ) : null}
