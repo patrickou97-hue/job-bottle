@@ -768,6 +768,12 @@ const SOURCE_INVARIANTS = [
     label: "生产补齐迁移以幂等方式恢复状态历史、埋点、举报、AI 限流和数据一致性",
   },
   {
+    file: "supabase/migrations/20260722120000_raise_resume_ai_rate_limit.sql",
+    mustInclude: ["take_resume_ai_rate_slot", "interval '10 minutes'", "active_count >= 15", "pg_advisory_xact_lock", "grant execute", "authenticated"],
+    mustNotInclude: ["drop table", "service_role", "grant execute on function public.take_resume_ai_rate_slot() to anon"],
+    label: "简历导入、润色与翻译共用的用户级 AI 限额提升为每十分钟 15 次",
+  },
+  {
     file: "supabase/migrations/20260704030000_security_audit_followup.sql",
     mustInclude: [
       "set search_path = public, pg_temp",
