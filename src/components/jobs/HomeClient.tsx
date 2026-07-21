@@ -224,8 +224,9 @@ export function HomeClient() {
       visibleJobs: filteredJobs.length,
       savedJobs: applications.length,
       companyCount,
+      recentJobs: recentJobs.length,
     };
-  }, [applications.length, filteredJobs, jobs.length, matchingJobs.length]);
+  }, [applications.length, filteredJobs, jobs.length, matchingJobs.length, recentJobs.length]);
 
   async function handleApply(job: Job) {
     setMessage("");
@@ -660,6 +661,7 @@ function JobRadarHeader({
     visibleJobs: number;
     savedJobs: number;
     companyCount: number;
+    recentJobs: number;
   };
   jobView: JobViewMode;
   onJobViewChange: (mode: JobViewMode) => void;
@@ -679,10 +681,11 @@ function JobRadarHeader({
       </div>
 
       <div className="progress-summary px-4 py-2 md:px-5 md:py-3">
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
           <StatNumber value={stats.visibleJobs} label="当前岗位" />
           <StatNumber value={stats.companyCount} label="公司" />
           <StatNumber value={stats.savedJobs} label="已收录" />
+          <StatNumber value={stats.recentJobs} label="近 7 天新发现" />
         </div>
       </div>
 
