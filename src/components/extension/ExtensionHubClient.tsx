@@ -11,7 +11,7 @@ import {
 } from "@phosphor-icons/react";
 
 const CHANNEL = "starjob-resume-assistant";
-const DOWNLOAD_URL = "https://pan.baidu.com/s/10QoSAiNpFOch881oCniEjA?pwd=SXZS";
+const DOWNLOAD_URL = "https://pan.baidu.com/s/1z815NaU8NRArpswkEAiU3w?pwd=SXZS";
 
 type SyncState = "idle" | "checking" | "syncing" | "success" | "missing" | "auth" | "empty" | "error";
 
@@ -176,9 +176,20 @@ export function ExtensionHubClient() {
               </div>
             </div>
             <div className="mt-5 flex flex-wrap gap-3">
-              <button type="button" className="gold-button pressable inline-flex h-11 items-center rounded-lg px-4 text-sm font-semibold disabled:cursor-wait disabled:opacity-60" onClick={syncResumes} disabled={isWorking}>
-                {syncState === "syncing" ? "正在同步" : "同步到扩展"}
-              </button>
+              {installed ? (
+                <button type="button" className="gold-button pressable inline-flex h-11 items-center rounded-lg px-4 text-sm font-semibold disabled:cursor-wait disabled:opacity-60" onClick={syncResumes} disabled={isWorking}>
+                  {syncState === "syncing" ? "正在同步" : "同步到扩展"}
+                </button>
+              ) : syncState === "checking" ? (
+                <button type="button" className="gold-button inline-flex h-11 items-center rounded-lg px-4 text-sm font-semibold opacity-60" disabled>
+                  正在检测扩展
+                </button>
+              ) : (
+                <button type="button" className="gold-button pressable inline-flex h-11 items-center rounded-lg px-4 text-sm font-semibold" onClick={() => window.location.reload()}>
+                  安装后刷新检测
+                </button>
+              )}
+              {!installed && syncState !== "checking" ? <Link href="/extension/guide" className="text-action h-11 px-2 text-sm font-semibold">查看安装步骤</Link> : null}
               {syncState === "auth" ? <Link href="/login?next=/extension%23sync" className="text-action h-11 px-2 text-sm font-semibold">前往登录</Link> : null}
               {syncState === "empty" ? <Link href="/resume" className="text-action h-11 px-2 text-sm font-semibold">制作简历</Link> : null}
             </div>

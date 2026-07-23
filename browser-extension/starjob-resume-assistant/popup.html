@@ -4,18 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>拾星网申助手</title>
-    <link rel="stylesheet" href="popup.css?v=017-popup-width" />
+    <link rel="stylesheet" href="popup.css?v=019-editorial-tool" />
   </head>
   <body>
     <main class="shell">
       <header class="brand-row">
         <img src="assets/wordmark.png" alt="拾星" class="brand-wordmark" />
         <div class="brand-copy">
-          <div class="brand-title-line">
-            <h1>网申助手</h1>
-            <span class="brand-badge">安全填写</span>
-          </div>
-          <p>把拾星简历填进当前页面</p>
+          <h1>网申助手</h1>
+          <p>本地读取简历 · 最终由你提交</p>
         </div>
       </header>
 
@@ -42,6 +39,7 @@
             <span>覆盖已有内容</span>
           </label>
         </fieldset>
+        <p id="modeHint" class="mode-hint">默认只填写空白项，不会改动你已经输入的内容。</p>
 
         <button id="fillButton" class="button button-primary" type="button">一键填写当前页面</button>
         <div class="meta-row"><span class="meta-dot" aria-hidden="true"></span><p id="syncMeta" class="meta"></p></div>
@@ -52,15 +50,19 @@
         <div class="result-copy">
           <strong id="resultTitle"></strong>
           <p id="resultText"></p>
+          <details id="unmatchedDetails" class="result-details" hidden>
+            <summary>查看需要手动确认的字段</summary>
+            <ul id="unmatchedList"></ul>
+          </details>
         </div>
       </section>
 
       <section id="progressPanel" class="progress-panel" aria-live="polite" hidden>
-        <div class="progress-heading"><strong>本次处理</strong><span>按页面顺序执行</span></div>
-        <div class="progress-row" data-step="extract"><span class="progress-dot"></span><div><strong>页面字段提取</strong><p>等待开始</p></div></div>
-        <div class="progress-row" data-step="match"><span class="progress-dot"></span><div><strong>智能分析匹配</strong><p>等待字段清单</p></div></div>
-        <div class="progress-row" data-step="fill"><span class="progress-dot"></span><div><strong>开始逐项填写</strong><p>等待匹配结果</p></div></div>
-        <div class="progress-row" data-step="summary"><span class="progress-dot"></span><div><strong>未填项整理</strong><p>等待填写完成</p></div></div>
+        <div class="progress-heading"><strong>处理进度</strong><span>按页面顺序执行</span></div>
+        <div class="progress-row" data-step="extract"><span class="progress-dot"></span><div><strong>读取页面字段</strong><p>等待开始</p></div></div>
+        <div class="progress-row" data-step="match"><span class="progress-dot"></span><div><strong>匹配简历内容</strong><p>等待字段清单</p></div></div>
+        <div class="progress-row" data-step="fill"><span class="progress-dot"></span><div><strong>填写可确认字段</strong><p>等待匹配结果</p></div></div>
+        <div class="progress-row" data-step="summary"><span class="progress-dot"></span><div><strong>整理待处理项</strong><p>等待填写完成</p></div></div>
       </section>
 
       <footer class="footer-actions">
@@ -72,6 +74,6 @@
         <button id="clearData" class="text-button text-button-danger" type="button">清除本地数据</button>
       </footer>
     </main>
-    <script src="popup.js"></script>
+    <script src="popup.js?v=019-editorial-tool"></script>
   </body>
 </html>

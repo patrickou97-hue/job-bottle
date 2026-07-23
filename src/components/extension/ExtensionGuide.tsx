@@ -32,6 +32,11 @@ const INSTALL_ACTIONS = [
     title: "固定拾星图标",
     body: "在浏览器工具栏的扩展菜单中找到拾星网申助手并固定，后续填写网申时可以直接打开。",
   },
+  {
+    icon: UploadSimpleIcon,
+    title: "返回拾星并同步简历",
+    body: "回到网申助手页，点击“安装后刷新检测”。登录后再选择“同步到扩展”，看到同步成功即可开始填写。",
+  },
 ];
 
 export function ExtensionGuide() {
@@ -42,7 +47,7 @@ export function ExtensionGuide() {
           <h1 className="page-title">安装拾星网申助手</h1>
           <p className="page-subtitle mt-4">完成一次安装和简历同步，之后在网申页打开扩展即可填写。</p>
         </div>
-        <a href="https://pan.baidu.com/s/10QoSAiNpFOch881oCniEjA?pwd=SXZS" target="_blank" rel="noreferrer" className="gold-button pressable inline-flex h-11 w-fit items-center gap-2 rounded-lg px-4 text-sm font-semibold">
+        <a href="https://pan.baidu.com/s/1z815NaU8NRArpswkEAiU3w?pwd=SXZS" target="_blank" rel="noreferrer" className="gold-button pressable inline-flex h-11 w-fit items-center gap-2 rounded-lg px-4 text-sm font-semibold">
           <ArrowDownIcon aria-hidden="true" className="size-4" />
           获取安装包
         </a>
@@ -50,11 +55,14 @@ export function ExtensionGuide() {
       </section>
 
       <section className="grid gap-x-10 gap-y-8 md:grid-cols-2">
-        {INSTALL_ACTIONS.map((action) => {
+        {INSTALL_ACTIONS.map((action, index) => {
           const Icon = action.icon;
           return (
             <article key={action.title} className="border-t border-[color:var(--line-ghost)] pt-5">
-              <Icon aria-hidden="true" className="size-6 text-[color:var(--aurora)]" />
+              <div className="flex items-center justify-between gap-4">
+                <Icon aria-hidden="true" className="size-6 text-[color:var(--aurora)]" />
+                <span className="text-xs font-semibold tracking-[0.12em] text-ink-muted">步骤 {String(index + 1).padStart(2, "0")}</span>
+              </div>
               <h2 className="mt-4 text-lg font-semibold text-ink-primary">{action.title}</h2>
               <p className="mt-2 max-w-[48ch] text-sm leading-7 text-ink-secondary">{action.body}</p>
             </article>

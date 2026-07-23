@@ -3,8 +3,8 @@ import path from "node:path";
 
 const ROOT = process.cwd();
 const SOURCE_DIR = path.join(ROOT, "browser-extension", "starjob-resume-assistant");
-const PUBLIC_OUTPUT = path.join(ROOT, "public", "downloads", "starjob-resume-assistant-v0.1.7.zip");
-const SHARE_OUTPUT = path.join(ROOT, "dist", "拾星网申助手-v0.1.7.zip");
+const PUBLIC_OUTPUT = path.join(ROOT, "public", "downloads", "starjob-resume-assistant-v0.1.8.zip");
+const SHARE_OUTPUT = path.join(ROOT, "dist", "拾星网申助手-v0.1.8.zip");
 const REQUIRED_FILES = [
   "manifest.json",
   "popup.html",

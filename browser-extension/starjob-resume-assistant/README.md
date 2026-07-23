@@ -19,4 +19,4 @@
 npm run build:extension
 ```
 
-脚本会校验必需文件并生成 `public/downloads/starjob-resume-assistant-v0.1.7.zip`，该 ZIP 可直接上传百度网盘。
+脚本会校验必需文件并生成 `public/downloads/starjob-resume-assistant-v0.1.8.zip`，该 ZIP 可直接上传百度网盘。

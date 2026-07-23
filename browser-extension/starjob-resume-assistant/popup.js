@@ -1,6 +1,7 @@
 const STARJOB_HOME = "https://www.starjob.space";
 const SMART_MATCH_TIMEOUT_MS = 9_000;
-const SMART_MATCH_MAX_FIELDS = 6;
+const SMART_MATCH_MAX_FIELDS = 12;
+const CONFIRM_WINDOW_MS = 8_000;
 const STORAGE_KEYS = ["starjobResumes", "activeResumeId", "fillMode", "lastSyncedAt", "matchToken", "matchTokenExpiresAt", "aiMatchingAvailable", "analysisOnly", "aiOnly", "aiFieldMappings"];
 
 const elements = {
@@ -8,16 +9,24 @@ const elements = {
   readyState: document.querySelector("#readyState"),
   resumeSelect: document.querySelector("#resumeSelect"),
   fillButton: document.querySelector("#fillButton"),
+  modeHint: document.querySelector("#modeHint"),
   syncMeta: document.querySelector("#syncMeta"),
   resultPanel: document.querySelector("#resultPanel"),
   resultTitle: document.querySelector("#resultTitle"),
   resultText: document.querySelector("#resultText"),
+  unmatchedDetails: document.querySelector("#unmatchedDetails"),
+  unmatchedList: document.querySelector("#unmatchedList"),
   progressPanel: document.querySelector("#progressPanel"),
   openSync: document.querySelector("#openSync"),
   openSyncFromEmpty: document.querySelector("#openSyncFromEmpty"),
   openGuide: document.querySelector("#openGuide"),
   clearData: document.querySelector("#clearData"),
 };
+
+let overwriteConfirmationExpiresAt = 0;
+let overwriteConfirmationTimer = null;
+let clearConfirmationExpiresAt = 0;
+let clearConfirmationTimer = null;
 
 const progressDefaults = {
   extract: "等待开始",
@@ -42,11 +51,62 @@ function openPage(path) {
   void chrome.tabs.create({ url: `${STARJOB_HOME}${path}` });
 }
 
-function showResult(title, text, tone = "success") {
+function showResult(title, text, tone = "success", unmatchedFields = []) {
   elements.resultTitle.textContent = title;
   elements.resultText.textContent = text;
   elements.resultPanel.dataset.tone = tone;
   elements.resultPanel.hidden = false;
+  const fields = [...new Set(unmatchedFields.map((field) => String(field || "").trim()).filter(Boolean))].slice(0, 8);
+  elements.unmatchedList.replaceChildren(...fields.map((field) => {
+    const item = document.createElement("li");
+    item.textContent = field;
+    return item;
+  }));
+  elements.unmatchedDetails.hidden = fields.length === 0;
+  elements.unmatchedDetails.open = false;
+}
+
+function selectedFillMode() {
+  return document.querySelector('input[name="fillMode"]:checked')?.value === "overwrite" ? "overwrite" : "merge";
+}
+
+function resetOverwriteConfirmation() {
+  overwriteConfirmationExpiresAt = 0;
+  if (overwriteConfirmationTimer) window.clearTimeout(overwriteConfirmationTimer);
+  overwriteConfirmationTimer = null;
+  const overwrite = selectedFillMode() === "overwrite";
+  elements.modeHint.dataset.tone = overwrite ? "warning" : "neutral";
+  elements.modeHint.textContent = overwrite
+    ? "覆盖模式会替换页面已有内容，填写前需要再次确认。"
+    : "默认只填写空白项，不会改动你已经输入的内容。";
+  if (!elements.fillButton.disabled) elements.fillButton.textContent = "一键填写当前页面";
+  if (elements.resultTitle.textContent === "请确认覆盖") elements.resultPanel.hidden = true;
+}
+
+function armOverwriteConfirmation() {
+  overwriteConfirmationExpiresAt = Date.now() + CONFIRM_WINDOW_MS;
+  elements.modeHint.dataset.tone = "warning";
+  elements.modeHint.textContent = "请确认：下一次点击会覆盖当前页面已有内容。";
+  elements.fillButton.textContent = "再次点击，确认覆盖并填写";
+  showResult("请确认覆盖", "为了避免丢失你已经填写的内容，请再次点击上方按钮。", "warning");
+  if (overwriteConfirmationTimer) window.clearTimeout(overwriteConfirmationTimer);
+  overwriteConfirmationTimer = window.setTimeout(resetOverwriteConfirmation, CONFIRM_WINDOW_MS);
+}
+
+function resetClearConfirmation() {
+  clearConfirmationExpiresAt = 0;
+  if (clearConfirmationTimer) window.clearTimeout(clearConfirmationTimer);
+  clearConfirmationTimer = null;
+  elements.clearData.textContent = "清除本地数据";
+  if (elements.resultTitle.textContent === "确认清除本地数据") elements.resultPanel.hidden = true;
+}
+
+function armClearConfirmation() {
+  clearConfirmationExpiresAt = Date.now() + CONFIRM_WINDOW_MS;
+  elements.clearData.textContent = "再次点击确认清除";
+  showResult("确认清除本地数据", "这会删除扩展中已同步的所有简历，不会删除拾星网站中的云端简历。", "warning");
+  if (clearConfirmationTimer) window.clearTimeout(clearConfirmationTimer);
+  clearConfirmationTimer = window.setTimeout(resetClearConfirmation, CONFIRM_WINDOW_MS);
 }
 
 function formatSyncTime(value) {
@@ -54,6 +114,16 @@ function formatSyncTime(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "简历只保存在当前浏览器";
   return `上次同步 ${date.toLocaleString("zh-CN", { hour12: false })}`;
+}
+
+function friendlyFillError(error) {
+  const message = error instanceof Error ? error.message : "";
+  if (/cannot access|cannot read|could not establish|context invalidated|no tab with id/i.test(message)) {
+    return "扩展与当前页面的连接已失效，请刷新网申页后重试。";
+  }
+  return /[\u3400-\u9fff]/.test(message)
+    ? message
+    : "当前页面暂时无法填写，请刷新网申页后重试。";
 }
 
 function summarizeFrameResults(frameResults) {
@@ -97,9 +167,21 @@ async function render() {
   const selectedMode = stored.fillMode === "overwrite" ? "overwrite" : "merge";
   document.querySelector(`input[name="fillMode"][value="${selectedMode}"]`).checked = true;
   elements.syncMeta.textContent = formatSyncTime(stored.lastSyncedAt);
+  resetOverwriteConfirmation();
+  resetClearConfirmation();
 }
 
 async function fillCurrentPage() {
+  const fillMode = selectedFillMode();
+  if (fillMode === "overwrite" && overwriteConfirmationExpiresAt < Date.now()) {
+    armOverwriteConfirmation();
+    return;
+  }
+  resetOverwriteConfirmation();
+  if (!globalThis.chrome?.tabs?.query || !globalThis.chrome?.scripting?.executeScript || !globalThis.chrome?.storage?.local) {
+    showResult("请从浏览器工具栏打开扩展", "当前是界面预览，实际填写需要在 Chrome 或 Edge 的扩展菜单中打开拾星网申助手。", "warning");
+    return;
+  }
   elements.fillButton.disabled = true;
   elements.fillButton.textContent = "正在逐项分析";
   elements.resultPanel.hidden = true;
@@ -112,9 +194,6 @@ async function fillCurrentPage() {
       throw new Error("当前页面不允许扩展填写，请打开企业网申页面后重试。");
     }
 
-    const fillMode = document.querySelector('input[name="fillMode"]:checked')?.value === "overwrite"
-      ? "overwrite"
-      : "merge";
     const activeResumeId = elements.resumeSelect.value;
     await chrome.storage.local.set({ activeResumeId, fillMode, analysisOnly: true, aiOnly: false, aiFieldMappings: {} });
 
@@ -210,25 +289,31 @@ async function fillCurrentPage() {
     updateProgress("summary", "success", `共 ${total.manual} 个需手动确认，其中 ${total.empty || 0} 个在简历中没有对应值`);
     showResult(
       `已填写 ${total.filled} 项`,
-      `扫描 ${total.scanned} 项，保留已有内容 ${total.preserved} 项，需手动确认 ${total.manual} 项。${[...new Set(total.unmatched)].slice(0, 4).length ? ` 可优先检查：${[...new Set(total.unmatched)].slice(0, 4).join("、")}。` : ""}提交前请逐项检查。`,
+      `保留已有内容 ${total.preserved} 项，仍有 ${total.manual} 项需要你确认。提交前请逐项检查。`,
+      "success",
+      total.unmatched,
     );
   } catch (error) {
     updateProgress("summary", "fallback", "填写中断，请查看下方原因");
-    showResult("本次填写未完成", error instanceof Error ? error.message : "请刷新网申页面后重试。", "error");
+    showResult("本次填写未完成", friendlyFillError(error), "error");
   } finally {
     await chrome.storage.local.remove(["analysisOnly", "aiOnly", "aiFieldMappings"]);
     elements.fillButton.disabled = false;
-    elements.fillButton.textContent = "一键填写当前页面";
+    resetOverwriteConfirmation();
   }
 }
 
 elements.resumeSelect.addEventListener("change", () => {
+  resetOverwriteConfirmation();
   void chrome.storage.local.set({ activeResumeId: elements.resumeSelect.value });
 });
 
 document.querySelectorAll('input[name="fillMode"]').forEach((input) => {
   input.addEventListener("change", () => {
-    if (input.checked) void chrome.storage.local.set({ fillMode: input.value });
+    if (input.checked) {
+      resetOverwriteConfirmation();
+      void chrome.storage.local.set({ fillMode: input.value });
+    }
   });
 });
 
@@ -238,6 +323,11 @@ elements.openSyncFromEmpty.addEventListener("click", () => openPage("/extension#
 elements.openGuide.addEventListener("click", () => openPage("/extension/guide"));
 elements.clearData.addEventListener("click", async () => {
   if (!globalThis.chrome?.storage?.local) return;
+  if (clearConfirmationExpiresAt < Date.now()) {
+    armClearConfirmation();
+    return;
+  }
+  resetClearConfirmation();
   await chrome.storage.local.remove(STORAGE_KEYS);
   await render();
   showResult("本地数据已清除", "扩展中保存的拾星简历已删除。", "success");
@@ -256,7 +346,7 @@ function renderPreview() {
   updateProgress("match", "success", "本地识别 28 个，后台复核 3 个");
   updateProgress("fill", "success", "本地内容已先填写，补充完成 18/35");
   updateProgress("summary", "success", "17 个需手动确认，其中 12 个在简历中没有对应值");
-  showResult("已填写 18 项", "请检查页面中标记的字段，并手动提交网申。", "success");
+  showResult("已填写 18 项", "请检查页面中标记的字段，并手动提交网申。", "success", ["最高学历", "毕业时间", "附件简历", "身份证明"]);
 }
 
 if (globalThis.chrome?.storage?.local) void render();
