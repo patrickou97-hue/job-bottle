@@ -7,7 +7,7 @@
 ## 当前状态
 
 - 日期：2026-07-23
-- 阶段：真实 AppID、生产数据 API 与微信登录桥接联调
+- 阶段：生产服务端已上线，等待微信开发者工具重新扫码后完成真实登录联调
 - 网站基线：`main` / `origin/main` / `104aa05766585d511a66190a7cb34c7ae75be96d`
 - 工作区保护：`.codex-artifacts/` 与五份 `docs/prd/*.md` 用户文件保持未修改、未暂存、未提交
 - 小程序代码：已建立原生 TypeScript 工程和 6 个页面
@@ -16,6 +16,7 @@
 - Vercel 主体：确认以 Patrick（`patrickou97-hue`）账号的 `job-bottle` 为唯一生产项目；Ray 账号同名项目仅暂时保留，不承载主域名
 - Vercel 环境变量：Patrick 生产项目的 AppID、AppSecret 与独立会话签名密钥均已确认并覆盖 Production / Preview
 - Supabase 主体：生产站、本地环境与 hosted migration 均指向项目 ref `uzzdcjdjlbnxmhvilldj`
+- 生产发布：提交 `ace6ef4` 已推送 Patrick 的 GitHub `main`，Patrick Vercel 主域名已返回新小程序 API
 - 微信公众平台配置：真实 AppID 已写入；请求域名、隐私声明与审核配置待完成
 
 ## 隔离规则
@@ -63,7 +64,8 @@
 - [x] 清除本地 Vercel CLI 对 Ray 副本的默认关联和登录，保留可恢复备份以防误部署
 - [x] 在 Patrick 项目补充 `MINIPROGRAM_SESSION_SECRET`
 - [x] 开启微信开发者工具服务端口
-- [ ] 部署服务端路由并执行真实 `wx.login` 端到端验证
+- [x] 部署服务端路由并验证生产岗位 API 与微信登录失败边界
+- [ ] 微信开发者工具重新登录后执行真实 `wx.login` 端到端验证
 
 ## 当前客户端目录
 
@@ -117,6 +119,8 @@ starjob-miniprogram/
 - Supabase Auth：Management API 已开启并回读确认 `external_anonymous_users_enabled=true`
 - Ray 项目审计：Ray 无权访问生产域名，按用户要求暂不删除；本地 Ray 项目关联与 CLI 凭据已移为可恢复备份，避免误部署
 - 微信开发者工具：服务端口已开启（端口号只用于本机）；CLI 已能连接 IDE，但当前微信工具登录票据过期，需要重新扫码登录后再导入
+- 生产岗位 API：`GET /api/miniprogram/jobs` 返回 200 与 273 条当前开放岗位
+- 生产登录失败边界：无效微信 code 返回 401 / `WECHAT_LOGIN_FAILED`，响应未包含 session key、openid 或 AppSecret 标识
 
 ## 初步可行性
 
@@ -276,6 +280,8 @@ StarJob 小程序 API
 - 开启生产 Supabase Anonymous Sign-Ins，并回读确认配置生效。
 - 清除本地 Ray Vercel 默认关联，保留可恢复备份，后续部署只通过 Patrick 的 GitHub/Vercel 生产链。
 - 开启微信开发者工具服务端口；发现现有登录票据已过期，待扫码后继续导入和上传。
+- 推送提交 `ace6ef4` 到 Patrick GitHub `main`，由 Patrick Vercel 生产链发布。
+- 在 `www.starjob.space` 验证岗位 API 已上线，并验证无效微信 code 的安全失败响应。
 - 完成现有 Auth、profiles、岗位、投递、简历、指南、公告和 RLS 的定向代码核对。
 - 确定“服务端微信身份桥接 + 导入的 ES256 signing key + 短期 RLS access token + 单次轮换 refresh token”的首选身份方向。
 - 视觉生成服务连续三次连接失败；未用文字草图冒充视觉方案，等待外部服务恢复后重试。
