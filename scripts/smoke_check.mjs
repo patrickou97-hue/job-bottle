@@ -904,14 +904,14 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/extension/ExtensionHubClient.tsx",
-    mustInclude: ["<span className=\"block\">一份简历，</span>", "<span className=\"block\">投向更多可能</span>", "调用拾星网申工具填写常用字段。你只需检查后提交。", "starjob-resume-assistant-iphone17pm.png", "iPhone 17 Pro Max", "获取安装包", "安装后刷新检测", "window.location.reload()", "LEGACY_COMPATIBLE_VERSION = \"0.1.7\"", "0.1.7 可继续同步与填写；需要新版描述识别时可升级 0.1.9", "最新版本 0.1.9", "https://pan.baidu.com/s/1jl_OHVc_HxXbUrI1-IS56g?pwd=SXZS"],
-    mustNotInclude: ["一份简历，投向更多可能", "常见网申字段按页面顺序填入", "你只需检查，再决定提交", "简历写一次，网申少重复", "请升级到 0.1.8", "extensionVersion !==", "starjob-resume-assistant-popup.png", "https://pan.baidu.com/s/1z815NaU8NRArpswkEAiU3w?pwd=SXZS", "https://pan.baidu.com/s/10QoSAiNpFOch881oCniEjA?pwd=SXZS", "https://pan.baidu.com/s/18t2FPlnjktr3zTG9eE1k2g?pwd=SXZS", "https://pan.baidu.com/s/1WhabI64zCSOXyn4zIAKMsw?pwd=SXZS", "https://pan.baidu.com/s/11xaueV0f0D_pFt_czk_MHw?pwd=SXZS"],
+    mustInclude: ["<span className=\"block\">一份简历，</span>", "<span className=\"block\">投向更多可能</span>", "调用拾星网申工具填写常用字段。你只需检查后提交。", "starjob-resume-assistant-iphone17pm.png", "iPhone 17 Pro Max", "获取安装包", "安装后刷新检测", "window.location.reload()", "LEGACY_COMPATIBLE_VERSION = \"0.1.7\"", "0.1.7 可继续同步与填写；需要新版描述识别时可升级 0.1.9", "最新版本 0.1.9", "https://pan.baidu.com/s/13sk2UUdep9S1zoJdEk_sSA?pwd=SXZS"],
+    mustNotInclude: ["一份简历，投向更多可能", "常见网申字段按页面顺序填入", "你只需检查，再决定提交", "简历写一次，网申少重复", "请升级到 0.1.8", "extensionVersion !==", "starjob-resume-assistant-popup.png", "https://pan.baidu.com/s/1jl_OHVc_HxXbUrI1-IS56g?pwd=SXZS", "https://pan.baidu.com/s/1z815NaU8NRArpswkEAiU3w?pwd=SXZS", "https://pan.baidu.com/s/10QoSAiNpFOch881oCniEjA?pwd=SXZS", "https://pan.baidu.com/s/18t2FPlnjktr3zTG9eE1k2g?pwd=SXZS", "https://pan.baidu.com/s/1WhabI64zCSOXyn4zIAKMsw?pwd=SXZS", "https://pan.baidu.com/s/11xaueV0f0D_pFt_czk_MHw?pwd=SXZS"],
     label: "网申助手首屏使用更克制的价值表达与带灵动岛的设备实机展示",
   },
   {
     file: "src/components/extension/ExtensionGuide.tsx",
-    mustInclude: ["https://pan.baidu.com/s/1jl_OHVc_HxXbUrI1-IS56g?pwd=SXZS", "百度网盘提取码：SXZS", "最新版本 0.1.9", "0.1.7 仍可继续同步和填写，不强制重装", "返回拾星并同步简历", "安装后刷新检测", "步骤 {String(index + 1).padStart(2, \"0\")}"],
-    mustNotInclude: ["https://pan.baidu.com/s/1z815NaU8NRArpswkEAiU3w?pwd=SXZS", "https://pan.baidu.com/s/10QoSAiNpFOch881oCniEjA?pwd=SXZS", "https://pan.baidu.com/s/18t2FPlnjktr3zTG9eE1k2g?pwd=SXZS", "https://pan.baidu.com/s/1WhabI64zCSOXyn4zIAKMsw?pwd=SXZS", "https://pan.baidu.com/s/11xaueV0f0D_pFt_czk_MHw?pwd=SXZS"],
+    mustInclude: ["https://pan.baidu.com/s/13sk2UUdep9S1zoJdEk_sSA?pwd=SXZS", "百度网盘提取码：SXZS", "最新版本 0.1.9", "0.1.7 仍可继续同步和填写，不强制重装", "返回拾星并同步简历", "安装后刷新检测", "步骤 {String(index + 1).padStart(2, \"0\")}"],
+    mustNotInclude: ["https://pan.baidu.com/s/1jl_OHVc_HxXbUrI1-IS56g?pwd=SXZS", "https://pan.baidu.com/s/1z815NaU8NRArpswkEAiU3w?pwd=SXZS", "https://pan.baidu.com/s/10QoSAiNpFOch881oCniEjA?pwd=SXZS", "https://pan.baidu.com/s/18t2FPlnjktr3zTG9eE1k2g?pwd=SXZS", "https://pan.baidu.com/s/1WhabI64zCSOXyn4zIAKMsw?pwd=SXZS", "https://pan.baidu.com/s/11xaueV0f0D_pFt_czk_MHw?pwd=SXZS"],
     label: "网申助手下载页与安装教程共用最新百度网盘地址",
   },
   {
