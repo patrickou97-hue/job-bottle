@@ -12,6 +12,7 @@ import {
 
 const CHANNEL = "starjob-resume-assistant";
 const DOWNLOAD_URL = "https://pan.baidu.com/s/1z815NaU8NRArpswkEAiU3w?pwd=SXZS";
+const LEGACY_COMPATIBLE_VERSION = "0.1.7";
 
 type SyncState = "idle" | "checking" | "syncing" | "success" | "missing" | "auth" | "empty" | "error";
 
@@ -33,10 +34,13 @@ export function ExtensionHubClient() {
       if (!payload || payload.channel !== CHANNEL || payload.source !== "extension") return;
 
       if (payload.type === "READY" || payload.type === "PONG") {
+        const detectedVersion = typeof payload.version === "string" ? payload.version : null;
         setInstalled(true);
-        setExtensionVersion(typeof payload.version === "string" ? payload.version : null);
+        setExtensionVersion(detectedVersion);
         setSyncState("idle");
-        setMessage("扩展已安装，可以同步当前账号的云端简历");
+        setMessage(detectedVersion === LEGACY_COMPATIBLE_VERSION
+          ? "0.1.7 可继续同步与填写，无需重新下载"
+          : "扩展已安装，可以同步当前账号的云端简历");
       }
       if (payload.type === "SYNC_COMPLETE") {
         if (syncTimerRef.current) window.clearTimeout(syncTimerRef.current);
@@ -148,7 +152,7 @@ export function ExtensionHubClient() {
               <ArrowRightIcon aria-hidden="true" className="size-4" />
             </Link>
           </div>
-          <p className="mt-4 text-xs leading-6 text-ink-muted">适用于 Chrome、Edge 及其他 Chromium 浏览器。安装包通过百度网盘提供，提取码 SXZS。</p>
+          <p className="mt-4 text-xs leading-6 text-ink-muted">适用于 Chrome、Edge 及其他 Chromium 浏览器。安装包通过百度网盘提供，提取码 SXZS。已安装 0.1.7 的用户可以继续使用，无需重复安装。</p>
         </div>
 
         <div className="extension-product-visual mx-auto w-full max-w-[350px]" aria-label="拾星网申助手产品图">

@@ -862,7 +862,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "browser-extension/starjob-resume-assistant/sync-bridge.js",
-    mustInclude: ["ALLOWED_ORIGINS", "SYNC_RESUMES", "chrome.storage.local.set", "4_500_000", "matchTokenExpiresAt", "aiMatchingAvailable", "SYNC_COMPLETE"],
+    mustInclude: ["ALLOWED_ORIGINS", "\"READY\"", "\"PONG\"", "SYNC_RESUMES", "chrome.storage.local.set", "4_500_000", "matchTokenExpiresAt", "aiMatchingAvailable", "SYNC_COMPLETE"],
     mustNotInclude: ["localhost", "localStorage", "document.cookie", "fetch("],
     label: "扩展仅接收拾星来源并把有限简历数据保存在浏览器本地",
   },
@@ -904,13 +904,13 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/extension/ExtensionHubClient.tsx",
-    mustInclude: ["<span className=\"block\">一份简历，</span>", "<span className=\"block\">投向更多可能</span>", "调用拾星网申工具填写常用字段。你只需检查后提交。", "starjob-resume-assistant-iphone17pm.png", "iPhone 17 Pro Max", "获取安装包", "安装后刷新检测", "window.location.reload()", "https://pan.baidu.com/s/1z815NaU8NRArpswkEAiU3w?pwd=SXZS"],
-    mustNotInclude: ["一份简历，投向更多可能", "常见网申字段按页面顺序填入", "你只需检查，再决定提交", "简历写一次，网申少重复", "starjob-resume-assistant-popup.png", "https://pan.baidu.com/s/10QoSAiNpFOch881oCniEjA?pwd=SXZS", "https://pan.baidu.com/s/18t2FPlnjktr3zTG9eE1k2g?pwd=SXZS", "https://pan.baidu.com/s/1WhabI64zCSOXyn4zIAKMsw?pwd=SXZS", "https://pan.baidu.com/s/11xaueV0f0D_pFt_czk_MHw?pwd=SXZS"],
+    mustInclude: ["<span className=\"block\">一份简历，</span>", "<span className=\"block\">投向更多可能</span>", "调用拾星网申工具填写常用字段。你只需检查后提交。", "starjob-resume-assistant-iphone17pm.png", "iPhone 17 Pro Max", "获取安装包", "安装后刷新检测", "window.location.reload()", "LEGACY_COMPATIBLE_VERSION = \"0.1.7\"", "0.1.7 可继续同步与填写，无需重新下载", "https://pan.baidu.com/s/1z815NaU8NRArpswkEAiU3w?pwd=SXZS"],
+    mustNotInclude: ["一份简历，投向更多可能", "常见网申字段按页面顺序填入", "你只需检查，再决定提交", "简历写一次，网申少重复", "请升级到 0.1.8", "extensionVersion !==", "starjob-resume-assistant-popup.png", "https://pan.baidu.com/s/10QoSAiNpFOch881oCniEjA?pwd=SXZS", "https://pan.baidu.com/s/18t2FPlnjktr3zTG9eE1k2g?pwd=SXZS", "https://pan.baidu.com/s/1WhabI64zCSOXyn4zIAKMsw?pwd=SXZS", "https://pan.baidu.com/s/11xaueV0f0D_pFt_czk_MHw?pwd=SXZS"],
     label: "网申助手首屏使用更克制的价值表达与带灵动岛的设备实机展示",
   },
   {
     file: "src/components/extension/ExtensionGuide.tsx",
-    mustInclude: ["https://pan.baidu.com/s/1z815NaU8NRArpswkEAiU3w?pwd=SXZS", "百度网盘提取码：SXZS", "返回拾星并同步简历", "安装后刷新检测", "步骤 {String(index + 1).padStart(2, \"0\")}"],
+    mustInclude: ["https://pan.baidu.com/s/1z815NaU8NRArpswkEAiU3w?pwd=SXZS", "百度网盘提取码：SXZS", "已经安装 0.1.7 的用户可以继续同步和填写，无需重新下载", "返回拾星并同步简历", "安装后刷新检测", "步骤 {String(index + 1).padStart(2, \"0\")}"],
     mustNotInclude: ["https://pan.baidu.com/s/10QoSAiNpFOch881oCniEjA?pwd=SXZS", "https://pan.baidu.com/s/18t2FPlnjktr3zTG9eE1k2g?pwd=SXZS", "https://pan.baidu.com/s/1WhabI64zCSOXyn4zIAKMsw?pwd=SXZS", "https://pan.baidu.com/s/11xaueV0f0D_pFt_czk_MHw?pwd=SXZS"],
     label: "网申助手下载页与安装教程共用最新百度网盘地址",
   },

@@ -52,6 +52,7 @@ export function ExtensionGuide() {
           获取安装包
         </a>
         <p className="mt-3 text-xs leading-6 text-ink-muted">百度网盘提取码：SXZS</p>
+        <p className="mt-1 text-xs leading-6 text-ink-muted">已经安装 0.1.7 的用户可以继续同步和填写，无需重新下载。</p>
       </section>
 
       <section className="grid gap-x-10 gap-y-8 md:grid-cols-2">
