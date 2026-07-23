@@ -19,4 +19,4 @@
 npm run build:extension
 ```
 
-脚本会校验必需文件并生成 `public/downloads/starjob-resume-assistant-v0.1.8.zip`，该 ZIP 可直接上传百度网盘。
+脚本会读取 `manifest.json` 的版本号、校验必需文件，并生成对应版本的 ZIP。当前正式包为 `public/downloads/starjob-resume-assistant-v0.1.9.zip`，同时会在 `dist/` 生成可上传百度网盘的中文文件名副本。

@@ -47,12 +47,12 @@ export function ExtensionGuide() {
           <h1 className="page-title">安装拾星网申助手</h1>
           <p className="page-subtitle mt-4">完成一次安装和简历同步，之后在网申页打开扩展即可填写。</p>
         </div>
-        <a href="https://pan.baidu.com/s/1z815NaU8NRArpswkEAiU3w?pwd=SXZS" target="_blank" rel="noreferrer" className="gold-button pressable inline-flex h-11 w-fit items-center gap-2 rounded-lg px-4 text-sm font-semibold">
+        <a href="https://pan.baidu.com/s/1jl_OHVc_HxXbUrI1-IS56g?pwd=SXZS" target="_blank" rel="noreferrer" className="gold-button pressable inline-flex h-11 w-fit items-center gap-2 rounded-lg px-4 text-sm font-semibold">
           <ArrowDownIcon aria-hidden="true" className="size-4" />
           获取安装包
         </a>
         <p className="mt-3 text-xs leading-6 text-ink-muted">百度网盘提取码：SXZS</p>
-        <p className="mt-1 text-xs leading-6 text-ink-muted">已经安装 0.1.7 的用户可以继续同步和填写，无需重新下载。</p>
+        <p className="mt-1 text-xs leading-6 text-ink-muted">最新版本 0.1.9。0.1.7 仍可继续同步和填写，不强制重装；需要新版实习描述识别修复时建议升级。</p>
       </section>
 
       <section className="grid gap-x-10 gap-y-8 md:grid-cols-2">

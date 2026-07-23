@@ -3,8 +3,10 @@ import path from "node:path";
 
 const ROOT = process.cwd();
 const SOURCE_DIR = path.join(ROOT, "browser-extension", "starjob-resume-assistant");
-const PUBLIC_OUTPUT = path.join(ROOT, "public", "downloads", "starjob-resume-assistant-v0.1.8.zip");
-const SHARE_OUTPUT = path.join(ROOT, "dist", "拾星网申助手-v0.1.8.zip");
+const manifest = JSON.parse(await readFile(path.join(SOURCE_DIR, "manifest.json"), "utf8"));
+if (!/^\d+\.\d+\.\d+$/.test(manifest.version)) throw new Error("扩展版本号格式无效。");
+const PUBLIC_OUTPUT = path.join(ROOT, "public", "downloads", `starjob-resume-assistant-v${manifest.version}.zip`);
+const SHARE_OUTPUT = path.join(ROOT, "dist", `拾星网申助手-v${manifest.version}.zip`);
 const REQUIRED_FILES = [
   "manifest.json",
   "popup.html",
@@ -118,7 +120,6 @@ for (const required of REQUIRED_FILES) {
   await stat(path.join(SOURCE_DIR, required));
 }
 
-const manifest = JSON.parse(await readFile(path.join(SOURCE_DIR, "manifest.json"), "utf8"));
 if (manifest.manifest_version !== 3) throw new Error("扩展必须使用 Manifest V3。");
 if (manifest.permissions.includes("cookies") || manifest.permissions.includes("tabs")) {
   throw new Error("扩展权限超出当前安全边界。");

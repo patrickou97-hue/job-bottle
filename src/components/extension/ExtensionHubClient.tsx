@@ -11,7 +11,7 @@ import {
 } from "@phosphor-icons/react";
 
 const CHANNEL = "starjob-resume-assistant";
-const DOWNLOAD_URL = "https://pan.baidu.com/s/1z815NaU8NRArpswkEAiU3w?pwd=SXZS";
+const DOWNLOAD_URL = "https://pan.baidu.com/s/1jl_OHVc_HxXbUrI1-IS56g?pwd=SXZS";
 const LEGACY_COMPATIBLE_VERSION = "0.1.7";
 
 type SyncState = "idle" | "checking" | "syncing" | "success" | "missing" | "auth" | "empty" | "error";
@@ -39,7 +39,7 @@ export function ExtensionHubClient() {
         setExtensionVersion(detectedVersion);
         setSyncState("idle");
         setMessage(detectedVersion === LEGACY_COMPATIBLE_VERSION
-          ? "0.1.7 可继续同步与填写，无需重新下载"
+          ? "0.1.7 可继续同步与填写；需要新版描述识别时可升级 0.1.9"
           : "扩展已安装，可以同步当前账号的云端简历");
       }
       if (payload.type === "SYNC_COMPLETE") {
@@ -152,7 +152,7 @@ export function ExtensionHubClient() {
               <ArrowRightIcon aria-hidden="true" className="size-4" />
             </Link>
           </div>
-          <p className="mt-4 text-xs leading-6 text-ink-muted">适用于 Chrome、Edge 及其他 Chromium 浏览器。安装包通过百度网盘提供，提取码 SXZS。已安装 0.1.7 的用户可以继续使用，无需重复安装。</p>
+          <p className="mt-4 text-xs leading-6 text-ink-muted">最新版本 0.1.9，适用于 Chrome、Edge 及其他 Chromium 浏览器。安装包通过百度网盘提供，提取码 SXZS。0.1.7 仍可继续同步和填写，不强制重装；遇到实习描述无法识别时建议升级。</p>
         </div>
 
         <div className="extension-product-visual mx-auto w-full max-w-[350px]" aria-label="拾星网申助手产品图">

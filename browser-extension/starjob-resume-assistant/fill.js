@@ -54,7 +54,7 @@
     { key: "work.startDate", section: "work", aliases: ["开始日期", "开始时间", "工作开始日期", "工作开始时间", "实习开始时间", "任职开始时间", "workstartdate", "employmentstartdate", "startdate"], values: work.map((item) => item.startDate), date: true },
     { key: "work.endDate", section: "work", aliases: ["结束日期", "结束时间", "工作结束日期", "工作结束时间", "实习结束时间", "离职时间", "workenddate", "employmentenddate", "enddate"], values: work.map((item) => item.endDate), date: true },
     { key: "work.current", section: "work", aliases: ["至今", "仍在职", "当前任职", "currentlyworkhere", "currentposition", "present"], values: work.map((item) => Boolean(item.current)), checkbox: true },
-    { key: "work.description", section: "work", aliases: ["经历描述", "工作描述", "工作内容", "岗位职责", "实习描述", "主要职责", "workdescription", "jobdescription", "responsibilities", "achievements"], values: work.map((item) => joinBullets(item.bullets)), multiline: true },
+    { key: "work.description", section: "work", aliases: ["经历描述", "工作描述", "工作内容", "工作职责", "职责描述", "工作职责描述", "岗位职责", "岗位描述", "实习描述", "实习内容", "主要职责", "主要工作", "主要工作内容", "工作业绩", "工作成果", "职责及业绩", "描述", "workdescription", "jobdescription", "responsibilities", "responsibility", "duties", "duty", "achievements", "description"], values: work.map((item) => joinBullets(item.bullets)), multiline: true },
 
     { key: "project.name", section: "project", aliases: ["项目名称", "项目名", "projectname", "projecttitle"], values: projects.map((item) => item.name) },
     { key: "project.role", section: "project", aliases: ["项目角色", "担任角色", "项目职务", "projectrole", "roleinproject"], values: projects.map((item) => item.role) },
@@ -274,6 +274,8 @@
     for (const alias of definition.aliases) {
       const normalizedAlias = normalize(alias);
       if (!normalizedAlias) continue;
+      if (["描述", "description"].includes(normalizedAlias)
+        && (!sectionHint || definition.section !== sectionHint)) continue;
       for (const signal of visibleSignals) {
         if (signal === normalizedAlias) score = Math.max(score, 0.99);
         else if (signal.includes(normalizedAlias) && normalizedAlias.length >= 2) score = Math.max(score, 0.91);
@@ -594,6 +596,26 @@
     return null;
   }
 
+  function getRepeatableOccurrenceKey(definition, signals) {
+    const label = signals.visible.find(Boolean) || signals.attributes.find(Boolean) || definition.key;
+    const normalizedLabel = normalize(String(label));
+    const aliasFamily = [...definition.aliases]
+      .map(normalize)
+      .filter((alias) => alias && normalizedLabel.includes(alias))
+      .sort((left, right) => right.length - left.length)[0];
+    return `${definition.key}|${aliasFamily || normalizedLabel.slice(0, 80)}`;
+  }
+
+  function takeNextOccurrenceIndex(occurrences, key) {
+    const index = occurrences.get(key) || 0;
+    occurrences.set(key, index + 1);
+    return index;
+  }
+
+  function isUsableRecordIndex(index, definition) {
+    return Number.isInteger(index) && index >= 0 && index < definition.values.length;
+  }
+
   function toAnalysisField(field) {
     return {
       fieldKey: field.fieldKey,
@@ -771,28 +793,27 @@
     const containerRecordIndex = recordContainerMaps.get(matchedDefinition.section)?.get(recordContainer);
     const normalizedRecordIndex = recordNumberMaps.get(matchedDefinition.section)?.get(explicitRecordNumber);
     let index;
-    if (repeatable && Number.isInteger(containerRecordIndex) && containerRecordIndex >= 0) {
-      index = containerRecordIndex;
-      currentRecordBySection.set(matchedDefinition.section, index);
-      nextRecordBySection.set(matchedDefinition.section, Math.max(nextRecordBySection.get(matchedDefinition.section) || 0, index + 1));
-    } else if (repeatable && Number.isInteger(normalizedRecordIndex) && normalizedRecordIndex >= 0) {
+    if (repeatable && isUsableRecordIndex(normalizedRecordIndex, matchedDefinition)) {
       index = normalizedRecordIndex;
       currentRecordBySection.set(matchedDefinition.section, index);
       nextRecordBySection.set(matchedDefinition.section, Math.max(nextRecordBySection.get(matchedDefinition.section) || 0, index + 1));
-    } else if (repeatable && sectionsWithAnchors.has(matchedDefinition.section)) {
-      if (anchorKeys[matchedDefinition.section] === matchedDefinition.key) {
-        const duplicateAdjacentAnchor = lastMatchedKeyBySection.get(matchedDefinition.section) === matchedDefinition.key;
-        index = duplicateAdjacentAnchor
-          ? currentRecordBySection.get(matchedDefinition.section) ?? 0
-          : nextRecordBySection.get(matchedDefinition.section) || 0;
-        if (!duplicateAdjacentAnchor) nextRecordBySection.set(matchedDefinition.section, index + 1);
-        currentRecordBySection.set(matchedDefinition.section, index);
-      } else {
-        index = currentRecordBySection.get(matchedDefinition.section) ?? 0;
-      }
+    } else if (repeatable && isUsableRecordIndex(containerRecordIndex, matchedDefinition)) {
+      index = containerRecordIndex;
+      currentRecordBySection.set(matchedDefinition.section, index);
+      nextRecordBySection.set(matchedDefinition.section, Math.max(nextRecordBySection.get(matchedDefinition.section) || 0, index + 1));
+    } else if (repeatable && sectionsWithAnchors.has(matchedDefinition.section)
+      && anchorKeys[matchedDefinition.section] === matchedDefinition.key) {
+      const duplicateAdjacentAnchor = lastMatchedKeyBySection.get(matchedDefinition.section) === matchedDefinition.key;
+      index = duplicateAdjacentAnchor
+        ? currentRecordBySection.get(matchedDefinition.section) ?? 0
+        : nextRecordBySection.get(matchedDefinition.section) || 0;
+      if (!duplicateAdjacentAnchor) nextRecordBySection.set(matchedDefinition.section, index + 1);
+      currentRecordBySection.set(matchedDefinition.section, index);
+    } else if (repeatable) {
+      index = takeNextOccurrenceIndex(occurrence, getRepeatableOccurrenceKey(matchedDefinition, signals));
+      currentRecordBySection.set(matchedDefinition.section, index);
     } else {
-      index = occurrence.get(matchedDefinition.key) || 0;
-      occurrence.set(matchedDefinition.key, index + 1);
+      index = takeNextOccurrenceIndex(occurrence, matchedDefinition.key);
     }
     if (repeatable) lastMatchedKeyBySection.set(matchedDefinition.section, matchedDefinition.key);
     matched += 1;
