@@ -60,7 +60,7 @@
     { key: "project.role", section: "project", aliases: ["项目角色", "担任角色", "项目职务", "projectrole", "roleinproject"], values: projects.map((item) => item.role) },
     { key: "project.startDate", section: "project", aliases: ["项目开始时间", "项目开始日期", "projectstartdate", "startdate"], values: projects.map((item) => item.startDate), date: true },
     { key: "project.endDate", section: "project", aliases: ["项目结束时间", "项目结束日期", "projectenddate", "enddate"], values: projects.map((item) => item.endDate), date: true },
-    { key: "project.description", section: "project", aliases: ["项目描述", "项目内容", "项目经历", "projectdescription", "projectdetails"], values: projects.map((item) => joinBullets(item.bullets)), multiline: true },
+    { key: "project.description", section: "project", aliases: ["项目描述", "项目内容", "项目职责", "项目成果", "项目业绩", "项目详情", "项目介绍", "项目经历", "项目经历描述", "负责内容", "主要内容", "个人贡献", "职责描述", "经历描述", "描述", "projectdescription", "projectdetails", "projectresponsibilities", "projectduties", "projectachievements", "responsibilities", "responsibility", "duties", "duty", "achievements", "contribution", "description"], values: projects.map((item) => joinBullets(item.bullets)), multiline: true },
     { key: "project.keywords", section: "project", aliases: ["项目关键词", "项目技能", "技术栈", "projectskills", "technologies", "techstack"], values: projects.map((item) => item.keywords) },
 
     { key: "skills", section: "skills", aliases: ["技能", "专业技能", "技能特长", "skills", "technicalskills", "competencies"], values: [(content.skills || []).flatMap((group) => group.skills || []).filter(Boolean).join("、")], multiline: true },
@@ -154,7 +154,7 @@
   function detectSectionFromText(value) {
     const text = normalize(value);
     if (/获奖名称|奖项名称|荣誉名称|获奖时间|awardname|awardtitle/.test(text)) return "awards";
-    if (/项目名称|项目角色|项目链接|projectname|projectrole/.test(text)) return "project";
+    if (/项目经历|项目名称|项目角色|项目链接|项目描述|项目内容|projectexperience|projectname|projectrole|projectdescription/.test(text)) return "project";
     if (/学校名称|毕业院校|入学时间|毕业时间|schoolname|educationlevel/.test(text)) return "education";
     if (/公司名称|工作经历|实习经历|任职经历|companyname|workexperience|employment/.test(text)) return "work";
     if (/校园经历名称|学生工作名称|社团名称|活动名称|campustitle|activityname/.test(text)) return "campus";
