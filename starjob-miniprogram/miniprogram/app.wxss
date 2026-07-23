@@ -1,0 +1,123 @@
+page {
+  --color-ink: #17243a;
+  --color-ink-soft: #5f6875;
+  --color-muted: #8b919a;
+  --color-paper: #f4f3ef;
+  --color-surface: #faf9f6;
+  --color-line: rgba(23, 36, 58, 0.12);
+  --color-gold: #bd8619;
+  --color-gold-pressed: #95660d;
+  --color-blue: #5279a9;
+  --color-danger: #ad3f3f;
+  --radius-control: 18rpx;
+  --radius-panel: 28rpx;
+
+  min-height: 100%;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 28rpx;
+  line-height: 1.55;
+}
+
+view,
+text,
+button,
+input,
+textarea,
+image,
+scroll-view {
+  box-sizing: border-box;
+}
+
+button {
+  margin: 0;
+  font: inherit;
+}
+
+button::after {
+  border: 0;
+}
+
+.page-shell {
+  min-height: 100vh;
+  padding: 32rpx 32rpx calc(48rpx + env(safe-area-inset-bottom));
+}
+
+.page-title {
+  margin: 0;
+  font-size: 44rpx;
+  font-weight: 680;
+  letter-spacing: -1rpx;
+  line-height: 1.2;
+}
+
+.page-description {
+  margin-top: 12rpx;
+  color: var(--color-ink-soft);
+  font-size: 27rpx;
+}
+
+.primary-button,
+.secondary-button {
+  min-height: 88rpx;
+  border-radius: var(--radius-control);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 29rpx;
+  font-weight: 620;
+  line-height: 1;
+}
+
+.primary-button {
+  background: var(--color-ink);
+  color: #fff;
+}
+
+.primary-button[disabled] {
+  background: #aeb2b8;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.primary-button:active {
+  transform: scale(0.985);
+}
+
+.secondary-button {
+  border: 1rpx solid var(--color-line);
+  background: transparent;
+  color: var(--color-ink);
+}
+
+.inline-error {
+  margin-top: 20rpx;
+  padding: 20rpx 22rpx;
+  border-left: 5rpx solid var(--color-danger);
+  background: rgba(173, 63, 63, 0.06);
+  color: #7d3030;
+  font-size: 26rpx;
+}
+
+.skeleton-line {
+  height: 24rpx;
+  border-radius: 10rpx;
+  background: rgba(23, 36, 58, 0.08);
+  animation: skeleton-pulse 1.25s ease-in-out infinite;
+}
+
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-line {
+    animation: none;
+  }
+}

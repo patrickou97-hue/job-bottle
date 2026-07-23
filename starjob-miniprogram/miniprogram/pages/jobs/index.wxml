@@ -1,0 +1,134 @@
+<view class="jobs-page">
+  <view class="hero">
+    <view class="brand-row">
+      <image
+        class="brand-mark"
+        src="/assets/starjob-mark.png"
+        mode="aspectFit"
+      />
+      <text class="brand-name">拾星</text>
+      <text class="source-note" wx:if="{{isSampleData}}">界面样例</text>
+    </view>
+
+    <view class="title-row">
+      <view>
+        <text class="hero-title">岗位坐标</text>
+        <text class="hero-description">找到值得认真投递的下一站</text>
+      </view>
+      <view class="coordinate-mark" aria-hidden="true">
+        <view class="coordinate-ring"></view>
+        <view class="coordinate-star"></view>
+      </view>
+    </view>
+
+    <view class="search-field">
+      <input
+        class="search-input"
+        value="{{keyword}}"
+        placeholder="搜索公司或岗位"
+        placeholder-class="search-placeholder"
+        confirm-type="search"
+        bindinput="onKeywordInput"
+      />
+    </view>
+  </view>
+
+  <view class="filter-section">
+    <scroll-view class="chip-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+      <view class="chip-row">
+        <button
+          wx:for="{{cityOptions}}"
+          wx:key="*this"
+          class="filter-chip {{selectedCity === item ? 'filter-chip-active' : ''}}"
+          data-city="{{item}}"
+          bindtap="onCityTap"
+        >
+          {{item}}
+        </button>
+      </view>
+    </scroll-view>
+
+    <scroll-view class="chip-scroll category-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+      <view class="chip-row">
+        <button
+          wx:for="{{categoryOptions}}"
+          wx:key="*this"
+          class="filter-chip filter-chip-secondary {{selectedCategory === item ? 'filter-chip-active' : ''}}"
+          data-category="{{item}}"
+          bindtap="onCategoryTap"
+        >
+          {{item}}
+        </button>
+      </view>
+    </scroll-view>
+  </view>
+
+  <view class="result-header">
+    <view class="scope-switch" role="tablist">
+      <button
+        class="scope-button {{scope === 'all' ? 'scope-button-active' : ''}}"
+        data-scope="all"
+        bindtap="onScopeTap"
+      >
+        全部岗位
+      </button>
+      <button
+        class="scope-button {{scope === 'recent' ? 'scope-button-active' : ''}}"
+        data-scope="recent"
+        bindtap="onScopeTap"
+      >
+        近 7 天
+      </button>
+    </view>
+    <text class="result-count" wx:if="{{!loading && !errorMessage}}">{{jobs.length}} 个结果</text>
+  </view>
+
+  <view class="job-list" wx:if="{{loading}}">
+    <view class="job-skeleton" wx:for="{{[1, 2, 3]}}" wx:key="*this">
+      <view class="skeleton-line skeleton-company"></view>
+      <view class="skeleton-line skeleton-role"></view>
+      <view class="skeleton-line skeleton-meta"></view>
+    </view>
+  </view>
+
+  <view class="state-panel" wx:elif="{{errorMessage}}">
+    <text class="state-title">岗位暂时没有加载出来</text>
+    <text class="state-copy">{{errorMessage}}</text>
+    <button class="secondary-button state-action" bindtap="onRetry">重新加载</button>
+  </view>
+
+  <view class="state-panel" wx:elif="{{jobs.length === 0}}">
+    <text class="state-title">没有符合条件的岗位</text>
+    <text class="state-copy">换一个城市、方向或关键词再试试。</text>
+  </view>
+
+  <view class="job-list" wx:else>
+    <button
+      wx:for="{{jobs}}"
+      wx:key="id"
+      class="job-row"
+      data-id="{{item.id}}"
+      bindtap="onJobTap"
+      hover-class="job-row-pressed"
+    >
+      <view class="job-main">
+        <view class="job-heading">
+          <text class="company-name">{{item.companyName}}</text>
+          <text class="recent-dot" wx:if="{{item.isRecent}}">新</text>
+        </view>
+        <text class="job-title">{{item.jobTitles}}</text>
+        <view class="job-meta">
+          <text>{{item.locations}}</text>
+          <text class="meta-divider">·</text>
+          <text>{{item.categoryLabel}}</text>
+          <text class="meta-divider">·</text>
+          <text>{{item.batchType}}</text>
+        </view>
+      </view>
+      <view class="job-side">
+        <text class="deadline">{{item.deadlineLabel}}</text>
+        <text class="row-arrow">›</text>
+      </view>
+    </button>
+  </view>
+</view>

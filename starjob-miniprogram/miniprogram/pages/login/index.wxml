@@ -1,0 +1,41 @@
+<view class="login-page">
+  <view class="space-field" aria-hidden="true">
+    <view class="orbit orbit-large"></view>
+    <view class="orbit orbit-small"></view>
+    <view class="space-star star-one"></view>
+    <view class="space-star star-two"></view>
+    <view class="space-star star-three"></view>
+  </view>
+
+  <view class="login-content">
+    <image class="login-mark" src="/assets/starjob-mark.png" mode="aspectFit" />
+    <text class="login-brand">拾星</text>
+    <text class="login-title">把值得投递的机会，留在同一片星图里</text>
+    <text class="login-copy">登录后，你的网站资料、星瓶、投递进度和简历会使用同一套线上数据。</text>
+
+    <view class="privacy-line">
+      <checkbox-group bindchange="onAgreementChange">
+        <label class="privacy-label">
+          <checkbox
+            value="agreed"
+            checked="{{agreed}}"
+            color="#BD8619"
+          />
+          <text>我已阅读并同意《用户协议》和《隐私政策》</text>
+        </label>
+      </checkbox-group>
+    </view>
+
+    <view class="login-error" wx:if="{{errorMessage}}">{{errorMessage}}</view>
+
+    <button
+      class="wechat-button"
+      loading="{{submitting}}"
+      disabled="{{submitting}}"
+      bindtap="onLogin"
+    >
+      微信登录
+    </button>
+    <text class="security-note">微信临时 code 只发送到拾星服务端，AppSecret 不会进入小程序。</text>
+  </view>
+</view>

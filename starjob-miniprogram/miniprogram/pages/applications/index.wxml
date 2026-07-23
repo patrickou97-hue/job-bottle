@@ -1,0 +1,56 @@
+<view class="page-shell applications-page">
+  <view class="page-header">
+    <text class="page-title">投递进度</text>
+    <text class="page-description">每一步都有记录，下一步也更清楚。</text>
+  </view>
+
+  <view class="auth-state" wx:if="{{!authenticated}}">
+    <view class="orbit-symbol" aria-hidden="true">
+      <view class="orbit-core"></view>
+    </view>
+    <text class="state-title">登录后查看投递轨道</text>
+    <text class="state-copy">网站和小程序会使用同一份投递记录。</text>
+    <button class="primary-button state-action" bindtap="onLogin">微信登录</button>
+  </view>
+
+  <view wx:elif="{{loading}}" class="application-list">
+    <view class="application-skeleton" wx:for="{{[1, 2, 3]}}" wx:key="*this">
+      <view class="skeleton-line skeleton-company"></view>
+      <view class="skeleton-line skeleton-role"></view>
+      <view class="skeleton-line skeleton-status"></view>
+    </view>
+  </view>
+
+  <view class="state-panel" wx:elif="{{errorMessage}}">
+    <text class="state-title">投递记录暂时没有加载出来</text>
+    <text class="state-copy">{{errorMessage}}</text>
+    <button class="secondary-button state-action" bindtap="onRetry">重新加载</button>
+  </view>
+
+  <view class="state-panel" wx:elif="{{applications.length === 0}}">
+    <text class="state-title">还没有投递记录</text>
+    <text class="state-copy">先找到一个岗位，把它收进星瓶。</text>
+    <button class="primary-button state-action" bindtap="onExplore">浏览岗位</button>
+  </view>
+
+  <view class="application-list" wx:else>
+    <button
+      wx:for="{{applications}}"
+      wx:key="id"
+      class="application-row"
+      data-job-id="{{item.jobId}}"
+      bindtap="onApplicationTap"
+    >
+      <view class="application-status">
+        <view class="status-dot"></view>
+        <text>{{item.statusLabel}}</text>
+      </view>
+      <text class="application-company">{{item.job.companyName}}</text>
+      <text class="application-role">{{item.job.jobTitles}}</text>
+      <view class="application-footer">
+        <text>{{item.job.locations}}</text>
+        <text>{{item.updatedLabel}}</text>
+      </view>
+    </button>
+  </view>
+</view>

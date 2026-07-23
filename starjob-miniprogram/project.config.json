@@ -1,0 +1,19 @@
+{
+  "appid": "wxb6a7c94631bf776e",
+  "compileType": "miniprogram",
+  "libVersion": "trial",
+  "miniprogramRoot": "miniprogram/",
+  "projectname": "starjob-miniprogram",
+  "setting": {
+    "checkSiteMap": true,
+    "coverView": true,
+    "es6": true,
+    "lazyloadPlaceholderEnable": true,
+    "minified": true,
+    "postcss": true,
+    "useCompilerPlugins": [
+      "typescript"
+    ],
+    "useIsolateContext": true
+  }
+}

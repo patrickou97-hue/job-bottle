@@ -1,0 +1,66 @@
+<view class="page-shell profile-page">
+  <view class="profile-heading">
+    <image class="profile-mark" src="/assets/starjob-mark.png" mode="aspectFit" />
+    <view>
+      <text class="page-title">我的拾星</text>
+      <text class="page-description">资料、偏好与账号安全</text>
+    </view>
+  </view>
+
+  <view class="state-panel" wx:if="{{!authenticated}}">
+    <text class="state-title">登录后同步个人资料</text>
+    <text class="state-copy">不会根据微信昵称自动合并网站账号。</text>
+    <button class="primary-button state-action" bindtap="onLogin">微信登录</button>
+  </view>
+
+  <view class="profile-loading" wx:elif="{{loading}}">
+    <view class="skeleton-line skeleton-name"></view>
+    <view class="skeleton-line skeleton-detail"></view>
+    <view class="skeleton-line skeleton-detail"></view>
+  </view>
+
+  <view class="state-panel" wx:elif="{{errorMessage}}">
+    <text class="state-title">个人资料暂时没有加载出来</text>
+    <text class="state-copy">{{errorMessage}}</text>
+    <button class="secondary-button state-action" bindtap="onRetry">重新加载</button>
+  </view>
+
+  <block wx:elif="{{profile}}">
+    <view class="profile-identity">
+      <text class="profile-name">{{profile.displayName || '拾星用户'}}</text>
+      <text class="profile-summary">
+        {{profile.school || '学校待完善'}}
+        ·
+        {{profile.graduationYear || '毕业年份待完善'}}
+      </text>
+    </view>
+
+    <view class="profile-section">
+      <text class="section-title">求职偏好</text>
+      <view class="preference-row">
+        <text class="preference-label">地区</text>
+        <text class="preference-value">{{profile.preferredRegionsLabel}}</text>
+      </view>
+      <view class="preference-row">
+        <text class="preference-label">方向</text>
+        <text class="preference-value">{{profile.targetRolesLabel}}</text>
+      </view>
+    </view>
+
+    <view class="profile-section">
+      <text class="section-title">账号与支持</text>
+      <button class="menu-row" bindtap="onFeedback">
+        <text>问题反馈</text>
+        <text class="menu-arrow">›</text>
+      </button>
+      <button
+        class="menu-row danger-row"
+        loading="{{loggingOut}}"
+        disabled="{{loggingOut}}"
+        bindtap="onLogout"
+      >
+        <text>退出登录</text>
+      </button>
+    </view>
+  </block>
+</view>

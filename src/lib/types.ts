@@ -203,6 +203,26 @@ export type AnalyticsEvent = {
   created_at: string;
 };
 
+export type WechatIdentity = {
+  id: string;
+  user_id: string;
+  openid_hash: string;
+  unionid_hash: string | null;
+  created_at: string;
+  updated_at: string;
+  last_login_at: string;
+};
+
+export type MiniProgramSession = {
+  id: string;
+  user_id: string;
+  refresh_token_hash: string;
+  expires_at: string;
+  revoked_at: string | null;
+  created_at: string;
+  last_used_at: string;
+};
+
 export type ForumPostWithComments = ForumPostView & {
   comments: ForumCommentView[];
 };
@@ -422,6 +442,43 @@ export type Database = {
         Update: {
           event?: string;
           props?: Record<string, unknown>;
+        };
+        Relationships: [];
+      };
+      wechat_identities: {
+        Row: WechatIdentity;
+        Insert: {
+          id?: string;
+          user_id: string;
+          openid_hash: string;
+          unionid_hash?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          last_login_at?: string;
+        };
+        Update: {
+          unionid_hash?: string | null;
+          updated_at?: string;
+          last_login_at?: string;
+        };
+        Relationships: [];
+      };
+      miniprogram_sessions: {
+        Row: MiniProgramSession;
+        Insert: {
+          id?: string;
+          user_id: string;
+          refresh_token_hash: string;
+          expires_at: string;
+          revoked_at?: string | null;
+          created_at?: string;
+          last_used_at?: string;
+        };
+        Update: {
+          refresh_token_hash?: string;
+          expires_at?: string;
+          revoked_at?: string | null;
+          last_used_at?: string;
         };
         Relationships: [];
       };

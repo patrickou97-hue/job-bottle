@@ -1,0 +1,5 @@
+.venv/
+node_modules/
+miniprogram_npm/
+output/
+project.private.config.json

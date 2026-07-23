@@ -1,0 +1,84 @@
+<view class="detail-page">
+  <view class="detail-loading" wx:if="{{loading}}">
+    <view class="skeleton-line detail-skeleton-company"></view>
+    <view class="skeleton-line detail-skeleton-title"></view>
+    <view class="skeleton-line detail-skeleton-meta"></view>
+    <view class="skeleton-line detail-skeleton-body"></view>
+    <view class="skeleton-line detail-skeleton-body detail-skeleton-short"></view>
+  </view>
+
+  <view class="state-panel" wx:elif="{{errorMessage}}">
+    <text class="state-title">岗位暂时无法打开</text>
+    <text class="state-copy">{{errorMessage}}</text>
+    <button class="secondary-button state-action" bindtap="onRetry">重新加载</button>
+  </view>
+
+  <block wx:elif="{{job}}">
+    <view class="detail-header">
+      <view class="detail-source" wx:if="{{isSampleData}}">界面联调样例</view>
+      <text class="detail-company">{{job.companyName}}</text>
+      <text class="detail-title">{{job.jobTitles}}</text>
+      <view class="detail-meta">
+        <text>{{job.locations}}</text>
+        <text class="meta-divider">·</text>
+        <text>{{job.batchType}}</text>
+        <text class="meta-divider">·</text>
+        <text>{{job.industry}}</text>
+      </view>
+    </view>
+
+    <view class="date-strip">
+      <view class="date-item">
+        <text class="date-label">开放</text>
+        <text class="date-value">{{job.openLabel}}</text>
+      </view>
+      <view class="date-item">
+        <text class="date-label">截止</text>
+        <text class="date-value">{{job.closeLabel}}</text>
+      </view>
+    </view>
+
+    <view class="detail-section" wx:if="{{job.responsibilities}}">
+      <text class="section-title">你会做什么</text>
+      <text class="section-body" user-select>{{job.responsibilities}}</text>
+    </view>
+
+    <view class="detail-section" wx:if="{{job.mustHave}}">
+      <text class="section-title">岗位要求</text>
+      <text class="section-body" user-select>{{job.mustHave}}</text>
+    </view>
+
+    <view class="detail-section" wx:if="{{job.preferredQualifications}}">
+      <text class="section-title">加分项</text>
+      <text class="section-body" user-select>{{job.preferredQualifications}}</text>
+    </view>
+
+    <view class="detail-section" wx:if="{{job.notes}}">
+      <text class="section-title">补充说明</text>
+      <text class="section-body" user-select>{{job.notes}}</text>
+    </view>
+
+    <view class="apply-note">
+      <text class="apply-note-title">关于官网投递</text>
+      <text class="apply-note-copy">微信可能限制直接打开外部招聘网站。复制链接后，请在系统浏览器中继续投递。</text>
+    </view>
+
+    <view class="action-bar">
+      <button
+        class="secondary-button save-button"
+        loading="{{saving}}"
+        disabled="{{isSampleData || saving}}"
+        bindtap="onSave"
+      >
+        {{isSampleData ? '样例不可收录' : '加入星瓶'}}
+      </button>
+      <button
+        class="primary-button apply-button"
+        disabled="{{isSampleData}}"
+        bindtap="onCopyApplyLink"
+      >
+        {{isSampleData ? '样例无投递链接' : '复制投递链接'}}
+      </button>
+    </view>
+  </block>
+</view>

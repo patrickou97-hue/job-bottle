@@ -1,0 +1,137 @@
+.page-header {
+  padding: 18rpx 0 34rpx;
+  border-bottom: 1rpx solid var(--color-line);
+}
+
+.auth-state,
+.state-panel {
+  margin-top: 56rpx;
+  padding: 54rpx 0;
+  border-top: 1rpx solid var(--color-line);
+  border-bottom: 1rpx solid var(--color-line);
+  text-align: center;
+}
+
+.orbit-symbol {
+  position: relative;
+  width: 106rpx;
+  height: 106rpx;
+  margin: 0 auto 28rpx;
+  border: 1rpx solid rgba(82, 121, 169, 0.34);
+  border-radius: 50%;
+}
+
+.orbit-symbol::before {
+  content: "";
+  position: absolute;
+  inset: 24rpx;
+  border: 1rpx solid rgba(82, 121, 169, 0.2);
+  border-radius: 50%;
+}
+
+.orbit-core {
+  position: absolute;
+  left: 47rpx;
+  top: 47rpx;
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  background: var(--color-gold);
+  box-shadow: 0 0 20rpx rgba(189, 134, 25, 0.42);
+}
+
+.state-title,
+.state-copy {
+  display: block;
+}
+
+.state-title {
+  font-size: 31rpx;
+  font-weight: 660;
+}
+
+.state-copy {
+  margin-top: 14rpx;
+  color: var(--color-ink-soft);
+  font-size: 25rpx;
+}
+
+.state-action {
+  width: 240rpx;
+  margin: 30rpx auto 0;
+}
+
+.application-list {
+  margin-top: 22rpx;
+}
+
+.application-row {
+  width: 100%;
+  padding: 30rpx 0;
+  border-bottom: 1rpx solid var(--color-line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-ink);
+  text-align: left;
+}
+
+.application-status {
+  display: flex;
+  align-items: center;
+  color: var(--color-blue);
+  font-size: 22rpx;
+  font-weight: 620;
+}
+
+.status-dot {
+  width: 10rpx;
+  height: 10rpx;
+  margin-right: 10rpx;
+  border-radius: 50%;
+  background: var(--color-gold);
+}
+
+.application-company,
+.application-role {
+  display: block;
+}
+
+.application-company {
+  margin-top: 18rpx;
+  color: var(--color-ink-soft);
+  font-size: 24rpx;
+}
+
+.application-role {
+  margin-top: 6rpx;
+  font-size: 32rpx;
+  font-weight: 660;
+}
+
+.application-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 18rpx;
+  color: var(--color-muted);
+  font-size: 22rpx;
+}
+
+.application-skeleton {
+  padding: 32rpx 0;
+  border-bottom: 1rpx solid var(--color-line);
+}
+
+.skeleton-company {
+  width: 30%;
+}
+
+.skeleton-role {
+  width: 70%;
+  height: 34rpx;
+  margin-top: 18rpx;
+}
+
+.skeleton-status {
+  width: 50%;
+  margin-top: 22rpx;
+}

@@ -1,0 +1,41 @@
+<view class="page-shell resumes-page">
+  <view class="page-header">
+    <text class="page-title">我的简历</text>
+    <text class="page-description">先查看和维护基础信息，复杂排版继续留在网页端。</text>
+  </view>
+
+  <view class="state-panel" wx:if="{{!authenticated}}">
+    <text class="state-title">登录后同步简历</text>
+    <text class="state-copy">小程序不会把简历复制到第二套数据库。</text>
+    <button class="primary-button state-action" bindtap="onLogin">微信登录</button>
+  </view>
+
+  <view wx:elif="{{loading}}" class="resume-list">
+    <view class="resume-skeleton" wx:for="{{[1, 2]}}" wx:key="*this">
+      <view class="skeleton-line skeleton-title"></view>
+      <view class="skeleton-line skeleton-meta"></view>
+    </view>
+  </view>
+
+  <view class="state-panel" wx:elif="{{errorMessage}}">
+    <text class="state-title">简历暂时没有加载出来</text>
+    <text class="state-copy">{{errorMessage}}</text>
+    <button class="secondary-button state-action" bindtap="onRetry">重新加载</button>
+  </view>
+
+  <view class="state-panel" wx:elif="{{resumes.length === 0}}">
+    <text class="state-title">还没有云端简历</text>
+    <text class="state-copy">首期小程序只读取真实云端简历，不会创建无法同步的本地副本。</text>
+  </view>
+
+  <view class="resume-list" wx:else>
+    <view wx:for="{{resumes}}" wx:key="id" class="resume-row">
+      <view class="resume-mark">{{index + 1}}</view>
+      <view class="resume-content">
+        <text class="resume-title">{{item.title}}</text>
+        <text class="resume-role">{{item.targetRole || '未设置求职方向'}}</text>
+        <text class="resume-updated">{{item.updatedLabel}}</text>
+      </view>
+    </view>
+  </view>
+</view>

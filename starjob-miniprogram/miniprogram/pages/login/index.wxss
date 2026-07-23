@@ -1,0 +1,159 @@
+page {
+  background: #0b1220;
+  color: #f7f7f4;
+}
+
+.login-page {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  background: #0b1220;
+}
+
+.space-field {
+  position: absolute;
+  inset: 0;
+  opacity: 0.9;
+}
+
+.orbit {
+  position: absolute;
+  border: 1rpx solid rgba(124, 158, 198, 0.18);
+  border-radius: 50%;
+}
+
+.orbit-large {
+  top: 86rpx;
+  right: -260rpx;
+  width: 620rpx;
+  height: 620rpx;
+}
+
+.orbit-small {
+  top: 188rpx;
+  right: -106rpx;
+  width: 300rpx;
+  height: 300rpx;
+}
+
+.space-star {
+  position: absolute;
+  width: 5rpx;
+  height: 5rpx;
+  border-radius: 50%;
+  background: #8bb3df;
+  box-shadow: 0 0 14rpx rgba(139, 179, 223, 0.7);
+}
+
+.star-one {
+  top: 166rpx;
+  left: 98rpx;
+}
+
+.star-two {
+  top: 344rpx;
+  right: 88rpx;
+}
+
+.star-three {
+  top: 510rpx;
+  left: 52rpx;
+  background: #d7ad52;
+}
+
+.login-content {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  padding: calc(86rpx + env(safe-area-inset-top)) 48rpx
+    calc(52rpx + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+}
+
+.login-mark {
+  width: 82rpx;
+  height: 82rpx;
+  border-radius: 22rpx;
+}
+
+.login-brand {
+  margin-top: 22rpx;
+  color: #d8b15b;
+  font-size: 25rpx;
+  font-weight: 680;
+  letter-spacing: 5rpx;
+}
+
+.login-title {
+  max-width: 600rpx;
+  margin-top: 40rpx;
+  font-size: 54rpx;
+  font-weight: 700;
+  letter-spacing: -1.5rpx;
+  line-height: 1.28;
+}
+
+.login-copy {
+  max-width: 590rpx;
+  margin-top: 24rpx;
+  color: rgba(234, 239, 247, 0.7);
+  font-size: 27rpx;
+  line-height: 1.72;
+}
+
+.privacy-line {
+  margin-top: auto;
+  padding-top: 64rpx;
+}
+
+.privacy-label {
+  display: flex;
+  align-items: flex-start;
+  color: rgba(234, 239, 247, 0.76);
+  font-size: 24rpx;
+  line-height: 1.5;
+}
+
+.privacy-label checkbox {
+  margin-right: 14rpx;
+  transform: scale(0.82);
+  transform-origin: left top;
+}
+
+.login-error {
+  margin-top: 22rpx;
+  padding: 18rpx 20rpx;
+  border-left: 5rpx solid #ce7676;
+  background: rgba(206, 118, 118, 0.12);
+  color: #f2c3c3;
+  font-size: 24rpx;
+}
+
+.wechat-button {
+  width: 100%;
+  min-height: 92rpx;
+  margin-top: 28rpx;
+  border-radius: 18rpx;
+  background: #f3f1ea;
+  color: #152238;
+  font-size: 29rpx;
+  font-weight: 680;
+  line-height: 92rpx;
+}
+
+.wechat-button[disabled] {
+  color: rgba(21, 34, 56, 0.58);
+}
+
+.wechat-button:active {
+  transform: scale(0.985);
+}
+
+.security-note {
+  margin-top: 18rpx;
+  color: rgba(234, 239, 247, 0.46);
+  font-size: 21rpx;
+  line-height: 1.55;
+  text-align: center;
+}

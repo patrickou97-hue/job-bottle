@@ -1,0 +1,132 @@
+.profile-heading {
+  display: flex;
+  align-items: center;
+  padding: 18rpx 0 34rpx;
+  border-bottom: 1rpx solid var(--color-line);
+}
+
+.profile-mark {
+  width: 82rpx;
+  height: 82rpx;
+  margin-right: 24rpx;
+  border-radius: 20rpx;
+}
+
+.state-panel {
+  margin-top: 56rpx;
+  padding: 54rpx 0;
+  border-top: 1rpx solid var(--color-line);
+  border-bottom: 1rpx solid var(--color-line);
+  text-align: center;
+}
+
+.state-title,
+.state-copy {
+  display: block;
+}
+
+.state-title {
+  font-size: 31rpx;
+  font-weight: 660;
+}
+
+.state-copy {
+  margin-top: 14rpx;
+  color: var(--color-ink-soft);
+  font-size: 25rpx;
+}
+
+.state-action {
+  width: 240rpx;
+  margin: 30rpx auto 0;
+}
+
+.profile-loading {
+  padding-top: 46rpx;
+}
+
+.skeleton-name {
+  width: 42%;
+  height: 38rpx;
+}
+
+.skeleton-detail {
+  width: 72%;
+  margin-top: 24rpx;
+}
+
+.profile-identity {
+  padding: 42rpx 0 36rpx;
+  border-bottom: 1rpx solid var(--color-line);
+}
+
+.profile-name,
+.profile-summary {
+  display: block;
+}
+
+.profile-name {
+  font-size: 40rpx;
+  font-weight: 680;
+}
+
+.profile-summary {
+  margin-top: 12rpx;
+  color: var(--color-ink-soft);
+  font-size: 25rpx;
+}
+
+.profile-section {
+  padding: 38rpx 0 10rpx;
+}
+
+.section-title {
+  display: block;
+  margin-bottom: 18rpx;
+  color: var(--color-muted);
+  font-size: 22rpx;
+  font-weight: 620;
+}
+
+.preference-row,
+.menu-row {
+  width: 100%;
+  min-height: 92rpx;
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid var(--color-line);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.preference-label {
+  flex: 0 0 110rpx;
+  color: var(--color-ink-soft);
+  font-size: 25rpx;
+}
+
+.preference-value {
+  flex: 1;
+  color: var(--color-ink);
+  font-size: 26rpx;
+  line-height: 1.6;
+  text-align: right;
+}
+
+.menu-row {
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-ink);
+  font-size: 27rpx;
+  text-align: left;
+}
+
+.menu-arrow {
+  color: var(--color-blue);
+  font-size: 38rpx;
+  line-height: 1;
+}
+
+.danger-row {
+  color: var(--color-danger);
+}

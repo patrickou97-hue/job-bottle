@@ -1,0 +1,43 @@
+{
+  "pages": [
+    "pages/jobs/index",
+    "pages/applications/index",
+    "pages/resumes/index",
+    "pages/profile/index",
+    "pages/jobs/detail",
+    "pages/login/index"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#F4F3EF",
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "拾星",
+    "backgroundColor": "#F4F3EF",
+    "backgroundTextStyle": "dark"
+  },
+  "tabBar": {
+    "color": "#777D87",
+    "selectedColor": "#17243A",
+    "backgroundColor": "#FAF9F6",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/jobs/index",
+        "text": "岗位"
+      },
+      {
+        "pagePath": "pages/applications/index",
+        "text": "投递"
+      },
+      {
+        "pagePath": "pages/resumes/index",
+        "text": "简历"
+      },
+      {
+        "pagePath": "pages/profile/index",
+        "text": "我的"
+      }
+    ]
+  },
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}
