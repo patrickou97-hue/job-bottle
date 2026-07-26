@@ -1,0 +1,170 @@
+.support-tabs {
+  margin-top: 30rpx;
+}
+
+.support-loading,
+.guide-list {
+  margin-top: 28rpx;
+}
+
+.support-skeleton {
+  padding: 28rpx 0;
+  border-bottom: 1rpx solid var(--color-line);
+}
+
+.support-skeleton-short {
+  width: 58%;
+  margin-top: 18rpx;
+}
+
+.guide-item {
+  display: block;
+  width: 100%;
+  padding: 28rpx 2rpx;
+  border-bottom: 1rpx solid var(--color-line);
+  background: transparent;
+  text-align: left;
+}
+
+.guide-meta {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  color: var(--color-muted);
+  font-size: 21rpx;
+}
+
+.guide-category,
+.guide-pinned {
+  padding: 4rpx 10rpx;
+  border-radius: 8rpx;
+  background: var(--color-accent-soft);
+  color: #57558b;
+}
+
+.guide-pinned {
+  background: #f3e9dd;
+  color: #7a552b;
+}
+
+.guide-date {
+  margin-left: auto;
+}
+
+.guide-title,
+.guide-content,
+.guide-toggle {
+  display: block;
+}
+
+.guide-title {
+  margin-top: 16rpx;
+  font-size: 31rpx;
+  font-weight: 680;
+  line-height: 1.35;
+}
+
+.guide-content {
+  display: -webkit-box;
+  overflow: hidden;
+  margin-top: 14rpx;
+  color: var(--color-ink-soft);
+  font-size: 25rpx;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.guide-content-expanded {
+  display: block;
+  overflow: visible;
+}
+
+.guide-toggle {
+  margin-top: 14rpx;
+  color: var(--color-navy);
+  font-size: 23rpx;
+  font-weight: 620;
+}
+
+.feedback-panel {
+  margin-top: 34rpx;
+}
+
+.section-title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 680;
+}
+
+.feedback-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 18rpx;
+}
+
+.feedback-type {
+  min-height: 62rpx;
+  padding: 0 20rpx;
+  border: 1rpx solid var(--color-line);
+  border-radius: 31rpx;
+  background: transparent;
+  color: var(--color-ink-soft);
+  font-size: 23rpx;
+  line-height: 62rpx;
+}
+
+.feedback-type-active {
+  border-color: var(--color-navy);
+  background: var(--color-navy);
+  color: #fff;
+}
+
+.feedback-field {
+  display: block;
+  margin-top: 36rpx;
+}
+
+.feedback-helper,
+.privacy-copy,
+.feedback-message {
+  display: block;
+}
+
+.feedback-helper {
+  margin-top: 9rpx;
+  color: var(--color-muted);
+  font-size: 23rpx;
+}
+
+.feedback-textarea {
+  width: 100%;
+  min-height: 280rpx;
+  margin-top: 18rpx;
+  padding: 22rpx;
+  border: 1rpx solid var(--color-line);
+  border-radius: var(--radius-control);
+  background: #fff;
+  font-size: 27rpx;
+  line-height: 1.6;
+}
+
+.feedback-message {
+  margin-top: 18rpx;
+  color: var(--color-ink-soft);
+  font-size: 24rpx;
+}
+
+.feedback-submit {
+  margin-top: 24rpx;
+}
+
+.privacy-copy {
+  margin-top: 16rpx;
+  color: var(--color-muted);
+  font-size: 21rpx;
+  line-height: 1.55;
+  text-align: center;
+}

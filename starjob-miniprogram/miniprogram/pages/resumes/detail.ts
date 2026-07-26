@@ -74,6 +74,13 @@ Page({
   onRetry() {
     void this.loadResume();
   },
+
+  onEdit() {
+    if (!this.data.id) return;
+    wx.redirectTo({
+      url: `/pages/resumes/editor?id=${encodeURIComponent(this.data.id)}`,
+    });
+  },
 });
 
 function toPreview(resume: ResumeDetail): ResumePreview {

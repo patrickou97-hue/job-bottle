@@ -123,6 +123,14 @@ export async function PUT(request: NextRequest) {
       candidateStage?: unknown;
       note?: unknown;
       nextAction?: unknown;
+      nextActionAt?: unknown;
+      priority?: unknown;
+      applicationChannel?: unknown;
+      applicationAccount?: unknown;
+      contactName?: unknown;
+      resumeId?: unknown;
+      customStageLabel?: unknown;
+      reviewNote?: unknown;
     };
     if (typeof body.id !== "string" || !body.id) {
       return NextResponse.json({ error: "星瓶记录无效。" }, { status: 400 });
@@ -132,7 +140,48 @@ export async function PUT(request: NextRequest) {
     if (!status || !candidateStage) {
       return NextResponse.json({ error: "投递状态无效。" }, { status: 400 });
     }
+    const priority = body.priority === undefined
+      ? undefined
+      : typeof body.priority === "number" &&
+      Number.isInteger(body.priority) &&
+      body.priority >= 0 &&
+      body.priority <= 3
+        ? body.priority
+        : null;
+    if (priority === null) {
+      return NextResponse.json({ error: "优先级无效。" }, { status: 400 });
+    }
+    const nextActionAt = body.nextActionAt === undefined
+      ? undefined
+      : parseOptionalDate(body.nextActionAt);
+    if (body.nextActionAt !== undefined && nextActionAt === undefined) {
+      return NextResponse.json(
+        { error: "下一步时间格式无效。" },
+        { status: 400 },
+      );
+    }
+    const resumeId = body.resumeId === undefined
+      ? undefined
+      : parseOptionalUuid(body.resumeId);
+    if (body.resumeId !== undefined && resumeId === undefined) {
+      return NextResponse.json({ error: "关联简历无效。" }, { status: 400 });
+    }
     const admin = createAdminClient();
+    if (typeof resumeId === "string") {
+      const { data: resume, error: resumeError } = await admin
+        .from("resumes")
+        .select("id")
+        .eq("id", resumeId)
+        .eq("user_id", identity.sub)
+        .maybeSingle();
+      if (resumeError) throw resumeError;
+      if (!resume) {
+        return NextResponse.json(
+          { error: "关联简历不存在或不属于当前账号。" },
+          { status: 400 },
+        );
+      }
+    }
     const { data: application, error } = await admin
       .from("user_applications")
       .update({
@@ -140,6 +189,24 @@ export async function PUT(request: NextRequest) {
         candidate_stage: candidateStage,
         note: cleanText(body.note, 1000),
         next_action: cleanText(body.nextAction, 300),
+        ...(nextActionAt !== undefined ? { next_action_at: nextActionAt } : {}),
+        ...(priority !== undefined ? { priority } : {}),
+        ...(body.applicationChannel !== undefined
+          ? { application_channel: optionalText(body.applicationChannel, 80) }
+          : {}),
+        ...(body.applicationAccount !== undefined
+          ? { application_account: optionalText(body.applicationAccount, 160) }
+          : {}),
+        ...(body.contactName !== undefined
+          ? { contact_name: optionalText(body.contactName, 120) }
+          : {}),
+        ...(resumeId !== undefined ? { resume_id: resumeId } : {}),
+        ...(body.customStageLabel !== undefined
+          ? { custom_stage_label: optionalText(body.customStageLabel, 40) }
+          : {}),
+        ...(body.reviewNote !== undefined
+          ? { review_note: optionalText(body.reviewNote, 3000) }
+          : {}),
         updated_at: new Date().toISOString(),
       })
       .eq("id", body.id)
@@ -193,6 +260,33 @@ function parseStatus(value: unknown) {
 
 function cleanText(value: unknown, maxLength: number) {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
+}
+
+function optionalText(value: unknown, maxLength: number) {
+  const clean = cleanText(value, maxLength);
+  return clean || null;
+}
+
+function parseOptionalUuid(value: unknown) {
+  if (value === null || value === "") return null;
+  if (
+    typeof value === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value,
+    )
+  ) {
+    return value;
+  }
+  return undefined;
+}
+
+function parseOptionalDate(value: unknown) {
+  if (value === null || value === "") return null;
+  if (typeof value !== "string") return undefined;
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ? new Date(`${value}T09:00:00+08:00`)
+    : new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
 }
 
 function unauthorized() {

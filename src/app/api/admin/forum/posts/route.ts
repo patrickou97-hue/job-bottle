@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 const GUIDE_CATEGORIES = ["公告", "教程", "分享"] as const;
+const PLATFORM_VISIBILITIES = ["both", "web", "miniprogram"] as const;
 
 type GuideCategory = (typeof GUIDE_CATEGORIES)[number];
 
@@ -12,6 +13,7 @@ type GuideInput = {
   content?: string;
   category?: string;
   tags?: unknown;
+  platformVisibility?: unknown;
 };
 
 async function getAdminUser() {
@@ -40,11 +42,22 @@ function parseContentInput(input: GuideInput) {
       .filter(Boolean)
       .slice(0, 8)
     : [];
+  const platformVisibility = PLATFORM_VISIBILITIES.includes(
+    input.platformVisibility as (typeof PLATFORM_VISIBILITIES)[number],
+  )
+    ? input.platformVisibility as (typeof PLATFORM_VISIBILITIES)[number]
+    : "both";
 
   if (!title || title.length > 120 || !content || content.length > 5000 || !category) {
     return null;
   }
-  return { title, content, category, tags };
+  return {
+    title,
+    content,
+    category,
+    tags,
+    platform_visibility: platformVisibility,
+  };
 }
 
 function errorResponse(error: unknown, fallback: string) {

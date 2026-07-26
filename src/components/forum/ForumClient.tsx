@@ -92,11 +92,14 @@ export function ForumClient() {
 
   function handleUpdated(
     postId: string,
-    updates: Pick<ForumPostView, "title" | "content" | "category" | "tags">,
+    updates: Pick<ForumPostView, "title" | "content" | "category" | "tags" | "platform_visibility">,
   ) {
     setPosts((current) => current
       .map((post) => post.id === postId ? { ...post, ...updates } : post)
-      .filter((post) => activeCategory === "全部" || post.category === activeCategory));
+      .filter((post) => (
+        post.platform_visibility !== "miniprogram"
+        && (activeCategory === "全部" || post.category === activeCategory)
+      )));
   }
 
   return (

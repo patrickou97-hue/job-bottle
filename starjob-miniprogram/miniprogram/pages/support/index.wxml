@@ -1,0 +1,53 @@
+<view class="page-shell support-page">
+  <view class="page-brand-header">
+    <image class="brand-wordmark" src="/assets/shi-xing-wordmark-dark.png" mode="aspectFit" />
+    <text class="page-kicker">产品支持</text>
+  </view>
+  <view class="page-header">
+    <text class="page-title">指南与反馈</text>
+    <text class="page-description">查看官方公告、使用教程和求职经验，也可以直接告诉我们你遇到的问题。</text>
+  </view>
+
+  <view class="segmented support-tabs">
+    <button class="segmented-button {{activeTab === 'guide' ? 'segmented-button-active' : ''}}" data-id="guide" bindtap="onTabTap">拾星指南</button>
+    <button class="segmented-button {{activeTab === 'feedback' ? 'segmented-button-active' : ''}}" data-id="feedback" bindtap="onTabTap">问题反馈</button>
+  </view>
+
+  <block wx:if="{{activeTab === 'guide'}}">
+    <view class="support-loading" wx:if="{{loading}}">
+      <view class="support-skeleton" wx:for="{{[1,2,3]}}" wx:key="*this"><view class="skeleton-line"></view><view class="skeleton-line support-skeleton-short"></view></view>
+    </view>
+    <view class="state-panel" wx:elif="{{errorMessage}}">
+      <text class="state-title">指南暂时没有加载出来</text>
+      <text class="state-copy">{{errorMessage}}</text>
+      <button class="secondary-button state-action" bindtap="loadSupport">重新加载</button>
+    </view>
+    <view class="state-panel" wx:elif="{{posts.length === 0}}">
+      <text class="state-title">暂无指南内容</text>
+      <text class="state-copy">官方内容正在整理中，请稍后再来。</text>
+    </view>
+    <view class="guide-list" wx:else>
+      <button class="guide-item" wx:for="{{posts}}" wx:key="id" data-id="{{item.id}}" bindtap="onPostTap">
+        <view class="guide-meta"><text class="guide-category">{{item.category}}</text><text wx:if="{{item.isPinned}}" class="guide-pinned">置顶</text><text class="guide-date">{{item.dateLabel}}</text></view>
+        <text class="guide-title">{{item.title}}</text>
+        <text class="guide-content {{expandedId === item.id ? 'guide-content-expanded' : ''}}">{{item.content}}</text>
+        <text class="guide-toggle">{{expandedId === item.id ? '收起' : '阅读全文'}}</text>
+      </button>
+    </view>
+  </block>
+
+  <view class="feedback-panel" wx:else>
+    <text class="section-title">问题类型</text>
+    <view class="feedback-types">
+      <button wx:for="{{feedbackTypes}}" wx:key="*this" class="feedback-type {{feedbackType === item ? 'feedback-type-active' : ''}}" data-value="{{item}}" bindtap="onFeedbackTypeTap">{{item}}</button>
+    </view>
+    <label class="feedback-field">
+      <text class="section-title">具体情况</text>
+      <text class="feedback-helper">写清页面、操作步骤和实际结果会更有帮助。</text>
+      <textarea class="feedback-textarea" value="{{feedbackText}}" bindinput="onFeedbackInput" placeholder="请描述你遇到的问题或建议" maxlength="5000" />
+    </label>
+    <text class="feedback-message" wx:if="{{feedbackMessage}}">{{feedbackMessage}}</text>
+    <button class="primary-button feedback-submit" loading="{{submitting}}" disabled="{{submitting}}" bindtap="onSubmitFeedback">{{authenticated ? '提交反馈' : '登录后提交反馈'}}</button>
+    <text class="privacy-copy">不会自动上传简历正文、投递记录或其他个人资料。</text>
+  </view>
+</view>

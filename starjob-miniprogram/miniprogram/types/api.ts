@@ -46,6 +46,14 @@ export type ResumeDetailResponse = ApiEnvelope<{
   resume: ResumeDetail;
 }>;
 
+export type ResumeUpdateResponse = ResumeDetailResponse;
+
+export type ResumeDuplicateResponse = ResumeDetailResponse;
+
+export type ResumeDeleteResponse = ApiEnvelope<{
+  deletedId: string;
+}>;
+
 export type ProfileResponse = ApiEnvelope<{
   profile: Profile;
 }>;
@@ -67,6 +75,37 @@ export type EmailLoginResponse = ApiEnvelope<{
 export type WebLoginCodeResponse = ApiEnvelope<{
   code: string;
   expiresAt: string;
+}>;
+
+export type SupportPost = {
+  id: string;
+  title: string;
+  content: string;
+  category: string;
+  tags: string[];
+  isPinned: boolean;
+  createdAt: string;
+};
+
+export type SupportResponse = ApiEnvelope<{
+  posts: SupportPost[];
+}>;
+
+export type FeedbackResponse = ApiEnvelope<{
+  submitted: true;
+  id: string;
+}>;
+
+export type AccountStatusResponse = ApiEnvelope<{
+  hasEmail: boolean;
+  email: string;
+  hasWechat: boolean;
+  wechatIdentityId: string | null;
+}>;
+
+export type AccountBindingResponse = ApiEnvelope<{
+  bound: true;
+  session?: StarJobSession;
 }>;
 
 export type RefreshResponse = ApiEnvelope<{

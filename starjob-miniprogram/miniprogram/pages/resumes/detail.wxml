@@ -13,6 +13,9 @@
   </view>
 
   <view class="resume-paper" wx:elif="{{resume}}">
+    <view class="preview-actions">
+      <button class="secondary-button preview-edit" bindtap="onEdit">编辑这份简历</button>
+    </view>
     <view class="resume-head">
       <text class="preview-name">{{resume.content.basics.name || resume.title}}</text>
       <text class="preview-target">{{resume.content.basics.targetRole || resume.targetRole || resume.jobTarget}}</text>

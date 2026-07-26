@@ -11,12 +11,18 @@ import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
 
 const GUIDE_CATEGORIES = ["公告", "教程", "分享"] as const;
+const VISIBILITIES = [
+  { value: "both", label: "网页和小程序" },
+  { value: "web", label: "仅网页" },
+  { value: "miniprogram", label: "仅小程序" },
+] as const;
 
 const schema = z.object({
   title: z.string().min(1, "请输入标题").max(120, "标题不超过120字"),
   category: z.enum(GUIDE_CATEGORIES),
   content: z.string().min(1, "请输入内容").max(5000, "内容不超过5000字"),
   tags: z.string(),
+  platformVisibility: z.enum(["both", "web", "miniprogram"]),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -42,6 +48,7 @@ export function NewPostForm({ onCreated, onCancel }: NewPostFormProps) {
       category: "公告",
       content: "",
       tags: "",
+      platformVisibility: "both",
     },
   });
 
@@ -60,6 +67,7 @@ export function NewPostForm({ onCreated, onCancel }: NewPostFormProps) {
         content: values.content,
         category: values.category,
         tags,
+        platformVisibility: values.platformVisibility,
       });
 
       onCreated();
@@ -100,6 +108,23 @@ export function NewPostForm({ onCreated, onCancel }: NewPostFormProps) {
                 <option key={cat} value={cat}>
                   {cat}
                 </option>
+              ))}
+            </Select>
+          )}
+        />
+      </div>
+
+      <div>
+        <label className="mb-1 block text-xs font-medium text-ink-muted">
+          展示范围
+        </label>
+        <Controller
+          control={control}
+          name="platformVisibility"
+          render={({ field }) => (
+            <Select value={field.value} onChange={field.onChange}>
+              {VISIBILITIES.map((item) => (
+                <option key={item.value} value={item.value}>{item.label}</option>
               ))}
             </Select>
           )}

@@ -20,6 +20,7 @@ export async function GET() {
       .from("forum_posts")
       .select("id,user_id,title,content,category,tags,created_at")
       .eq("category", "公告")
+      .in("platform_visibility", ["both", "web"])
       .order("created_at", { ascending: false })
       .limit(20);
     if (announcementError) throw announcementError;

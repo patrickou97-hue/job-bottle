@@ -96,7 +96,7 @@ Page({
     const id = String(event.currentTarget.dataset.id || "");
     if (!id) return;
     wx.navigateTo({
-      url: `/pages/resumes/detail?id=${encodeURIComponent(id)}`,
+      url: `/pages/resumes/editor?id=${encodeURIComponent(id)}`,
     });
   },
 
@@ -154,6 +154,9 @@ Page({
           ],
         });
         wx.showToast({ title: "简历已创建", icon: "success" });
+        wx.navigateTo({
+          url: `/pages/resumes/editor?id=${encodeURIComponent(resume.id)}`,
+        });
       })
       .catch((error: unknown) => {
         this.setData({

@@ -41,6 +41,11 @@ export function toMiniProgramApplication(
     nextAction: application.next_action ?? "",
     nextActionAt: application.next_action_at ?? null,
     resumeId: application.resume_id ?? null,
+    applicationChannel: application.application_channel ?? "",
+    applicationAccount: application.application_account ?? "",
+    contactName: application.contact_name ?? "",
+    customStageLabel: application.custom_stage_label ?? "",
+    reviewNote: application.review_note ?? "",
     updatedAt: application.updated_at,
     job: toMiniProgramJob(job),
   };

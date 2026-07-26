@@ -131,6 +131,7 @@ export type ForumPost = {
   like_count: number;
   comment_count: number;
   is_pinned: boolean;
+  platform_visibility: "both" | "web" | "miniprogram";
   created_at: string;
   updated_at: string;
   profiles?: { display_name: string | null } | null;
@@ -399,10 +400,42 @@ export type Database = {
           like_count?: number;
           comment_count?: number;
           is_pinned?: boolean;
+          platform_visibility?: "both" | "web" | "miniprogram";
           created_at?: string;
           updated_at?: string;
         };
         Update: Partial<Omit<ForumPost, "id" | "created_at">>;
+        Relationships: [];
+      };
+      feedback_submissions: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          platform: "web" | "miniprogram";
+          category: string;
+          content: string;
+          contact_email: string | null;
+          fingerprint_hash: string;
+          created_at: string;
+          resolved_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          platform: "web" | "miniprogram";
+          category: string;
+          content: string;
+          contact_email?: string | null;
+          fingerprint_hash: string;
+          created_at?: string;
+          resolved_at?: string | null;
+        };
+        Update: {
+          category?: string;
+          content?: string;
+          contact_email?: string | null;
+          resolved_at?: string | null;
+        };
         Relationships: [];
       };
       forum_comments: {
@@ -556,6 +589,10 @@ export type Database = {
       consume_wechat_web_login_code: {
         Args: { p_code_hash: string };
         Returns: string | null;
+      };
+      merge_wechat_user_into_email_user: {
+        Args: { source_user_id: string; target_user_id: string };
+        Returns: boolean;
       };
       merge_duplicate_jobs: {
         Args: Record<string, never>;

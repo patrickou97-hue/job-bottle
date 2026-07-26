@@ -101,6 +101,33 @@
 
     <view class="profile-section">
       <text class="section-title">账号与支持</text>
+      <view class="account-summary" wx:if="{{accountStatus}}">
+        <text class="account-summary-title">登录方式</text>
+        <text class="account-summary-value">{{accountStatus.hasEmail ? accountStatus.email : '未绑定邮箱'}} · {{accountStatus.hasWechat ? '微信已绑定' : '微信未绑定'}}</text>
+      </view>
+      <button class="menu-row" wx:if="{{accountStatus && !accountStatus.hasWechat}}" loading="{{accountLoading}}" disabled="{{accountLoading}}" bindtap="onBindWechat">
+        <view class="menu-copy"><text>绑定当前微信</text><text class="menu-note">以后可使用微信进入同一账号</text></view>
+        <text class="menu-arrow">›</text>
+      </button>
+      <button class="menu-row" wx:if="{{accountStatus && !accountStatus.hasEmail}}" bindtap="onToggleEmailBinding">
+        <view class="menu-copy"><text>绑定已有邮箱账号</text><text class="menu-note">验证密码后合并投递和简历数据</text></view>
+        <text class="menu-arrow">›</text>
+      </button>
+      <view class="email-binding-panel" wx:if="{{showEmailBinding}}">
+        <label class="form-group"><text class="form-label">邮箱</text><input class="form-input" value="{{bindingEmail}}" bindinput="onBindingEmailInput" /></label>
+        <label class="form-group"><text class="form-label">密码</text><input class="form-input" value="{{bindingPassword}}" password bindinput="onBindingPasswordInput" /></label>
+        <button class="primary-button binding-submit" loading="{{accountLoading}}" disabled="{{accountLoading}}" bindtap="onBindEmail">验证并合并账号</button>
+      </view>
+      <button class="menu-row danger-row" wx:if="{{accountStatus && accountStatus.hasWechat && accountStatus.hasEmail}}" loading="{{accountLoading}}" disabled="{{accountLoading}}" bindtap="onUnbindWechat">
+        <text>解绑微信</text>
+      </button>
+      <button class="menu-row" bindtap="onOpenSupport">
+        <view class="menu-copy">
+          <text>拾星指南与反馈</text>
+          <text class="menu-note">公告、教程、经验与问题反馈</text>
+        </view>
+        <text class="menu-arrow">›</text>
+      </button>
       <button
         class="menu-row"
         wx:if="{{webLoginCodeAvailable}}"
@@ -112,10 +139,6 @@
           <text>登录网页版</text>
           <text class="menu-note">生成 8 位一次性登录码</text>
         </view>
-        <text class="menu-arrow">›</text>
-      </button>
-      <button class="menu-row" bindtap="onFeedback">
-        <text>问题反馈</text>
         <text class="menu-arrow">›</text>
       </button>
       <button

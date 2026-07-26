@@ -29,6 +29,12 @@ export type MiniProgramSessionPayload = {
   userId: string;
 };
 
+type WechatCodeSessionResponse = {
+  openid?: string;
+  unionid?: string;
+  errcode?: number;
+};
+
 function getSessionSecret() {
   const secret = process.env.MINIPROGRAM_SESSION_SECRET;
   if (!secret || secret.length < 32) {
@@ -68,6 +74,34 @@ export function hashMiniProgramIdentifier(kind: "openid" | "unionid", value: str
   return createHmac("sha256", getSessionSecret())
     .update(`wechat-${kind}:${value}`)
     .digest("hex");
+}
+
+export async function exchangeMiniProgramWechatCode(code: string) {
+  const appId = process.env.WECHAT_MINIPROGRAM_APP_ID;
+  const appSecret = process.env.WECHAT_MINIPROGRAM_APP_SECRET;
+  if (!appId || !appSecret) {
+    throw new Error("WeChat Mini Program credentials are missing.");
+  }
+  const url = new URL("https://api.weixin.qq.com/sns/jscode2session");
+  url.search = new URLSearchParams({
+    appid: appId,
+    secret: appSecret,
+    js_code: code,
+    grant_type: "authorization_code",
+  }).toString();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8_000);
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    if (!response.ok) throw new Error(`WeChat HTTP ${response.status}`);
+    return (await response.json()) as WechatCodeSessionResponse;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export function hashRefreshToken(token: string) {

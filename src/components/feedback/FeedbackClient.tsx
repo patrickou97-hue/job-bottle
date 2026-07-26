@@ -1,7 +1,7 @@
 "use client";
 
-import { CheckCircle2, LifeBuoy, Mail, MessageSquareText, ShieldCheck } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { CheckCircle2, LifeBuoy, Send, MessageSquareText, ShieldCheck } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Textarea } from "@/components/ui/Textarea";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
@@ -14,6 +14,8 @@ export function FeedbackClient() {
   const [feedbackType, setFeedbackType] = useState(FEEDBACK_TYPES[0]);
   const [feedbackText, setFeedbackText] = useState("");
   const [userEmail, setUserEmail] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     if (!isSupabaseConfigured()) return;
@@ -26,15 +28,34 @@ export function FeedbackClient() {
     };
   }, []);
 
-  const feedbackMailto = useMemo(() => {
-    const body = [
-      `反馈类型：${feedbackType}`,
-      `账号：${userEmail || "未登录"}`,
-      "",
-      feedbackText.trim() || "请在这里补充你遇到的问题。",
-    ].join("\n");
-    return `mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent("拾星问题反馈")}&body=${encodeURIComponent(body)}`;
-  }, [feedbackText, feedbackType, userEmail]);
+  async function submitFeedback() {
+    if (submitting) return;
+    if (feedbackText.trim().length < 5) {
+      setMessage("请填写至少 5 个字的反馈内容。");
+      return;
+    }
+    setSubmitting(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category: feedbackType,
+          content: feedbackText,
+          contactEmail: userEmail,
+        }),
+      });
+      const result = await response.json().catch(() => null) as { error?: string } | null;
+      if (!response.ok) throw new Error(result?.error ?? "反馈提交失败。");
+      setFeedbackText("");
+      setMessage("反馈已提交，谢谢你帮助拾星变得更好。");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : `提交失败，也可以邮件联系 ${FEEDBACK_EMAIL}。`);
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <div className="observatory-page">
@@ -97,15 +118,16 @@ export function FeedbackClient() {
             />
           </label>
           <div className="mt-4 flex flex-wrap items-center gap-4">
-            <a href={feedbackMailto} className="gold-button inline-flex h-10 items-center gap-2 rounded-lg px-4 text-sm font-medium">
-              <Mail aria-hidden="true" className="size-4" />
-              发送反馈
-            </a>
+            <button type="button" onClick={() => void submitFeedback()} disabled={submitting} className="gold-button inline-flex h-10 items-center gap-2 rounded-lg px-4 text-sm font-medium disabled:opacity-60">
+              <Send aria-hidden="true" className="size-4" />
+              {submitting ? "提交中" : "提交反馈"}
+            </button>
             <span className="flex items-center gap-2 text-xs leading-5 text-ink-muted">
               <CheckCircle2 aria-hidden="true" className="size-4" />
-              将打开你的邮件应用，发送前仍可修改内容。
+              反馈会直接进入拾星处理队列。
             </span>
           </div>
+          {message ? <p className="mt-3 text-sm leading-6 text-ink-secondary" role="status">{message}</p> : null}
         </div>
       </section>
 
@@ -115,7 +137,7 @@ export function FeedbackClient() {
         </header>
         <p className="flex max-w-3xl items-start gap-2 text-sm leading-7 text-ink-secondary">
           <ShieldCheck aria-hidden="true" className="mt-1 size-4 shrink-0 text-ink-muted" />
-          页面不会自动发送简历正文、投递记录或其他个人资料。登录邮箱只会写入待发送邮件，供我们识别账号问题。
+          页面不会自动发送简历正文、投递记录或其他个人资料。登录邮箱仅用于识别账号问题。
         </p>
       </section>
     </div>

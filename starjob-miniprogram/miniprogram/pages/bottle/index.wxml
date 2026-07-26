@@ -84,6 +84,7 @@
         </button>
         <view class="bottle-actions">
           <text class="status-pill">{{item.statusLabel}}</text>
+          <button class="progress-button detail-button" data-id="{{item.id}}" bindtap="onEditDetails">编辑详情</button>
           <picker
             class="progress-picker"
             wx:if="{{progressUpdateAvailable}}"
@@ -102,4 +103,58 @@
       </view>
     </view>
   </block>
+
+  <view class="workflow-backdrop" wx:if="{{editingApplication}}" bindtap="onCloseDetails"></view>
+  <view class="workflow-sheet" wx:if="{{editingApplication}}">
+    <view class="workflow-header">
+      <view>
+        <text class="workflow-title">{{editingApplication.job.companyName}}</text>
+        <text class="workflow-subtitle">{{editingApplication.job.jobTitles}}</text>
+      </view>
+      <button class="workflow-close" bindtap="onCloseDetails">关闭</button>
+    </view>
+    <scroll-view class="workflow-scroll" scroll-y>
+      <view class="workflow-grid">
+        <label class="workflow-field">
+          <text class="form-label">投递状态</text>
+          <picker mode="selector" range="{{statusOptions}}" range-key="label" value="{{editingApplication.statusIndex}}" bindchange="onDetailStatusChange">
+            <view class="workflow-picker">{{statusOptions[editingApplication.statusIndex].label}} ›</view>
+          </picker>
+        </label>
+        <label class="workflow-field">
+          <text class="form-label">星瓶阶段</text>
+          <picker mode="selector" range="{{stageOptions}}" range-key="label" value="{{editingApplication.stageIndex}}" bindchange="onDetailStageChange">
+            <view class="workflow-picker">{{stageOptions[editingApplication.stageIndex].label}} ›</view>
+          </picker>
+        </label>
+        <label class="workflow-field">
+          <text class="form-label">优先级</text>
+          <picker mode="selector" range="{{priorityOptions}}" value="{{editingApplication.priorityIndex}}" bindchange="onDetailPriorityChange">
+            <view class="workflow-picker">{{priorityOptions[editingApplication.priorityIndex]}} ›</view>
+          </picker>
+        </label>
+        <label class="workflow-field"><text class="form-label">自定义阶段</text><input class="form-input" value="{{editingApplication.customStageLabel}}" data-field="customStageLabel" bindinput="onDetailInput" maxlength="40" /></label>
+        <label class="workflow-field"><text class="form-label">投递渠道</text><input class="form-input" value="{{editingApplication.applicationChannel}}" data-field="applicationChannel" bindinput="onDetailInput" placeholder="官网、内推、招聘平台" maxlength="80" /></label>
+        <label class="workflow-field"><text class="form-label">投递账号</text><input class="form-input" value="{{editingApplication.applicationAccount}}" data-field="applicationAccount" bindinput="onDetailInput" maxlength="160" /></label>
+        <label class="workflow-field"><text class="form-label">联系人</text><input class="form-input" value="{{editingApplication.contactName}}" data-field="contactName" bindinput="onDetailInput" maxlength="120" /></label>
+        <label class="workflow-field">
+          <text class="form-label">关联简历</text>
+          <picker mode="selector" range="{{resumeOptions}}" range-key="title" value="{{editingApplication.resumeIndex}}" bindchange="onDetailResumeChange">
+            <view class="workflow-picker">{{resumeOptions[editingApplication.resumeIndex].title}} ›</view>
+          </picker>
+        </label>
+        <view class="workflow-field">
+          <text class="form-label">下一步日期</text>
+          <view class="date-row">
+            <picker class="date-picker" mode="date" value="{{editingApplication.nextActionDate}}" bindchange="onDetailDateChange"><view class="workflow-picker">{{editingApplication.nextActionDate || '选择日期'}} ›</view></picker>
+            <button class="date-clear" wx:if="{{editingApplication.nextActionDate}}" bindtap="onClearDetailDate">清除</button>
+          </view>
+        </view>
+        <label class="workflow-field"><text class="form-label">下一步</text><input class="form-input" value="{{editingApplication.nextAction}}" data-field="nextAction" bindinput="onDetailInput" maxlength="300" /></label>
+        <label class="workflow-field"><text class="form-label">备注</text><textarea class="workflow-textarea" value="{{editingApplication.note}}" data-field="note" bindinput="onDetailInput" maxlength="1000" auto-height /></label>
+        <label class="workflow-field"><text class="form-label">复盘记录</text><textarea class="workflow-textarea workflow-review" value="{{editingApplication.reviewNote}}" data-field="reviewNote" bindinput="onDetailInput" maxlength="3000" auto-height /></label>
+      </view>
+    </scroll-view>
+    <button class="primary-button workflow-save" loading="{{savingDetails}}" disabled="{{savingDetails}}" bindtap="onSaveDetails">保存并同步</button>
+  </view>
 </view>

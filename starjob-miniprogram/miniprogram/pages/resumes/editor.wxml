@@ -1,0 +1,202 @@
+<template name="item-actions">
+  <view class="item-actions">
+    <button class="item-action" data-section="{{section}}" data-index="{{index}}" data-direction="-1" bindtap="onMoveItem" disabled="{{index === 0}}">上移</button>
+    <button class="item-action" data-section="{{section}}" data-index="{{index}}" data-direction="1" bindtap="onMoveItem" disabled="{{index === length - 1}}">下移</button>
+    <button class="item-action item-action-danger" data-section="{{section}}" data-index="{{index}}" bindtap="onRemoveItem">删除</button>
+  </view>
+</template>
+
+<template name="text-section-list">
+  <view class="editor-list">
+    <view class="editor-card" wx:for="{{items}}" wx:key="id">
+      <template is="item-actions" data="{{section: sectionKey, index, length: items.length}}" />
+      <label class="editor-field">
+        <text class="editor-label">标题</text>
+        <input class="editor-input" value="{{item.title}}" data-path="resume.content.{{sectionKey}}[{{index}}].title" bindinput="onFieldInput" maxlength="160" />
+      </label>
+      <label class="editor-field">
+        <text class="editor-label">内容</text>
+        <textarea class="editor-textarea editor-textarea-large" value="{{item.bulletsText}}" data-path="resume.content.{{sectionKey}}[{{index}}].bulletsText" bindinput="onFieldInput" placeholder="每行一条内容" maxlength="6000" auto-height />
+      </label>
+    </view>
+    <button class="add-section-button" data-section="{{sectionKey}}" bindtap="onAddItem">＋ 添加{{sectionLabel}}</button>
+  </view>
+</template>
+
+<view class="resume-editor-page">
+  <view class="editor-loading" wx:if="{{loading}}">
+    <view class="skeleton-line editor-skeleton-title"></view>
+    <view class="skeleton-line editor-skeleton-block"></view>
+    <view class="skeleton-line editor-skeleton-block"></view>
+  </view>
+
+  <view class="state-panel editor-error-state" wx:elif="{{errorMessage && !resume}}">
+    <text class="state-title">简历暂时无法打开</text>
+    <text class="state-copy">{{errorMessage}}</text>
+    <button class="secondary-button state-action" bindtap="onRetry">重新加载</button>
+  </view>
+
+  <block wx:elif="{{resume}}">
+    <view class="editor-toolbar">
+      <view class="editor-title-copy">
+        <text class="editor-title">{{resume.title || '未命名简历'}}</text>
+        <text class="editor-status {{dirty ? 'editor-status-dirty' : ''}}">{{saving ? '正在保存…' : dirty ? '有未保存修改' : '已同步云端'}}</text>
+      </view>
+      <view class="toolbar-actions">
+        <button class="toolbar-button" bindtap="onPreview">预览</button>
+        <button class="toolbar-button toolbar-more" bindtap="onMoreActions">•••</button>
+        <button class="toolbar-save" loading="{{saving}}" disabled="{{saving || !dirty}}" bindtap="onSave">保存</button>
+      </view>
+    </view>
+
+    <scroll-view class="section-scroll" scroll-x show-scrollbar="{{false}}">
+      <view class="section-tabs">
+        <button
+          wx:for="{{sectionOptions}}"
+          wx:key="id"
+          class="section-tab {{activeSection === item.id ? 'section-tab-active' : ''}}"
+          data-id="{{item.id}}"
+          bindtap="onSectionTap"
+        >{{item.label}}</button>
+      </view>
+    </scroll-view>
+
+    <view class="editor-error" wx:if="{{errorMessage}}">
+      <text>{{errorMessage}}</text>
+    </view>
+
+    <view class="editor-section" wx:if="{{activeSection === 'overview'}}">
+      <view class="section-heading">
+        <text class="section-heading-title">简历设置</text>
+        <text class="section-heading-copy">名称、目标岗位和版式会同步到网页版。</text>
+      </view>
+      <view class="editor-card">
+        <label class="editor-field">
+          <text class="editor-label">简历名称</text>
+          <input class="editor-input" value="{{resume.title}}" data-path="resume.title" bindinput="onFieldInput" maxlength="80" />
+        </label>
+        <label class="editor-field">
+          <text class="editor-label">目标岗位</text>
+          <input class="editor-input" value="{{resume.targetRole}}" data-path="resume.targetRole" bindinput="onFieldInput" maxlength="120" />
+        </label>
+        <label class="editor-field">
+          <text class="editor-label">求职目标补充</text>
+          <textarea class="editor-textarea" value="{{resume.jobTarget}}" data-path="resume.jobTarget" bindinput="onFieldInput" maxlength="240" auto-height />
+        </label>
+      </view>
+      <view class="section-heading section-heading-compact">
+        <text class="section-heading-title">版式</text>
+      </view>
+      <view class="template-grid">
+        <button
+          wx:for="{{templateOptions}}"
+          wx:key="id"
+          class="template-option {{resume.templateId === item.id ? 'template-option-active' : ''}}"
+          data-id="{{item.id}}"
+          bindtap="onTemplateTap"
+        >{{item.label}}</button>
+      </view>
+    </view>
+
+    <view class="editor-section" wx:elif="{{activeSection === 'basics'}}">
+      <view class="section-heading">
+        <text class="section-heading-title">基本信息</text>
+        <text class="section-heading-copy">只填写你愿意展示在简历上的联系方式。</text>
+      </view>
+      <view class="editor-card">
+        <label class="editor-field"><text class="editor-label">姓名</text><input class="editor-input" value="{{resume.content.basics.name}}" data-path="resume.content.basics.name" bindinput="onFieldInput" maxlength="80" /></label>
+        <label class="editor-field"><text class="editor-label">英文名</text><input class="editor-input" value="{{resume.content.basics.englishName}}" data-path="resume.content.basics.englishName" bindinput="onFieldInput" maxlength="120" /></label>
+        <label class="editor-field"><text class="editor-label">手机号</text><input class="editor-input" value="{{resume.content.basics.phone}}" data-path="resume.content.basics.phone" bindinput="onFieldInput" maxlength="40" /></label>
+        <label class="editor-field"><text class="editor-label">邮箱</text><input class="editor-input" value="{{resume.content.basics.email}}" data-path="resume.content.basics.email" bindinput="onFieldInput" maxlength="160" /></label>
+        <label class="editor-field"><text class="editor-label">所在城市</text><input class="editor-input" value="{{resume.content.basics.city}}" data-path="resume.content.basics.city" bindinput="onFieldInput" maxlength="80" /></label>
+        <label class="editor-field"><text class="editor-label">简历内目标岗位</text><input class="editor-input" value="{{resume.content.basics.targetRole}}" data-path="resume.content.basics.targetRole" bindinput="onFieldInput" maxlength="120" /></label>
+        <label class="editor-field"><text class="editor-label">LinkedIn</text><input class="editor-input" value="{{resume.content.basics.linkedin}}" data-path="resume.content.basics.linkedin" bindinput="onFieldInput" maxlength="240" /></label>
+        <label class="editor-field"><text class="editor-label">GitHub</text><input class="editor-input" value="{{resume.content.basics.github}}" data-path="resume.content.basics.github" bindinput="onFieldInput" maxlength="240" /></label>
+        <label class="editor-field"><text class="editor-label">个人网站</text><input class="editor-input" value="{{resume.content.basics.website}}" data-path="resume.content.basics.website" bindinput="onFieldInput" maxlength="240" /></label>
+      </view>
+    </view>
+
+    <view class="editor-section" wx:elif="{{activeSection === 'education'}}">
+      <view class="section-heading"><text class="section-heading-title">教育经历</text><text class="section-heading-copy">时间可以留空，空记录不会出现在预览中。</text></view>
+      <view class="editor-list">
+        <view class="editor-card" wx:for="{{resume.content.education}}" wx:key="id">
+          <template is="item-actions" data="{{section: 'education', index, length: resume.content.education.length}}" />
+          <label class="editor-field"><text class="editor-label">学校</text><input class="editor-input" value="{{item.school}}" data-path="resume.content.education[{{index}}].school" bindinput="onFieldInput" /></label>
+          <view class="field-pair">
+            <label class="editor-field"><text class="editor-label">学历</text><input class="editor-input" value="{{item.degree}}" data-path="resume.content.education[{{index}}].degree" bindinput="onFieldInput" /></label>
+            <label class="editor-field"><text class="editor-label">专业</text><input class="editor-input" value="{{item.major}}" data-path="resume.content.education[{{index}}].major" bindinput="onFieldInput" /></label>
+          </view>
+          <view class="field-pair">
+            <label class="editor-field"><text class="editor-label">开始时间（可选）</text><input class="editor-input" value="{{item.startDate}}" data-path="resume.content.education[{{index}}].startDate" bindinput="onFieldInput" /></label>
+            <label class="editor-field"><text class="editor-label">结束时间（可选）</text><input class="editor-input" value="{{item.endDate}}" data-path="resume.content.education[{{index}}].endDate" bindinput="onFieldInput" /></label>
+          </view>
+          <label class="editor-field"><text class="editor-label">GPA</text><input class="editor-input" value="{{item.gpa}}" data-path="resume.content.education[{{index}}].gpa" bindinput="onFieldInput" /></label>
+          <label class="editor-field"><text class="editor-label">主修课程</text><textarea class="editor-textarea" value="{{item.courses}}" data-path="resume.content.education[{{index}}].courses" bindinput="onFieldInput" auto-height /></label>
+          <label class="editor-field"><text class="editor-label">荣誉</text><textarea class="editor-textarea" value="{{item.honors}}" data-path="resume.content.education[{{index}}].honors" bindinput="onFieldInput" auto-height /></label>
+        </view>
+        <button class="add-section-button" data-section="education" bindtap="onAddItem">＋ 添加教育经历</button>
+      </view>
+    </view>
+
+    <view class="editor-section" wx:elif="{{activeSection === 'work'}}">
+      <view class="section-heading"><text class="section-heading-title">实习与工作经历</text><text class="section-heading-copy">每行填写一条职责或成果。</text></view>
+      <view class="editor-list">
+        <view class="editor-card" wx:for="{{resume.content.work}}" wx:key="id">
+          <template is="item-actions" data="{{section: 'work', index, length: resume.content.work.length}}" />
+          <label class="editor-field"><text class="editor-label">公司</text><input class="editor-input" value="{{item.company}}" data-path="resume.content.work[{{index}}].company" bindinput="onFieldInput" /></label>
+          <view class="field-pair">
+            <label class="editor-field"><text class="editor-label">岗位</text><input class="editor-input" value="{{item.title}}" data-path="resume.content.work[{{index}}].title" bindinput="onFieldInput" /></label>
+            <label class="editor-field"><text class="editor-label">地点</text><input class="editor-input" value="{{item.location}}" data-path="resume.content.work[{{index}}].location" bindinput="onFieldInput" /></label>
+          </view>
+          <view class="field-pair">
+            <label class="editor-field"><text class="editor-label">开始时间（可选）</text><input class="editor-input" value="{{item.startDate}}" data-path="resume.content.work[{{index}}].startDate" bindinput="onFieldInput" /></label>
+            <label class="editor-field"><text class="editor-label">结束时间（可选）</text><input class="editor-input" value="{{item.endDate}}" data-path="resume.content.work[{{index}}].endDate" bindinput="onFieldInput" disabled="{{item.current}}" /></label>
+          </view>
+          <checkbox-group data-index="{{index}}" bindchange="onCurrentChange"><label class="current-check"><checkbox value="current" checked="{{item.current}}" color="#12294e" />目前仍在这里</label></checkbox-group>
+          <label class="editor-field"><text class="editor-label">工作内容与成果</text><textarea class="editor-textarea editor-textarea-large" value="{{item.bulletsText}}" data-path="resume.content.work[{{index}}].bulletsText" bindinput="onFieldInput" placeholder="每行一条经历描述" maxlength="6000" auto-height /></label>
+        </view>
+        <button class="add-section-button" data-section="work" bindtap="onAddItem">＋ 添加工作经历</button>
+      </view>
+    </view>
+
+    <view class="editor-section" wx:elif="{{activeSection === 'projects'}}">
+      <view class="section-heading"><text class="section-heading-title">项目经历</text><text class="section-heading-copy">突出你的角色、行动和可量化结果。</text></view>
+      <view class="editor-list">
+        <view class="editor-card" wx:for="{{resume.content.projects}}" wx:key="id">
+          <template is="item-actions" data="{{section: 'projects', index, length: resume.content.projects.length}}" />
+          <label class="editor-field"><text class="editor-label">项目名称</text><input class="editor-input" value="{{item.name}}" data-path="resume.content.projects[{{index}}].name" bindinput="onFieldInput" /></label>
+          <label class="editor-field"><text class="editor-label">你的角色</text><input class="editor-input" value="{{item.role}}" data-path="resume.content.projects[{{index}}].role" bindinput="onFieldInput" /></label>
+          <view class="field-pair">
+            <label class="editor-field"><text class="editor-label">开始时间（可选）</text><input class="editor-input" value="{{item.startDate}}" data-path="resume.content.projects[{{index}}].startDate" bindinput="onFieldInput" /></label>
+            <label class="editor-field"><text class="editor-label">结束时间（可选）</text><input class="editor-input" value="{{item.endDate}}" data-path="resume.content.projects[{{index}}].endDate" bindinput="onFieldInput" /></label>
+          </view>
+          <label class="editor-field"><text class="editor-label">关键词</text><input class="editor-input" value="{{item.keywords}}" data-path="resume.content.projects[{{index}}].keywords" bindinput="onFieldInput" /></label>
+          <label class="editor-field"><text class="editor-label">项目内容与成果</text><textarea class="editor-textarea editor-textarea-large" value="{{item.bulletsText}}" data-path="resume.content.projects[{{index}}].bulletsText" bindinput="onFieldInput" placeholder="每行一条项目描述" maxlength="6000" auto-height /></label>
+        </view>
+        <button class="add-section-button" data-section="projects" bindtap="onAddItem">＋ 添加项目经历</button>
+      </view>
+    </view>
+
+    <view class="editor-section" wx:elif="{{activeSection === 'skills'}}">
+      <view class="section-heading"><text class="section-heading-title">技能</text><text class="section-heading-copy">用顿号或逗号分隔技能；没有兴趣分类时，预览只显示“技能”。</text></view>
+      <view class="editor-list">
+        <view class="editor-card" wx:for="{{resume.content.skills}}" wx:key="id">
+          <template is="item-actions" data="{{section: 'skills', index, length: resume.content.skills.length}}" />
+          <label class="editor-field"><text class="editor-label">分类</text><input class="editor-input" value="{{item.category}}" data-path="resume.content.skills[{{index}}].category" bindinput="onFieldInput" placeholder="例如：产品与数据" /></label>
+          <label class="editor-field"><text class="editor-label">技能</text><textarea class="editor-textarea" value="{{item.skillsText}}" data-path="resume.content.skills[{{index}}].skillsText" bindinput="onFieldInput" placeholder="用户研究、SQL、Figma" auto-height /></label>
+        </view>
+        <button class="add-section-button" data-section="skills" bindtap="onAddItem">＋ 添加技能分类</button>
+      </view>
+    </view>
+
+    <view class="editor-section" wx:elif="{{activeSection === 'campus'}}"><view class="section-heading"><text class="section-heading-title">校园经历</text></view><template is="text-section-list" data="{{sectionKey: 'campus', sectionLabel: '校园经历', items: resume.content.campus}}" /></view>
+    <view class="editor-section" wx:elif="{{activeSection === 'awards'}}"><view class="section-heading"><text class="section-heading-title">荣誉奖项</text></view><template is="text-section-list" data="{{sectionKey: 'awards', sectionLabel: '奖项', items: resume.content.awards}}" /></view>
+    <view class="editor-section" wx:elif="{{activeSection === 'certifications'}}"><view class="section-heading"><text class="section-heading-title">证书</text></view><template is="text-section-list" data="{{sectionKey: 'certifications', sectionLabel: '证书', items: resume.content.certifications}}" /></view>
+    <view class="editor-section" wx:elif="{{activeSection === 'languages'}}"><view class="section-heading"><text class="section-heading-title">语言能力</text></view><template is="text-section-list" data="{{sectionKey: 'languages', sectionLabel: '语言能力', items: resume.content.languages}}" /></view>
+    <view class="editor-section" wx:elif="{{activeSection === 'customSections'}}"><view class="section-heading"><text class="section-heading-title">其他内容</text></view><template is="text-section-list" data="{{sectionKey: 'customSections', sectionLabel: '自定义内容', items: resume.content.customSections}}" /></view>
+
+    <view class="editor-bottom-save">
+      <button class="primary-button" loading="{{saving}}" disabled="{{saving || !dirty}}" bindtap="onSave">{{dirty ? '保存到云端' : '已同步云端'}}</button>
+    </view>
+  </block>
+</view>

@@ -40,7 +40,7 @@ export async function logout() {
   }
 }
 
-function getWechatLoginCode() {
+export function getWechatLoginCode() {
   return new Promise<string>((resolve, reject) => {
     wx.login({
       timeout: 10_000,

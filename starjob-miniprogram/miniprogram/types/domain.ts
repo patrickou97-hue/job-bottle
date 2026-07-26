@@ -50,6 +50,11 @@ export type UserApplication = {
   nextAction: string;
   nextActionAt: string | null;
   resumeId: string | null;
+  applicationChannel: string;
+  applicationAccount: string;
+  contactName: string;
+  customStageLabel: string;
+  reviewNote: string;
   updatedAt: string;
   job: Job;
 };

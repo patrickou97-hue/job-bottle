@@ -50,10 +50,10 @@ const SOURCE_INVARIANTS = [
     label: "重复点击收录岗位时可从唯一键竞争中恢复",
   },
   {
-    file: "src/lib/forum.ts",
-    mustInclude: ["/api/admin/forum/posts", "role === \"admin\"", "author_name: \"拾星官方\"", "normalizeGuideCategory"],
+    file: "src/lib/guide-server.ts",
+    mustInclude: ["role === \"admin\"", "author_name: \"拾星官方\"", ".in(\"platform_visibility\", [\"both\", platform])"],
     mustNotInclude: ["createComment", "toggleLike", ".from(\"forum_likes\")"],
-    label: "拾星指南只展示管理员内容且移除社区互动写入",
+    label: "拾星指南由服务端过滤平台范围并只展示管理员内容",
   },
   {
     file: "src/components/galaxy/GalaxyMapClient.tsx",
@@ -577,9 +577,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/feedback/FeedbackClient.tsx",
-    mustInclude: ["反馈", "告诉我们您的建议与反馈，这对我们非常重要", "问题类型", "具体情况", "反馈内容", "发送反馈", "隐私说明", "FEEDBACK_TYPES", "mailto:", "不会自动发送简历正文"],
+    mustInclude: ["反馈", "告诉我们您的建议与反馈，这对我们非常重要", "问题类型", "具体情况", "反馈内容", "提交反馈", "隐私说明", "FEEDBACK_TYPES", "fetch(\"/api/feedback\"", "不会自动发送简历正文"],
     mustNotInclude: ["rounded-2xl", "shadow-", "bg-gradient"],
-    label: "反馈独立为一级开放式页面并保留问题分类、邮件确认和隐私说明",
+    label: "反馈独立为一级开放式页面并直接进入服务端处理队列",
   },
   {
     file: "src/components/forum/ForumClient.tsx",
@@ -814,9 +814,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/lib/forum.ts",
-    mustInclude: ["fetchForumAuthors", "author_role", "/api/forum/authors", "role === \"admin\"", "拾星官方"],
+    mustInclude: ["/api/guide/posts", "ForumPostView", "normalizeGuideCategory"],
     mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY", "匿名用户***"],
-    label: "拾星指南在客户端只保留管理员发布内容",
+    label: "拾星指南客户端只消费服务端过滤后的官方内容",
   },
   {
     file: "src/app/api/forum/authors/route.ts",
@@ -974,6 +974,30 @@ const SOURCE_INVARIANTS = [
     mustNotInclude: [],
     label: "七篇搜索指南作为未公开草稿等待产品审核",
   },
+  {
+    file: "src/app/api/miniprogram/resumes/[id]/route.ts",
+    mustInclude: ["export async function PUT", "RESUME_CONFLICT", "export async function DELETE", "action !== \"duplicate\"", ".eq(\"user_id\", identity.sub)"],
+    mustNotInclude: ["content_json: body.content"],
+    label: "小程序简历支持归属校验、冲突保护、更新、复制和删除",
+  },
+  {
+    file: "src/app/api/miniprogram/resumes/[id]/pdf/route.ts",
+    mustInclude: ["createResumePdfBytes", ".eq(\"user_id\", identity.sub)", "Content-Type", "application/pdf"],
+    mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY"],
+    label: "小程序 PDF 由服务端按当前用户归属生成",
+  },
+  {
+    file: "src/app/api/miniprogram/auth/account/route.ts",
+    mustInclude: ["isActiveMiniProgramSession", "merge_wechat_user_into_email_user", "请先绑定真实邮箱，再解绑微信", "这个微信已绑定其他拾星账号"],
+    mustNotInclude: ["nickname", "avatar"],
+    label: "邮箱微信绑定只接受显式凭据并保留安全解绑条件",
+  },
+  {
+    file: "supabase/migrations/20260726140000_shared_guide_feedback.sql",
+    mustInclude: ["platform_visibility in ('both', 'web', 'miniprogram')", "feedback_submissions", "merge_wechat_user_into_email_user", "revoke all on function"],
+    mustNotInclude: ["grant execute on function public.merge_wechat_user_into_email_user(uuid, uuid)\\n  to authenticated"],
+    label: "指南可见性、反馈队列和账号合并均由数据库约束",
+  },
 ];
 const REQUIRED_FILES = [
   "public/assets/space-background-desktop.png",
@@ -1028,7 +1052,7 @@ const REQUIRED_TEXT = {
   "/explore": ["岗位坐标", "正在加载岗位"],
   "/my": ["投递管理", "当前阶段"],
   "/profile": ["个人中心"],
-  "/feedback": ["反馈", "告诉我们您的建议与反馈，这对我们非常重要", "问题类型", "发送反馈"],
+  "/feedback": ["反馈", "告诉我们您的建议与反馈，这对我们非常重要", "问题类型", "提交反馈"],
   "/bottle": ["星瓶"],
   "/resume": ["简历制作"],
   "/galaxy": ["岗位星系", "地区星系", "行业星系"],

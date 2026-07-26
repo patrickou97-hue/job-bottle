@@ -20,11 +20,16 @@ type PostCardProps = {
   onPinnedChange: (postId: string, isPinned: boolean) => void;
   onUpdated: (
     postId: string,
-    updates: Pick<ForumPostView, "title" | "content" | "category" | "tags">,
+    updates: Pick<ForumPostView, "title" | "content" | "category" | "tags" | "platform_visibility">,
   ) => void;
 };
 
 const GUIDE_CATEGORIES = ["公告", "教程", "分享"] as const;
+const PLATFORM_VISIBILITY_OPTIONS = [
+  { value: "both", label: "网页与小程序" },
+  { value: "web", label: "仅网页端" },
+  { value: "miniprogram", label: "仅微信小程序" },
+] as const;
 
 export function PostCard({
   post,
@@ -42,6 +47,7 @@ export function PostCard({
   const [editCategory, setEditCategory] = useState(post.category);
   const [editContent, setEditContent] = useState(post.content);
   const [editTags, setEditTags] = useState(post.tags.join("，"));
+  const [editVisibility, setEditVisibility] = useState(post.platform_visibility);
   const reducedMotion = useReducedMotion();
   const contentId = `guide-content-${post.id}`;
 
@@ -50,6 +56,7 @@ export function PostCard({
     setEditCategory(post.category);
     setEditContent(post.content);
     setEditTags(post.tags.join("，"));
+    setEditVisibility(post.platform_visibility);
     setActionMessage("");
     setEditing(true);
   }
@@ -79,8 +86,20 @@ export function PostCard({
     setActionBusy(true);
     setActionMessage("");
     try {
-      await updatePost(post.id, { title, content, category, tags });
-      onUpdated(post.id, { title, content, category, tags });
+      await updatePost(post.id, {
+        title,
+        content,
+        category,
+        tags,
+        platformVisibility: editVisibility,
+      });
+      onUpdated(post.id, {
+        title,
+        content,
+        category,
+        tags,
+        platform_visibility: editVisibility,
+      });
       setEditing(false);
       setActionMessage("内容已更新。");
     } catch (error) {
@@ -199,6 +218,18 @@ export function PostCard({
                 <div>
                   <label htmlFor={`guide-tags-${post.id}`} className="mb-1 block text-xs font-medium text-ink-muted">标签（可选，逗号分隔）</label>
                   <Input id={`guide-tags-${post.id}`} value={editTags} onChange={(event) => setEditTags(event.target.value)} />
+                </div>
+                <div>
+                  <label htmlFor={`guide-visibility-${post.id}`} className="mb-1 block text-xs font-medium text-ink-muted">展示范围</label>
+                  <Select
+                    id={`guide-visibility-${post.id}`}
+                    value={editVisibility}
+                    onChange={(event) => setEditVisibility(event.target.value as ForumPostView["platform_visibility"])}
+                  >
+                    {PLATFORM_VISIBILITY_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </Select>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Button type="submit" disabled={actionBusy}>{actionBusy ? "保存中" : "保存修改"}</Button>

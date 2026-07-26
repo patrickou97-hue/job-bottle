@@ -39,9 +39,10 @@
     <view class="core-system">
       <view class="core-glow"></view>
       <view class="core-planet">
+        <view class="planet-bands"></view>
         <view class="planet-texture"></view>
         <view class="planet-terminator"></view>
-        <view class="planet-glint"></view>
+        <view class="planet-crater planet-crater-a"></view>
       </view>
       <text class="core-label">拾星</text>
     </view>
@@ -58,9 +59,11 @@
         aria-label="进入岗位坐标"
       >
         <view class="planet-orb planet-orb-jobs">
+          <view class="planet-bands"></view>
           <view class="planet-texture"></view>
           <view class="planet-terminator"></view>
-          <view class="planet-glint"></view>
+          <view class="planet-crater planet-crater-a"></view>
+          <view class="planet-crater planet-crater-b"></view>
         </view>
         <text class="planet-label">岗位坐标</text>
       </button>
@@ -79,9 +82,10 @@
       >
         <view class="planet-orb planet-orb-bottle">
           <view class="planet-ring"></view>
+          <view class="planet-bands"></view>
           <view class="planet-texture"></view>
           <view class="planet-terminator"></view>
-          <view class="planet-glint"></view>
+          <view class="planet-crater planet-crater-a"></view>
         </view>
         <text class="planet-label">星瓶</text>
       </button>
@@ -99,9 +103,11 @@
         aria-label="进入我的简历"
       >
         <view class="planet-orb planet-orb-resume">
+          <view class="planet-bands"></view>
           <view class="planet-texture"></view>
           <view class="planet-terminator"></view>
-          <view class="planet-glint"></view>
+          <view class="planet-crater planet-crater-a"></view>
+          <view class="planet-crater planet-crater-b"></view>
         </view>
         <text class="planet-label">我的简历</text>
       </button>
@@ -119,9 +125,10 @@
         aria-label="进入我的拾星"
       >
         <view class="planet-orb planet-orb-profile">
+          <view class="planet-bands"></view>
           <view class="planet-texture"></view>
           <view class="planet-terminator"></view>
-          <view class="planet-glint"></view>
+          <view class="planet-crater planet-crater-a"></view>
         </view>
         <text class="planet-label">我的拾星</text>
       </button>

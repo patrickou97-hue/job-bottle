@@ -142,7 +142,7 @@ const COMPACT_OPTIONS: PdfOptions[] = [
 ];
 
 const fontSourceCache = new Map<string, Promise<ResumeFontBundle>>();
-const selectedFontCache = new Map<ResumeFontProfile, Promise<ResumeFontBundle>>();
+const selectedFontCache = new Map<string, Promise<ResumeFontBundle>>();
 const previewMeasurementPdfCache = new Map<string, Promise<JsPdf>>();
 const installedFontFaces = new Set<FontFace>();
 
@@ -160,6 +160,14 @@ export async function exportResumeToPdf(resume: ResumeDocument) {
   const pdf = await buildResumePdf(resume);
   const fileName = sanitizeFileName(resume.content.basics.name || resume.title || "Resume");
   pdf.save(`${fileName}-Resume.pdf`);
+}
+
+export async function createResumePdfBytes(
+  resume: ResumeDocument,
+  fontBaseUrl?: string,
+) {
+  const pdf = await buildResumePdf(resume, fontBaseUrl);
+  return pdf.output("arraybuffer");
 }
 
 export async function createResumePreviewLayout(resume: ResumeDocument): Promise<ResumePreviewLayout> {
@@ -182,9 +190,9 @@ export async function createResumePreviewLayout(resume: ResumeDocument): Promise
   };
 }
 
-async function buildResumePdf(resume: ResumeDocument) {
+async function buildResumePdf(resume: ResumeDocument, fontBaseUrl?: string) {
   const { jsPDF } = await import("jspdf");
-  const fonts = await loadResumeFonts(resume);
+  const fonts = await loadResumeFonts(resume, fontBaseUrl);
   const pdf = createPdf(jsPDF, fonts);
   const selectedOptions = chooseOptions(resume, pdf);
   renderResume(pdf, resume, selectedOptions, { allowPageBreaks: true, draw: true });
@@ -693,26 +701,30 @@ function drawRight(state: LayoutState, text: string, right: number, y: number) {
   drawText(state, text, right - state.pdf.getTextWidth(text), y);
 }
 
-async function loadResumeFonts(resume: ResumeDocument) {
+async function loadResumeFonts(resume: ResumeDocument, fontBaseUrl?: string) {
   const profile = selectResumeDocumentFontProfile(resume);
-  const existing = selectedFontCache.get(profile);
+  const selectionKey = `${profile}:${fontBaseUrl ?? "browser"}`;
+  const existing = selectedFontCache.get(selectionKey);
   if (existing) return existing;
 
-  const promise = resolveResumeFontBundle(profile).catch((error) => {
-    selectedFontCache.delete(profile);
+  const promise = resolveResumeFontBundle(profile, fontBaseUrl).catch((error) => {
+    selectedFontCache.delete(selectionKey);
     throw error;
   });
-  selectedFontCache.set(profile, promise);
+  selectedFontCache.set(selectionKey, promise);
   return promise;
 }
 
-async function resolveResumeFontBundle(profile: ResumeFontProfile) {
+async function resolveResumeFontBundle(
+  profile: ResumeFontProfile,
+  fontBaseUrl?: string,
+) {
   if (profile === "common") {
     return loadFontSource({
       profile,
       source: "same-origin-common",
-      regularUrl: COMMON_FONT_REGULAR,
-      boldUrl: COMMON_FONT_BOLD,
+      regularUrl: resolveFontUrl(COMMON_FONT_REGULAR, fontBaseUrl),
+      boldUrl: resolveFontUrl(COMMON_FONT_BOLD, fontBaseUrl),
     });
   }
 
@@ -734,13 +746,13 @@ async function resolveResumeFontBundle(profile: ResumeFontProfile) {
   return loadFontSource({
     profile,
     source: "same-origin-full",
-    regularUrl: FULL_FONT_REGULAR,
-    boldUrl: FULL_FONT_BOLD,
+    regularUrl: resolveFontUrl(FULL_FONT_REGULAR, fontBaseUrl),
+    boldUrl: resolveFontUrl(FULL_FONT_BOLD, fontBaseUrl),
   });
 }
 
 function loadFontSource(source: ResumeFontSource) {
-  const cacheKey = `${source.profile}:${source.source}`;
+  const cacheKey = `${source.profile}:${source.source}:${source.regularUrl}:${source.boldUrl}`;
   const existing = fontSourceCache.get(cacheKey);
   if (existing) return existing;
 
@@ -770,7 +782,10 @@ function loadFontSource(source: ResumeFontSource) {
 
 async function fetchFontBuffer(path: string) {
   const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), FONT_TIMEOUT_MS);
+  const timeout = globalThis.setTimeout(
+    () => controller.abort(),
+    FONT_TIMEOUT_MS,
+  );
 
   try {
     const response = await fetch(path, { cache: "force-cache", signal: controller.signal });
@@ -785,8 +800,13 @@ async function fetchFontBuffer(path: string) {
 
     throw normalizeFontError(error);
   } finally {
-    window.clearTimeout(timeout);
+    globalThis.clearTimeout(timeout);
   }
+}
+
+function resolveFontUrl(path: string, baseUrl?: string) {
+  if (!baseUrl || !path.startsWith("/")) return path;
+  return new URL(path, baseUrl).toString();
 }
 
 async function installAndValidateFontPair(

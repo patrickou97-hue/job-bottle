@@ -1,8 +1,13 @@
-import { logout } from "../../services/auth";
+import { getWechatLoginCode, logout } from "../../services/auth";
 import { RELEASE_CAPABILITIES } from "../../config/env";
 import { apiRequest } from "../../services/request";
-import { hasActiveSession } from "../../services/session";
-import type { ProfileResponse, WebLoginCodeResponse } from "../../types/api";
+import { hasActiveSession, saveSession } from "../../services/session";
+import type {
+  AccountBindingResponse,
+  AccountStatusResponse,
+  ProfileResponse,
+  WebLoginCodeResponse,
+} from "../../types/api";
 import type { Profile } from "../../types/domain";
 
 type ProfileView = Profile & {
@@ -31,6 +36,11 @@ Page({
     draftGraduationYear: "",
     draftPreferredRegions: "",
     draftTargetRoles: "",
+    accountStatus: null as AccountStatusResponse["data"] | null,
+    accountLoading: false,
+    showEmailBinding: false,
+    bindingEmail: "",
+    bindingPassword: "",
   },
 
   onShow() {
@@ -57,6 +67,7 @@ Page({
         draftTargetRoles: response.data.profile.targetRoles.join("、"),
         profile: toProfileView(response.data.profile),
       });
+      void this.loadAccountStatus();
     } catch (error) {
       this.setData({
         loading: false,
@@ -76,6 +87,118 @@ Page({
 
   onToggleEdit() {
     this.setData({ editing: !this.data.editing, errorMessage: "" });
+  },
+
+  onOpenSupport() {
+    wx.navigateTo({ url: "/pages/support/index" });
+  },
+
+  async loadAccountStatus() {
+    try {
+      const response = await apiRequest<AccountStatusResponse>("/auth/account");
+      this.setData({ accountStatus: response.data });
+    } catch {
+      // The profile remains usable when account status cannot be read.
+    }
+  },
+
+  onToggleEmailBinding() {
+    this.setData({ showEmailBinding: !this.data.showEmailBinding });
+  },
+
+  onBindingEmailInput(event: WechatMiniprogram.Input) {
+    this.setData({ bindingEmail: event.detail.value });
+  },
+
+  onBindingPasswordInput(event: WechatMiniprogram.Input) {
+    this.setData({ bindingPassword: event.detail.value });
+  },
+
+  async onBindWechat() {
+    if (this.data.accountLoading) return;
+    this.setData({ accountLoading: true });
+    try {
+      const code = await getWechatLoginCode();
+      await apiRequest<AccountBindingResponse>("/auth/account", {
+        method: "POST",
+        data: { action: "bind_wechat", code },
+      });
+      wx.showToast({ title: "微信已绑定", icon: "success" });
+      await this.loadAccountStatus();
+    } catch (error) {
+      wx.showToast({
+        title: error instanceof Error ? error.message : "绑定失败",
+        icon: "none",
+      });
+    } finally {
+      this.setData({ accountLoading: false });
+    }
+  },
+
+  async onBindEmail() {
+    if (this.data.accountLoading) return;
+    if (!this.data.bindingEmail.trim() || !this.data.bindingPassword) {
+      wx.showToast({ title: "请输入邮箱和密码", icon: "none" });
+      return;
+    }
+    this.setData({ accountLoading: true });
+    try {
+      const response = await apiRequest<AccountBindingResponse>(
+        "/auth/account",
+        {
+          method: "POST",
+          data: {
+            action: "bind_email",
+            email: this.data.bindingEmail,
+            password: this.data.bindingPassword,
+          },
+        },
+      );
+      if (response.data.session) saveSession(response.data.session);
+      this.setData({
+        showEmailBinding: false,
+        bindingEmail: "",
+        bindingPassword: "",
+      });
+      wx.showToast({ title: "邮箱账号已合并", icon: "success" });
+      await this.loadAccountStatus();
+      await this.loadProfile();
+    } catch (error) {
+      wx.showToast({
+        title: error instanceof Error ? error.message : "绑定失败",
+        icon: "none",
+      });
+    } finally {
+      this.setData({ accountLoading: false });
+    }
+  },
+
+  onUnbindWechat() {
+    wx.showModal({
+      title: "解绑微信？",
+      content: "解绑后仍可使用已绑定邮箱登录。",
+      confirmText: "确认解绑",
+      confirmColor: "#9f2d3f",
+      success: (result) => {
+        if (result.confirm) void this.unbindWechat();
+      },
+    });
+  },
+
+  async unbindWechat() {
+    this.setData({ accountLoading: true });
+    try {
+      await apiRequest("/auth/account", { method: "DELETE" });
+      wx.showToast({ title: "微信已解绑", icon: "success" });
+      await this.loadAccountStatus();
+    } catch (error) {
+      wx.showToast({
+        title: error instanceof Error ? error.message : "解绑失败",
+        icon: "none",
+      });
+    } finally {
+      this.setData({ accountLoading: false });
+    }
   },
 
   onDraftInput(event: WechatMiniprogram.Input) {
@@ -116,14 +239,6 @@ Page({
         });
       })
       .finally(() => this.setData({ saving: false }));
-  },
-
-  onFeedback() {
-    wx.showModal({
-      title: "反馈入口",
-      content: "正式反馈接口接入前，请先通过拾星网站反馈页联系我们。",
-      showCancel: false,
-    });
   },
 
   onGenerateWebCode() {

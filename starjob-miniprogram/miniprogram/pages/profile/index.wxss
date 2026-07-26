@@ -133,6 +133,41 @@
   padding: 34rpx 0 8rpx;
 }
 
+.account-summary {
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid var(--color-line-soft);
+}
+
+.account-summary-title,
+.account-summary-value {
+  display: block;
+}
+
+.account-summary-title {
+  color: var(--color-muted);
+  font-size: 22rpx;
+}
+
+.account-summary-value {
+  margin-top: 7rpx;
+  font-size: 25rpx;
+  line-height: 1.5;
+}
+
+.email-binding-panel {
+  padding: 22rpx 0;
+  border-bottom: 1rpx solid var(--color-line-soft);
+}
+
+.email-binding-panel .form-group + .form-group {
+  display: block;
+  margin-top: 18rpx;
+}
+
+.binding-submit {
+  margin-top: 20rpx;
+}
+
 .section-title {
   display: block;
   margin-bottom: 18rpx;

@@ -2,19 +2,12 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import {
   createMiniProgramSession,
+  exchangeMiniProgramWechatCode,
   hashMiniProgramIdentifier,
 } from "@/lib/miniprogram-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
-
-type WechatCodeSessionResponse = {
-  openid?: string;
-  unionid?: string;
-  session_key?: string;
-  errcode?: number;
-  errmsg?: string;
-};
 
 export async function POST(request: Request) {
   try {
@@ -30,7 +23,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const wechat = await exchangeWechatCode(body.code);
+    const wechat = await exchangeMiniProgramWechatCode(body.code);
     if (!wechat.openid) {
       console.warn("[miniprogram_auth_wechat_exchange]", {
         errcode: wechat.errcode,
@@ -118,36 +111,6 @@ export async function POST(request: Request) {
       { error: "微信登录暂时不可用，请稍后重试。" },
       { status: 500 },
     );
-  }
-}
-
-async function exchangeWechatCode(code: string) {
-  const appId = process.env.WECHAT_MINIPROGRAM_APP_ID;
-  const appSecret = process.env.WECHAT_MINIPROGRAM_APP_SECRET;
-  if (!appId || !appSecret) {
-    throw new Error("WeChat Mini Program credentials are missing.");
-  }
-
-  const url = new URL("https://api.weixin.qq.com/sns/jscode2session");
-  url.search = new URLSearchParams({
-    appid: appId,
-    secret: appSecret,
-    js_code: code,
-    grant_type: "authorization_code",
-  }).toString();
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8_000);
-  try {
-    const response = await fetch(url, {
-      method: "GET",
-      cache: "no-store",
-      signal: controller.signal,
-    });
-    if (!response.ok) throw new Error(`WeChat HTTP ${response.status}`);
-    return (await response.json()) as WechatCodeSessionResponse;
-  } finally {
-    clearTimeout(timeout);
   }
 }
 

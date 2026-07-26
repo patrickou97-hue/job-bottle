@@ -4,6 +4,7 @@ import { hasActiveSession } from "../../services/session";
 import type {
   ApplicationListResponse,
   ApplicationUpdateResponse,
+  ResumeListResponse,
 } from "../../types/api";
 import type {
   ApplicationCandidateStage,
@@ -15,6 +16,11 @@ type BottleRow = UserApplication & {
   statusLabel: string;
   stageLabel: string;
   updatedLabel: string;
+  nextActionDate: string;
+  statusIndex: number;
+  stageIndex: number;
+  priorityIndex: number;
+  resumeIndex: number;
 };
 
 const STATUS_LABELS: Record<ApplicationStatus, string> = {
@@ -34,6 +40,14 @@ const STAGE_LABELS: Record<ApplicationCandidateStage, string> = {
   saved: "已收藏",
   preparing: "准备中",
 };
+
+const STAGE_OPTIONS = [
+  { label: "评估中", value: "evaluating" },
+  { label: "已收藏", value: "saved" },
+  { label: "准备中", value: "preparing" },
+] as const;
+
+const PRIORITY_OPTIONS = ["未设置", "低", "中", "高"];
 
 const PROGRESS_OPTIONS: {
   label: string;
@@ -74,6 +88,14 @@ Page({
     activeCount: 0,
     offerCount: 0,
     progressUpdateAvailable: RELEASE_CAPABILITIES.applicationProgressUpdate,
+    editingApplication: null as BottleRow | null,
+    savingDetails: false,
+    stageOptions: STAGE_OPTIONS,
+    priorityOptions: PRIORITY_OPTIONS,
+    resumeOptions: [{ id: "", title: "不关联简历" }] as {
+      id: string;
+      title: string;
+    }[],
   },
 
   onShow() {
@@ -131,7 +153,9 @@ Page({
       }
       return item.candidateStage === filter;
     });
-    this.setData({ applications: filtered.map(toBottleRow) });
+    this.setData({
+      applications: filtered.map((application) => toBottleRow(application)),
+    });
   },
 
   onExplore() {
@@ -152,6 +176,130 @@ Page({
     const jobId = String(event.currentTarget.dataset.jobId || "");
     if (!jobId) return;
     wx.navigateTo({ url: `/pages/jobs/detail?id=${encodeURIComponent(jobId)}` });
+  },
+
+  async onEditDetails(event: WechatMiniprogram.TouchEvent) {
+    const id = String(event.currentTarget.dataset.id || "");
+    const current = sourceApplications.find((item) => item.id === id);
+    if (!current) return;
+    let resumeOptions = this.data.resumeOptions;
+    if (resumeOptions.length === 1) {
+      try {
+        const response = await apiRequest<ResumeListResponse>("/resumes");
+        resumeOptions = [
+          { id: "", title: "不关联简历" },
+          ...response.data.resumes.map((resume) => ({
+            id: resume.id,
+            title: resume.title,
+          })),
+        ];
+      } catch {
+        // Other workflow details remain editable when resumes cannot load.
+      }
+    }
+    this.setData({
+      resumeOptions,
+      editingApplication: toBottleRow(current, resumeOptions),
+    });
+  },
+
+  onCloseDetails() {
+    if (this.data.savingDetails) return;
+    this.setData({ editingApplication: null });
+  },
+
+  onDetailInput(event: WechatMiniprogram.Input) {
+    const field = String(event.currentTarget.dataset.field || "");
+    if (!field) return;
+    this.setData({ [`editingApplication.${field}`]: event.detail.value });
+  },
+
+  onDetailStatusChange(event: WechatMiniprogram.PickerChange) {
+    const index = Number(event.detail.value);
+    const selection = PROGRESS_OPTIONS[index];
+    if (!selection) return;
+    this.setData({
+      "editingApplication.status": selection.status,
+      "editingApplication.statusIndex": index,
+    });
+  },
+
+  onDetailStageChange(event: WechatMiniprogram.PickerChange) {
+    const index = Number(event.detail.value);
+    const selection = STAGE_OPTIONS[index];
+    if (!selection) return;
+    this.setData({
+      "editingApplication.candidateStage": selection.value,
+      "editingApplication.stageIndex": index,
+    });
+  },
+
+  onDetailPriorityChange(event: WechatMiniprogram.PickerChange) {
+    const index = Number(event.detail.value);
+    this.setData({
+      "editingApplication.priority": index,
+      "editingApplication.priorityIndex": index,
+    });
+  },
+
+  onDetailResumeChange(event: WechatMiniprogram.PickerChange) {
+    const index = Number(event.detail.value);
+    const selection = this.data.resumeOptions[index];
+    if (!selection) return;
+    this.setData({
+      "editingApplication.resumeId": selection.id || null,
+      "editingApplication.resumeIndex": index,
+    });
+  },
+
+  onDetailDateChange(event: WechatMiniprogram.PickerChange) {
+    this.setData({ "editingApplication.nextActionDate": event.detail.value });
+  },
+
+  onClearDetailDate() {
+    this.setData({ "editingApplication.nextActionDate": "" });
+  },
+
+  async onSaveDetails() {
+    const current = this.data.editingApplication;
+    if (!current || this.data.savingDetails) return;
+    this.setData({ savingDetails: true });
+    try {
+      const response = await apiRequest<ApplicationUpdateResponse>(
+        "/applications",
+        {
+          method: "PUT",
+          data: {
+            id: current.id,
+            status: current.status,
+            candidateStage: current.candidateStage,
+            priority: current.priority,
+            note: current.note,
+            nextAction: current.nextAction,
+            nextActionAt: current.nextActionDate,
+            applicationChannel: current.applicationChannel,
+            applicationAccount: current.applicationAccount,
+            contactName: current.contactName,
+            resumeId: current.resumeId,
+            customStageLabel: current.customStageLabel,
+            reviewNote: current.reviewNote,
+          },
+        },
+      );
+      sourceApplications = sourceApplications.map((item) =>
+        item.id === current.id ? response.data.application : item,
+      );
+      this.applyFilter();
+      this.setData({ editingApplication: null });
+      wx.showToast({ title: "投递信息已同步", icon: "success" });
+    } catch (error) {
+      wx.showToast({
+        title: error instanceof Error ? error.message : "保存失败，请重试",
+        icon: "none",
+      });
+    } finally {
+      this.setData({ savingDetails: false });
+    }
   },
 
   onUpdateProgress(event: WechatMiniprogram.TouchEvent) {
@@ -246,12 +394,33 @@ Page({
   },
 });
 
-function toBottleRow(application: UserApplication): BottleRow {
+function toBottleRow(
+  application: UserApplication,
+  resumeOptions: { id: string; title: string }[] = [{ id: "", title: "" }],
+): BottleRow {
   return {
     ...application,
     statusLabel: STATUS_LABELS[application.status],
     stageLabel: STAGE_LABELS[application.candidateStage],
     updatedLabel: formatDate(application.updatedAt),
+    nextActionDate: application.nextActionAt
+      ? application.nextActionAt.slice(0, 10)
+      : "",
+    statusIndex: Math.max(
+      0,
+      PROGRESS_OPTIONS.findIndex((item) => item.status === application.status),
+    ),
+    stageIndex: Math.max(
+      0,
+      STAGE_OPTIONS.findIndex(
+        (item) => item.value === application.candidateStage,
+      ),
+    ),
+    priorityIndex: application.priority,
+    resumeIndex: Math.max(
+      0,
+      resumeOptions.findIndex((item) => item.id === application.resumeId),
+    ),
   };
 }
 
