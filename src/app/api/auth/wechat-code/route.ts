@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 import {
   getWechatInternalEmail,
   isWechatInternalEmail,
 } from "@/lib/account-identity";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
+import type { Database } from "@/lib/types";
 import {
   consumeWechatWebLoginCode,
   WechatWebLoginRateLimitError,
@@ -75,7 +76,11 @@ export async function POST(request: NextRequest) {
     });
     if (linkError) throw linkError;
 
-    const supabase = await createClient();
+    const response = NextResponse.json(
+      { data: { userId } },
+      { headers: { "Cache-Control": "no-store" } },
+    );
+    const supabase = createLoginClient(request, response);
     const { data: verified, error: verifyError } = await supabase.auth.verifyOtp({
       type: "magiclink",
       token_hash: link.properties.hashed_token,
@@ -84,10 +89,7 @@ export async function POST(request: NextRequest) {
       throw verifyError ?? new Error("Web session was not created.");
     }
 
-    return NextResponse.json(
-      { data: { userId } },
-      { headers: { "Cache-Control": "no-store" } },
-    );
+    return response;
   } catch (error) {
     if (error instanceof WechatWebLoginRateLimitError) {
       return NextResponse.json(
@@ -100,6 +102,29 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
+}
+
+function createLoginClient(request: NextRequest, response: NextResponse) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const publishableKey =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !publishableKey) {
+    throw new Error("Supabase public server configuration is missing.");
+  }
+
+  return createServerClient<Database>(url, publishableKey, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
+      },
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value, options }) => {
+          response.cookies.set(name, value, options);
+        });
+      },
+    },
+  });
 }
 
 function hasTrustedOrigin(request: NextRequest) {

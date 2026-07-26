@@ -315,7 +315,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/auth/wechat-code/route.ts",
-    mustInclude: ["hasTrustedOrigin", "getRequestFingerprint", "WechatWebLoginRateLimitError", "email_kind: \"internal\"", "verifyOtp", "Cache-Control"],
+    mustInclude: ["hasTrustedOrigin", "getRequestFingerprint", "WechatWebLoginRateLimitError", "email_kind: \"internal\"", "verifyOtp", "response.cookies.set", "Cache-Control"],
     mustNotInclude: ["console.log", "console.warn", "console.error"],
     label: "微信网页登录消费接口校验同源、持久限流且不记录验证码或身份凭证",
   },
