@@ -1,16 +1,18 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import {
   Activity,
   Ban,
   Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Clock3,
   RefreshCw,
   RotateCcw,
   Search,
+  Sparkles,
   Shield,
   ShieldCheck,
   UserRound,
@@ -23,10 +25,12 @@ import {
   confirmAdminUserEmail,
   fetchAdminUsers,
   updateAdminUser,
+  updateStarInterviewAccess,
   type AdminUserActivityFilter,
   type AdminUserMetrics,
   type AdminUserRoleFilter,
   type AdminUserSort,
+  type AdminUserStarInterviewFilter,
   type AdminUserStatusFilter,
   type AdminUserSummary,
 } from "@/lib/admin-users";
@@ -41,12 +45,14 @@ const EMPTY_METRICS: AdminUserMetrics = {
   active3d: 0,
   neverSignedIn: 0,
   disabledUsers: 0,
+  starInterviewUnlimitedUsers: 0,
 };
 
 export function AdminUsersClient() {
   const [users, setUsers] = useState<AdminUserSummary[]>([]);
   const [metrics, setMetrics] = useState<AdminUserMetrics>(EMPTY_METRICS);
   const [currentUserId, setCurrentUserId] = useState("");
+  const [canManageStarInterviewAccess, setCanManageStarInterviewAccess] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [totalFiltered, setTotalFiltered] = useState(0);
@@ -56,6 +62,7 @@ export function AdminUsersClient() {
   const [activity, setActivity] = useState<AdminUserActivityFilter>("all");
   const [role, setRole] = useState<AdminUserRoleFilter>("all");
   const [status, setStatus] = useState<AdminUserStatusFilter>("all");
+  const [starInterviewAccess, setStarInterviewAccess] = useState<AdminUserStarInterviewFilter>("all");
   const [sort, setSort] = useState<AdminUserSort>("activity_desc");
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [refreshing, setRefreshing] = useState(false);
@@ -64,6 +71,8 @@ export function AdminUsersClient() {
   const [confirmDisableId, setConfirmDisableId] = useState("");
   const [confirmEmailId, setConfirmEmailId] = useState("");
   const [confirmRoleId, setConfirmRoleId] = useState("");
+  const [confirmAccessId, setConfirmAccessId] = useState("");
+  const [expandedId, setExpandedId] = useState("");
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const hasLoadedRef = useRef(false);
 
@@ -73,12 +82,13 @@ export function AdminUsersClient() {
       if (hasLoadedRef.current) setRefreshing(true);
       else setState("loading");
       setMessage("");
-      void fetchAdminUsers({ page, pageSize, query, activity, role, status, sort })
+      void fetchAdminUsers({ page, pageSize, query, activity, role, status, starInterviewAccess, sort })
         .then((result) => {
           if (cancelled) return;
           setUsers(result.users);
           setMetrics(result.metrics);
           setCurrentUserId(result.currentUserId);
+          setCanManageStarInterviewAccess(result.canManageStarInterviewAccess);
           setPage(result.page);
           setPageSize(result.pageSize);
           setTotalFiltered(result.totalFiltered);
@@ -103,7 +113,7 @@ export function AdminUsersClient() {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [activity, page, pageSize, query, revision, role, sort, status]);
+  }, [activity, page, pageSize, query, revision, role, sort, starInterviewAccess, status]);
 
   function updateDraft(id: string, values: Partial<Draft>) {
     setConfirmRoleId("");
@@ -199,11 +209,61 @@ export function AdminUsersClient() {
     }
   }
 
+  async function requestStarInterviewAccessToggle(user: AdminUserSummary) {
+    if (!canManageStarInterviewAccess) return;
+    if (confirmAccessId !== user.id) {
+      setConfirmAccessId(user.id);
+      setMessage(
+        `再次点击将${user.starInterviewUnlimitedAccess ? "关闭" : "开启"} ${user.email} 的 StarInterview 无限访问。`,
+      );
+      return;
+    }
+    setSavingId(user.id);
+    setMessage("");
+    try {
+      const result = await updateStarInterviewAccess(user.id, !user.starInterviewUnlimitedAccess);
+      setUsers((current) => current
+        .map((item) => item.id === user.id ? {
+          ...item,
+          starInterviewUnlimitedAccess: result.starInterviewUnlimitedAccess,
+          starInterviewAccessSource: result.starInterviewAccessSource,
+        } : item)
+        .filter((item) => (
+          starInterviewAccess === "all"
+          || (starInterviewAccess === "unlimited" && item.starInterviewUnlimitedAccess)
+          || (starInterviewAccess === "standard" && !item.starInterviewUnlimitedAccess)
+        )));
+      setMetrics((current) => ({
+        ...current,
+        starInterviewUnlimitedUsers: Math.max(
+          0,
+          current.starInterviewUnlimitedUsers + (result.starInterviewUnlimitedAccess ? 1 : -1),
+        ),
+      }));
+      if (starInterviewAccess !== "all") {
+        const nextTotal = Math.max(0, totalFiltered - 1);
+        const nextTotalPages = Math.max(1, Math.ceil(nextTotal / pageSize));
+        setTotalFiltered(nextTotal);
+        setTotalPages(nextTotalPages);
+        if (page > nextTotalPages) setPage(nextTotalPages);
+      }
+      setConfirmAccessId("");
+      setMessage(
+        `${user.email} 已${result.starInterviewUnlimitedAccess ? "开启" : "关闭"} StarInterview 无限访问。`,
+      );
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "StarInterview 访问权限更新失败，原设置未改变。");
+    } finally {
+      setSavingId("");
+    }
+  }
+
   function resetFilters() {
     setQuery("");
     setActivity("all");
     setRole("all");
     setStatus("all");
+    setStarInterviewAccess("all");
     setSort("activity_desc");
     setPage(1);
   }
@@ -213,7 +273,14 @@ export function AdminUsersClient() {
     setPage(1);
   }
 
-  const hasFilters = Boolean(query || activity !== "all" || role !== "all" || status !== "all" || sort !== "activity_desc");
+  const hasFilters = Boolean(
+    query
+    || activity !== "all"
+    || role !== "all"
+    || status !== "all"
+    || starInterviewAccess !== "all"
+    || sort !== "activity_desc",
+  );
 
   if (state === "loading") {
     return <div className="empty-state"><span className="loading-line">正在汇总全部用户账户</span></div>;
@@ -229,16 +296,16 @@ export function AdminUsersClient() {
   }
 
   const metricItems = [
-    { label: "用户总数", value: metrics.totalUsers, helper: "全部注册账户", activity: "all" as const, icon: UsersRound },
-    { label: "最近 24h 活跃", value: metrics.active24h, helper: "按最近登录统计", activity: "24h" as const, icon: Activity },
-    { label: "最近 3 日活跃", value: metrics.active3d, helper: "按最近登录统计", activity: "3d" as const, icon: Clock3 },
-    { label: "从未登录", value: metrics.neverSignedIn, helper: metrics.disabledUsers ? `另有 ${metrics.disabledUsers} 个停用账户` : "尚无成功登录", activity: "never" as const, icon: UserRound },
+    { label: "全部用户", value: metrics.totalUsers, helper: "注册账户", activity: "all" as const, icon: UsersRound },
+    { label: "24h 活跃", value: metrics.active24h, helper: "最近登录", activity: "24h" as const, icon: Activity },
+    { label: "3 日活跃", value: metrics.active3d, helper: "最近登录", activity: "3d" as const, icon: Clock3 },
+    { label: "从未登录", value: metrics.neverSignedIn, helper: metrics.disabledUsers ? `${metrics.disabledUsers} 个已停用` : "尚无成功登录", activity: "never" as const, icon: UserRound },
   ];
 
   return (
-    <div className="space-y-6">
-      <section aria-label="用户概览" className="grid grid-cols-2 border-y border-[color:var(--line-ghost)] lg:grid-cols-4">
-        {metricItems.map((item, index) => {
+    <div className="space-y-5">
+      <section aria-label="用户概览" className="grid gap-px overflow-hidden rounded-xl border border-[color:var(--line-ghost)] bg-[color:var(--line-ghost)] sm:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))_minmax(210px,1.2fr)]">
+        {metricItems.map((item) => {
           const Icon = item.icon;
           const active = activity === item.activity;
           return (
@@ -247,38 +314,62 @@ export function AdminUsersClient() {
               type="button"
               onClick={() => selectActivity(item.activity)}
               className={cn(
-                "pressable min-w-0 px-3 py-5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--aurora)] sm:px-5",
-                index % 2 === 1 ? "border-l border-[color:var(--line-ghost)]" : "",
-                index >= 2 ? "border-t border-[color:var(--line-ghost)] lg:border-t-0" : "",
-                index === 2 ? "lg:border-l" : "",
+                "pressable min-w-0 bg-[color:var(--background)] px-4 py-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--aurora)]",
                 active ? "bg-[color:var(--surface-hover-bg)]" : "hover:bg-[color:var(--surface-hover-bg)]/55",
               )}
               aria-pressed={active}
             >
-              <span className="flex items-center gap-2 text-xs text-ink-muted"><Icon aria-hidden="true" className="size-4" />{item.label}</span>
-              <strong className="mt-2 block text-3xl font-semibold tracking-[-0.04em] text-ink-primary">{item.value}</strong>
+              <span className="flex items-center gap-2 text-xs font-medium text-ink-muted"><Icon aria-hidden="true" className="size-4" />{item.label}</span>
+              <strong className="mt-2 block text-2xl font-semibold tabular-nums tracking-[-0.04em] text-ink-primary">{item.value}</strong>
               <span className="mt-1 block truncate text-xs text-ink-muted">{item.helper}</span>
             </button>
           );
         })}
+        <button
+          type="button"
+          onClick={() => {
+            setStarInterviewAccess(starInterviewAccess === "unlimited" ? "all" : "unlimited");
+            setPage(1);
+          }}
+          className={cn(
+            "pressable min-w-0 bg-[color:var(--background)] px-4 py-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--aurora)] sm:col-span-2 xl:col-span-1",
+            starInterviewAccess === "unlimited" ? "bg-[color:var(--surface-hover-bg)]" : "hover:bg-[color:var(--surface-hover-bg)]/55",
+          )}
+          aria-pressed={starInterviewAccess === "unlimited"}
+        >
+          <span className="flex items-center gap-2 text-xs font-medium text-ink-muted"><Sparkles aria-hidden="true" className="size-4 text-nebula-blue" />StarInterview 无限访问</span>
+          <strong className="mt-2 block text-2xl font-semibold tabular-nums tracking-[-0.04em] text-ink-primary">{metrics.starInterviewUnlimitedUsers}</strong>
+          <span className="mt-1 block text-xs text-ink-muted">点击查看已授权用户</span>
+        </button>
       </section>
 
-      <section aria-label="用户筛选" className="space-y-3 border-b border-[color:var(--line-ghost)] pb-5">
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(260px,1.5fr)_repeat(4,minmax(130px,0.6fr))]">
-          <label className="relative block">
-            <span className="sr-only">搜索用户</span>
-            <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-muted" />
+      <section aria-label="用户筛选" className="rounded-xl border border-[color:var(--line-ghost)] bg-[color:var(--surface-subtle-bg)]/35 p-4 sm:p-5">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold text-ink-primary">筛选用户</h2>
+            <p className="mt-1 text-xs text-ink-muted">多个条件会同时生效</p>
+          </div>
+          {hasFilters ? (
+            <button type="button" className="text-action h-9 px-2.5 text-sm" onClick={resetFilters}>
+              <RotateCcw aria-hidden="true" className="size-4" />清空
+            </button>
+          ) : null}
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-7">
+          <label className="relative block sm:col-span-2 xl:col-span-2">
+            <span className="mb-1.5 block text-xs font-medium text-ink-muted">关键词</span>
+            <Search aria-hidden="true" className="pointer-events-none absolute bottom-3.5 left-3 size-4 text-ink-muted" />
             <Input
               value={query}
               onChange={(event) => { setQuery(event.target.value); setPage(1); }}
-              placeholder="搜索邮箱、姓名、学校、方向或用户 ID"
+              placeholder="邮箱、姓名、学校、方向或 ID"
               className="pl-9"
             />
           </label>
           <label>
-            <span className="sr-only">活跃时间</span>
+            <span className="mb-1.5 block text-xs font-medium text-ink-muted">最近活跃</span>
             <Select value={activity} onChange={(event) => selectActivity(event.target.value as AdminUserActivityFilter)}>
-              <option value="all">全部活跃时间</option>
+              <option value="all">不限</option>
               <option value="24h">最近 24 小时</option>
               <option value="3d">最近 3 日</option>
               <option value="7d">最近 7 日</option>
@@ -286,24 +377,38 @@ export function AdminUsersClient() {
             </Select>
           </label>
           <label>
-            <span className="sr-only">账户身份</span>
+            <span className="mb-1.5 block text-xs font-medium text-ink-muted">账户身份</span>
             <Select value={role} onChange={(event) => { setRole(event.target.value as AdminUserRoleFilter); setPage(1); }}>
-              <option value="all">全部身份</option>
+              <option value="all">不限</option>
               <option value="user">普通用户</option>
               <option value="admin">管理员</option>
             </Select>
           </label>
           <label>
-            <span className="sr-only">账户状态</span>
+            <span className="mb-1.5 block text-xs font-medium text-ink-muted">登录状态</span>
             <Select value={status} onChange={(event) => { setStatus(event.target.value as AdminUserStatusFilter); setPage(1); }}>
-              <option value="all">全部账户状态</option>
+              <option value="all">不限</option>
               <option value="enabled">可正常登录</option>
               <option value="disabled">已停用</option>
               <option value="unconfirmed">邮箱未确认</option>
             </Select>
           </label>
           <label>
-            <span className="sr-only">排序方式</span>
+            <span className="mb-1.5 block text-xs font-medium text-ink-muted">StarInterview</span>
+            <Select
+              value={starInterviewAccess}
+              onChange={(event) => {
+                setStarInterviewAccess(event.target.value as AdminUserStarInterviewFilter);
+                setPage(1);
+              }}
+            >
+              <option value="all">不限</option>
+              <option value="unlimited">无限访问</option>
+              <option value="standard">标准访问</option>
+            </Select>
+          </label>
+          <label className="sm:col-span-2 xl:col-span-1">
+            <span className="mb-1.5 block text-xs font-medium text-ink-muted">排序</span>
             <Select value={sort} onChange={(event) => { setSort(event.target.value as AdminUserSort); setPage(1); }}>
               <option value="activity_desc">最近活跃优先</option>
               <option value="created_desc">最新注册优先</option>
@@ -312,18 +417,11 @@ export function AdminUsersClient() {
             </Select>
           </label>
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-ink-muted">
-          <span>{refreshing ? "正在更新结果…" : `找到 ${totalFiltered} 位用户 · 第 ${page} / ${totalPages} 页`}</span>
-          <div className="flex items-center gap-2">
-            {hasFilters ? (
-              <button type="button" className="text-action h-9 px-2.5 text-sm" onClick={resetFilters}>
-                <RotateCcw aria-hidden="true" className="size-4" />重置筛选
-              </button>
-            ) : null}
-            <button type="button" className="text-action h-9 px-2.5 text-sm" onClick={() => setRevision((value) => value + 1)} disabled={refreshing}>
-              <RefreshCw aria-hidden="true" className={cn("size-4", refreshing && "animate-spin")} />刷新
-            </button>
-          </div>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[color:var(--line-ghost)] pt-4 text-sm text-ink-muted">
+          <span>{refreshing ? "正在更新结果…" : `${totalFiltered} 位用户 · 第 ${page} / ${totalPages} 页`}</span>
+          <button type="button" className="text-action h-9 px-2.5 text-sm" onClick={() => setRevision((value) => value + 1)} disabled={refreshing}>
+            <RefreshCw aria-hidden="true" className={cn("size-4", refreshing && "animate-spin")} />刷新数据
+          </button>
         </div>
       </section>
 
@@ -335,87 +433,80 @@ export function AdminUsersClient() {
           {hasFilters ? <Button variant="secondary" className="mt-4" onClick={resetFilters}>清空筛选</Button> : null}
         </div>
       ) : (
-        <div className={cn("divide-y divide-[color:var(--line-ghost)] border-y border-[color:var(--line-ghost)] transition-opacity", refreshing && "opacity-55")} aria-busy={refreshing}>
+        <section className={cn("overflow-hidden rounded-xl border border-[color:var(--line-ghost)] transition-opacity", refreshing && "opacity-55")} aria-label="用户列表" aria-busy={refreshing}>
+          <div className="hidden grid-cols-[minmax(240px,1.35fr)_minmax(150px,0.6fr)_minmax(190px,0.75fr)_44px] gap-5 border-b border-[color:var(--line-ghost)] bg-[color:var(--surface-subtle-bg)]/45 px-5 py-3 text-xs font-medium text-ink-muted lg:grid">
+            <span>用户</span><span>使用情况</span><span>账户与权限</span><span className="sr-only">展开</span>
+          </div>
           {users.map((user) => {
             const draft = drafts[user.id] ?? { displayName: user.displayName, role: user.role };
             const isSelf = user.id === currentUserId;
             const disabled = Boolean(user.bannedUntil);
             const dirty = draft.displayName !== user.displayName || draft.role !== user.role;
+            const expanded = expandedId === user.id;
             return (
-              <article key={user.id} className="grid gap-5 py-6 lg:grid-cols-[minmax(260px,1fr)_minmax(280px,0.8fr)_auto] lg:items-center">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {user.role === "admin" ? <Shield aria-hidden="true" className="size-4 text-nebula-blue" /> : <UserRound aria-hidden="true" className="size-4 text-ink-muted" />}
-                    <h2 className="truncate text-base font-semibold text-ink-primary">{user.email}</h2>
-                    <span className="text-xs text-ink-muted">
-                      {user.accountType === "wechat"
-                        ? "仅微信登录"
-                        : user.accountType === "linked"
-                          ? "邮箱与微信已绑定"
-                          : "仅邮箱登录"}
+              <article key={user.id} className="border-b border-[color:var(--line-ghost)] last:border-b-0">
+                <button type="button" onClick={() => setExpandedId(expanded ? "" : user.id)} className="grid w-full gap-4 px-4 py-4 text-left transition-colors hover:bg-[color:var(--surface-hover-bg)]/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--aurora)] sm:px-5 lg:grid-cols-[minmax(240px,1.35fr)_minmax(150px,0.6fr)_minmax(190px,0.75fr)_44px] lg:items-center lg:gap-5" aria-expanded={expanded}>
+                  <span className="min-w-0">
+                    <span className="flex min-w-0 items-center gap-2">
+                      {user.role === "admin" ? <Shield aria-hidden="true" className="size-4 shrink-0 text-nebula-blue" /> : <UserRound aria-hidden="true" className="size-4 shrink-0 text-ink-muted" />}
+                      <strong className="truncate text-sm font-semibold text-ink-primary">{user.email}</strong>
+                      {isSelf ? <span className="shrink-0 text-xs text-[color:var(--aurora)]">当前账号</span> : null}
                     </span>
-                    {isSelf ? <span className="text-xs text-[color:var(--aurora)]">当前账号</span> : null}
-                    {disabled ? <span className="text-xs text-[#d8a8b7]">已停用</span> : null}
-                    {user.accountType !== "wechat" && !user.emailConfirmedAt ? <span className="text-xs text-ink-muted">邮箱未确认</span> : null}
+                    <span className="mt-1.5 block truncate text-xs text-ink-muted">{user.displayName} · {user.school || "学校未填写"} · {user.targetRoles.join("、") || "方向未填写"}</span>
+                  </span>
+                  <span className="text-xs leading-5 text-ink-secondary">
+                    <span className="block">{user.applicationCount} 条投递 · {user.resumeCount} 份简历</span>
+                    <span className="block text-ink-muted">{formatLastActivity(user.lastSignInAt)}</span>
+                  </span>
+                  <span className="flex flex-wrap items-center gap-2">
+                    <StatusTag tone={user.role === "admin" ? "blue" : "neutral"}>{user.role === "admin" ? "管理员" : "普通用户"}</StatusTag>
+                    <StatusTag tone={user.starInterviewUnlimitedAccess ? "gold" : "neutral"}>{user.starInterviewUnlimitedAccess ? "StarInterview 无限" : "标准访问"}</StatusTag>
+                    {disabled ? <StatusTag tone="danger">已停用</StatusTag> : null}
+                    {user.accountType !== "wechat" && !user.emailConfirmedAt ? <StatusTag tone="neutral">邮箱未确认</StatusTag> : null}
+                  </span>
+                  <ChevronDown aria-hidden="true" className={cn("hidden size-4 justify-self-end text-ink-muted transition-transform lg:block", expanded && "rotate-180")} />
+                </button>
+
+                {expanded ? (
+                  <div className="border-t border-[color:var(--line-ghost)] bg-[color:var(--surface-subtle-bg)]/25 px-4 py-5 sm:px-5">
+                    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(310px,0.65fr)]">
+                      <div>
+                        <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-muted">账户资料</h3>
+                        <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_160px]">
+                          <label><span className="mb-1.5 block text-xs text-ink-muted">显示名</span><Input disabled={refreshing || savingId === user.id} value={draft.displayName} onChange={(event) => updateDraft(user.id, { displayName: event.target.value })} /></label>
+                          <label><span className="mb-1.5 block text-xs text-ink-muted">账户身份</span><Select value={draft.role} disabled={isSelf || refreshing || savingId === user.id} onChange={(event) => updateDraft(user.id, { role: event.target.value as ProfileRole })}><option value="user">普通用户</option><option value="admin">管理员</option></Select></label>
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <Button variant="secondary" disabled={!dirty || refreshing || savingId === user.id} onClick={() => requestSaveUser(user)}><Check aria-hidden="true" className="size-4" />{confirmRoleId === user.id ? "确认身份变更" : "保存资料与身份"}</Button>
+                          {user.accountType !== "wechat" && !user.emailConfirmedAt ? <Button variant="secondary" disabled={refreshing || savingId === user.id} onClick={() => requestEmailConfirmation(user)}><ShieldCheck aria-hidden="true" className="size-4" />{confirmEmailId === user.id ? "确认邮箱" : "设为已确认"}</Button> : null}
+                          <Button variant={disabled ? "secondary" : "danger"} disabled={isSelf || refreshing || savingId === user.id} onClick={() => requestAccountToggle(user)}>{disabled ? <RefreshCw aria-hidden="true" className="size-4" /> : <Ban aria-hidden="true" className="size-4" />}{disabled ? "恢复登录" : confirmDisableId === user.id ? "确认停用账户" : "停用账户"}</Button>
+                        </div>
+                      </div>
+
+                      <div className="border-t border-[color:var(--line-ghost)] pt-5 xl:border-l xl:border-t-0 xl:pl-6 xl:pt-0">
+                        <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-ink-muted"><Sparkles aria-hidden="true" className="size-4" />StarInterview 访问</h3>
+                        <div className="mt-3 flex items-center justify-between gap-4">
+                          <div>
+                            <p className="text-sm font-semibold text-ink-primary">{user.starInterviewUnlimitedAccess ? "无限访问" : "标准访问"}</p>
+                            <p className="mt-1 text-xs leading-5 text-ink-muted">{user.starInterviewAccessSource === "admin_default" ? "管理员初始权限，尚未单独调整" : user.starInterviewAccessSource === "explicit" ? "已由主管理员单独设置" : "普通用户默认状态"}</p>
+                          </div>
+                          <button type="button" role="switch" aria-checked={user.starInterviewUnlimitedAccess} aria-label={`调整 ${user.email} 的 StarInterview 无限访问`} disabled={!canManageStarInterviewAccess || refreshing || savingId === user.id} onClick={() => void requestStarInterviewAccessToggle(user)} className={cn("relative h-7 w-12 shrink-0 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--aurora)] disabled:cursor-not-allowed disabled:opacity-45", user.starInterviewUnlimitedAccess ? "border-nebula-blue/70 bg-nebula-blue/75" : "border-[color:var(--line)] bg-[color:var(--surface-hover-bg)]")}>
+                            <span className={cn("absolute left-0 top-1 size-[18px] rounded-full bg-white shadow-sm transition-transform", user.starInterviewUnlimitedAccess ? "translate-x-6" : "translate-x-1")} />
+                          </button>
+                        </div>
+                        {!canManageStarInterviewAccess ? <p className="mt-3 text-xs leading-5 text-ink-muted">只有主管理员可以调整此权限。</p> : confirmAccessId === user.id ? <p className="mt-3 text-xs leading-5 text-[#d8a8b7]">再次点击开关以确认变更。</p> : null}
+                      </div>
+                    </div>
+                    <details className="mt-5 border-t border-[color:var(--line-ghost)] pt-4 text-xs text-ink-muted">
+                      <summary className="cursor-pointer select-none font-medium text-ink-secondary">技术信息</summary>
+                      <div className="mt-3 space-y-1 font-mono text-[11px] leading-5"><p className="break-all">用户 ID：{user.id}</p>{user.wechatIdentityId ? <p className="break-all">微信身份 ID：{user.wechatIdentityId}</p> : null}<p>登录方式：{formatAccountType(user.accountType)}</p><p>注册时间：{formatDateTime(user.createdAt)}</p></div>
+                    </details>
                   </div>
-                  <p className="mt-2 break-all font-mono text-[11px] leading-5 text-ink-muted">
-                    用户 ID：{user.id}
-                  </p>
-                  {user.wechatIdentityId ? (
-                    <p className="break-all font-mono text-[11px] leading-5 text-ink-muted">
-                      微信身份 ID：{user.wechatIdentityId}
-                    </p>
-                  ) : null}
-                  <p className="mt-2 text-sm text-ink-secondary">{user.school || "学校未填写"} · {user.targetRoles.join("、") || "求职方向未填写"}</p>
-                  <p className="mt-2 text-xs text-ink-muted">
-                    {user.applicationCount} 条投递 · {user.resumeCount} 份简历 · {formatLastActivity(user.lastSignInAt)}
-                  </p>
-                  <p className="mt-1 text-xs text-ink-muted">注册于 {formatDateTime(user.createdAt)}</p>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_140px]">
-                  <label>
-                    <span className="mb-1.5 block text-xs text-ink-muted">显示名</span>
-                    <Input disabled={refreshing || savingId === user.id} value={draft.displayName} onChange={(event) => updateDraft(user.id, { displayName: event.target.value })} />
-                  </label>
-                  <label>
-                    <span className="mb-1.5 block text-xs text-ink-muted">账户身份</span>
-                    <Select value={draft.role} disabled={isSelf || refreshing || savingId === user.id} onChange={(event) => updateDraft(user.id, { role: event.target.value as ProfileRole })}>
-                      <option value="user">普通用户</option>
-                      <option value="admin">管理员</option>
-                    </Select>
-                  </label>
-                </div>
-
-                <div className="flex flex-wrap gap-2 lg:justify-end">
-                  {user.accountType !== "wechat" && !user.emailConfirmedAt ? (
-                    <Button
-                      variant="secondary"
-                      disabled={refreshing || savingId === user.id}
-                      onClick={() => requestEmailConfirmation(user)}
-                    >
-                      <ShieldCheck aria-hidden="true" className="size-4" />
-                      {confirmEmailId === user.id ? "确认邮箱" : "设为已确认"}
-                    </Button>
-                  ) : null}
-                  <Button variant="secondary" disabled={!dirty || refreshing || savingId === user.id} onClick={() => requestSaveUser(user)}>
-                    <Check aria-hidden="true" className="size-4" />
-                    {confirmRoleId === user.id ? "确认身份" : "保存身份"}
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    disabled={isSelf || refreshing || savingId === user.id}
-                    onClick={() => requestAccountToggle(user)}
-                    className={disabled ? "" : "text-[#d8a8b7]"}
-                  >
-                    {disabled ? <RefreshCw aria-hidden="true" className="size-4" /> : <Ban aria-hidden="true" className="size-4" />}
-                    {disabled ? "恢复登录" : confirmDisableId === user.id ? "确认停用" : "停用账户"}
-                  </Button>
-                </div>
+                ) : null}
               </article>
             );
           })}
-        </div>
+        </section>
       )}
 
       <div className="flex flex-col-reverse items-center justify-between gap-3 sm:flex-row">
@@ -451,4 +542,30 @@ function formatLastActivity(value: string | null) {
   if (elapsed >= 0 && elapsed < 24 * 60 * 60 * 1000) return `24h 内活跃 · ${formatDateTime(value)}`;
   if (elapsed >= 0 && elapsed < 3 * 24 * 60 * 60 * 1000) return `3 日内活跃 · ${formatDateTime(value)}`;
   return `最近登录 ${formatDateTime(value)}`;
+}
+
+function formatAccountType(value: AdminUserSummary["accountType"]) {
+  if (value === "wechat") return "仅微信登录";
+  if (value === "linked") return "邮箱与微信已绑定";
+  return "仅邮箱登录";
+}
+
+function StatusTag({
+  children,
+  tone,
+}: {
+  children: ReactNode;
+  tone: "neutral" | "blue" | "gold" | "danger";
+}) {
+  return (
+    <span className={cn(
+      "inline-flex h-6 items-center whitespace-nowrap rounded-md border px-2 text-[11px] font-medium",
+      tone === "neutral" && "border-[color:var(--line-ghost)] text-ink-muted",
+      tone === "blue" && "border-nebula-blue/35 bg-nebula-blue/10 text-nebula-blue",
+      tone === "gold" && "border-aurum/30 bg-aurum/10 text-ink-primary",
+      tone === "danger" && "border-[#a66f81]/35 bg-[#a66f81]/10 text-[#d8a8b7]",
+    )}>
+      {children}
+    </span>
+  );
 }

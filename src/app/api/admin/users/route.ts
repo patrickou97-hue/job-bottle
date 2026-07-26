@@ -5,6 +5,7 @@ import type {
   AdminUserMetrics,
   AdminUserRoleFilter,
   AdminUserSort,
+  AdminUserStarInterviewFilter,
   AdminUserStatusFilter,
   AdminUserSummary,
   AdminUserUpdate,
@@ -23,6 +24,8 @@ const MAX_PAGE_SIZE = 100;
 const DATABASE_CHUNK_SIZE = 500;
 const USAGE_PAGE_SIZE = 1000;
 const HOUR_MS = 60 * 60 * 1000;
+const PRIMARY_ADMIN_EMAIL = "raywang6688@outlook.com";
+const STAR_INTERVIEW_ACCESS_KEY = "star_interview_unlimited_access";
 
 type AdminProfile = Pick<Profile, "id" | "display_name" | "role" | "school" | "target_roles">;
 type AdminWechatIdentity = { id: string; user_id: string };
@@ -40,7 +43,7 @@ export async function GET(request: NextRequest) {
       fetchProfiles(admin, authUserIds),
       fetchWechatIdentities(admin, authUserIds),
     ]);
-    const metrics = buildMetrics(authUsers);
+    const metrics = buildMetrics(authUsers, profiles);
     const filteredUsers = authUsers
       .filter((user) => matchesFilters(
         user,
@@ -75,6 +78,7 @@ export async function GET(request: NextRequest) {
       totalPages,
       metrics,
       currentUserId: access.userId,
+      canManageStarInterviewAccess: access.isPrimaryAdmin,
     });
   } catch (error) {
     return NextResponse.json({ error: getServerError(error) }, { status: 500 });
@@ -87,6 +91,12 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json().catch(() => null);
+    if (isStarInterviewAccessUpdate(body)) {
+      if (!access.isPrimaryAdmin) {
+        return NextResponse.json({ error: "只有主管理员可以调整 StarInterview 无限访问。" }, { status: 403 });
+      }
+      return await updateStarInterviewAccess(body.id, body.unlimitedAccess);
+    }
     if (isConfirmEmailUpdate(body)) {
       return await confirmUserEmail(body.id);
     }
@@ -109,8 +119,26 @@ export async function PATCH(request: NextRequest) {
     const { data: previousAuth, error: previousAuthError } = await admin.auth.admin.getUserById(input.id);
     if (previousAuthError) throw previousAuthError;
     const wasDisabled = isFutureDate(previousAuth.user.banned_until);
+    const previousProfile = await admin
+      .from("profiles")
+      .select("role")
+      .eq("id", input.id)
+      .maybeSingle();
+    if (previousProfile.error) throw previousProfile.error;
+    const preserveImplicitAccess = typeof previousAuth.user.app_metadata?.[STAR_INTERVIEW_ACCESS_KEY] !== "boolean"
+      ? {
+          app_metadata: {
+            ...previousAuth.user.app_metadata,
+            [STAR_INTERVIEW_ACCESS_KEY]: resolveStarInterviewAccess(
+              previousAuth.user,
+              previousProfile.data?.role ?? "user",
+            ).unlimited,
+          },
+        }
+      : {};
     const { data: authData, error: authError } = await admin.auth.admin.updateUserById(input.id, {
       ban_duration: input.disabled ? "876000h" : "none",
+      ...preserveImplicitAccess,
     });
     if (authError) throw authError;
 
@@ -204,7 +232,10 @@ async function requireAdmin() {
     if (profile?.role !== "admin") {
       return { response: NextResponse.json({ error: "无权限管理用户账户。" }, { status: 403 }) };
     }
-    return { userId: user.id };
+    return {
+      userId: user.id,
+      isPrimaryAdmin: user.email?.trim().toLowerCase() === PRIMARY_ADMIN_EMAIL,
+    };
   } catch {
     return { response: NextResponse.json({ error: "管理员鉴权服务暂时不可用。" }, { status: 503 }) };
   }
@@ -231,6 +262,37 @@ function isConfirmEmailUpdate(value: unknown): value is { id: string; action: "c
   return typeof input.id === "string" && Boolean(input.id) && input.action === "confirm_email";
 }
 
+function isStarInterviewAccessUpdate(value: unknown): value is {
+  id: string;
+  action: "star_interview_access";
+  unlimitedAccess: boolean;
+} {
+  if (!value || typeof value !== "object") return false;
+  const input = value as Record<string, unknown>;
+  return typeof input.id === "string"
+    && Boolean(input.id)
+    && input.action === "star_interview_access"
+    && typeof input.unlimitedAccess === "boolean";
+}
+
+async function updateStarInterviewAccess(id: string, unlimitedAccess: boolean) {
+  const admin = createAdminClient();
+  const { data: current, error: currentError } = await admin.auth.admin.getUserById(id);
+  if (currentError || !current.user) throw currentError ?? new Error("目标用户不存在。");
+  const { error } = await admin.auth.admin.updateUserById(id, {
+    app_metadata: {
+      ...current.user.app_metadata,
+      [STAR_INTERVIEW_ACCESS_KEY]: unlimitedAccess,
+    },
+  });
+  if (error) throw error;
+  return NextResponse.json({
+    id,
+    starInterviewUnlimitedAccess: unlimitedAccess,
+    starInterviewAccessSource: "explicit",
+  });
+}
+
 function toSummary(
   user: User,
   profile: AdminProfile | undefined,
@@ -242,6 +304,7 @@ function toSummary(
   const realEmail = user.email && !isWechatInternalEmail(user.email)
     ? user.email
     : null;
+  const starInterviewAccess = resolveStarInterviewAccess(user, profile?.role ?? "user");
   return {
     id: user.id,
     email: realEmail ?? "微信用户",
@@ -257,6 +320,8 @@ function toSummary(
     resumeCount,
     school: profile?.school ?? null,
     targetRoles: profile?.target_roles ?? [],
+    starInterviewUnlimitedAccess: starInterviewAccess.unlimited,
+    starInterviewAccessSource: starInterviewAccess.source,
   };
 }
 
@@ -287,6 +352,10 @@ function parseListFilters(searchParams: URLSearchParams) {
     role: role === "admin" || role === "user" ? role as AdminUserRoleFilter : "all",
     status: (["enabled", "disabled", "unconfirmed"] as const).includes(status as Exclude<AdminUserStatusFilter, "all">)
       ? status as AdminUserStatusFilter
+      : "all",
+    starInterviewAccess: searchParams.get("starInterviewAccess") === "unlimited"
+      || searchParams.get("starInterviewAccess") === "standard"
+      ? searchParams.get("starInterviewAccess") as AdminUserStarInterviewFilter
       : "all",
     sort: (["created_desc", "created_asc", "email_asc"] as const).includes(sort as Exclude<AdminUserSort, "activity_desc">)
       ? sort as AdminUserSort
@@ -355,7 +424,7 @@ async function fetchUsageCounts(
   throw new Error("用户使用记录超过当前管理页的安全读取上限。");
 }
 
-function buildMetrics(users: User[]): AdminUserMetrics {
+function buildMetrics(users: User[], profiles: Map<string, AdminProfile>): AdminUserMetrics {
   const now = Date.now();
   return users.reduce<AdminUserMetrics>((metrics, user) => {
     const lastSignIn = getTimestamp(user.last_sign_in_at);
@@ -364,8 +433,18 @@ function buildMetrics(users: User[]): AdminUserMetrics {
     if (lastSignIn >= now - 3 * 24 * HOUR_MS) metrics.active3d += 1;
     if (!lastSignIn) metrics.neverSignedIn += 1;
     if (isFutureDate(user.banned_until)) metrics.disabledUsers += 1;
+    if (resolveStarInterviewAccess(user, profiles.get(user.id)?.role ?? "user").unlimited) {
+      metrics.starInterviewUnlimitedUsers += 1;
+    }
     return metrics;
-  }, { totalUsers: 0, active24h: 0, active3d: 0, neverSignedIn: 0, disabledUsers: 0 });
+  }, {
+    totalUsers: 0,
+    active24h: 0,
+    active3d: 0,
+    neverSignedIn: 0,
+    disabledUsers: 0,
+    starInterviewUnlimitedUsers: 0,
+  });
 }
 
 function matchesFilters(
@@ -387,6 +466,9 @@ function matchesFilters(
   }
 
   if (filters.role !== "all" && (profile?.role ?? "user") !== filters.role) return false;
+  const starInterviewAccess = resolveStarInterviewAccess(user, profile?.role ?? "user").unlimited;
+  if (filters.starInterviewAccess === "unlimited" && !starInterviewAccess) return false;
+  if (filters.starInterviewAccess === "standard" && starInterviewAccess) return false;
 
   const disabled = isFutureDate(user.banned_until);
   if (filters.status === "enabled" && disabled) return false;
@@ -401,6 +483,17 @@ function matchesFilters(
   if (filters.activity === "3d" && lastSignIn < now - 3 * 24 * HOUR_MS) return false;
   if (filters.activity === "7d" && lastSignIn < now - 7 * 24 * HOUR_MS) return false;
   return true;
+}
+
+function resolveStarInterviewAccess(user: User, role: ProfileRole) {
+  const explicitValue = user.app_metadata?.[STAR_INTERVIEW_ACCESS_KEY];
+  if (typeof explicitValue === "boolean") {
+    return { unlimited: explicitValue, source: "explicit" as const };
+  }
+  if (role === "admin") {
+    return { unlimited: true, source: "admin_default" as const };
+  }
+  return { unlimited: false, source: "default" as const };
 }
 
 function getUserComparator(sort: AdminUserSort) {

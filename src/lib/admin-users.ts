@@ -16,6 +16,8 @@ export type AdminUserSummary = {
   resumeCount: number;
   school: string | null;
   targetRoles: string[];
+  starInterviewUnlimitedAccess: boolean;
+  starInterviewAccessSource: "explicit" | "admin_default" | "default";
 };
 
 export type AdminUserMetrics = {
@@ -24,11 +26,13 @@ export type AdminUserMetrics = {
   active3d: number;
   neverSignedIn: number;
   disabledUsers: number;
+  starInterviewUnlimitedUsers: number;
 };
 
 export type AdminUserActivityFilter = "all" | "24h" | "3d" | "7d" | "never";
 export type AdminUserRoleFilter = "all" | ProfileRole;
 export type AdminUserStatusFilter = "all" | "enabled" | "disabled" | "unconfirmed";
+export type AdminUserStarInterviewFilter = "all" | "unlimited" | "standard";
 export type AdminUserSort = "activity_desc" | "created_desc" | "created_asc" | "email_asc";
 
 export type AdminUsersResponse = {
@@ -39,6 +43,7 @@ export type AdminUsersResponse = {
   totalPages: number;
   metrics: AdminUserMetrics;
   currentUserId: string;
+  canManageStarInterviewAccess: boolean;
 };
 
 export type AdminUserUpdate = {
@@ -54,6 +59,7 @@ export type AdminUserQuery = {
   activity?: AdminUserActivityFilter;
   role?: AdminUserRoleFilter;
   status?: AdminUserStatusFilter;
+  starInterviewAccess?: AdminUserStarInterviewFilter;
   sort?: AdminUserSort;
 };
 
@@ -65,12 +71,30 @@ export async function fetchAdminUsers(input: AdminUserQuery = {}) {
   if (input.activity && input.activity !== "all") params.set("activity", input.activity);
   if (input.role && input.role !== "all") params.set("role", input.role);
   if (input.status && input.status !== "all") params.set("status", input.status);
+  if (input.starInterviewAccess && input.starInterviewAccess !== "all") {
+    params.set("starInterviewAccess", input.starInterviewAccess);
+  }
   if (input.sort && input.sort !== "activity_desc") params.set("sort", input.sort);
 
   const response = await fetch(`/api/admin/users?${params.toString()}`, { cache: "no-store" });
   const payload = await readJson(response);
   if (!response.ok) throw new Error(getErrorMessage(payload, "用户列表读取失败，请稍后重试。"));
   return payload as AdminUsersResponse;
+}
+
+export async function updateStarInterviewAccess(id: string, unlimitedAccess: boolean) {
+  const response = await fetch("/api/admin/users", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, action: "star_interview_access", unlimitedAccess }),
+  });
+  const payload = await readJson(response);
+  if (!response.ok) throw new Error(getErrorMessage(payload, "StarInterview 访问权限更新失败，原设置未改变。"));
+  return payload as {
+    id: string;
+    starInterviewUnlimitedAccess: boolean;
+    starInterviewAccessSource: "explicit";
+  };
 }
 
 export async function updateAdminUser(id: string, input: AdminUserUpdate) {

@@ -721,15 +721,15 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/admin/users/route.ts",
-    mustInclude: ["requireAdmin", "auth.getUser", "createAdminClient", "listAllAuthUsers", "listUsers", "buildMetrics", "active24h", "active3d", "last_sign_in_at", "matchesFilters", "totalFiltered", "updateUserById", "不能停用或降级当前管理员账号", "ban_duration", "email_confirm: true"],
+    mustInclude: ["requireAdmin", "auth.getUser", "createAdminClient", "listAllAuthUsers", "listUsers", "buildMetrics", "active24h", "active3d", "last_sign_in_at", "matchesFilters", "totalFiltered", "updateUserById", "不能停用或降级当前管理员账号", "ban_duration", "email_confirm: true", "PRIMARY_ADMIN_EMAIL", "star_interview_unlimited_access", "只有主管理员可以调整 StarInterview 无限访问", "isPrimaryAdmin"],
     mustNotInclude: ["NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY"],
-    label: "管理员用户 API 在服务端复核身份并提供全量登录活跃指标、筛选和权限管理",
+    label: "管理员用户 API 在服务端复核身份并将 StarInterview 无限权限调整限制给主管理员",
   },
   {
     file: "src/components/admin/AdminUsersClient.tsx",
-    mustInclude: ["用户总数", "最近 24h 活跃", "最近 3 日活跃", "按最近登录统计", "搜索邮箱、姓名、学校、方向或用户 ID", "最近活跃优先", "用户账户", "账户身份", "普通用户", "管理员", "停用账户", "恢复登录", "确认停用", "设为已确认", "确认邮箱"],
+    mustInclude: ["全部用户", "24h 活跃", "3 日活跃", "邮箱、姓名、学校、方向或 ID", "最近活跃优先", "筛选用户", "账户身份", "普通用户", "管理员", "停用账户", "恢复登录", "确认停用账户", "设为已确认", "确认邮箱", "StarInterview 无限访问", "标准访问", "role=\"switch\"", "只有主管理员可以调整此权限"],
     mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY", "deleteUser"],
-    label: "管理员用户页用全局事实带和可组合筛选展示账户并提供非破坏性身份管理",
+    label: "管理员用户页用摘要表、组合筛选和展开编辑管理账户及 StarInterview 权限",
   },
   {
     file: "src/app/api/announcements/latest/route.ts",
