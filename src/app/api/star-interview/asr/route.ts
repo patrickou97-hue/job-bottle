@@ -9,6 +9,7 @@ import {
 } from "@/lib/star-interview-server";
 
 export const maxDuration = 30;
+export const preferredRegion = "hkg1";
 
 const requestSchema = z.object({
   audio: z.string().min(100).max(3_500_000),

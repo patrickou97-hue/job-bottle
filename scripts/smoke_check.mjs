@@ -9,13 +9,13 @@ const NEXT_BIN = new URL("node_modules/.bin/next", ROOT);
 const SOURCE_INVARIANTS = [
   {
     file: "src/app/api/star-interview/completion/route.ts",
-    mustInclude: ["validateStarInterviewClient", "getMimoConfiguration", "response_format", "json_object", "Cache-Control", "no-store", "maxDuration = 60", "max_tokens"],
+    mustInclude: ["validateStarInterviewClient", "getMimoConfiguration", "response_format", "json_object", "Cache-Control", "no-store", "maxDuration = 60", "preferredRegion = \"hkg1\"", "max_tokens"],
     mustNotInclude: ["NEXT_PUBLIC_", "SUPABASE_SERVICE_ROLE_KEY"],
     label: "诘星 macOS 文本生成仅由服务端读取模型密钥并具备客户端校验与禁止缓存",
   },
   {
     file: "src/app/api/star-interview/asr/route.ts",
-    mustInclude: ["validateStarInterviewClient", "getMimoConfiguration", "input_audio", "asr_options", "installLimit: 600", "ipLimit: 3_000", "Cache-Control", "no-store"],
+    mustInclude: ["validateStarInterviewClient", "getMimoConfiguration", "input_audio", "asr_options", "installLimit: 600", "ipLimit: 3_000", "preferredRegion = \"hkg1\"", "Cache-Control", "no-store"],
     mustNotInclude: ["NEXT_PUBLIC_", "SUPABASE_SERVICE_ROLE_KEY"],
     label: "诘星实时语音转写走服务端代理且频率额度覆盖高频分片",
   },

@@ -8,6 +8,7 @@ import {
 } from "@/lib/star-interview-server";
 
 export const maxDuration = 60;
+export const preferredRegion = "hkg1";
 
 const messageSchema = z.object({
   role: z.enum(["system", "user", "assistant"]),
