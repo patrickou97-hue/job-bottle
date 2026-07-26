@@ -7,7 +7,7 @@ export const USE_SAMPLE_JOB_DATA = false;
 // 对应接口上线后只需切换这里，无需重新制作页面。
 export const RELEASE_CAPABILITIES = {
   emailLogin: true,
-  webLoginCode: false,
+  webLoginCode: true,
   resumeCreation: true,
   applicationProgressUpdate: true,
 } as const;
