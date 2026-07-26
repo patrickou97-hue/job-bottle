@@ -7,21 +7,39 @@
 ## 当前状态
 
 - 日期：2026-07-26
-- 阶段：手机端功能补齐与第三轮视觉改造完成，准备部署必要的小程序 API 并上传新版本
-- 网站基线：生产小程序首版已在 `main`；本轮只发布小程序客户端与其必要服务端 API，不发布工作区中的网页界面改动
+- 阶段：安全网页登录码双端闭环已上线；0.2.1 已预览并上传，等待后续审核安排
+- 网站基线：服务端主体 `5144713`、Cookie 修复 `17c9aa2`、小程序开关 `30b503e` 均已推送 `main`
 - 工作区保护：`.codex-artifacts/` 与五份 `docs/prd/*.md` 用户文件保持未修改、未暂存、未提交
 - 小程序代码：已建立原生 TypeScript 工程和 9 个页面
-- 数据库变更：新增微信身份映射与小程序会话迁移
-- hosted Supabase DDL：`20260723120000_miniprogram_wechat_auth.sql` 已推送并核对远端迁移历史
+- 数据库变更：微信身份映射、小程序会话与一次性网页登录码 migration 均已存在
+- hosted Supabase DDL：`20260723120000_miniprogram_wechat_auth.sql`、`20260724183000_wechat_web_login_codes.sql` 均已推送并核对远端迁移历史
 - Vercel 主体：确认以 Patrick（`patrickou97-hue`）账号的 `job-bottle` 为唯一生产项目；Ray 账号同名项目仅暂时保留，不承载主域名
 - Vercel 环境变量：Patrick 生产项目的 AppID、AppSecret 与独立会话签名密钥均已确认并覆盖 Production / Preview
 - Supabase 主体：生产站、本地环境与 hosted migration 均指向项目 ref `uzzdcjdjlbnxmhvilldj`
-- 生产发布：提交 `ace6ef4` 已推送 Patrick 的 GitHub `main`，Patrick Vercel 主域名已返回新小程序 API
+- 生产发布：提交 `30b503e` 已推送 Patrick 的 GitHub `main`，Patrick Vercel 状态为 `success / Deployment has completed`
 - 微信公众平台配置：真实 AppID 已写入；现有线上体验版已能读取生产岗位，正式审核资料仍需在平台复核
 - 真实微信联调：开发者工具内 `wx.login` 已成功创建 `wechat_identities` 与有效 `miniprogram_sessions` 记录
 - 账号复用：已增加邮箱密码登录安全服务端接口，已有拾星网站用户可进入原 Supabase 账号；待本轮生产部署后验证安全失败边界
 - 体验改造：岗位进入底部 dock；星瓶与投递合并；星图首页改为更克制的深海星图材质；补齐岗位详情、投递状态更新、资料编辑、邮箱登录与云端简历预览
-- 发布约束：用户要求本轮所有网页端修改只保留本地，不提交、不推送、不上线；小程序与网页端改动必须分开处理
+- 网页登录码 E2E：真实小程序登录态生成生产码；全新无痕 Chrome 建立同一账号 Session，`/profile` 显示微信用户工作台；重放同一码被拒绝
+- 小程序发布：`0.2.1` 已预览并上传，包体 455,243 bytes；未提交审核、未审核通过、未正式发布，不覆盖用户已提交审核的 `0.2.0`
+- 发布边界：`0.2.0` 审核状态来自用户说明，本轮未在微信公众平台独立核验；iPhone/Android 真机和完整跨端投递/简历读写仍未覆盖
+
+## 2026-07-26 安全网页登录码与 0.2.1
+
+- [x] 小程序“我的”开放 8 位网页登录码入口
+- [x] 5 分钟有效、单次消费和重放保护
+- [x] 30 秒持久生成限流与 10 分钟 10 次持久猜码限流
+- [x] 网页消费接口可信 Origin、严格格式与 no-store
+- [x] Supabase SSR Cookie 明确写入最终响应
+- [x] 后台区分仅邮箱、仅微信、邮箱与微信已绑定
+- [x] hosted migration `20260724183000` applied
+- [x] 小程序真实登录态 → 生产码 → 无痕 Chrome → `/profile` E2E
+- [x] 0.2.1 预览与上传
+- [ ] 0.2.1 提交审核
+- [ ] 0.2.1 审核通过
+- [ ] 0.2.1 正式发布
+- [ ] iPhone 与 Android 真机回归
 
 ## 隔离规则
 
