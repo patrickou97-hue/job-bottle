@@ -8,6 +8,24 @@ const ENV_FILE = new URL(".env.local", ROOT);
 const NEXT_BIN = new URL("node_modules/.bin/next", ROOT);
 const SOURCE_INVARIANTS = [
   {
+    file: "src/lib/star-interview-auth.ts",
+    mustInclude: ["TOKEN_AUDIENCE = \"star-interview\"", "STAR_INTERVIEW_SESSION_SECRET", "pkceChallenge", "install_id_hash", "x-starinterview-install-id", "selected_resume_ids", "revoked_at", "timingSafeEqual"],
+    mustNotInclude: ["MINIPROGRAM_SESSION_SECRET", "MINIPROGRAM_AUDIENCE"],
+    label: "诘星账号授权使用独立 audience、密钥、PKCE、设备绑定和可撤销会话",
+  },
+  {
+    file: "supabase/migrations/20260726160000_star_interview_auth.sql",
+    mustInclude: ["star_interview_auth_codes", "star_interview_sessions", "enable row level security", "revoke all"],
+    mustNotInclude: ["grant all to anon", "grant all to authenticated"],
+    label: "诘星授权码和会话由独立数据库表承载且默认不向客户端角色开放",
+  },
+  {
+    file: "src/app/api/star-interview/resumes/[id]/route.ts",
+    mustInclude: ["selectedResumeIds.includes", ".eq(\"user_id\", access.sub)", "phone: \"\"", "email: \"\"", "photoDataUrl: \"\""],
+    mustNotInclude: ["MINIPROGRAM_SESSION_SECRET"],
+    label: "诘星只读取用户显式授权的简历并在服务端去除联系方式和照片",
+  },
+  {
     file: "src/app/api/star-interview/completion/route.ts",
     mustInclude: ["validateStarInterviewClient", "getMimoConfiguration", "response_format", "json_object", "Cache-Control", "no-store", "maxDuration = 60", "preferredRegion = \"hkg1\"", "max_tokens"],
     mustNotInclude: ["NEXT_PUBLIC_", "SUPABASE_SERVICE_ROLE_KEY"],

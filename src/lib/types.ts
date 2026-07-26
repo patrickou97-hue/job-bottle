@@ -224,6 +224,33 @@ export type MiniProgramSession = {
   last_used_at: string;
 };
 
+export type StarInterviewAuthCode = {
+  id: string;
+  code_hash: string;
+  user_id: string;
+  install_id_hash: string;
+  pkce_challenge: string;
+  state_hash: string;
+  scopes: string[];
+  selected_resume_ids: string[];
+  expires_at: string;
+  consumed_at: string | null;
+  created_at: string;
+};
+
+export type StarInterviewSession = {
+  id: string;
+  user_id: string;
+  install_id_hash: string;
+  refresh_token_hash: string;
+  scopes: string[];
+  selected_resume_ids: string[];
+  expires_at: string;
+  revoked_at: string | null;
+  last_used_at: string;
+  created_at: string;
+};
+
 export type WechatWebLoginCode = {
   id: string;
   user_id: string;
@@ -522,6 +549,48 @@ export type Database = {
           revoked_at?: string | null;
           created_at?: string;
           last_used_at?: string;
+        };
+        Update: {
+          refresh_token_hash?: string;
+          expires_at?: string;
+          revoked_at?: string | null;
+          last_used_at?: string;
+        };
+        Relationships: [];
+      };
+      star_interview_auth_codes: {
+        Row: StarInterviewAuthCode;
+        Insert: {
+          id?: string;
+          code_hash: string;
+          user_id: string;
+          install_id_hash: string;
+          pkce_challenge: string;
+          state_hash: string;
+          scopes?: string[];
+          selected_resume_ids?: string[];
+          expires_at: string;
+          consumed_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          consumed_at?: string | null;
+        };
+        Relationships: [];
+      };
+      star_interview_sessions: {
+        Row: StarInterviewSession;
+        Insert: {
+          id?: string;
+          user_id: string;
+          install_id_hash: string;
+          refresh_token_hash: string;
+          scopes?: string[];
+          selected_resume_ids?: string[];
+          expires_at: string;
+          revoked_at?: string | null;
+          last_used_at?: string;
+          created_at?: string;
         };
         Update: {
           refresh_token_hash?: string;
