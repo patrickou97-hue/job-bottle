@@ -15,7 +15,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/star-interview/asr/route.ts",
-    mustInclude: ["validateStarInterviewClient", "getMimoConfiguration", "input_audio", "asr_options", "installLimit: 600", "ipLimit: 3_000", "preferredRegion = \"hkg1\"", "Cache-Control", "no-store"],
+    mustInclude: ["validateStarInterviewClient", "getMimoConfiguration", "input_audio", "asr_options", "installLimit: 600", "ipLimit: 3_000", "preferredRegion = \"hkg1\"", "runtime = \"edge\"", "Cache-Control", "no-store"],
     mustNotInclude: ["NEXT_PUBLIC_", "SUPABASE_SERVICE_ROLE_KEY"],
     label: "诘星实时语音转写走服务端代理且频率额度覆盖高频分片",
   },
