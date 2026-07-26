@@ -1088,6 +1088,9 @@ const REQUIRED_FILES = [
   "public/assets/nebula/cutouts/nebula-industry-consumer.png",
   "public/assets/nebula/cutouts/nebula-industry-healthcare.png",
   "public/assets/nebula/cutouts/nebula-industry-energy.png",
+  "public/brand/star-interview/app-icon.png",
+  "public/brand/star-interview/wordmark.png",
+  "public/brand/star-interview/product-home.png",
 ];
 const REQUIRED_TEXT = {
   "/": ["拾星"],
@@ -1105,6 +1108,7 @@ const REQUIRED_TEXT = {
   "/forum": ["拾星指南"],
   "/extension": ["一份简历，", "抵达更多坐标", "把拾星简历同步到浏览器", "获取安装包", "正在检测网申助手"],
   "/extension/guide": ["安装拾星网申助手", "加载已解压的扩展", "同步简历"],
+  "/interview": ["谛听察意", "应答成章", "先听懂", "不是临场编造", "先给你一条路"],
   "/admin": ["管理后台"],
 };
 
