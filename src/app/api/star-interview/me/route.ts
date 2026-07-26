@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isWechatInternalEmail } from "@/lib/account-identity";
 import { authenticateStarInterviewRequest } from "@/lib/star-interview-auth";
+import { resolveStarInterviewAccessMode } from "@/lib/star-interview-access";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -13,11 +14,15 @@ export async function GET(request: NextRequest) {
   try {
     const admin = createAdminClient();
     const [{ data: profile, error }, { data: auth }] = await Promise.all([
-      admin.from("profiles").select("display_name,city,school,major").eq("id", access.sub).maybeSingle(),
+      admin.from("profiles").select("display_name,city,school,major,role").eq("id", access.sub).maybeSingle(),
       admin.auth.admin.getUserById(access.sub),
     ]);
     if (error) throw error;
     const rawEmail = auth.user?.email ?? "";
+    const role = profile?.role ?? "user";
+    const starInterviewAccessMode = auth.user
+      ? resolveStarInterviewAccessMode(auth.user, role)
+      : "standard";
     return NextResponse.json(
       {
         data: {
@@ -28,6 +33,12 @@ export async function GET(request: NextRequest) {
             city: profile?.city ?? "",
             school: profile?.school ?? "",
             major: profile?.major ?? "",
+          },
+          starInterviewAccess: {
+            mode: starInterviewAccessMode,
+            usagePolicy: starInterviewAccessMode === "unlimited"
+              ? "unlimited"
+              : "metered_not_enforced",
           },
         },
       },

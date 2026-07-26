@@ -27,21 +27,27 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/star-interview/completion/route.ts",
-    mustInclude: ["validateStarInterviewClient", "getMimoConfiguration", "response_format", "json_object", "Cache-Control", "no-store", "maxDuration = 60", "preferredRegion = \"hkg1\"", "max_tokens"],
+    mustInclude: ["validateStarInterviewClient", "requireStarInterviewUsageAccess", "\"completion\"", "starInterviewUsageHeaders", "getMimoConfiguration", "z.literal(\"mimo-v2.5\")", "response_format", "json_object", "Cache-Control", "no-store", "maxDuration = 60", "preferredRegion = \"hkg1\"", "max_tokens"],
     mustNotInclude: ["NEXT_PUBLIC_", "SUPABASE_SERVICE_ROLE_KEY"],
     label: "诘星 macOS 文本生成仅由服务端读取模型密钥并具备客户端校验与禁止缓存",
   },
   {
     file: "src/app/api/star-interview/asr/route.ts",
-    mustInclude: ["validateStarInterviewClient", "getMimoConfiguration", "input_audio", "asr_options", "installLimit: 600", "ipLimit: 3_000", "preferredRegion = \"hkg1\"", "runtime = \"edge\"", "Cache-Control", "no-store"],
-    mustNotInclude: ["NEXT_PUBLIC_", "SUPABASE_SERVICE_ROLE_KEY"],
+    mustInclude: ["validateStarInterviewClient", "requireStarInterviewUsageAccess", "\"asr\"", "starInterviewUsageHeaders", "getMimoConfiguration", "input_audio", "asr_options", "installLimit: 600", "ipLimit: 3_000", "preferredRegion = \"hkg1\"", "Cache-Control", "no-store"],
+    mustNotInclude: ["runtime = \"edge\"", "NEXT_PUBLIC_", "SUPABASE_SERVICE_ROLE_KEY"],
     label: "诘星实时语音转写走服务端代理且频率额度覆盖高频分片",
   },
   {
     file: "src/lib/star-interview-server.ts",
-    mustInclude: ["server-only", "x-starinterview-client", "x-starinterview-install-id", "x-forwarded-for", "MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_ASR_MODEL", "MIMO_ASR_BASE_URL", "https://token-plan-cn.xiaomimimo.com/v1"],
+    mustInclude: ["server-only", "x-starinterview-client", "x-starinterview-install-id", "x-forwarded-for", "MIMO_API_KEY", "MIMO_BASE_URL", "const llmModel = \"mimo-v2.5\"", "MIMO_ASR_MODEL", "MIMO_ASR_BASE_URL", "https://token-plan-cn.xiaomimimo.com/v1"],
     mustNotInclude: ["NEXT_PUBLIC_", "SUPABASE_SERVICE_ROLE_KEY"],
     label: "诘星云端配置和原始模型密钥只存在于服务端",
+  },
+  {
+    file: "src/lib/star-interview-access.ts",
+    mustInclude: ["authenticateStarInterviewRequest", "star_interview_unlimited_access", "metered_not_enforced", "reserveStarInterviewUsage", "createAdminClient"],
+    mustNotInclude: ["NEXT_PUBLIC_", "SUPABASE_SERVICE_ROLE_KEY"],
+    label: "诘星 ASR 与回答共用登录鉴权、无限访问权限和后续按量计费预留口",
   },
   {
     file: "src/app/layout.tsx",

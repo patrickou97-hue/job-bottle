@@ -6,6 +6,10 @@ import {
   mapStarInterviewError,
   validateStarInterviewClient,
 } from "@/lib/star-interview-server";
+import {
+  requireStarInterviewUsageAccess,
+  starInterviewUsageHeaders,
+} from "@/lib/star-interview-access";
 
 export const maxDuration = 60;
 export const preferredRegion = "hkg1";
@@ -16,7 +20,7 @@ const messageSchema = z.object({
 }).strict();
 
 const requestSchema = z.object({
-  model: z.literal("mimo-v2.5-pro"),
+  model: z.literal("mimo-v2.5"),
   messages: z.array(messageSchema).min(1).max(4),
   temperature: z.number().min(0).max(1).optional().nullable(),
   max_tokens: z.number().int().min(1).max(3_500).optional().nullable(),
@@ -36,6 +40,8 @@ export async function POST(request: NextRequest) {
     windowMs: 10 * 60 * 1_000,
   });
   if (rejected) return rejected;
+  const authorization = await requireStarInterviewUsageAccess(request, "completion");
+  if ("response" in authorization) return authorization.response;
 
   const parsed = requestSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
@@ -59,7 +65,11 @@ export async function POST(request: NextRequest) {
       },
     });
     return NextResponse.json(payload, {
-      headers: { "Cache-Control": "no-store", "X-StarInterview-Service": "cloud-v1" },
+      headers: {
+        "Cache-Control": "no-store",
+        "X-StarInterview-Service": "cloud-v1",
+        ...starInterviewUsageHeaders(authorization.access),
+      },
     });
   } catch (error) {
     return mapStarInterviewError(error, "AI 生成");

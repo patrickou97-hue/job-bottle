@@ -7,10 +7,13 @@ import {
   StarInterviewUpstreamError,
   validateStarInterviewClient,
 } from "@/lib/star-interview-server";
+import {
+  requireStarInterviewUsageAccess,
+  starInterviewUsageHeaders,
+} from "@/lib/star-interview-access";
 
 export const maxDuration = 30;
 export const preferredRegion = "hkg1";
-export const runtime = "edge";
 
 const requestSchema = z.object({
   audio: z.string().min(100).max(3_500_000),
@@ -27,6 +30,8 @@ export async function POST(request: NextRequest) {
     windowMs: 10 * 60 * 1_000,
   });
   if (rejected) return rejected;
+  const authorization = await requireStarInterviewUsageAccess(request, "asr");
+  if ("response" in authorization) return authorization.response;
 
   const parsed = requestSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
@@ -58,7 +63,13 @@ export async function POST(request: NextRequest) {
     if (!transcript) throw new StarInterviewUpstreamError(502, "empty");
     return NextResponse.json(
       { transcript },
-      { headers: { "Cache-Control": "no-store", "X-StarInterview-Service": "cloud-v1" } },
+      {
+        headers: {
+          "Cache-Control": "no-store",
+          "X-StarInterview-Service": "cloud-v1",
+          ...starInterviewUsageHeaders(authorization.access),
+        },
+      },
     );
   } catch (error) {
     return mapStarInterviewError(error, "语音识别");

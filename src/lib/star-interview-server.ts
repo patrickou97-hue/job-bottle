@@ -61,7 +61,10 @@ export function validateStarInterviewClient(
 export function getMimoConfiguration() {
   const apiKey = process.env.MIMO_API_KEY;
   const baseUrl = process.env.MIMO_BASE_URL;
-  const llmModel = process.env.MIMO_MODEL || "mimo-v2.5-pro";
+  // StarInterview uses the low-latency base model for the combined
+  // question-boundary assessment and answer response. URL and API key remain
+  // server-controlled and unchanged.
+  const llmModel = "mimo-v2.5";
   const asrModel = process.env.MIMO_ASR_MODEL || "mimo-v2.5-asr";
   const asrBaseUrl = process.env.MIMO_ASR_BASE_URL
     || "https://token-plan-cn.xiaomimimo.com/v1";
