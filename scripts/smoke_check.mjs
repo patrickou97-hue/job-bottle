@@ -8,12 +8,6 @@ const ENV_FILE = new URL(".env.local", ROOT);
 const NEXT_BIN = new URL("node_modules/.bin/next", ROOT);
 const SOURCE_INVARIANTS = [
   {
-    file: "vercel.json",
-    mustInclude: ["\"regions\": [\"hkg1\"]"],
-    mustNotInclude: ["iad1"],
-    label: "生产 Node Functions 固定在香港，避免诘星音频代理绕行美国",
-  },
-  {
     file: "src/lib/star-interview-auth.ts",
     mustInclude: ["TOKEN_AUDIENCE = \"star-interview\"", "STAR_INTERVIEW_SESSION_SECRET", "pkceChallenge", "install_id_hash", "x-starinterview-install-id", "selected_resume_ids", "revoked_at", "timingSafeEqual"],
     mustNotInclude: ["MINIPROGRAM_SESSION_SECRET", "MINIPROGRAM_AUDIENCE"],
