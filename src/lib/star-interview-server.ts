@@ -63,8 +63,10 @@ export function getMimoConfiguration() {
   const baseUrl = process.env.MIMO_BASE_URL;
   const llmModel = process.env.MIMO_MODEL || "mimo-v2.5-pro";
   const asrModel = process.env.MIMO_ASR_MODEL || "mimo-v2.5-asr";
+  const asrBaseUrl = process.env.MIMO_ASR_BASE_URL
+    || "https://token-plan-cn.xiaomimimo.com/v1";
   if (!apiKey || !baseUrl) return null;
-  return { apiKey, baseUrl, llmModel, asrModel };
+  return { apiKey, baseUrl, llmModel, asrModel, asrBaseUrl };
 }
 
 export function getChatCompletionsUrl(baseUrl: string) {

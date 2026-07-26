@@ -21,7 +21,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/lib/star-interview-server.ts",
-    mustInclude: ["server-only", "x-starinterview-client", "x-starinterview-install-id", "x-forwarded-for", "MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_ASR_MODEL"],
+    mustInclude: ["server-only", "x-starinterview-client", "x-starinterview-install-id", "x-forwarded-for", "MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_ASR_MODEL", "MIMO_ASR_BASE_URL", "https://token-plan-cn.xiaomimimo.com/v1"],
     mustNotInclude: ["NEXT_PUBLIC_", "SUPABASE_SERVICE_ROLE_KEY"],
     label: "诘星云端配置和原始模型密钥只存在于服务端",
   },

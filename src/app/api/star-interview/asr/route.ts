@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
   try {
     const payload = await fetchMimoJSON({
       apiKey: config.apiKey,
-      baseUrl: config.baseUrl,
+      baseUrl: config.asrBaseUrl,
       timeoutMs: 15_000,
       body: {
         model: config.asrModel,
