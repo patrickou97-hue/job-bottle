@@ -1,13 +1,66 @@
 <view class="page-shell resumes-page">
+  <view class="page-brand-header">
+    <image class="brand-wordmark" src="/assets/shi-xing-wordmark-dark.png" mode="aspectFit" />
+    <text class="page-kicker">简历制作</text>
+  </view>
+
   <view class="page-header">
-    <text class="page-title">我的简历</text>
-    <text class="page-description">先查看和维护基础信息，复杂排版继续留在网页端。</text>
+    <view>
+      <text class="page-title">我的简历</text>
+      <text class="page-description">与网页版共用同一份云端简历。</text>
+    </view>
+    <button
+      class="create-trigger"
+      wx:if="{{resumeCreationAvailable}}"
+      bindtap="onToggleCreate"
+    >{{showCreateForm ? '取消' : '新建简历'}}</button>
+  </view>
+
+  <view class="create-panel surface-card" wx:if="{{authenticated && showCreateForm}}">
+    <text class="create-title">新建一份简历</text>
+    <label class="form-group">
+      <text class="form-label">简历名称</text>
+      <input
+        class="form-input"
+        value="{{draftTitle}}"
+        placeholder="例如：产品经理校招版"
+        placeholder-class="form-placeholder"
+        maxlength="50"
+        bindinput="onDraftTitleInput"
+      />
+    </label>
+    <label class="form-group">
+      <text class="form-label">目标岗位</text>
+      <input
+        class="form-input"
+        value="{{draftTargetRole}}"
+        placeholder="例如：产品经理"
+        placeholder-class="form-placeholder"
+        maxlength="80"
+        bindinput="onDraftTargetRoleInput"
+      />
+    </label>
+    <view class="form-group">
+      <text class="form-label">版式</text>
+      <scroll-view scroll-x class="template-scroll" show-scrollbar="{{false}}">
+        <view class="template-row">
+          <button
+            wx:for="{{templateOptions}}"
+            wx:key="id"
+            class="template-chip {{draftTemplateId === item.id ? 'template-chip-active' : ''}}"
+            data-id="{{item.id}}"
+            bindtap="onTemplateTap"
+          >{{item.label}}</button>
+        </view>
+      </scroll-view>
+    </view>
+    <button class="primary-button create-submit" loading="{{creating}}" disabled="{{creating}}" bindtap="onCreateResume">创建并同步</button>
   </view>
 
   <view class="state-panel" wx:if="{{!authenticated}}">
     <text class="state-title">登录后同步简历</text>
     <text class="state-copy">小程序不会把简历复制到第二套数据库。</text>
-    <button class="primary-button state-action" bindtap="onLogin">微信登录</button>
+    <button class="primary-button state-action" bindtap="onLogin">登录拾星</button>
   </view>
 
   <view wx:elif="{{loading}}" class="resume-list">
@@ -25,17 +78,29 @@
 
   <view class="state-panel" wx:elif="{{resumes.length === 0}}">
     <text class="state-title">还没有云端简历</text>
-    <text class="state-copy">首期小程序只读取真实云端简历，不会创建无法同步的本地副本。</text>
+    <text class="state-copy">创建后会与网页版实时共用同一份云端简历。</text>
+    <button class="primary-button state-action" bindtap="onToggleCreate">创建第一份简历</button>
   </view>
 
   <view class="resume-list" wx:else>
-    <view wx:for="{{resumes}}" wx:key="id" class="resume-row">
-      <view class="resume-mark">{{index + 1}}</view>
+    <button
+      wx:for="{{resumes}}"
+      wx:key="id"
+      class="resume-row surface-card"
+      data-id="{{item.id}}"
+      bindtap="onResumeTap"
+      hover-class="resume-row-pressed"
+    >
+      <view class="resume-mark">简历</view>
       <view class="resume-content">
         <text class="resume-title">{{item.title}}</text>
         <text class="resume-role">{{item.targetRole || '未设置求职方向'}}</text>
-        <text class="resume-updated">{{item.updatedLabel}}</text>
+        <view class="resume-footer">
+          <text class="resume-template">{{item.templateLabel}}</text>
+          <text class="resume-updated">{{item.updatedLabel}}</text>
+        </view>
       </view>
-    </view>
+      <text class="resume-arrow">›</text>
+    </button>
   </view>
 </view>

@@ -1,0 +1,86 @@
+<view class="resume-detail-page">
+  <view class="resume-loading" wx:if="{{loading}}">
+    <view class="skeleton-line skeleton-name"></view>
+    <view class="skeleton-line skeleton-contact"></view>
+    <view class="skeleton-block"></view>
+    <view class="skeleton-block"></view>
+  </view>
+
+  <view class="state-panel" wx:elif="{{errorMessage}}">
+    <text class="state-title">简历暂时无法打开</text>
+    <text class="state-copy">{{errorMessage}}</text>
+    <button class="secondary-button state-action" bindtap="onRetry">重新加载</button>
+  </view>
+
+  <view class="resume-paper" wx:elif="{{resume}}">
+    <view class="resume-head">
+      <text class="preview-name">{{resume.content.basics.name || resume.title}}</text>
+      <text class="preview-target">{{resume.content.basics.targetRole || resume.targetRole || resume.jobTarget}}</text>
+      <text class="preview-contact" wx:if="{{resume.contactLine}}" user-select>{{resume.contactLine}}</text>
+    </view>
+
+    <view class="preview-section" wx:if="{{resume.educationView.length}}">
+      <text class="preview-section-title">教育背景</text>
+      <view class="preview-entry" wx:for="{{resume.educationView}}" wx:key="id">
+        <view class="entry-heading">
+          <text class="entry-title">{{item.school}}</text>
+          <text class="entry-date">{{item.dateLabel}}</text>
+        </view>
+        <text class="entry-subtitle">{{item.degree}} {{item.major}}</text>
+        <text class="entry-body" wx:if="{{item.gpa}}">GPA：{{item.gpa}}</text>
+        <text class="entry-body" wx:if="{{item.honors}}" user-select>{{item.honors}}</text>
+      </view>
+    </view>
+
+    <view class="preview-section" wx:if="{{resume.workView.length}}">
+      <text class="preview-section-title">实习与工作经历</text>
+      <view class="preview-entry" wx:for="{{resume.workView}}" wx:key="id">
+        <view class="entry-heading">
+          <text class="entry-title">{{item.company}}</text>
+          <text class="entry-date">{{item.dateLabel}}</text>
+        </view>
+        <text class="entry-subtitle">{{item.title}} {{item.location}}</text>
+        <view class="bullet-row" wx:for="{{item.bullets}}" wx:for-item="bullet" wx:key="*this">
+          <text class="bullet-dot">•</text><text class="entry-body" user-select>{{bullet}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="preview-section" wx:if="{{resume.projectsView.length}}">
+      <text class="preview-section-title">项目经历</text>
+      <view class="preview-entry" wx:for="{{resume.projectsView}}" wx:key="id">
+        <view class="entry-heading">
+          <text class="entry-title">{{item.name}}</text>
+          <text class="entry-date">{{item.dateLabel}}</text>
+        </view>
+        <text class="entry-subtitle">{{item.role}}</text>
+        <view class="bullet-row" wx:for="{{item.bullets}}" wx:for-item="bullet" wx:key="*this">
+          <text class="bullet-dot">•</text><text class="entry-body" user-select>{{bullet}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="preview-section" wx:if="{{resume.skillsView.length}}">
+      <text class="preview-section-title">技能</text>
+      <view class="skill-row" wx:for="{{resume.skillsView}}" wx:key="id">
+        <text class="skill-category">{{item.category}}</text>
+        <text class="entry-body" user-select>{{item.skillsLabel}}</text>
+      </view>
+    </view>
+
+    <view class="preview-section" wx:for="{{resume.otherSections}}" wx:key="id">
+      <text class="preview-section-title">{{item.sectionLabel}}</text>
+      <view class="preview-entry">
+        <text class="entry-title">{{item.title}}</text>
+        <view class="bullet-row" wx:for="{{item.bullets}}" wx:for-item="bullet" wx:key="*this">
+          <text class="bullet-dot">•</text><text class="entry-body" user-select>{{bullet}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="preview-footer">
+      <text>此预览读取网页版同一份云端简历</text>
+      <text>{{resume.title}}</text>
+    </view>
+  </view>
+</view>

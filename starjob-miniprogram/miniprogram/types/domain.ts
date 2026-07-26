@@ -62,9 +62,87 @@ export type ResumeSummary = {
   updatedAt: string;
 };
 
+export type ResumeBasics = {
+  name: string;
+  englishName: string;
+  phone: string;
+  email: string;
+  city: string;
+  linkedin: string;
+  github: string;
+  website: string;
+  targetRole: string;
+};
+
+export type ResumeEducation = {
+  id: string;
+  school: string;
+  degree: string;
+  major: string;
+  startDate: string;
+  endDate: string;
+  gpa: string;
+  courses: string;
+  honors: string;
+};
+
+export type ResumeExperience = {
+  id: string;
+  company: string;
+  title: string;
+  location: string;
+  startDate: string;
+  endDate: string;
+  current: boolean;
+  bullets: string[];
+};
+
+export type ResumeProject = {
+  id: string;
+  name: string;
+  role: string;
+  startDate: string;
+  endDate: string;
+  bullets: string[];
+  keywords: string;
+};
+
+export type ResumeSkillGroup = {
+  id: string;
+  category: string;
+  skills: string[];
+};
+
+export type ResumeTextSection = {
+  id: string;
+  title: string;
+  bullets: string[];
+};
+
+export type ResumeContent = {
+  basics: ResumeBasics;
+  education: ResumeEducation[];
+  work: ResumeExperience[];
+  projects: ResumeProject[];
+  skills: ResumeSkillGroup[];
+  campus: ResumeTextSection[];
+  awards: ResumeTextSection[];
+  certifications: ResumeTextSection[];
+  languages: ResumeTextSection[];
+  customSections: ResumeTextSection[];
+};
+
+export type ResumeDetail = ResumeSummary & {
+  jobTarget: string;
+  linkedJobId: string | null;
+  content: ResumeContent;
+  createdAt: string;
+};
+
 export type Profile = {
   id: string;
   displayName: string;
+  phone: string;
   city: string;
   school: string;
   major: string;

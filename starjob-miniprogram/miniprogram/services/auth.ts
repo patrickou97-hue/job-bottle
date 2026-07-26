@@ -1,4 +1,4 @@
-import type { WechatLoginResponse } from "../types/api";
+import type { EmailLoginResponse, WechatLoginResponse } from "../types/api";
 import { apiRequest } from "./request";
 import { clearSession, getSession, saveSession } from "./session";
 
@@ -8,6 +8,19 @@ export async function loginWithWechat() {
     method: "POST",
     auth: false,
     data: { code },
+  });
+  saveSession(response.data.session);
+  return response.data;
+}
+
+export async function loginWithEmail(email: string, password: string) {
+  const response = await apiRequest<EmailLoginResponse>("/auth/email", {
+    method: "POST",
+    auth: false,
+    data: {
+      email: email.trim().toLowerCase(),
+      password,
+    },
   });
   saveSession(response.data.session);
   return response.data;

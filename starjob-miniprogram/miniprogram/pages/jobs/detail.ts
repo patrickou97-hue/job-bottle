@@ -7,7 +7,6 @@ import type { Job } from "../../types/domain";
 
 type DetailJob = Job & {
   openLabel: string;
-  closeLabel: string;
 };
 
 Page({
@@ -130,14 +129,21 @@ Page({
 function toDetailJob(job: Job): DetailJob {
   return {
     ...job,
-    openLabel: formatDate(job.opensAt, "开放时间待更新"),
-    closeLabel: formatDate(job.closesAt, "截止时间待更新"),
+    openLabel: formatDate(job.opensAt, "开启时间待更新"),
   };
 }
 
 function formatDate(value: string | null, fallback: string) {
   if (!value) return fallback;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return fallback;
-  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+  const normalized = value.trim();
+  const monthDay = normalized.match(/^(\d{1,2})[.\-/月](\d{1,2})(?:日)?$/u);
+  if (monthDay) return `${Number(monthDay[1])}月${Number(monthDay[2])}日`;
+
+  const calendarDate = normalized.match(
+    /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/u,
+  );
+  if (calendarDate) {
+    return `${Number(calendarDate[1])}年${Number(calendarDate[2])}月${Number(calendarDate[3])}日`;
+  }
+  return fallback;
 }

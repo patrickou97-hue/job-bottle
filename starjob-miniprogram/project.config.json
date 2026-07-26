@@ -1,7 +1,7 @@
 {
   "appid": "wxb6a7c94631bf776e",
   "compileType": "miniprogram",
-  "libVersion": "trial",
+  "libVersion": "3.15.2",
   "miniprogramRoot": "miniprogram/",
   "projectname": "starjob-miniprogram",
   "setting": {
@@ -14,6 +14,7 @@
     "useCompilerPlugins": [
       "typescript"
     ],
-    "useIsolateContext": true
+    "useIsolateContext": true,
+    "minifyWXML": true
   }
 }

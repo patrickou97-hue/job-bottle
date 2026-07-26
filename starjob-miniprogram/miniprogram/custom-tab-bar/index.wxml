@@ -1,0 +1,14 @@
+<view class="tab-bar">
+  <button
+    wx:for="{{tabs}}"
+    wx:key="pagePath"
+    class="tab-item {{selectedPath === item.pagePath ? 'tab-item-active' : ''}}"
+    data-path="{{item.pagePath}}"
+    bindtap="onTabTap"
+    hover-class="tab-item-pressed"
+    aria-label="切换到{{item.text}}"
+  >
+    <view class="tab-indicator"></view>
+    <text>{{item.text}}</text>
+  </button>
+</view>

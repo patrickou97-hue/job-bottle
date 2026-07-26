@@ -1,5 +1,6 @@
 .venv/
 node_modules/
+.audit/
 miniprogram_npm/
 output/
 project.private.config.json

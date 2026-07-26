@@ -1,0 +1,255 @@
+.bottle-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 290rpx;
+  margin: 12rpx -8rpx 0;
+  padding: 30rpx 8rpx 26rpx;
+  overflow: hidden;
+  border-bottom: 1rpx solid var(--color-line);
+}
+
+.bottle-hero-copy {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  flex: 1;
+  max-width: 390rpx;
+}
+
+.bottle-art {
+  position: absolute;
+  right: 0;
+  bottom: 12rpx;
+  width: 250rpx;
+  height: 250rpx;
+  opacity: 0.96;
+}
+
+.add-job-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: auto;
+  min-height: 72rpx;
+  margin-top: 28rpx;
+  padding: 0 24rpx;
+  border-radius: 14rpx;
+  background: var(--color-navy);
+  color: #fff;
+  font-size: 24rpx;
+  font-weight: 640;
+  line-height: 72rpx;
+  white-space: nowrap;
+}
+
+.bottle-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 0;
+  padding: 24rpx 0;
+  border-top: 1rpx solid var(--color-line);
+  border-bottom: 1rpx solid var(--color-line);
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-item + .stat-item {
+  border-left: 1rpx solid var(--color-line);
+}
+
+.stat-value,
+.stat-label {
+  display: block;
+}
+
+.stat-value {
+  color: var(--color-navy);
+  font-size: 36rpx;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-label {
+  margin-top: 5rpx;
+  color: var(--color-muted);
+  font-size: 21rpx;
+}
+
+.filter-scroll {
+  width: calc(100% + 64rpx);
+  margin: 28rpx -32rpx 0;
+  white-space: nowrap;
+}
+
+.filter-row {
+  display: inline-flex;
+  gap: 10rpx;
+  padding: 0 32rpx;
+}
+
+.bottle-filter {
+  min-width: auto;
+  min-height: 56rpx;
+  padding: 0 24rpx;
+  border: 1rpx solid var(--color-line);
+  border-radius: 999rpx;
+  background: var(--color-surface-strong);
+  color: var(--color-ink-soft);
+  font-size: 23rpx;
+  line-height: 54rpx;
+}
+
+.bottle-filter-active {
+  border-color: var(--color-navy);
+  background: var(--color-navy);
+  color: #fff;
+}
+
+.bottle-list {
+  display: grid;
+  gap: 16rpx;
+  margin-top: 22rpx;
+}
+
+.bottle-card {
+  overflow: hidden;
+}
+
+.bottle-main {
+  width: 100%;
+  padding: 26rpx;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-ink);
+  text-align: left;
+}
+
+.bottle-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.bottle-stage {
+  color: #57558b;
+  font-size: 21rpx;
+  font-weight: 650;
+}
+
+.bottle-date {
+  color: var(--color-muted);
+  font-size: 20rpx;
+}
+
+.bottle-company,
+.bottle-role,
+.bottle-location {
+  display: block;
+}
+
+.bottle-company {
+  margin-top: 20rpx;
+  color: var(--color-ink-soft);
+  font-size: 23rpx;
+}
+
+.bottle-role {
+  margin-top: 6rpx;
+  font-size: 30rpx;
+  font-weight: 680;
+  line-height: 1.35;
+}
+
+.bottle-location {
+  margin-top: 12rpx;
+  color: var(--color-muted);
+  font-size: 22rpx;
+}
+
+.bottle-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16rpx 24rpx;
+  border-top: 1rpx solid var(--color-line-soft);
+  background: #f2f3f6;
+}
+
+.status-pill {
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+  background: var(--color-accent-soft);
+  color: #57558b;
+  font-size: 21rpx;
+}
+
+.progress-button {
+  min-width: auto;
+  min-height: 52rpx;
+  padding: 0 18rpx;
+  border: 1rpx solid var(--color-line);
+  border-radius: 12rpx;
+  background: var(--color-surface-strong);
+  color: var(--color-navy);
+  font-size: 22rpx;
+  font-weight: 620;
+  line-height: 50rpx;
+}
+
+.progress-picker {
+  flex: 0 0 auto;
+}
+
+.state-panel {
+  margin-top: 42rpx;
+  padding: 50rpx 24rpx;
+  border-top: 1rpx solid var(--color-line);
+  border-bottom: 1rpx solid var(--color-line);
+  text-align: center;
+}
+
+.state-title,
+.state-copy {
+  display: block;
+}
+
+.state-title {
+  font-size: 31rpx;
+  font-weight: 660;
+}
+
+.state-copy {
+  max-width: 560rpx;
+  margin: 14rpx auto 0;
+  color: var(--color-muted);
+  font-size: 24rpx;
+  line-height: 1.65;
+}
+
+.state-action {
+  width: 260rpx;
+  margin: 28rpx auto 0;
+}
+
+.bottle-skeleton {
+  padding: 28rpx;
+}
+
+.skeleton-company {
+  width: 30%;
+}
+
+.skeleton-role {
+  width: 72%;
+  height: 32rpx;
+  margin-top: 18rpx;
+}
+
+.skeleton-meta {
+  width: 46%;
+  margin-top: 20rpx;
+}

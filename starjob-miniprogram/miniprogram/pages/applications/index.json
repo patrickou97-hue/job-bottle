@@ -1,5 +1,6 @@
 {
   "navigationBarTitleText": "投递进度",
-  "backgroundColor": "#F4F3EF",
+  "backgroundColor": "#E9EBEF",
+  "navigationBarBackgroundColor": "#E9EBEF",
   "enablePullDownRefresh": true
 }

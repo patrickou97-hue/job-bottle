@@ -1,12 +1,15 @@
 <view class="jobs-page">
   <view class="hero">
-    <view class="brand-row">
+    <view
+      class="brand-row"
+      style="margin-top: {{menuTop}}px; height: {{menuHeight}}px; max-width: {{menuLeft - 32}}px;"
+    >
       <image
-        class="brand-mark"
-        src="/assets/starjob-mark.png"
+        class="brand-wordmark"
+        src="/assets/shi-xing-wordmark.png"
         mode="aspectFit"
       />
-      <text class="brand-name">拾星</text>
+      <text class="brand-subtitle">STARJOB</text>
       <text class="source-note" wx:if="{{isSampleData}}">界面样例</text>
     </view>
 
@@ -14,10 +17,7 @@
       <view>
         <text class="hero-title">岗位坐标</text>
         <text class="hero-description">找到值得认真投递的下一站</text>
-      </view>
-      <view class="coordinate-mark" aria-hidden="true">
-        <view class="coordinate-ring"></view>
-        <view class="coordinate-star"></view>
+        <text class="hero-meta" wx:if="{{!loading && !errorMessage}}">{{jobs.length}} 个开放岗位</text>
       </view>
     </view>
 
@@ -64,23 +64,14 @@
   </view>
 
   <view class="result-header">
-    <view class="scope-switch" role="tablist">
-      <button
-        class="scope-button {{scope === 'all' ? 'scope-button-active' : ''}}"
-        data-scope="all"
-        bindtap="onScopeTap"
-      >
-        全部岗位
-      </button>
-      <button
-        class="scope-button {{scope === 'recent' ? 'scope-button-active' : ''}}"
-        data-scope="recent"
-        bindtap="onScopeTap"
-      >
-        近 7 天
-      </button>
+    <view class="scope-switch">
+      <button class="scope-button {{scope === 'all' ? 'scope-button-active' : ''}}" data-scope="all" bindtap="onScopeTap">全部岗位</button>
+      <button class="scope-button {{scope === 'recent' ? 'scope-button-active' : ''}}" data-scope="recent" bindtap="onScopeTap">近 7 天</button>
     </view>
-    <text class="result-count" wx:if="{{!loading && !errorMessage}}">{{jobs.length}} 个结果</text>
+    <view class="view-switch">
+      <button class="view-button {{viewMode === 'map' ? 'view-button-active' : ''}}" data-mode="map" bindtap="onViewModeTap">地图</button>
+      <button class="view-button {{viewMode === 'list' ? 'view-button-active' : ''}}" data-mode="list" bindtap="onViewModeTap">列表</button>
+    </view>
   </view>
 
   <view class="job-list" wx:if="{{loading}}">
@@ -100,6 +91,56 @@
   <view class="state-panel" wx:elif="{{jobs.length === 0}}">
     <text class="state-title">没有符合条件的岗位</text>
     <text class="state-copy">换一个城市、方向或关键词再试试。</text>
+  </view>
+
+  <view class="map-layout" wx:elif="{{viewMode === 'map'}}">
+    <view class="map-shell surface-card">
+      <map
+        class="job-map"
+        latitude="35.2"
+        longitude="104.2"
+        scale="4"
+        min-scale="3"
+        max-scale="12"
+        markers="{{markers}}"
+        bindmarkertap="onMarkerTap"
+        show-location="{{false}}"
+        enable-zoom
+        enable-scroll
+      />
+      <view class="map-caption">
+        <view>
+          <text class="map-caption-title">{{selectedCity === '全部' ? '全国岗位分布' : selectedCity + '岗位'}}</text>
+          <text class="map-caption-copy">点击城市坐标筛选，地图与岗位清单同步。</text>
+        </view>
+        <text class="result-count">{{jobs.length}} 个结果</text>
+      </view>
+    </view>
+
+    <view class="map-list-heading">
+      <view>
+        <text class="map-list-title">{{selectedCity === '全部' ? '全部匹配岗位' : selectedCity + '岗位'}}</text>
+        <text class="map-list-subtitle">{{jobs.length}} 个匹配结果，继续下滑浏览</text>
+      </view>
+    </view>
+
+    <view class="map-job-list">
+      <button
+        wx:for="{{jobs}}"
+        wx:key="id"
+        class="map-job-row"
+        data-id="{{item.id}}"
+        bindtap="onJobTap"
+      >
+        <view class="map-job-index">{{index + 1}}</view>
+        <view class="map-job-content">
+          <text class="company-name">{{item.companyName}}</text>
+          <text class="job-title">{{item.jobTitles}}</text>
+          <text class="job-meta">{{item.locations}} · {{item.categoryLabel}}</text>
+        </view>
+        <text class="row-arrow">›</text>
+      </button>
+    </view>
   </view>
 
   <view class="job-list" wx:else>
@@ -126,7 +167,7 @@
         </view>
       </view>
       <view class="job-side">
-        <text class="deadline">{{item.deadlineLabel}}</text>
+        <text class="open-date">{{item.openDateLabel}}</text>
         <text class="row-arrow">›</text>
       </view>
     </button>

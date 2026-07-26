@@ -1,6 +1,6 @@
 {
-  "navigationBarTitleText": "微信登录",
-  "backgroundColor": "#0B1220",
-  "navigationBarBackgroundColor": "#0B1220",
+  "navigationBarTitleText": "登录拾星",
+  "backgroundColor": "#000001",
+  "navigationBarBackgroundColor": "#000001",
   "navigationBarTextStyle": "white"
 }

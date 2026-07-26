@@ -1,0 +1,130 @@
+<view class="galaxy-page {{sceneActive ? '' : 'scene-paused'}}">
+  <view class="space-haze space-haze-left"></view>
+  <view class="space-haze space-haze-right"></view>
+  <view class="starfield starfield-near"></view>
+  <view class="starfield starfield-far"></view>
+  <view class="star star-1"></view>
+  <view class="star star-2"></view>
+  <view class="star star-3"></view>
+  <view class="star star-4"></view>
+  <view class="star star-5"></view>
+  <view class="star star-6"></view>
+  <view class="star star-7"></view>
+  <view class="star star-8"></view>
+
+  <view class="galaxy-header" style="padding-top: {{menuTop}}px;">
+    <view
+      class="brand-row"
+      style="height: {{menuHeight}}px; max-width: {{menuLeft - 28}}px;"
+    >
+      <image
+        class="galaxy-wordmark"
+        src="/assets/shi-xing-wordmark.png"
+        mode="aspectFit"
+      />
+      <text class="brand-english">STARJOB</text>
+    </view>
+    <view class="welcome-copy">
+      <text class="welcome-kicker">你的求职星系</text>
+      <text class="welcome-title">今天，从哪颗星开始？</text>
+      <text class="welcome-subtitle">轻触行星，进入对应工作台</text>
+    </view>
+  </view>
+
+  <view class="galaxy-scene">
+    <view class="orbit-line orbit-line-inner"></view>
+    <view class="orbit-line orbit-line-middle"></view>
+    <view class="orbit-line orbit-line-outer"></view>
+
+    <view class="core-system">
+      <view class="core-glow"></view>
+      <view class="core-planet">
+        <view class="planet-texture"></view>
+        <view class="planet-terminator"></view>
+        <view class="planet-glint"></view>
+      </view>
+      <text class="core-label">拾星</text>
+    </view>
+
+    <view class="orbit-carrier orbit-jobs">
+      <button
+        class="planet-hit planet-hit-jobs {{activePlanet === 'jobs' ? 'planet-hit-active' : ''}}"
+        data-id="jobs"
+        data-route="/pages/jobs/index"
+        data-tab="{{true}}"
+        bindtouchstart="onPlanetPress"
+        bindtap="onPlanetTap"
+        hover-class="none"
+        aria-label="进入岗位坐标"
+      >
+        <view class="planet-orb planet-orb-jobs">
+          <view class="planet-texture"></view>
+          <view class="planet-terminator"></view>
+          <view class="planet-glint"></view>
+        </view>
+        <text class="planet-label">岗位坐标</text>
+      </button>
+    </view>
+
+    <view class="orbit-carrier orbit-bottle">
+      <button
+        class="planet-hit planet-hit-bottle {{activePlanet === 'bottle' ? 'planet-hit-active' : ''}}"
+        data-id="bottle"
+        data-route="/pages/bottle/index"
+        data-tab="{{true}}"
+        bindtouchstart="onPlanetPress"
+        bindtap="onPlanetTap"
+        hover-class="none"
+        aria-label="进入星瓶"
+      >
+        <view class="planet-orb planet-orb-bottle">
+          <view class="planet-ring"></view>
+          <view class="planet-texture"></view>
+          <view class="planet-terminator"></view>
+          <view class="planet-glint"></view>
+        </view>
+        <text class="planet-label">星瓶</text>
+      </button>
+    </view>
+
+    <view class="orbit-carrier orbit-resume">
+      <button
+        class="planet-hit planet-hit-resume {{activePlanet === 'resume' ? 'planet-hit-active' : ''}}"
+        data-id="resume"
+        data-route="/pages/resumes/index"
+        data-tab="{{true}}"
+        bindtouchstart="onPlanetPress"
+        bindtap="onPlanetTap"
+        hover-class="none"
+        aria-label="进入我的简历"
+      >
+        <view class="planet-orb planet-orb-resume">
+          <view class="planet-texture"></view>
+          <view class="planet-terminator"></view>
+          <view class="planet-glint"></view>
+        </view>
+        <text class="planet-label">我的简历</text>
+      </button>
+    </view>
+
+    <view class="orbit-carrier orbit-profile">
+      <button
+        class="planet-hit planet-hit-profile {{activePlanet === 'profile' ? 'planet-hit-active' : ''}}"
+        data-id="profile"
+        data-route="/pages/profile/index"
+        data-tab="{{true}}"
+        bindtouchstart="onPlanetPress"
+        bindtap="onPlanetTap"
+        hover-class="none"
+        aria-label="进入我的拾星"
+      >
+        <view class="planet-orb planet-orb-profile">
+          <view class="planet-texture"></view>
+          <view class="planet-terminator"></view>
+          <view class="planet-glint"></view>
+        </view>
+        <text class="planet-label">我的拾星</text>
+      </button>
+    </view>
+  </view>
+</view>

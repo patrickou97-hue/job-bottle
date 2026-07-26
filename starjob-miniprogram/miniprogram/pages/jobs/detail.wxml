@@ -19,22 +19,16 @@
       <text class="detail-company">{{job.companyName}}</text>
       <text class="detail-title">{{job.jobTitles}}</text>
       <view class="detail-meta">
-        <text>{{job.locations}}</text>
-        <text class="meta-divider">·</text>
-        <text>{{job.batchType}}</text>
-        <text class="meta-divider">·</text>
-        <text>{{job.industry}}</text>
+        <text class="detail-meta-item">{{job.locations}}</text>
+        <text class="detail-meta-item">{{job.batchType}}</text>
+        <text class="detail-meta-item">{{job.industry}}</text>
       </view>
     </view>
 
     <view class="date-strip">
       <view class="date-item">
-        <text class="date-label">开放</text>
+        <text class="date-label">开启日期</text>
         <text class="date-value">{{job.openLabel}}</text>
-      </view>
-      <view class="date-item">
-        <text class="date-label">截止</text>
-        <text class="date-value">{{job.closeLabel}}</text>
       </view>
     </view>
 

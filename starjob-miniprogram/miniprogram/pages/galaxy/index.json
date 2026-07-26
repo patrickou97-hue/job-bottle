@@ -1,0 +1,7 @@
+{
+  "navigationStyle": "custom",
+  "backgroundColor": "#000001",
+  "navigationBarBackgroundColor": "#000001",
+  "navigationBarTextStyle": "white",
+  "disableScroll": true
+}

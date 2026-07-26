@@ -1,32 +1,40 @@
 {
   "pages": [
+    "pages/galaxy/index",
     "pages/jobs/index",
-    "pages/applications/index",
+    "pages/bottle/index",
     "pages/resumes/index",
     "pages/profile/index",
+    "pages/applications/index",
     "pages/jobs/detail",
+    "pages/resumes/detail",
     "pages/login/index"
   ],
   "window": {
-    "navigationBarBackgroundColor": "#F4F3EF",
+    "navigationBarBackgroundColor": "#E9EBEF",
     "navigationBarTextStyle": "black",
     "navigationBarTitleText": "拾星",
-    "backgroundColor": "#F4F3EF",
+    "backgroundColor": "#E9EBEF",
     "backgroundTextStyle": "dark"
   },
   "tabBar": {
-    "color": "#777D87",
-    "selectedColor": "#17243A",
-    "backgroundColor": "#FAF9F6",
+    "custom": true,
+    "color": "#6E6E73",
+    "selectedColor": "#12294E",
+    "backgroundColor": "#FAFAFB",
     "borderStyle": "white",
     "list": [
+      {
+        "pagePath": "pages/galaxy/index",
+        "text": "首页"
+      },
       {
         "pagePath": "pages/jobs/index",
         "text": "岗位"
       },
       {
-        "pagePath": "pages/applications/index",
-        "text": "投递"
+        "pagePath": "pages/bottle/index",
+        "text": "星瓶"
       },
       {
         "pagePath": "pages/resumes/index",

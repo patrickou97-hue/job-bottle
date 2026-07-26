@@ -8,10 +8,70 @@
   </view>
 
   <view class="login-content">
-    <image class="login-mark" src="/assets/starjob-mark.png" mode="aspectFit" />
-    <text class="login-brand">拾星</text>
-    <text class="login-title">把值得投递的机会，留在同一片星图里</text>
-    <text class="login-copy">登录后，你的网站资料、星瓶、投递进度和简历会使用同一套线上数据。</text>
+    <image class="login-wordmark" src="/assets/shi-xing-wordmark.png" mode="aspectFit" />
+    <text class="login-eyebrow">STARJOB</text>
+    <text class="login-title">继续你的求职工作台</text>
+    <text class="login-copy">登录后同步你的简历、星瓶与投递记录。</text>
+
+    <view class="login-panel">
+      <view class="segmented login-segmented" wx:if="{{emailLoginAvailable}}">
+        <button
+          class="segmented-button {{mode === 'email' ? 'segmented-button-active' : ''}}"
+          data-mode="email"
+          bindtap="onModeTap"
+        >邮箱登录</button>
+        <button
+          class="segmented-button {{mode === 'wechat' ? 'segmented-button-active' : ''}}"
+          data-mode="wechat"
+          bindtap="onModeTap"
+        >微信登录</button>
+      </view>
+
+      <view class="email-form" wx:if="{{emailLoginAvailable && mode === 'email'}}">
+        <label class="form-group">
+          <text class="form-label login-form-label">邮箱</text>
+          <input
+            class="form-input login-input"
+            value="{{email}}"
+            type="text"
+            placeholder="你在拾星注册时使用的邮箱"
+            placeholder-class="login-placeholder"
+            bindinput="onEmailInput"
+          />
+        </label>
+        <label class="form-group">
+          <text class="form-label login-form-label">密码</text>
+          <input
+            class="form-input login-input"
+            value="{{password}}"
+            password
+            placeholder="输入密码"
+            placeholder-class="login-placeholder"
+            confirm-type="done"
+            bindinput="onPasswordInput"
+            bindconfirm="onEmailLogin"
+          />
+        </label>
+        <button
+          class="email-button"
+          loading="{{submitting}}"
+          disabled="{{submitting}}"
+          bindtap="onEmailLogin"
+        >登录拾星</button>
+        <text class="login-method-note">适用于已经在拾星网站注册过的用户。</text>
+      </view>
+
+      <view class="wechat-form" wx:else>
+        <text class="wechat-intro">使用当前微信安全登录，继续浏览岗位并管理你的星瓶。</text>
+        <button
+          class="wechat-button"
+          loading="{{submitting}}"
+          disabled="{{submitting}}"
+          bindtap="onWechatLogin"
+        >微信登录</button>
+        <text class="login-method-note">登录状态由拾星服务端安全保存。</text>
+      </view>
+    </view>
 
     <view class="privacy-line">
       <checkbox-group bindchange="onAgreementChange">
@@ -27,15 +87,6 @@
     </view>
 
     <view class="login-error" wx:if="{{errorMessage}}">{{errorMessage}}</view>
-
-    <button
-      class="wechat-button"
-      loading="{{submitting}}"
-      disabled="{{submitting}}"
-      bindtap="onLogin"
-    >
-      微信登录
-    </button>
-    <text class="security-note">微信临时 code 只发送到拾星服务端，AppSecret 不会进入小程序。</text>
+    <text class="security-note">登录凭证只发送到拾星安全服务端，不写入小程序本地日志。</text>
   </view>
 </view>

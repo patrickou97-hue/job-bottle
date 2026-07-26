@@ -68,7 +68,7 @@ Page({
   },
 
   onExplore() {
-    wx.switchTab({ url: "/pages/jobs/index" });
+    wx.navigateTo({ url: "/pages/jobs/index" });
   },
 
   onRetry() {

@@ -1,7 +1,12 @@
 <view class="page-shell applications-page">
+  <view class="page-brand-header">
+    <image class="brand-wordmark" src="/assets/shi-xing-wordmark-dark.png" mode="aspectFit" />
+    <text class="page-kicker">投递管理</text>
+  </view>
+
   <view class="page-header">
     <text class="page-title">投递进度</text>
-    <text class="page-description">每一步都有记录，下一步也更清楚。</text>
+    <text class="page-description">从已投递到 Offer，所有进度与网页版实时同步。</text>
   </view>
 
   <view class="auth-state" wx:if="{{!authenticated}}">
@@ -10,7 +15,7 @@
     </view>
     <text class="state-title">登录后查看投递轨道</text>
     <text class="state-copy">网站和小程序会使用同一份投递记录。</text>
-    <button class="primary-button state-action" bindtap="onLogin">微信登录</button>
+    <button class="primary-button state-action" bindtap="onLogin">登录拾星</button>
   </view>
 
   <view wx:elif="{{loading}}" class="application-list">
@@ -37,19 +42,22 @@
     <button
       wx:for="{{applications}}"
       wx:key="id"
-      class="application-row"
+      class="application-row surface-card"
       data-job-id="{{item.jobId}}"
       bindtap="onApplicationTap"
     >
-      <view class="application-status">
-        <view class="status-dot"></view>
-        <text>{{item.statusLabel}}</text>
+      <view class="application-top">
+        <view class="application-status">
+          <view class="status-dot"></view>
+          <text>{{item.statusLabel}}</text>
+        </view>
+        <text class="application-date">{{item.updatedLabel}}</text>
       </view>
       <text class="application-company">{{item.job.companyName}}</text>
       <text class="application-role">{{item.job.jobTitles}}</text>
       <view class="application-footer">
         <text>{{item.job.locations}}</text>
-        <text>{{item.updatedLabel}}</text>
+        <text class="row-arrow">›</text>
       </view>
     </button>
   </view>

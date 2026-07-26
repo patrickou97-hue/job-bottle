@@ -1,5 +1,6 @@
 import "server-only";
 
+import { createEmptyResume, type ResumeContent } from "@/lib/resume";
 import type { Job, Profile, ResumeRow, UserApplication } from "@/lib/types";
 
 export function toMiniProgramJob(job: Job) {
@@ -55,10 +56,43 @@ export function toMiniProgramResume(resume: ResumeRow) {
   };
 }
 
+export function toMiniProgramResumeDetail(resume: ResumeRow) {
+  return {
+    ...toMiniProgramResume(resume),
+    jobTarget: resume.job_target ?? "",
+    linkedJobId: resume.linked_job_id,
+    content: normalizeResumeContent(resume.content_json),
+    createdAt: resume.created_at,
+  };
+}
+
+function normalizeResumeContent(value: unknown): ResumeContent {
+  const fallback = createEmptyResume().content;
+  if (!value || typeof value !== "object") return fallback;
+  const content = value as Partial<ResumeContent>;
+  return {
+    basics: { ...fallback.basics, ...(content.basics ?? {}) },
+    education: Array.isArray(content.education) ? content.education : [],
+    work: Array.isArray(content.work) ? content.work : [],
+    projects: Array.isArray(content.projects) ? content.projects : [],
+    skills: Array.isArray(content.skills) ? content.skills : [],
+    campus: Array.isArray(content.campus) ? content.campus : [],
+    awards: Array.isArray(content.awards) ? content.awards : [],
+    certifications: Array.isArray(content.certifications)
+      ? content.certifications
+      : [],
+    languages: Array.isArray(content.languages) ? content.languages : [],
+    customSections: Array.isArray(content.customSections)
+      ? content.customSections
+      : [],
+  };
+}
+
 export function toMiniProgramProfile(profile: Profile) {
   return {
     id: profile.id,
     displayName: profile.display_name ?? "微信用户",
+    phone: profile.phone ?? "",
     city: profile.city ?? "",
     school: profile.school ?? "",
     major: profile.major ?? "",

@@ -1,16 +1,18 @@
 <view class="page-shell profile-page">
+  <view class="page-brand-header">
+    <image class="brand-wordmark" src="/assets/shi-xing-wordmark-dark.png" mode="aspectFit" />
+    <text class="page-kicker">个人中心</text>
+  </view>
+
   <view class="profile-heading">
-    <image class="profile-mark" src="/assets/starjob-mark.png" mode="aspectFit" />
-    <view>
-      <text class="page-title">我的拾星</text>
-      <text class="page-description">资料、偏好与账号安全</text>
-    </view>
+    <text class="page-title">我的拾星</text>
+    <text class="page-description">资料、偏好与账号安全</text>
   </view>
 
   <view class="state-panel" wx:if="{{!authenticated}}">
     <text class="state-title">登录后同步个人资料</text>
     <text class="state-copy">不会根据微信昵称自动合并网站账号。</text>
-    <button class="primary-button state-action" bindtap="onLogin">微信登录</button>
+    <button class="primary-button state-action" bindtap="onLogin">登录拾星</button>
   </view>
 
   <view class="profile-loading" wx:elif="{{loading}}">
@@ -26,17 +28,67 @@
   </view>
 
   <block wx:elif="{{profile}}">
-    <view class="profile-identity">
-      <text class="profile-name">{{profile.displayName || '拾星用户'}}</text>
-      <text class="profile-summary">
-        {{profile.school || '学校待完善'}}
-        ·
-        {{profile.graduationYear || '毕业年份待完善'}}
-      </text>
+    <view class="profile-identity surface-card">
+      <view class="avatar-letter">{{avatarLetter}}</view>
+      <view class="identity-copy">
+        <text class="profile-name">{{profile.displayName || '拾星用户'}}</text>
+        <text class="profile-summary">{{profile.identitySummary}}</text>
+      </view>
+      <button class="profile-edit-button" bindtap="onToggleEdit">
+        {{editing ? '取消' : '编辑资料'}}
+      </button>
     </view>
 
-    <view class="profile-section">
+    <view class="profile-edit-panel surface-card" wx:if="{{editing}}">
+      <view class="profile-form-grid">
+        <label class="form-group">
+          <text class="form-label">称呼</text>
+          <input class="form-input" value="{{draftDisplayName}}" data-field="draftDisplayName" bindinput="onDraftInput" maxlength="50" />
+        </label>
+        <label class="form-group">
+          <text class="form-label">手机号</text>
+          <input class="form-input" value="{{draftPhone}}" data-field="draftPhone" bindinput="onDraftInput" type="text" maxlength="30" />
+        </label>
+        <label class="form-group">
+          <text class="form-label">所在城市</text>
+          <input class="form-input" value="{{draftCity}}" data-field="draftCity" bindinput="onDraftInput" maxlength="50" />
+        </label>
+        <label class="form-group">
+          <text class="form-label">学校</text>
+          <input class="form-input" value="{{draftSchool}}" data-field="draftSchool" bindinput="onDraftInput" maxlength="100" />
+        </label>
+        <label class="form-group">
+          <text class="form-label">专业</text>
+          <input class="form-input" value="{{draftMajor}}" data-field="draftMajor" bindinput="onDraftInput" maxlength="100" />
+        </label>
+        <label class="form-group">
+          <text class="form-label">毕业年份</text>
+          <input class="form-input" value="{{draftGraduationYear}}" data-field="draftGraduationYear" bindinput="onDraftInput" maxlength="20" />
+        </label>
+        <label class="form-group form-group-wide">
+          <text class="form-label">意向地区</text>
+          <input class="form-input" value="{{draftPreferredRegions}}" data-field="draftPreferredRegions" bindinput="onDraftInput" placeholder="北京、上海、深圳" />
+          <text class="form-helper">可用顿号或逗号分隔</text>
+        </label>
+        <label class="form-group form-group-wide">
+          <text class="form-label">目标方向</text>
+          <input class="form-input" value="{{draftTargetRoles}}" data-field="draftTargetRoles" bindinput="onDraftInput" placeholder="产品经理、行业研究" />
+          <text class="form-helper">可用顿号或逗号分隔</text>
+        </label>
+      </view>
+      <button class="primary-button profile-save-button" loading="{{saving}}" disabled="{{saving}}" bindtap="onSaveProfile">保存并同步</button>
+    </view>
+
+    <view class="profile-section" wx:else>
       <text class="section-title">求职偏好</text>
+      <view class="preference-row">
+        <text class="preference-label">城市</text>
+        <text class="preference-value">{{profile.city || '未设置'}}</text>
+      </view>
+      <view class="preference-row">
+        <text class="preference-label">专业</text>
+        <text class="preference-value">{{profile.major || '未设置'}}</text>
+      </view>
       <view class="preference-row">
         <text class="preference-label">地区</text>
         <text class="preference-value">{{profile.preferredRegionsLabel}}</text>
@@ -49,6 +101,19 @@
 
     <view class="profile-section">
       <text class="section-title">账号与支持</text>
+      <button
+        class="menu-row"
+        wx:if="{{webLoginCodeAvailable}}"
+        loading="{{generatingWebCode}}"
+        disabled="{{generatingWebCode}}"
+        bindtap="onGenerateWebCode"
+      >
+        <view class="menu-copy">
+          <text>登录网页版</text>
+          <text class="menu-note">生成 8 位一次性登录码</text>
+        </view>
+        <text class="menu-arrow">›</text>
+      </button>
       <button class="menu-row" bindtap="onFeedback">
         <text>问题反馈</text>
         <text class="menu-arrow">›</text>

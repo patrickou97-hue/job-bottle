@@ -112,10 +112,87 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export async function PUT(request: NextRequest) {
+  const identity = authenticateMiniProgramRequest(request);
+  if (!identity) return unauthorized();
+
+  try {
+    const body = (await request.json()) as {
+      id?: unknown;
+      status?: unknown;
+      candidateStage?: unknown;
+      note?: unknown;
+      nextAction?: unknown;
+    };
+    if (typeof body.id !== "string" || !body.id) {
+      return NextResponse.json({ error: "星瓶记录无效。" }, { status: 400 });
+    }
+    const status = parseStatus(body.status);
+    const candidateStage = parseCandidateStage(body.candidateStage);
+    if (!status || !candidateStage) {
+      return NextResponse.json({ error: "投递状态无效。" }, { status: 400 });
+    }
+    const admin = createAdminClient();
+    const { data: application, error } = await admin
+      .from("user_applications")
+      .update({
+        status,
+        candidate_stage: candidateStage,
+        note: cleanText(body.note, 1000),
+        next_action: cleanText(body.nextAction, 300),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", body.id)
+      .eq("user_id", identity.sub)
+      .select("*")
+      .maybeSingle();
+    if (error) throw error;
+    if (!application) {
+      return NextResponse.json({ error: "星瓶记录不存在。" }, { status: 404 });
+    }
+    const { data: job, error: jobError } = await admin
+      .from("jobs")
+      .select("*")
+      .eq("id", application.job_id)
+      .maybeSingle();
+    if (jobError) throw jobError;
+    if (!job) {
+      return NextResponse.json({ error: "岗位不存在或已下线。" }, { status: 404 });
+    }
+    return NextResponse.json(
+      { data: { application: toMiniProgramApplication(application, job) } },
+      { headers: { "Cache-Control": "no-store" } },
+    );
+  } catch {
+    return NextResponse.json(
+      { error: "投递状态更新失败，请稍后重试。" },
+      { status: 500 },
+    );
+  }
+}
+
 function parseCandidateStage(value: unknown): ApplicationCandidateStage | null {
   return value === "evaluating" || value === "saved" || value === "preparing"
     ? value
     : null;
+}
+
+function parseStatus(value: unknown) {
+  return value === "opened" ||
+    value === "applied" ||
+    value === "written_test" ||
+    value === "first_round" ||
+    value === "second_round" ||
+    value === "final_round" ||
+    value === "offer" ||
+    value === "rejected" ||
+    value === "withdrawn"
+    ? value
+    : null;
+}
+
+function cleanText(value: unknown, maxLength: number) {
+  return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
 }
 
 function unauthorized() {

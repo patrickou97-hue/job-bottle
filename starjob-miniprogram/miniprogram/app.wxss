@@ -1,16 +1,20 @@
 page {
-  --color-ink: #17243a;
-  --color-ink-soft: #5f6875;
-  --color-muted: #8b919a;
-  --color-paper: #f4f3ef;
-  --color-surface: #faf9f6;
-  --color-line: rgba(23, 36, 58, 0.12);
-  --color-gold: #bd8619;
-  --color-gold-pressed: #95660d;
-  --color-blue: #5279a9;
-  --color-danger: #ad3f3f;
-  --radius-control: 18rpx;
-  --radius-panel: 28rpx;
+  --color-ink: #1d1d1f;
+  --color-navy: #12294e;
+  --color-ink-soft: #515154;
+  --color-muted: #6e6e73;
+  --color-paper: #e9ebef;
+  --color-surface: #f6f7f9;
+  --color-surface-strong: #fafafb;
+  --color-line: #d2d2d7;
+  --color-line-soft: #e8e8ed;
+  --color-accent: #7e7cb5;
+  --color-accent-soft: #e4e4f2;
+  --color-warm: #7f5568;
+  --color-success: #356447;
+  --color-danger: #9f2d3f;
+  --radius-control: 16rpx;
+  --radius-panel: 22rpx;
 
   min-height: 100%;
   background: var(--color-paper);
@@ -41,21 +45,24 @@ button::after {
 
 .page-shell {
   min-height: 100vh;
-  padding: 32rpx 32rpx calc(48rpx + env(safe-area-inset-bottom));
+  padding: 28rpx 32rpx calc(140rpx + env(safe-area-inset-bottom));
 }
 
 .page-title {
+  display: block;
   margin: 0;
-  font-size: 44rpx;
-  font-weight: 680;
-  letter-spacing: -1rpx;
+  font-size: 48rpx;
+  font-weight: 700;
+  letter-spacing: -1.4rpx;
   line-height: 1.2;
 }
 
 .page-description {
+  display: block;
   margin-top: 12rpx;
-  color: var(--color-ink-soft);
+  color: var(--color-muted);
   font-size: 27rpx;
+  line-height: 1.6;
 }
 
 .primary-button,
@@ -66,12 +73,12 @@ button::after {
   align-items: center;
   justify-content: center;
   font-size: 29rpx;
-  font-weight: 620;
+  font-weight: 650;
   line-height: 1;
 }
 
 .primary-button {
-  background: var(--color-ink);
+  background: var(--color-navy);
   color: #fff;
 }
 
@@ -86,16 +93,116 @@ button::after {
 
 .secondary-button {
   border: 1rpx solid var(--color-line);
-  background: transparent;
+  background: var(--color-surface-strong);
   color: var(--color-ink);
+}
+
+.secondary-button:active {
+  background: #eceff3;
+  transform: scale(0.985);
+}
+
+.brand-wordmark {
+  display: block;
+  width: 134rpx;
+  height: 60rpx;
+}
+
+.page-brand-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 64rpx;
+  margin-bottom: 36rpx;
+}
+
+.page-kicker {
+  display: block;
+  flex: 0 0 auto;
+  color: var(--color-muted);
+  font-size: 23rpx;
+  font-weight: 620;
+  letter-spacing: 1rpx;
+  white-space: nowrap;
+}
+
+.surface-card {
+  border: 1rpx solid var(--color-line-soft);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface-strong);
+}
+
+.segmented {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4rpx;
+  padding: 6rpx;
+  border-radius: 18rpx;
+  background: #dddfe4;
+}
+
+.segmented-button {
+  min-height: 68rpx;
+  border-radius: 13rpx;
+  background: transparent;
+  color: var(--color-muted);
+  font-size: 25rpx;
+  line-height: 68rpx;
+}
+
+.segmented-button-active {
+  background: var(--color-surface-strong);
+  color: var(--color-ink);
+  font-weight: 650;
+  box-shadow: 0 2rpx 5rpx rgba(18, 41, 78, 0.08);
+}
+
+.form-label,
+.form-helper,
+.form-error {
+  display: block;
+}
+
+.form-label {
+  margin-bottom: 12rpx;
+  color: var(--color-ink-soft);
+  font-size: 24rpx;
+  font-weight: 580;
+}
+
+.form-input {
+  width: 100%;
+  height: 84rpx;
+  padding: 0 24rpx;
+  border: 1rpx solid var(--color-line);
+  border-radius: var(--radius-control);
+  background: #fff;
+  color: var(--color-ink);
+  font-size: 28rpx;
+}
+
+.form-input-focus {
+  border-color: var(--color-navy);
+  box-shadow: 0 0 0 5rpx rgba(18, 41, 78, 0.09);
+}
+
+.form-placeholder {
+  color: #a1a1a6;
+}
+
+.form-helper {
+  margin-top: 10rpx;
+  color: var(--color-muted);
+  font-size: 22rpx;
+  line-height: 1.55;
 }
 
 .inline-error {
   margin-top: 20rpx;
   padding: 20rpx 22rpx;
   border-left: 5rpx solid var(--color-danger);
-  background: rgba(173, 63, 63, 0.06);
-  color: #7d3030;
+  background: #fff2f4;
+  color: #7f2333;
   font-size: 26rpx;
 }
 
@@ -117,7 +224,10 @@ button::after {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .skeleton-line {
+  .skeleton-line,
+  .primary-button,
+  .secondary-button {
     animation: none;
+    transition: none;
   }
 }

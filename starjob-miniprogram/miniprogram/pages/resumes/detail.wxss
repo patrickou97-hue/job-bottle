@@ -1,0 +1,200 @@
+page {
+  background: #dfe2e8;
+}
+
+.resume-detail-page {
+  min-height: 100vh;
+  padding: 28rpx 22rpx calc(44rpx + env(safe-area-inset-bottom));
+  color: #15171a;
+}
+
+.resume-paper {
+  width: 100%;
+  padding: 54rpx 46rpx 42rpx;
+  border-radius: 8rpx;
+  background: #ffffff;
+  box-shadow: 0 18rpx 50rpx rgba(18, 41, 78, 0.12);
+}
+
+.resume-head {
+  padding-bottom: 28rpx;
+  border-bottom: 3rpx solid #12294e;
+  text-align: center;
+}
+
+.preview-name,
+.preview-target,
+.preview-contact {
+  display: block;
+}
+
+.preview-name {
+  font-size: 42rpx;
+  font-weight: 720;
+  letter-spacing: 3rpx;
+}
+
+.preview-target {
+  margin-top: 10rpx;
+  color: #303947;
+  font-size: 24rpx;
+  font-weight: 620;
+}
+
+.preview-contact {
+  margin-top: 13rpx;
+  color: #5f6671;
+  font-size: 19rpx;
+  line-height: 1.55;
+}
+
+.preview-section {
+  margin-top: 30rpx;
+}
+
+.preview-section-title {
+  display: block;
+  padding-bottom: 8rpx;
+  border-bottom: 1rpx solid #aeb6c3;
+  color: #12294e;
+  font-size: 24rpx;
+  font-weight: 720;
+  letter-spacing: 1rpx;
+}
+
+.preview-entry {
+  margin-top: 18rpx;
+}
+
+.entry-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 18rpx;
+}
+
+.entry-title {
+  color: #1b1e23;
+  font-size: 23rpx;
+  font-weight: 680;
+}
+
+.entry-date {
+  flex: 0 0 auto;
+  color: #69717d;
+  font-size: 18rpx;
+  font-variant-numeric: tabular-nums;
+}
+
+.entry-subtitle {
+  display: block;
+  margin-top: 5rpx;
+  color: #444c57;
+  font-size: 20rpx;
+  line-height: 1.5;
+}
+
+.entry-body {
+  display: block;
+  min-width: 0;
+  margin-top: 5rpx;
+  color: #31363e;
+  font-size: 20rpx;
+  line-height: 1.68;
+}
+
+.bullet-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10rpx;
+  margin-top: 6rpx;
+}
+
+.bullet-row .entry-body {
+  flex: 1;
+  margin-top: 0;
+}
+
+.bullet-dot {
+  color: #12294e;
+  font-size: 20rpx;
+  line-height: 1.68;
+}
+
+.skill-row {
+  display: grid;
+  grid-template-columns: 136rpx 1fr;
+  gap: 12rpx;
+  margin-top: 13rpx;
+}
+
+.skill-row .entry-body {
+  margin-top: 0;
+}
+
+.skill-category {
+  color: #303947;
+  font-size: 20rpx;
+  font-weight: 660;
+}
+
+.preview-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 20rpx;
+  margin-top: 38rpx;
+  padding-top: 18rpx;
+  border-top: 1rpx solid #e0e3e8;
+  color: #8a9099;
+  font-size: 17rpx;
+}
+
+.resume-loading {
+  padding: 70rpx 34rpx;
+  border-radius: 8rpx;
+  background: #fff;
+}
+
+.skeleton-name {
+  width: 42%;
+  height: 42rpx;
+  margin: 0 auto;
+}
+
+.skeleton-contact {
+  width: 70%;
+  margin: 20rpx auto 0;
+}
+
+.skeleton-block {
+  height: 180rpx;
+  margin-top: 40rpx;
+  border-radius: 10rpx;
+  background: #eceef2;
+}
+
+.state-panel {
+  margin-top: 120rpx;
+  text-align: center;
+}
+
+.state-title,
+.state-copy {
+  display: block;
+}
+
+.state-title {
+  font-size: 31rpx;
+  font-weight: 680;
+}
+
+.state-copy {
+  margin-top: 14rpx;
+  color: #666d78;
+  font-size: 24rpx;
+}
+
+.state-action {
+  width: 250rpx;
+  margin: 28rpx auto 0;
+}

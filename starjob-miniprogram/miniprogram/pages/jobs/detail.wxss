@@ -37,26 +37,22 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  gap: 10rpx;
   margin-top: 22rpx;
   color: var(--color-ink-soft);
-  font-size: 24rpx;
+  font-size: 22rpx;
 }
 
-.meta-divider {
-  margin: 0 10rpx;
-  color: #afb3b9;
+.detail-meta-item {
+  padding: 7rpx 13rpx;
+  border-radius: 999rpx;
+  background: #e1e4e9;
+  line-height: 1.4;
 }
 
 .date-strip {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
   padding: 26rpx 0;
   border-bottom: 1rpx solid var(--color-line);
-}
-
-.date-item + .date-item {
-  padding-left: 28rpx;
-  border-left: 1rpx solid var(--color-line);
 }
 
 .date-label,
@@ -134,12 +130,13 @@
   gap: 18rpx;
   padding: 20rpx 32rpx calc(20rpx + env(safe-area-inset-bottom));
   border-top: 1rpx solid var(--color-line);
-  background: rgba(250, 249, 246, 0.97);
+  background: rgba(250, 250, 251, 0.97);
 }
 
 .save-button,
 .apply-button {
   width: 100%;
+  white-space: nowrap;
 }
 
 .detail-loading {

@@ -1,0 +1,105 @@
+<view class="page-shell bottle-page">
+  <view class="page-brand-header">
+    <image class="brand-wordmark" src="/assets/shi-xing-wordmark-dark.png" mode="aspectFit" />
+    <text class="page-kicker">机会与投递工作台</text>
+  </view>
+
+  <view class="bottle-hero">
+    <view class="bottle-hero-copy">
+      <text class="page-title">星瓶与投递</text>
+      <text class="page-description">把机会收进来，再把每一步推进下去。</text>
+      <button class="add-job-button" bindtap="onExplore">＋ 收录岗位</button>
+    </view>
+    <image
+      class="bottle-art"
+      src="/assets/star-bottle-image2.png"
+      mode="aspectFit"
+    />
+  </view>
+
+  <view class="bottle-stats" wx:if="{{authenticated}}">
+    <view class="stat-item">
+      <text class="stat-value">{{totalCount}}</text>
+      <text class="stat-label">全部星星</text>
+    </view>
+    <view class="stat-item">
+      <text class="stat-value">{{activeCount}}</text>
+      <text class="stat-label">正在推进</text>
+    </view>
+    <view class="stat-item">
+      <text class="stat-value">{{offerCount}}</text>
+      <text class="stat-label">Offer</text>
+    </view>
+  </view>
+
+  <view class="state-panel" wx:if="{{!authenticated}}">
+    <text class="state-title">登录后查看你的星瓶</text>
+    <text class="state-copy">使用微信或邮箱登录，查看并推进你保存的岗位。</text>
+    <button class="primary-button state-action" bindtap="onLogin">登录拾星</button>
+  </view>
+
+  <block wx:else>
+    <scroll-view class="filter-scroll" scroll-x show-scrollbar="{{false}}">
+      <view class="filter-row">
+        <button
+          wx:for="{{filters}}"
+          wx:key="id"
+          class="bottle-filter {{filter === item.id ? 'bottle-filter-active' : ''}}"
+          data-id="{{item.id}}"
+          bindtap="onFilterTap"
+        >{{item.label}}</button>
+      </view>
+    </scroll-view>
+
+    <view class="bottle-list" wx:if="{{loading}}">
+      <view class="bottle-skeleton surface-card" wx:for="{{[1, 2, 3]}}" wx:key="*this">
+        <view class="skeleton-line skeleton-company"></view>
+        <view class="skeleton-line skeleton-role"></view>
+        <view class="skeleton-line skeleton-meta"></view>
+      </view>
+    </view>
+
+    <view class="state-panel" wx:elif="{{errorMessage}}">
+      <text class="state-title">星瓶暂时没有打开</text>
+      <text class="state-copy">{{errorMessage}}</text>
+      <button class="secondary-button state-action" bindtap="onRetry">重新加载</button>
+    </view>
+
+    <view class="state-panel" wx:elif="{{applications.length === 0}}">
+      <text class="state-title">这个分组还是空的</text>
+      <text class="state-copy">在岗位详情点击“加入星瓶”，机会会立刻同步到这里。</text>
+      <button class="primary-button state-action" bindtap="onExplore">去岗位坐标</button>
+    </view>
+
+    <view class="bottle-list" wx:else>
+      <view wx:for="{{applications}}" wx:key="id" class="bottle-card surface-card">
+        <button class="bottle-main" data-job-id="{{item.jobId}}" bindtap="onJobTap">
+          <view class="bottle-card-top">
+            <text class="bottle-stage">{{item.stageLabel}}</text>
+            <text class="bottle-date">{{item.updatedLabel}}</text>
+          </view>
+          <text class="bottle-company">{{item.job.companyName}}</text>
+          <text class="bottle-role">{{item.job.jobTitles}}</text>
+          <text class="bottle-location">{{item.job.locations}}</text>
+        </button>
+        <view class="bottle-actions">
+          <text class="status-pill">{{item.statusLabel}}</text>
+          <picker
+            class="progress-picker"
+            wx:if="{{progressUpdateAvailable}}"
+            mode="selector"
+            range="{{statusOptions}}"
+            range-key="label"
+            data-id="{{item.id}}"
+            disabled="{{!!updatingId}}"
+            bindchange="onStatusChange"
+          >
+            <view class="progress-button">
+              {{updatingId === item.id ? '同步中…' : '更改状态'}}
+            </view>
+          </picker>
+        </view>
+      </view>
+    </view>
+  </block>
+</view>
