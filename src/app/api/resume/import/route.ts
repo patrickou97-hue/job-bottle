@@ -296,7 +296,7 @@ function getImportMetrics(input: z.infer<typeof inputSchema>) {
 
 function mapUpstreamError(error: unknown) {
   if (error instanceof DOMException && error.name === "AbortError") {
-    return NextResponse.json({ error: "AI 复核超时，你仍可直接导入程序解析结果，或稍后重试" }, { status: 504 });
+    return NextResponse.json({ error: "结构复核等待超时。本地识别结果仍可直接导入，也可稍后重试。" }, { status: 504 });
   }
   if (error instanceof UpstreamError) {
     if (error.status === 401 || error.status === 403) return NextResponse.json({ error: "AI 服务鉴权失败，请联系管理员检查配置" }, { status: 502 });

@@ -27,21 +27,21 @@ export function validateStarInterviewClient(
   },
 ) {
   if (request.headers.get("x-starinterview-client") !== "macos-v1") {
-    return NextResponse.json({ error: "客户端版本无效，请更新诘星后重试。" }, { status: 403 });
+    return NextResponse.json({ error: "当前诘星版本不受支持，请更新后重试。" }, { status: 403 });
   }
 
   const origin = request.headers.get("origin");
   if (origin && origin !== request.nextUrl.origin && origin !== "https://www.starjob.space") {
-    return NextResponse.json({ error: "请求来源无效。" }, { status: 403 });
+    return NextResponse.json({ error: "请求来源无法验证。" }, { status: 403 });
   }
   const fetchSite = request.headers.get("sec-fetch-site");
   if (fetchSite && fetchSite !== "same-origin" && fetchSite !== "none") {
-    return NextResponse.json({ error: "请求来源无效。" }, { status: 403 });
+    return NextResponse.json({ error: "请求来源无法验证。" }, { status: 403 });
   }
 
   const installId = request.headers.get("x-starinterview-install-id")?.trim() ?? "";
   if (!/^[0-9a-f-]{36}$/i.test(installId)) {
-    return NextResponse.json({ error: "客户端安装标识无效，请重新打开诘星。" }, { status: 403 });
+    return NextResponse.json({ error: "安装标识无法验证，请重新打开诘星。" }, { status: 403 });
   }
 
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
@@ -51,7 +51,7 @@ export function validateStarInterviewClient(
       || !takeRateSlot(ipRates, ip, limits.ipLimit, limits.windowMs)) {
     const retryAfter = Math.ceil(limits.windowMs / 1_000);
     return NextResponse.json(
-      { error: "诘星云端请求较频繁，请稍后重试。" },
+      { error: "请求过于频繁，请稍后再试。" },
       { status: 429, headers: { "Retry-After": String(retryAfter) } },
     );
   }
@@ -124,7 +124,7 @@ export function mapStarInterviewError(error: unknown, action: string) {
     }
     if (error.status === 429) {
       return NextResponse.json(
-        { error: "模型服务繁忙，请稍后重试。" },
+        { error: "模型服务正忙，请稍后重试。" },
         { status: 429, headers: { "Retry-After": "30" } },
       );
     }

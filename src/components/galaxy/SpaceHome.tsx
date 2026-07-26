@@ -192,7 +192,7 @@ export function SpaceHome() {
           enterPlanet({
             id: 'auth',
             label: user ? '资料' : '登录',
-            description: user ? '查看资料与简历' : '登录后保存投递记录',
+            description: user ? '查看个人资料与简历版本' : '登录后，保存岗位与投递记录',
             href: user ? '/profile' : '/login',
             orbitRadius: 0,
             orbitDuration: 150,

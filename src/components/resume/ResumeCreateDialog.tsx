@@ -41,9 +41,9 @@ export function ResumeCreateDialog({
         <div className="mb-3 flex justify-center sm:hidden"><span className="apple-sheet-handle" /></div>
         <header className="flex items-start justify-between gap-4 border-b border-[color:var(--line-ghost)] pb-5">
           <div>
-            <p className="text-xs text-ink-muted">语言决定可用模板与 A4 标题</p>
+            <p className="text-xs text-ink-muted">简历语言将决定可用模板与页面标题。</p>
             <h2 id="resume-create-title" className="mt-1 text-xl font-semibold text-ink-primary">新建简历</h2>
-            <p className="mt-2 text-sm leading-6 text-ink-secondary">先选择中文或英文，再从对应模板开始填写。</p>
+            <p className="mt-2 text-sm leading-6 text-ink-secondary">先选择中文或英文，再从对应模板开始。</p>
           </div>
           <button type="button" className="muted-button pressable inline-flex size-9 shrink-0 items-center justify-center rounded-lg" aria-label="关闭" onClick={onClose}>
             <X aria-hidden="true" className="size-4" />
@@ -55,7 +55,7 @@ export function ResumeCreateDialog({
             active={language === "zh-CN"}
             icon={<FileText aria-hidden="true" className="size-5" />}
             title="中文简历"
-            description="适合中文网申、校招和国内岗位"
+            description="适用于中文网申、校招与国内岗位"
             onClick={() => chooseLanguage("zh-CN")}
           />
           <LanguageOption
@@ -71,7 +71,7 @@ export function ResumeCreateDialog({
 
         <footer className="mt-2 flex items-center justify-end gap-3 border-t border-[color:var(--line-ghost)] pt-5">
           <Button variant="secondary" onClick={onClose}>取消</Button>
-          <Button onClick={() => onCreate(language, templateId)}>使用此模板创建</Button>
+          <Button onClick={() => onCreate(language, templateId)}>使用此模板</Button>
         </footer>
       </section>
     </div>

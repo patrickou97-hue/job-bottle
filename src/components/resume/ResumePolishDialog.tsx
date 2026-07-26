@@ -22,10 +22,10 @@ export type ResumePolishTarget = {
 };
 
 const instructionOptions: { label: string; value: ResumePolishInstruction }[] = [
-  { label: "更专业", value: "professional" },
-  { label: "更简洁", value: "concise" },
-  { label: "更突出成果", value: "results" },
-  { label: "更匹配目标岗位", value: "relevance" },
+  { label: "提升专业表达", value: "professional" },
+  { label: "压缩篇幅", value: "concise" },
+  { label: "突出成果", value: "results" },
+  { label: "贴合目标岗位", value: "relevance" },
   { label: "优化英文表达", value: "english" },
 ];
 
@@ -75,7 +75,7 @@ export function ResumePolishDialog({
 
   async function generate() {
     if (!sourceBullets.some((bullet) => bullet.trim())) {
-      setError("当前段落为空，请先填写内容");
+      setError("当前段落为空，请先填写内容。");
       return;
     }
     setBusy(true);
@@ -95,7 +95,7 @@ export function ResumePolishDialog({
       setResult(next);
     } catch (requestError) {
       if (!mountedRef.current) return;
-      setError(requestError instanceof Error ? requestError.message : "AI 润色失败，请稍后重试");
+      setError(requestError instanceof Error ? requestError.message : "润色暂时不可用，请稍后重试。");
     } finally {
       if (requestAbortRef.current === controller) requestAbortRef.current = null;
       if (mountedRef.current) setBusy(false);
@@ -119,8 +119,8 @@ export function ResumePolishDialog({
         <header className="flex items-start justify-between gap-4 border-b border-[color:var(--line-ghost)] pb-5">
           <div>
             <p className="text-xs text-ink-muted">{target.label}</p>
-            <h2 id="resume-polish-title" className="mt-1 text-xl font-semibold text-ink-primary">AI 润色</h2>
-            <p className="mt-2 text-sm leading-6 text-ink-secondary">仅处理当前段落，不会发送联系方式、照片或整份简历</p>
+            <h2 id="resume-polish-title" className="mt-1 text-xl font-semibold text-ink-primary">智能润色</h2>
+            <p className="mt-2 text-sm leading-6 text-ink-secondary">仅处理当前段落，不会发送联系方式、照片或整份简历。</p>
           </div>
           <button type="button" className="muted-button pressable inline-flex size-9 shrink-0 items-center justify-center rounded-lg" aria-label="关闭" onClick={closeDialog}>
             <X aria-hidden="true" className="size-4" />
@@ -131,7 +131,7 @@ export function ResumePolishDialog({
           <label className="block">
             <span className="mb-2 block text-xs font-medium text-ink-muted">润色范围</span>
             <Select value={scope} onChange={(event) => { setScope(event.target.value); setResult(null); }}>
-              <option value="all">当前经历全部描述</option>
+              <option value="all">当前经历的全部描述</option>
               {target.content.bullets.map((bullet, index) => <option key={index} value={index}>第 {index + 1} 条 · {bullet.slice(0, 24) || "空白"}</option>)}
             </Select>
           </label>
@@ -144,13 +144,13 @@ export function ResumePolishDialog({
         </div>
 
         <div className="grid gap-6 py-6 lg:grid-cols-2">
-          <PolishColumn title="原始内容" bullets={sourceBullets} />
-          <PolishColumn title="润色结果" bullets={result?.revised.bullets ?? []} placeholder={busy ? "正在润色" : "生成后在这里预览，不会自动覆盖原文"} />
+          <PolishColumn title="原文" bullets={sourceBullets} />
+          <PolishColumn title="建议稿" bullets={result?.revised.bullets ?? []} placeholder={busy ? "正在润色" : "生成后可在此对照查看，原文不会自动改动。"} />
         </div>
 
         {result ? (
           <div className="space-y-4 border-t border-[color:var(--line-ghost)] pt-5 text-sm leading-6">
-            <ResultBlock title="修改说明" items={[result.summary, ...result.changes.map((change) => change.description)]} />
+            <ResultBlock title="调整说明" items={[result.summary, ...result.changes.map((change) => change.description)]} />
             <ResultBlock title="建议补充" items={result.suggestions} empty="暂无" />
             <ResultBlock title="风险提示" items={result.warnings} empty="暂无" warning />
           </div>
@@ -163,7 +163,7 @@ export function ResumePolishDialog({
           <Button variant="secondary" onClick={closeDialog}>保留原文</Button>
           <Button variant="secondary" className="gap-2" onClick={busy ? () => requestAbortRef.current?.abort() : generate}>
             {busy ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> : result ? <RefreshCw aria-hidden="true" className="size-4" /> : <Sparkles aria-hidden="true" className="size-4" />}
-            {busy ? "取消润色" : result ? "重新生成" : "生成润色"}
+            {busy ? "取消" : result ? "重新生成" : "生成建议"}
           </Button>
           {result ? <Button onClick={() => onApply(result, bulletIndex)}>应用修改</Button> : null}
         </footer>

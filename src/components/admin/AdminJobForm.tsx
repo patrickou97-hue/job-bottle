@@ -89,7 +89,7 @@ export function AdminJobForm({
       setMessage(job ? "岗位已更新。" : "岗位已新增。");
       if (!job) reset(emptyValues);
     } catch {
-      setMessage("保存失败，请确认管理员权限和表单内容。");
+      setMessage("保存失败，请检查管理员权限与表单内容。");
     } finally {
       setSaving(false);
     }
@@ -101,14 +101,15 @@ export function AdminJobForm({
     setUploadingLogo(true);
     try {
       if (!isSupabaseConfigured()) {
-        setMessage("请先配置数据库环境变量。");
+        console.error("Supabase environment variables are not configured.");
+        setMessage("上传暂时不可用，请稍后重试。");
         return;
       }
       const publicUrl = await uploadCompanyLogo(createClient(), file);
       setValue("logo_url", publicUrl, { shouldDirty: true });
       setMessage("公司标识已上传。");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "上传失败，请稍后再试。");
+      setMessage(error instanceof Error ? error.message : "上传失败，请稍后重试。");
     } finally {
       setUploadingLogo(false);
     }

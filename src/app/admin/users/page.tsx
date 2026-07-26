@@ -9,7 +9,7 @@ export default function AdminUsersPage() {
           <div>
             <p className="page-kicker">账户、状态与产品权限</p>
             <h1 className="page-title">用户管理</h1>
-            <p className="page-description">快速定位用户、查看使用情况，并集中管理账户身份、登录状态与 StarInterview 访问权限。</p>
+            <p className="page-description">查找用户并查看使用情况，集中管理账户身份、登录状态与 StarInterview 访问权限。</p>
           </div>
         </section>
         <AdminUsersClient />

@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) {
-    return NextResponse.json({ error: "请先登录，再使用 AI 润色" }, { status: 401 });
+    return NextResponse.json({ error: "请先登录，再使用智能润色。" }, { status: 401 });
   }
 
   const body = await request.json().catch(() => null);
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
   const model = process.env.MIMO_MODEL;
   if (!apiKey || !baseUrl || !model) {
     return NextResponse.json(
-      { error: "AI 润色尚未配置，请联系管理员检查服务设置" },
+      { error: "润色暂时不可用，请稍后重试。" },
       { status: 503 },
     );
   }
@@ -260,7 +260,7 @@ function logServerError(scope: string, error: unknown) {
 
 function mapUpstreamError(error: unknown) {
   if (error instanceof DOMException && error.name === "AbortError") {
-    return NextResponse.json({ error: "AI 润色请求超时，原文未改变，请重试" }, { status: 504 });
+    return NextResponse.json({ error: "润色请求超时，原文未改动，请重试。" }, { status: 504 });
   }
   if (error instanceof UpstreamError) {
     if (error.status === 401 || error.status === 403) return NextResponse.json({ error: "AI 服务鉴权失败，请联系管理员检查配置" }, { status: 502 });

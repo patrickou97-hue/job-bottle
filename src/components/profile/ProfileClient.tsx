@@ -54,7 +54,7 @@ export function ProfileClient() {
   const [preferredRegions, setPreferredRegions] = useState("");
   const [targetRoles, setTargetRoles] = useState("");
   const [message, setMessage] = useState(() =>
-    isSupabaseConfigured() ? "正在读取资料" : "请先配置数据库环境变量。",
+    isSupabaseConfigured() ? "正在读取资料" : "个人资料暂时无法读取，请稍后重试。",
   );
   const [busy, setBusy] = useState(false);
 
@@ -67,7 +67,7 @@ export function ProfileClient() {
       const user = await getCurrentUserOrNull(supabase);
       if (!mounted) return;
       if (!user) {
-        setMessage("登录后可以查看资料。");
+        setMessage("登录后可保存资料、简历与投递记录。");
         return;
       }
 
@@ -108,8 +108,8 @@ export function ProfileClient() {
       if (!mounted) return;
       setMessage(
         isProfileSchemaError(error)
-          ? "云端个人资料尚未升级。请在 Supabase SQL Editor 运行 20260710120000_profile_resume_cloud_repair.sql。"
-          : "读取资料失败，请稍后再试。",
+          ? "个人资料服务正在升级，请稍后重试。"
+          : "个人资料暂时无法读取，请稍后重试。",
       );
     });
     return () => {
@@ -189,12 +189,12 @@ export function ProfileClient() {
       setGraduationYear(next.graduation_year ?? "");
       setPreferredRegions(formatPreferenceInput(next.preferred_regions));
       setTargetRoles(formatPreferenceInput(next.target_roles));
-      setMessage("已保存个人资料。");
+      setMessage("个人资料已保存。");
     } catch (error) {
       setMessage(
         isProfileSchemaError(error)
-          ? "云端个人资料尚未升级。请在 Supabase SQL Editor 运行 20260710120000_profile_resume_cloud_repair.sql。"
-          : "保存失败，请确认当前账号有 profiles 更新权限或稍后再试。",
+          ? "个人资料服务正在升级，请稍后重试。"
+          : "资料暂未保存，请稍后重试。若问题持续出现，请通过反馈联系拾星。",
       );
     } finally {
       setBusy(false);
@@ -219,8 +219,8 @@ export function ProfileClient() {
         {message ? <div className="info-banner text-sm">{message}</div> : null}
         <section className="empty-state border-y border-[color:var(--line-ghost)]">
           <div>
-            <h2>需要先登录</h2>
-            <p>登录后保存资料、简历和投递记录。</p>
+            <h2>登录后继续</h2>
+            <p>登录后可保存资料、简历与投递记录。</p>
             <Link href="/login?next=/profile" className="gold-button mt-4 inline-flex rounded-lg px-4 py-2 text-sm font-medium">
               去登录
             </Link>
@@ -275,7 +275,7 @@ export function ProfileClient() {
         <ProfileSection
           id="profile-details"
           title="基本资料"
-          description="用于同步简历和完善求职信息。"
+          description="完善基本资料，便于同步简历与管理求职信息。"
         >
           <div className="grid gap-x-5 gap-y-5 sm:grid-cols-2 xl:grid-cols-3">
             <ProfileField label="用户名" icon={<UserRound aria-hidden="true" className="size-4" />}>
@@ -302,7 +302,7 @@ export function ProfileClient() {
         <ProfileSection
           id="profile-preferences"
           title="求职偏好"
-          description="偏好会用于筛选和推荐岗位。"
+          description="求职偏好将用于岗位筛选与匹配。"
         >
           <div className="grid gap-7 xl:grid-cols-2">
             <ProfileField label="意向地区" icon={<MapPin aria-hidden="true" className="size-4" />}>
@@ -326,15 +326,15 @@ export function ProfileClient() {
           </div>
           <div className="mt-6 flex flex-wrap items-center gap-2 border-t border-[color:var(--line-ghost)] pt-4">
             <span className="mr-1 text-xs text-ink-muted">当前选择</span>
-            <TagGroup values={regionTags} empty="未选择地区" />
-            <TagGroup values={targetRoleTags} empty="未选择岗位" />
+            <TagGroup values={regionTags} empty="尚未选择地区" />
+            <TagGroup values={targetRoleTags} empty="尚未选择岗位" />
           </div>
         </ProfileSection>
 
         <ProfileSection
           id="profile-opportunities"
           title="简历与匹配"
-          description="先管理简历，再查看与你方向一致的岗位。"
+          description="先整理简历，再查看与你方向相近的岗位。"
         >
           <div className="grid gap-9 lg:grid-cols-2 lg:divide-x lg:divide-[color:var(--line-ghost)]">
             <article className="min-w-0">
@@ -353,7 +353,7 @@ export function ProfileClient() {
                 </Link>
               ))
             ) : (
-                  <p className="py-4 text-sm leading-6 text-ink-muted">还没有简历。先建立一份通用版。</p>
+                  <p className="py-4 text-sm leading-6 text-ink-muted">还没有简历，先建立一份通用版。</p>
             )}
           </div>
               <Link href="/resume" className="text-action mt-4 text-sm">
@@ -376,7 +376,7 @@ export function ProfileClient() {
                 </Link>
               ))
             ) : (
-                  <p className="py-4 text-sm leading-6 text-ink-muted">保存地区或岗位后，这里会显示匹配结果。</p>
+                  <p className="py-4 text-sm leading-6 text-ink-muted">保存意向地区或岗位后，匹配结果会显示在这里。</p>
             )}
           </div>
               <Link href="/explore" className="text-action mt-4 text-sm">
@@ -390,12 +390,12 @@ export function ProfileClient() {
         <ProfileSection
           id="profile-progress"
           title="投递进展"
-          description="集中查看已保存机会和下一步行动。"
+          description="集中查看已收录的机会与下一步安排。"
         >
           <p className="max-w-2xl text-sm leading-7 text-ink-secondary">
             {applications.length > 0
-              ? `你已保存 ${applications.length} 个机会，其中 ${appliedCount} 个进入投递或后续阶段。`
-              : "还没有保存岗位。可以先从岗位坐标添加一条记录。"}
+              ? `你已收录 ${applications.length} 个机会，其中 ${appliedCount} 个已进入投递或后续阶段。`
+              : "还没有收录岗位，可先从岗位坐标开始。"}
           </p>
           <div className="mt-6 grid grid-cols-3 border-y border-[color:var(--line-ghost)] py-5">
             <ProgressFact label="保存机会" value={applications.length} />
@@ -403,20 +403,20 @@ export function ProfileClient() {
             <ProgressFact label="待跟进" value={pendingCount} divided />
           </div>
           <div className="mt-5 flex flex-wrap gap-x-6 gap-y-3">
-            <Link href="/my" className="text-action text-sm">打开投递工作台 <ArrowRight aria-hidden="true" className="size-4" /></Link>
+            <Link href="/my" className="text-action text-sm">查看投递 <ArrowRight aria-hidden="true" className="size-4" /></Link>
             <Link href="/explore" className="text-action text-sm">继续找岗位 <ArrowRight aria-hidden="true" className="size-4" /></Link>
-            <Link href="/bottle" className="text-action text-sm">查看星瓶 <ArrowRight aria-hidden="true" className="size-4" /></Link>
+            <Link href="/bottle" className="text-action text-sm">打开星瓶 <ArrowRight aria-hidden="true" className="size-4" /></Link>
           </div>
         </ProfileSection>
 
         <ProfileSection
           id="profile-account"
           title="账号"
-          description="查看登录信息与隐私说明。"
+          description="查看账户信息与隐私说明。"
         >
           <div className="max-w-2xl space-y-5">
             <InfoLine icon={<Mail aria-hidden="true" className="size-4" />} label="登录邮箱" value={userEmail || "未读取"} />
-            <InfoLine icon={<ShieldCheck aria-hidden="true" className="size-4" />} label="公开分享" value="分享海报不展示邮箱和内部 ID" />
+            <InfoLine icon={<ShieldCheck aria-hidden="true" className="size-4" />} label="公开分享" value="分享海报不会展示邮箱或内部 ID。" />
             <button
               type="button"
               className="text-action pressable inline-flex min-h-10 items-center gap-2 text-sm text-[color:var(--text-danger)]"

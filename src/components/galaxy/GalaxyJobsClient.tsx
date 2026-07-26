@@ -36,7 +36,8 @@ export function GalaxyJobsClient({ kind, slug }: { kind: GalaxyKind; slug: strin
 
   async function loadData() {
     if (!isSupabaseConfigured()) {
-      setMessage("请先配置数据库环境变量，再读取岗位数据库。");
+      console.error("Supabase environment variables are not configured.");
+      setMessage("岗位星系暂时无法读取，请检查网络后重试。");
       setLoading(false);
       return;
     }
@@ -55,7 +56,7 @@ export function GalaxyJobsClient({ kind, slug }: { kind: GalaxyKind; slug: strin
     } catch {
       setJobs([]);
       setApplications([]);
-      setMessage("岗位读取失败，请检查网络后重试。");
+      setMessage("岗位星系暂时无法读取，请检查网络后重试。");
     } finally {
       setLoading(false);
     }
@@ -105,7 +106,7 @@ export function GalaxyJobsClient({ kind, slug }: { kind: GalaxyKind; slug: strin
         const application = await upsertApplication(supabase, currentUserId, job.id, "evaluating");
         queueBottleDrop(application.id);
         startCapture(job);
-        setMessage("已加入星瓶。先评估岗位，再决定是否投入准备。");
+        setMessage("已收入星瓶。先了解岗位，再决定是否投入准备。");
         await loadData();
         return;
       }
@@ -117,16 +118,16 @@ export function GalaxyJobsClient({ kind, slug }: { kind: GalaxyKind; slug: strin
       if (candidateStage !== "preparing") {
         const nextStage = candidateStage === "evaluating" ? "saved" : "preparing";
         await updateApplication(supabase, existing.id, { candidate_stage: nextStage });
-        setMessage(nextStage === "saved" ? "已保留为候选岗位。" : "已进入准备中，建议先绑定岗位简历。");
+        setMessage(nextStage === "saved" ? "已列入候选。你可以设置优先级，或开始准备。" : "已进入准备阶段。建议先建立岗位简历，再记录投递。");
         await loadData();
         return;
       }
       if (!isValidHttpUrl(job.apply_url)) {
-        setMessage("投递链接格式不正确，当前记录和已填内容都已保留。");
+        setMessage("投递链接无法识别；当前记录与已填内容均已保留。");
         return;
       }
       if (!safeOpenUrl(job.apply_url)) {
-        setMessage("浏览器阻止了新窗口，请允许本站打开投递页面后重试。");
+        setMessage("浏览器拦截了新窗口。请允许拾星打开投递页面后重试。");
         return;
       }
       setPendingConfirmation(existing);
@@ -134,9 +135,9 @@ export function GalaxyJobsClient({ kind, slug }: { kind: GalaxyKind; slug: strin
       pageWasHiddenRef.current = false;
       if (confirmationTimerRef.current) window.clearTimeout(confirmationTimerRef.current);
       confirmationTimerRef.current = window.setTimeout(() => setShowConfirmation(true), 2200);
-      setMessage("官网已打开。返回后确认是否完成投递。");
+      setMessage("投递官网已打开。返回后，请确认是否完成投递。");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "岗位操作失败，当前记录和已填内容都已保留，请稍后重试。");
+      setMessage(error instanceof Error ? error.message : "操作未完成；当前记录与已填内容均已保留。请稍后重试。");
     }
   }
 
@@ -146,7 +147,7 @@ export function GalaxyJobsClient({ kind, slug }: { kind: GalaxyKind; slug: strin
     if (status === "keep_opened") {
       setPendingConfirmation(null);
       setShowConfirmation(false);
-      setMessage("仍保留在“准备中”，可以稍后继续记录投递。");
+      setMessage("仍保留在“准备中”，之后可以继续更新。");
       return;
     }
     setConfirmBusy(true);
@@ -157,10 +158,10 @@ export function GalaxyJobsClient({ kind, slug }: { kind: GalaxyKind; slug: strin
       });
       setPendingConfirmation(null);
       setShowConfirmation(false);
-      setMessage(status === "applied" ? "已确认投递，接下来可以记录笔试或面试安排。" : "已结束这条候选记录。");
+      setMessage(status === "applied" ? "投递已记录，这颗星已进入你的投递星图。" : "已结束这次考虑。");
       await loadData();
     } catch {
-      setMessage("状态更新失败，候选记录仍保留。请检查网络后重试。");
+      setMessage("状态暂未更新，请稍后重试。");
     } finally {
       setConfirmBusy(false);
     }
@@ -204,7 +205,7 @@ export function GalaxyJobsClient({ kind, slug }: { kind: GalaxyKind; slug: strin
       ) : null}
       {loading ? (
         <div className="empty-state">
-          <span className="loading-line">正在读取岗位</span>
+          <span className="loading-line">正在整理岗位</span>
         </div>
       ) : (
         <>

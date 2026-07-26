@@ -64,7 +64,8 @@ export function JobDetailActions({
     let applyWindow: Window | null = null;
     let applyWindowNavigated = false;
     if (!isSupabaseConfigured()) {
-      setMessage("数据库暂未连接，稍后再试。");
+      console.error("Supabase environment variables are not configured.");
+      setMessage("操作未完成；当前记录与已填内容均已保留。请稍后重试。");
       return;
     }
     if (!application && isValidHttpUrl(job.apply_url)) {
@@ -72,15 +73,15 @@ export function JobDetailActions({
     }
     if (application?.status === "opened" && getCandidateStage(application) === "preparing") {
       if (!isValidHttpUrl(job.apply_url)) {
-        setMessage("投递链接格式不正确，当前记录和已填内容都已保留。");
+        setMessage("投递链接无法识别；当前记录与已填内容均已保留。");
         return;
       }
       if (!safeOpenUrl(job.apply_url)) {
-        setMessage("浏览器阻止了新窗口，请允许本站打开投递页面后重试。");
+        setMessage("浏览器拦截了新窗口。请允许拾星打开投递页面后重试。");
         return;
       }
       armApplyConfirmation();
-      setMessage("官网已打开。返回后确认是否完成投递。");
+      setMessage("投递官网已打开。返回后，请确认是否完成投递。");
       return;
     }
 
@@ -90,13 +91,13 @@ export function JobDetailActions({
       const user = await getCurrentUserOrNull(supabase);
       if (!user) {
         applyWindow?.close();
-        setMessage("登录后收录岗位。");
+        setMessage("登录后，即可收录岗位。");
         return;
       }
       if (!application) {
         if (!isValidHttpUrl(job.apply_url)) {
           applyWindow?.close();
-          setMessage("投递链接格式不正确，暂未加入星瓶。请通过反馈告诉我们。");
+          setMessage("投递链接无法识别，岗位尚未收入星瓶。请通过反馈告知我们。");
           return;
         }
         const nextApplication = await upsertApplication(supabase, user.id, job.id, "preparing");
@@ -107,11 +108,11 @@ export function JobDetailActions({
           applyWindow.location.href = sanitizeApplicationUrl(job.apply_url);
           applyWindowNavigated = true;
         } else if (!safeOpenUrl(job.apply_url)) {
-          setMessage("已加入星瓶，但浏览器阻止了官网窗口。请允许本站打开新窗口后重试。");
+          setMessage("岗位已收入星瓶，但投递页面被浏览器拦截。请允许打开新窗口后重试。");
           return;
         }
         armApplyConfirmation();
-        setMessage("已加入星瓶并打开官网。返回后确认是否完成投递。");
+        setMessage("岗位已收入星瓶，投递官网已打开。返回后，请确认是否完成投递。");
         return;
       }
 
@@ -122,13 +123,13 @@ export function JobDetailActions({
       setApplication(nextApplication);
       void track("candidate_stage_updated", { job_id: job.id, stage: nextStage });
       if (nextStage === "saved") {
-        setMessage("已保留为候选岗位。可以设置优先级，或继续开始准备。");
+        setMessage("已列入候选。你可以设置优先级，或开始准备。");
       } else {
-        setMessage("已进入准备中。建议先创建岗位简历，再记录投递。");
+        setMessage("已进入准备阶段。建议先建立岗位简历，再记录投递。");
       }
     } catch (error) {
       if (!applyWindowNavigated) applyWindow?.close();
-      setMessage(error instanceof Error ? error.message : "岗位操作失败，当前记录和已填内容都已保留，请稍后重试。");
+      setMessage(error instanceof Error ? error.message : "操作未完成；当前记录与已填内容均已保留。请稍后重试。");
     } finally {
       setBusy(false);
     }
@@ -159,7 +160,7 @@ export function JobDetailActions({
     if (status === "keep_opened") {
       applyConfirmationArmedRef.current = false;
       setShowApplyConfirmation(false);
-      setMessage("仍保留在“准备中”，可以稍后继续记录投递。");
+      setMessage("仍保留在“准备中”，之后可以继续更新。");
       return;
     }
 
@@ -174,9 +175,9 @@ export function JobDetailActions({
       if (status === "applied") void track("application_recorded", { job_id: job.id });
       applyConfirmationArmedRef.current = false;
       setShowApplyConfirmation(false);
-      setMessage(status === "applied" ? "已确认投递，岗位已出现在投递星图。" : "已标记为不投了。");
+      setMessage(status === "applied" ? "投递已记录，这颗星已进入你的投递星图。" : "已结束这次考虑。");
     } catch {
-      setMessage("状态更新失败，请稍后再试。");
+      setMessage("状态暂未更新，请稍后重试。");
     } finally {
       setConfirmBusy(false);
     }
@@ -188,14 +189,14 @@ export function JobDetailActions({
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-sm font-medium text-ink-primary">
             <Archive aria-hidden="true" className="size-4 text-nebula-silver" />
-            {application ? getApplicationStageLabel(application) : "先收藏，再决定是否投递"}
+            {application ? getApplicationStageLabel(application) : "先收入星瓶，再决定是否奔赴。"}
           </div>
           <div className="mt-1 text-xs text-ink-muted">
-            {application ? <StatusPill status={application.status} label={getApplicationStageLabel(application)} /> : "登录后加入星瓶，并直接打开投递官网。"}
+            {application ? <StatusPill status={application.status} label={getApplicationStageLabel(application)} /> : "登录后即可收入星瓶，并前往企业投递页面。"}
           </div>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          {message === "登录后收录岗位。" ? (
+          {message === "登录后，即可收录岗位。" ? (
             <Link
               href={loginHref}
               className="muted-button pressable inline-flex h-10 items-center justify-center rounded-lg px-4 text-sm font-medium"
@@ -238,7 +239,7 @@ export function JobDetailActions({
           />
         </div>
       ) : null}
-        {message && message !== "登录后收录岗位。" ? (
+        {message && message !== "登录后，即可收录岗位。" ? (
         <p className="mt-3 text-xs text-nebula-silver">{message}</p>
       ) : null}
     </div>

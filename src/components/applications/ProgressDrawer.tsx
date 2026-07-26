@@ -227,7 +227,7 @@ export function ProgressDrawer({
       void onChanged(previousApplication);
       setMessage(error instanceof Error
         ? error.message
-        : "保存失败，你填写的内容仍保留在当前面板。请检查网络后重试。");
+        : "保存未完成。你填写的内容仍在当前面板中，请检查网络后重试。");
       return false;
     } finally {
       if (requestId === saveRequestRef.current) setSaving(false);
@@ -259,7 +259,7 @@ export function ProgressDrawer({
       await onDeleted(application.id);
       onClose();
     } catch {
-      setMessage("删除失败，请检查网络后重试。");
+      setMessage("删除未完成，请检查网络后重试。");
     } finally {
       setSaving(false);
     }
@@ -309,9 +309,9 @@ export function ProgressDrawer({
               </Select>
             </label>
             <label className="block">
-              <span className="mb-2 block text-sm text-ink-secondary">使用简历</span>
+              <span className="mb-2 block text-sm text-ink-secondary">所用简历</span>
               <Select value={resumeId} onChange={(event) => setResumeId(event.target.value)}>
-                <option value="">暂未绑定</option>
+                <option value="">尚未绑定</option>
                 {resumes.map((resume) => (
                   <option key={resume.id} value={resume.id}>{resume.title || "未命名简历"}</option>
                 ))}
@@ -341,7 +341,7 @@ export function ProgressDrawer({
         </section>
 
         <section className={ended ? "opacity-40 transition-opacity" : "transition-opacity"}>
-          <div className="mb-4 text-sm font-medium text-ink-primary">状态轨道</div>
+          <div className="mb-4 text-sm font-medium text-ink-primary">投递轨道</div>
           <div className="relative px-1 pb-9 pt-4">
             <div className="absolute left-7 right-7 top-7 h-[2px] rounded-full bg-[rgba(183,134,40,0.24)] shadow-[0_0_12px_rgba(183,134,40,0.12)]" />
             <div
@@ -415,7 +415,7 @@ export function ProgressDrawer({
           <div className="mb-4 text-sm font-medium text-ink-primary">投递信息</div>
           <div className="grid gap-4 sm:grid-cols-2">
             <WorkflowField label="投递渠道">
-              <Input value={channel} onChange={(event) => setChannel(event.target.value)} placeholder="官网、内推、招聘平台" />
+              <Input value={channel} onChange={(event) => setChannel(event.target.value)} placeholder="官网、内推或招聘平台" />
             </WorkflowField>
             <WorkflowField label="投递账号">
               <Input value={account} onChange={(event) => setAccount(event.target.value)} placeholder="邮箱或平台账号" />
@@ -424,16 +424,16 @@ export function ProgressDrawer({
               <Input value={contactName} onChange={(event) => setContactName(event.target.value)} placeholder="姓名或联系方式" />
             </WorkflowField>
             <WorkflowField label="自定义阶段">
-              <Input value={customStageLabel} onChange={(event) => setCustomStageLabel(event.target.value)} placeholder="三面、HR 面、主管面" />
+              <Input value={customStageLabel} onChange={(event) => setCustomStageLabel(event.target.value)} placeholder="三面、HR 面或主管面" />
             </WorkflowField>
           </div>
         </section>
 
         <section>
-          <div className="mb-4 text-sm font-medium text-ink-primary">下一步</div>
+          <div className="mb-4 text-sm font-medium text-ink-primary">下一步动作</div>
           <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_190px]">
-            <WorkflowField label="动作">
-              <Input value={nextAction} onChange={(event) => setNextAction(event.target.value)} placeholder="准备笔试、跟进 HR、整理面试题" />
+            <WorkflowField label="下一步动作">
+              <Input value={nextAction} onChange={(event) => setNextAction(event.target.value)} placeholder="准备笔试、联系 HR、整理面试问题" />
             </WorkflowField>
             <WorkflowField label="计划时间">
               <Input type="datetime-local" value={nextActionAt} onChange={(event) => setNextActionAt(event.target.value)} />
@@ -447,7 +447,7 @@ export function ProgressDrawer({
             value={note}
             onChange={(event) => setNote(event.target.value)}
             onBlur={() => void handleNoteBlur()}
-            placeholder="记录笔试时间、面试反馈或需要跟进的事项"
+            placeholder="记录笔试时间、面试反馈与待跟进事项"
             className="min-h-28 w-full resize-none border-0 border-b border-[color:var(--line)] bg-transparent px-0 py-3 text-sm leading-6 text-ink-primary outline-none transition placeholder:text-ink-muted focus:border-[color:var(--aurora)] focus:bg-[color:var(--surface-hover-bg)]"
           />
         </label>
@@ -457,22 +457,22 @@ export function ProgressDrawer({
           <textarea
             value={reviewNote}
             onChange={(event) => setReviewNote(event.target.value)}
-            placeholder="记录卡点、有效准备和下次调整"
+            placeholder="记录卡点、有效准备与下次调整"
             className="min-h-24 w-full resize-none border-0 border-b border-[color:var(--line)] bg-transparent px-0 py-3 text-sm leading-6 text-ink-primary outline-none transition placeholder:text-ink-muted focus:border-[color:var(--aurora)] focus:bg-[color:var(--surface-hover-bg)]"
           />
         </label>
 
         <section>
           <div className="mb-4 flex items-center justify-between gap-3">
-            <span className="text-sm font-medium text-ink-primary">状态时间线</span>
+            <span className="text-sm font-medium text-ink-primary">进展时间线</span>
             <span className="text-xs text-ink-muted">{history.length} 个节点</span>
           </div>
           {historyState === "loading" ? (
-            <p className="text-sm text-ink-muted">正在读取状态记录</p>
+            <p className="text-sm text-ink-muted">正在读取进展记录</p>
           ) : historyState === "error" ? (
-            <p className="text-sm leading-6 text-ink-muted">状态记录暂时无法读取，当前编辑内容不受影响。</p>
+            <p className="text-sm leading-6 text-ink-muted">进展记录暂时无法读取；当前编辑内容不受影响。</p>
           ) : history.length === 0 ? (
-            <p className="text-sm text-ink-muted">还没有状态变化记录。</p>
+            <p className="text-sm text-ink-muted">还没有进展记录。</p>
           ) : (
             <ol className="border-l border-[color:var(--line)] pl-4">
               {history.map((item) => (

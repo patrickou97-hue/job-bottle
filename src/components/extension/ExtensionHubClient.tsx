@@ -20,7 +20,7 @@ export function ExtensionHubClient() {
   const [installed, setInstalled] = useState(false);
   const [extensionVersion, setExtensionVersion] = useState<string | null>(null);
   const [syncState, setSyncState] = useState<SyncState>("checking");
-  const [message, setMessage] = useState("正在检查浏览器中的拾星网申助手");
+  const [message, setMessage] = useState("正在检测拾星网申助手");
   const syncTimerRef = useRef<number | null>(null);
 
   const postToExtension = useCallback((payload: Record<string, unknown>) => {
@@ -40,13 +40,13 @@ export function ExtensionHubClient() {
         setSyncState("idle");
         setMessage(detectedVersion === LEGACY_COMPATIBLE_VERSION
           ? "0.1.7 可继续同步与填写；需要新版描述识别时可升级 0.1.9"
-          : "扩展已安装，可以同步当前账号的云端简历");
+          : "网申助手已安装，可同步当前账户的云端简历。");
       }
       if (payload.type === "SYNC_COMPLETE") {
         if (syncTimerRef.current) window.clearTimeout(syncTimerRef.current);
         setInstalled(true);
         setSyncState("success");
-        setMessage(`已同步 ${Number(payload.count) || 0} 份简历到当前浏览器`);
+        setMessage(`已将 ${Number(payload.count) || 0} 份简历同步至当前浏览器。`);
       }
       if (payload.type === "SYNC_ERROR") {
         if (syncTimerRef.current) window.clearTimeout(syncTimerRef.current);
@@ -60,7 +60,7 @@ export function ExtensionHubClient() {
     const timer = window.setTimeout(() => {
       setSyncState((current) => {
         if (current !== "checking") return current;
-        setMessage("尚未检测到扩展，请先下载并完成安装");
+        setMessage("尚未检测到网申助手，请先完成安装。");
         return "missing";
       });
     }, 1_500);
@@ -75,12 +75,12 @@ export function ExtensionHubClient() {
   async function syncResumes() {
     if (!installed) {
       setSyncState("missing");
-      setMessage("请先安装扩展，再回到这里同步简历");
+      setMessage("尚未检测到网申助手，请先完成安装。");
       return;
     }
 
     setSyncState("syncing");
-    setMessage("正在读取当前账号的云端简历");
+    setMessage("正在读取云端简历");
 
     try {
       const response = await fetch("/api/resume/extension-profile", {
@@ -106,7 +106,7 @@ export function ExtensionHubClient() {
       if (!response.ok) throw new Error(payload.error || "简历读取失败");
       if (!payload.resumes?.length) {
         setSyncState("empty");
-        setMessage("当前账号还没有云端简历，请先在简历制作页保存一份");
+        setMessage("当前账户还没有云端简历，请先在简历制作页保存一份。");
         return;
       }
 
@@ -121,7 +121,7 @@ export function ExtensionHubClient() {
       });
       syncTimerRef.current = window.setTimeout(() => {
         setSyncState("error");
-        setMessage("扩展没有响应，请在扩展管理页确认它已启用");
+        setMessage("网申助手未响应，请在浏览器扩展管理页确认它已启用。");
       }, 4_000);
     } catch (error) {
       setSyncState("error");
@@ -137,10 +137,10 @@ export function ExtensionHubClient() {
         <div className="max-w-2xl">
           <h1 className="text-4xl font-semibold leading-[1.08] tracking-[-0.035em] text-ink-primary sm:text-5xl">
             <span className="block">一份简历，</span>
-            <span className="block">投向更多可能</span>
+            <span className="block">抵达更多坐标</span>
           </h1>
           <p className="mt-5 max-w-[46ch] text-base leading-8 text-ink-secondary">
-            将拾星简历同步到浏览器，调用拾星网申工具填写常用字段。你只需检查后提交。
+            把拾星简历同步到浏览器，在网申页面填写常用字段；你负责核对与提交。
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <a href={DOWNLOAD_URL} target="_blank" rel="noreferrer" className="gold-button pressable inline-flex h-11 items-center gap-2 rounded-lg px-4 text-sm font-semibold">
@@ -164,9 +164,9 @@ export function ExtensionHubClient() {
       <section id="sync" className="scroll-mt-24">
         <div className="grid gap-8 lg:grid-cols-[minmax(0,0.85fr)_minmax(360px,1.15fr)] lg:items-start">
           <div>
-            <h2 className="text-2xl font-semibold tracking-[-0.02em] text-ink-primary">同步你的拾星简历</h2>
+            <h2 className="text-2xl font-semibold tracking-[-0.02em] text-ink-primary">将简历同步到浏览器</h2>
             <p className="mt-3 max-w-[48ch] text-sm leading-7 text-ink-secondary">
-              登录后读取最多 20 份云端简历，移除照片，再保存到当前浏览器的扩展本地存储。
+              登录后可读取最多 20 份云端简历。照片会被移除，其余内容仅保存于当前浏览器的扩展本地存储。
             </p>
           </div>
           <div className="border-y border-[color:var(--line-ghost)] py-6">
@@ -186,11 +186,11 @@ export function ExtensionHubClient() {
                 </button>
               ) : syncState === "checking" ? (
                 <button type="button" className="gold-button inline-flex h-11 items-center rounded-lg px-4 text-sm font-semibold opacity-60" disabled>
-                  正在检测扩展
+                  正在检测网申助手
                 </button>
               ) : (
                 <button type="button" className="gold-button pressable inline-flex h-11 items-center rounded-lg px-4 text-sm font-semibold" onClick={() => window.location.reload()}>
-                  安装后刷新检测
+                  安装后重新检测
                 </button>
               )}
               {!installed && syncState !== "checking" ? <Link href="/extension/guide" className="text-action h-11 px-2 text-sm font-semibold">查看安装步骤</Link> : null}
@@ -204,14 +204,14 @@ export function ExtensionHubClient() {
       <section className="grid gap-8 border-t border-[color:var(--line-ghost)] pt-10 md:grid-cols-2">
         <div className="max-w-xl">
           <ShieldCheckIcon aria-hidden="true" className="size-7 text-[color:var(--ok)]" />
-          <h2 className="mt-4 text-xl font-semibold text-ink-primary">权限保持克制</h2>
-          <p className="mt-3 text-sm leading-7 text-ink-secondary">不读取浏览历史和 Cookie。只有点击填写按钮后，扩展才临时访问当前网申页。</p>
+          <h2 className="mt-4 text-xl font-semibold text-ink-primary">权限止于所需</h2>
+          <p className="mt-3 text-sm leading-7 text-ink-secondary">不读取浏览历史或 Cookie。只有当你主动点击填写时，扩展才会临时访问当前网申页面。</p>
         </div>
         <div className="max-w-xl">
           <LockKeyIcon aria-hidden="true" className="size-7 text-[color:var(--aurora)]" />
-          <h2 className="mt-4 text-xl font-semibold text-ink-primary">由你检查和提交</h2>
-          <p className="mt-3 text-sm leading-7 text-ink-secondary">不自动提交，不填写敏感声明、验证码和密码。已有内容默认保留，填写结果会在页面中标记。</p>
-          <p className="mt-2 text-xs leading-6 text-ink-muted">智能匹配只分析字段标签、占位符、字段名、控件类型和所属区块，不发送输入框现有内容或简历正文。</p>
+          <h2 className="mt-4 text-xl font-semibold text-ink-primary">核对与提交，由你决定</h2>
+          <p className="mt-3 text-sm leading-7 text-ink-secondary">不自动提交，不填写敏感声明、验证码或密码。页面已有内容默认保留，新填内容会清晰标记。</p>
+          <p className="mt-2 text-xs leading-6 text-ink-muted">智能匹配仅分析字段标签、占位符、字段名、控件类型与所在区块，不读取输入框现有内容，也不发送简历正文。</p>
         </div>
       </section>
     </div>

@@ -20,7 +20,8 @@ export function GalaxyMapClient({ kind }: { kind: GalaxyKind }) {
   useEffect(() => {
     if (!isSupabaseConfigured()) {
       const frame = window.requestAnimationFrame(() => {
-        setMessage("请先配置数据库环境变量，再读取岗位星系。");
+        console.error("Supabase environment variables are not configured.");
+        setMessage("岗位星系暂时无法读取，请检查网络后重试。");
         setLoading(false);
       });
       return () => window.cancelAnimationFrame(frame);
@@ -39,7 +40,7 @@ export function GalaxyMapClient({ kind }: { kind: GalaxyKind }) {
           if (!mounted) return;
           setJobs([]);
           setApplications([]);
-          setMessage("岗位星系读取失败，请检查网络后重试。");
+          setMessage("岗位星系暂时无法读取，请检查网络后重试。");
         } finally {
           if (mounted) setLoading(false);
         }
@@ -68,7 +69,7 @@ export function GalaxyMapClient({ kind }: { kind: GalaxyKind }) {
         </div>
       </section>
       {message ? <div className="message-banner text-sm">{message}</div> : null}
-      {loading ? <div className="empty-state"><span className="loading-line">正在读取岗位数量</span></div> : null}
+      {loading ? <div className="empty-state"><span className="loading-line">正在清点岗位</span></div> : null}
       <section className="flex flex-wrap items-center justify-center gap-7">
         {(stats.length ? stats : getGalaxyGroups(kind).map((group) => ({ ...group, jobCount: 0, capturedCount: 0 }))).map((group) => (
           <NebulaNode

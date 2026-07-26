@@ -47,15 +47,15 @@ export function getMaterialReadiness(
   if (resumes.length > 0) {
     return {
       ready: false,
-      label: "待绑定简历",
-      detail: "已有简历版本，建议选择一份关联到该岗位。",
+      label: "待选择简历",
+      detail: "已有可用版本，选择一份与该岗位关联。",
     };
   }
 
   return {
     ready: false,
-    label: "待准备简历",
-    detail: "先建立一份通用简历，再按岗位调整。",
+    label: "待创建简历",
+    detail: "先建立一份通用简历，再按岗位要求调整。",
   };
 }
 
@@ -84,68 +84,68 @@ export function getNextAction(application: ApplicationWithJob) {
   if (application.status === "opened") {
     const candidateStage = getCandidateStage(application);
     if (candidateStage === "evaluating") {
-      return { title: "评估是否保留", detail: "确认岗位要求、截止时间和投入价值。", priority: 1 };
+      return { title: "评估是否保留", detail: "核对岗位要求、截止时间与准备成本。", priority: 1 };
     }
     if (candidateStage === "saved") {
       if (daysSinceUpdate >= 5) {
-        return { title: "候选岗位尚未准备", detail: `已收藏 ${daysSinceUpdate} 天，决定开始准备或结束候选。`, priority: 0 };
+        return { title: "候选岗位尚未推进", detail: `已收藏 ${daysSinceUpdate} 天，请决定开始准备或结束考虑。`, priority: 0 };
       }
-      return { title: "开始准备材料", detail: "设置优先级并选择对应简历版本。", priority: 1 };
+      return { title: "开始准备材料", detail: "设置优先级，并选择对应的简历版本。", priority: 1 };
     }
-    return { title: "记录投递", detail: "材料准备完成后，打开官网并记录投递。", priority: 1 };
+    return { title: "记录投递", detail: "材料就绪后，前往官网并记录投递结果。", priority: 1 };
   }
 
   if (application.status === "applied" && daysSinceUpdate >= 7) {
-    return { title: "投递已多日未更新", detail: `已有 ${daysSinceUpdate} 天没有记录进展。`, priority: 0 };
+    return { title: "投递进展久未更新", detail: `已有 ${daysSinceUpdate} 天没有新记录。`, priority: 0 };
   }
   if (["first_round", "second_round", "final_round"].includes(application.status) && daysSinceUpdate >= 2) {
-    return { title: "面试后待记录结果", detail: `最近一次更新在 ${daysSinceUpdate} 天前。`, priority: 0 };
+    return { title: "面试结果待记录", detail: `距离上次更新已有 ${daysSinceUpdate} 天。`, priority: 0 };
   }
 
   const actions: Record<ApplicationStatus, { title: string; detail: string; priority: number }> = {
     opened: {
       title: "记录投递",
-      detail: "材料准备完成后，打开官网并记录投递。",
+      detail: "材料就绪后，前往官网并记录投递结果。",
       priority: 1,
     },
     applied: {
-      title: hasNote ? "查看投递备注" : "补一条跟进备注",
-      detail: hasNote ? "已记录下一步，可以继续跟进。" : "记录测评、笔试或后续联系信息。",
+      title: hasNote ? "查看投递备注" : "补充跟进记录",
+      detail: hasNote ? "已记录下一步，可以继续跟进。" : "记下测评、笔试或后续联系信息。",
       priority: hasNote ? 4 : 2,
     },
     written_test: {
       title: "确认笔试安排",
-      detail: hasNote ? "已写下笔试信息，及时回看。" : "在备注里补上笔试时间和准备事项。",
+      detail: hasNote ? "已写下笔试信息，及时回看。" : "补充笔试时间与准备事项。",
       priority: 2,
     },
     first_round: {
-      title: "准备一面",
-      detail: hasNote ? "已有面试记录，继续完善准备事项。" : "补充面试时间、题目和复盘要点。",
+      title: "准备一面/二面",
+      detail: hasNote ? "已有面试记录，继续完善准备事项。" : "补充面试时间、问题与复盘要点。",
       priority: 2,
     },
     second_round: {
-      title: "准备二面",
-      detail: hasNote ? "已有面试记录，继续完善准备事项。" : "补充面试时间、题目和复盘要点。",
+      title: "准备一面/二面",
+      detail: hasNote ? "已有面试记录，继续完善准备事项。" : "补充面试时间、问题与复盘要点。",
       priority: 2,
     },
     final_round: {
       title: "准备终面",
-      detail: hasNote ? "已有终面记录，及时回看。" : "补充终面时间、问题和沟通事项。",
+      detail: hasNote ? "已有终面记录，及时回看。" : "补充终面时间、重点问题与沟通事项。",
       priority: 1,
     },
     offer: {
       title: "记录 Offer 决策",
-      detail: hasNote ? "已留下决策记录。" : "在备注里记录薪酬、截止时间或选择依据。",
+      detail: hasNote ? "已留下决策记录。" : "记下薪酬、答复期限与选择依据。",
       priority: hasNote ? 6 : 3,
     },
     rejected: {
-      title: "沉淀复盘",
-      detail: hasNote ? "复盘已留下。" : "记录这次流程的有效经验，便于下次调整。",
+      title: "完成复盘",
+      detail: hasNote ? "复盘已留下。" : "记录有效准备与需要调整之处，留给下一次参考。",
       priority: 7,
     },
     withdrawn: {
       title: "归档原因",
-      detail: hasNote ? "已说明不投原因。" : "记录放弃原因，避免重复评估。",
+      detail: hasNote ? "已说明结束原因。" : "记录结束考虑的原因，避免重复判断。",
       priority: 8,
     },
   };
@@ -183,10 +183,10 @@ export function getApplicationStageLabel(
 }
 
 export function getJobPrimaryAction(application?: UserApplication | null) {
-  if (!application) return { kind: "capture" as const, label: "加入星瓶" };
+  if (!application) return { kind: "capture" as const, label: "收入星瓶" };
   if (application.status !== "opened") return { kind: "progress" as const, label: "更新进度" };
   const candidateStage = getCandidateStage(application);
-  if (candidateStage === "evaluating") return { kind: "save" as const, label: "保留候选" };
+  if (candidateStage === "evaluating") return { kind: "save" as const, label: "列入候选" };
   if (candidateStage === "saved") return { kind: "prepare" as const, label: "开始准备" };
   return { kind: "apply" as const, label: "记录投递" };
 }

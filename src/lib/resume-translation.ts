@@ -102,16 +102,16 @@ export async function requestResumeTranslation(
     });
     const payload = await response.json().catch(() => null) as ResumeTranslationResult | { error?: string } | null;
     if (!response.ok) {
-      throw new Error(payload && "error" in payload && payload.error ? payload.error : "AI 翻译失败，请稍后重试");
+      throw new Error(payload && "error" in payload && payload.error ? payload.error : "翻译暂时不可用，原简历未改动。");
     }
     if (!isResumeTranslationResult(payload)) {
-      throw new Error("AI 返回的译文结构异常，原简历未改变，请重试");
+      throw new Error("译文结构异常，原简历未改动，请重试。");
     }
     return payload;
   } catch (error) {
     if (controller.signal.aborted) {
-      if (externalSignal?.aborted) throw new Error("已取消 AI 翻译，原简历未改变");
-      throw new Error("AI 翻译请求超时，原简历未改变，请重试");
+      if (externalSignal?.aborted) throw new Error("已取消翻译，原简历未改动。");
+      throw new Error("翻译请求超时，原简历未改动，请重试。");
     }
     throw error;
   } finally {

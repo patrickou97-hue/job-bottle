@@ -128,9 +128,9 @@ export function parseResumeTextLocally(sourceText: string, fileName = "导入简
     draft.skills.length && "技能",
   ].filter(Boolean).map(String);
   const warnings: string[] = [];
-  if (normalizedText.length < 120) warnings.push("提取到的文字较少，文件可能是扫描件或图片型 PDF。请改用文字版 PDF、DOCX 或 TXT。");
-  if (!name) warnings.push("本地规则未能确认姓名，AI 将根据原文复核。生成后请重点检查基本信息。");
-  if (!email && !phone) warnings.push("本地规则未识别邮箱或手机号，请确认原文件中的联系方式是否可复制。 ");
+  if (normalizedText.length < 120) warnings.push("读取到的文字过少，文件可能是扫描件。请改用文字可复制的 PDF、DOCX 或 TXT。");
+  if (!name) warnings.push("本地识别未能确认姓名，AI 将结合原文复核。生成后请重点检查基本信息。");
+  if (!email && !phone) warnings.push("本地识别未发现邮箱或手机号，请确认原文件中的联系方式可以复制。");
 
   return { draft, normalizedText, signals, warnings };
 }

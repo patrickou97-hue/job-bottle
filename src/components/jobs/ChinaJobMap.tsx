@@ -58,7 +58,7 @@ export function ChinaJobMap({
     <div className="grid min-h-[32rem] border-y border-[color:var(--line-ghost)] lg:grid-cols-[minmax(0,1.25fr)_minmax(300px,.75fr)]">
       <div className="min-w-0 py-5 lg:pr-8">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-xs text-ink-muted">
-          <span>颜色越深，当前筛选下的岗位越多</span>
+          <span>颜色越深，岗位越集中</span>
           <button
             type="button"
             className="text-action pressable px-2 py-1 text-xs"
@@ -184,7 +184,7 @@ export function ChinaJobMap({
         </div>
 
         {visibleJobs.length === 0 ? (
-          <div className="empty-state min-h-56 text-sm">当前地区暂无匹配岗位</div>
+          <div className="empty-state min-h-56 text-sm">这里暂时没有匹配岗位</div>
         ) : (
           <div className="max-h-[27rem] overflow-y-auto overscroll-contain">
             {visibleJobs.map((job) => (

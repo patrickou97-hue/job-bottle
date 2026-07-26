@@ -65,7 +65,7 @@ export function ResumeImportDialog({
       const parsed = parseResumeTextLocally(sourceText, file.name);
       if (parsed.normalizedText.length < 120) {
         setLocalResult(parsed);
-        setError("提取到的文字太少，文件可能是扫描件。请改用可复制文字的 PDF、DOCX 或 TXT。 ");
+        setError("读取到的文字过少，文件可能是扫描件。请改用文字可复制的 PDF、DOCX 或 TXT。");
         return;
       }
       setLocalResult(parsed);
@@ -81,7 +81,7 @@ export function ResumeImportDialog({
   async function requestReview() {
     if (!localResult) return;
     if (typeof navigator !== "undefined" && !navigator.onLine) {
-      setError("当前处于离线状态。程序解析结果仍可直接导入，联网后再使用 AI 复核。");
+      setError("当前网络不可用。本地识别结果仍可直接导入；联网后可再进行结构复核。");
       return;
     }
     reviewAbortRef.current?.abort("replaced");
@@ -90,10 +90,10 @@ export function ResumeImportDialog({
     reviewAbortRef.current = controller;
     setStage("reviewing");
     setError("");
-    setReviewHint("AI 正在核对字段与经历区块");
+    setReviewHint("AI 正在核对字段与经历结构");
     reviewTimersRef.current = [
-      window.setTimeout(() => mountedRef.current && setReviewHint("复杂简历需要更久，程序解析结果已安全保留"), 10_000),
-      window.setTimeout(() => mountedRef.current && setReviewHint("仍在等待 AI 返回，你也可以直接导入程序结果"), 26_000),
+      window.setTimeout(() => mountedRef.current && setReviewHint("简历结构较复杂，所需时间可能更长；本地识别结果已保留"), 10_000),
+      window.setTimeout(() => mountedRef.current && setReviewHint("仍在等待复核结果，你也可以直接导入本地识别结果"), 26_000),
       window.setTimeout(() => controller.abort("timeout"), 43_000),
     ];
     try {
@@ -109,17 +109,17 @@ export function ResumeImportDialog({
       });
       const payload = await response.json().catch(() => null) as (ImportReview & { error?: string }) | null;
       if (!response.ok || !payload?.draft) {
-        throw new Error(payload?.error || "智能复核失败，请稍后重试");
+        throw new Error(payload?.error || "结构复核暂时不可用，请稍后重试。");
       }
       setReview(payload);
     } catch (reviewError) {
       if (!mountedRef.current || controller.signal.reason === "closed") return;
       if (controller.signal.aborted) {
         setError(controller.signal.reason === "timeout"
-          ? "AI 复核等待超时。程序解析结果仍可直接导入，也可以稍后重试。"
-          : "本次 AI 复核已取消，程序解析结果仍然保留。");
+          ? "结构复核等待超时。本地识别结果仍可直接导入，也可稍后重试。"
+          : "本次复核已取消，本地识别结果仍然保留。");
       } else {
-        setError(reviewError instanceof Error ? reviewError.message : "智能复核失败，请稍后重试");
+        setError(reviewError instanceof Error ? reviewError.message : "结构复核暂时不可用，请稍后重试。");
       }
     } finally {
       clearReviewTimers();
@@ -160,7 +160,7 @@ export function ResumeImportDialog({
         <div className="mb-3 flex justify-center sm:hidden"><span className="apple-sheet-handle" /></div>
         <header className="flex items-start justify-between gap-4 border-b border-[color:var(--line-ghost)] pb-5">
           <div>
-            <p className="text-xs text-ink-muted">本地读取 · AI 复核 · 确认生成</p>
+            <p className="text-xs text-ink-muted">本地读取 · 智能复核 · 确认生成</p>
             <h2 id="resume-import-title" className="mt-1 text-xl font-semibold text-ink-primary">导入已有简历</h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-secondary">
               支持 PDF、DOCX 和 TXT，文件不超过 8 MB。浏览器先读取文字，只将提取出的文字和本地候选发送给 AI；不会上传原文件，也不会自动创建或覆盖简历。
@@ -190,8 +190,8 @@ export function ResumeImportDialog({
                 {stage === "reading" ? <LoaderCircle aria-hidden="true" className="size-5 animate-spin" /> : <FileUp aria-hidden="true" className="size-5" />}
               </span>
               <span className="min-w-0">
-                <span className="block truncate text-sm font-semibold text-ink-primary">{fileName || "选择一份已有简历"}</span>
-                <span className="mt-1 block text-xs leading-5 text-ink-muted">{stage === "reading" ? "正在本地提取文字" : "点击选择文件，原文件不会离开浏览器"}</span>
+                <span className="block truncate text-sm font-semibold text-ink-primary">{fileName || "选择简历文件"}</span>
+                <span className="mt-1 block text-xs leading-5 text-ink-muted">{stage === "reading" ? "正在本地读取文字" : "原文件仅在本地读取，不会离开浏览器"}</span>
               </span>
             </span>
             <span className="shrink-0 text-xs text-ink-muted">PDF / DOCX / TXT</span>
@@ -202,18 +202,18 @@ export function ResumeImportDialog({
           <section className="border-t border-[color:var(--line-ghost)] py-5">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <h3 className="text-sm font-semibold text-ink-primary">程序读取结果</h3>
-                <p className="mt-1 text-xs text-ink-muted">已提取 {localResult.normalizedText.length.toLocaleString("zh-CN")} 个字符</p>
+                <h3 className="text-sm font-semibold text-ink-primary">本地识别结果</h3>
+                <p className="mt-1 text-xs text-ink-muted">已读取 {localResult.normalizedText.length.toLocaleString("zh-CN")} 个字符</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 {localResult.signals.length > 0
                   ? localResult.signals.map((signal) => <span key={signal} className="status-pill rounded-md px-2.5 py-1 text-xs text-ink-secondary">{signal}</span>)
-                  : <span className="text-xs text-ink-muted">尚未识别明确字段</span>}
+                  : <span className="text-xs text-ink-muted">暂未识别出明确字段</span>}
               </div>
             </div>
             {localResult.warnings.length > 0 ? <WarningList items={localResult.warnings} /> : null}
             <p className="mt-4 text-xs leading-5 text-ink-muted">
-              你可以直接导入程序解析结果，也可以等待 AI 复核后再导入。AI 超时或失败不会清除当前解析结果。
+              可直接导入本地识别结果，也可等待 AI 复核后再导入。即使复核超时或失败，当前结果仍会保留。
             </p>
             {stage === "reviewing" && reviewHint ? (
               <div className="mt-4 flex items-center gap-2 text-xs text-nebula-silver" role="status" aria-live="polite">
@@ -228,7 +228,7 @@ export function ResumeImportDialog({
           <section className="border-t border-[color:var(--line-ghost)] py-5">
             <div className="flex items-center gap-2 text-sm font-semibold text-ink-primary">
               <Check aria-hidden="true" className="size-4 text-[#4f7c65]" />
-              AI 已完成结构复核 · {review.draft.language === "en-US" ? "英文简历" : "中文简历"}
+              结构复核已完成 · {review.draft.language === "en-US" ? "英文简历" : "中文简历"}
             </div>
             <p className="mt-2 text-sm leading-6 text-ink-secondary">{review.summary}</p>
             <div className="mt-5 grid grid-cols-3 border-y border-[color:var(--line-ghost)] py-4 sm:grid-cols-6">
@@ -239,26 +239,26 @@ export function ResumeImportDialog({
                 </div>
               ))}
             </div>
-            {review.warnings.length > 0 ? <WarningList items={review.warnings} /> : <p className="mt-4 text-xs text-ink-muted">未发现需要特别提示的结构问题，生成后仍建议逐项检查原文。</p>}
+            {review.warnings.length > 0 ? <WarningList items={review.warnings} /> : <p className="mt-4 text-xs text-ink-muted">未发现明显的结构问题。生成后仍请逐项核对原文。</p>}
           </section>
         ) : null}
 
         {error ? <p className="border-l-2 border-[#9f2d3f] pl-3 text-sm leading-6 text-[color:var(--text-danger)]">{error}</p> : null}
 
         <footer className="mt-6 flex flex-wrap items-center justify-end gap-3 border-t border-[color:var(--line-ghost)] pt-5">
-          <Button variant="secondary" onClick={closeDialog} disabled={stage === "reading"}>{stage === "reviewing" ? "取消 AI 复核" : "取消"}</Button>
+          <Button variant="secondary" onClick={closeDialog} disabled={stage === "reading"}>{stage === "reviewing" ? "取消复核" : "取消"}</Button>
           {localResult ? (
             <Button variant="secondary" disabled={stage === "reading"} onClick={() => importDraft(localResult.draft, "program")}>
-              直接导入解析结果
+              直接导入本地结果
             </Button>
           ) : null}
           {localResult ? (
             <Button variant="secondary" className="gap-2" disabled={stage !== "idle"} onClick={() => void requestReview()}>
               {stage === "reviewing" ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> : review ? <FileSearch aria-hidden="true" className="size-4" /> : <Sparkles aria-hidden="true" className="size-4" />}
-              {stage === "reviewing" ? "AI 正在复核" : review ? "重新复核" : "交给 AI 复核"}
+              {stage === "reviewing" ? "正在进行结构复核" : review ? "重新复核" : "进行结构复核"}
             </Button>
           ) : null}
-          {review ? <Button disabled={stage === "reading"} onClick={() => importDraft(review.draft, "ai")}>导入 AI 复核结果</Button> : null}
+          {review ? <Button disabled={stage === "reading"} onClick={() => importDraft(review.draft, "ai")}>导入复核结果</Button> : null}
         </footer>
       </section>
     </div>

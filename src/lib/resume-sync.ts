@@ -35,7 +35,7 @@ async function withCloudRetry<T>(operation: () => Promise<T>) {
 function withCloudTimeout<T>(operation: Promise<T>) {
   return new Promise<T>((resolve, reject) => {
     const timeout = setTimeout(
-      () => reject(new Error("简历云端请求超时，请稍后重试。")),
+      () => reject(new Error("云端请求超时，请稍后重试。")),
       CLOUD_OPERATION_TIMEOUT_MS,
     );
     operation.then(
@@ -134,15 +134,15 @@ export function getResumeSyncErrorMessage(error: unknown) {
     normalized.includes("jwt") ||
     normalized.includes("not authenticated")
   ) {
-    return "登录状态已失效，本地副本已保留，请重新登录";
+    return "登录已失效，本地副本已保留。请重新登录。";
   }
   if (code === "23503") {
-    return "简历关联的岗位已失效，本地副本已保留";
+    return "关联岗位已失效，本地副本已保留。";
   }
   if (normalized.includes("超时") || normalized.includes("timeout") || normalized.includes("network")) {
-    return "云端连接超时，本地副本已保留，稍后会自动重试";
+    return "云端连接超时，本地副本已保留，稍后将自动重试。";
   }
-  return "云端同步暂时失败，本地副本已保留，稍后会自动重试";
+  return "云端同步暂时未完成，本地副本已保留，稍后将自动重试。";
 }
 
 export function resumeRowToDocument(row: ResumeRow): ResumeDocument {

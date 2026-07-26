@@ -5,14 +5,14 @@ import { usePathname } from "next/navigation";
 import { useReducedMotion } from "motion/react";
 
 const DESTINATION_LABELS: Record<string, string> = {
-  "/explore": "进入岗位坐标",
-  "/my": "进入投递管理",
-  "/resume": "进入简历制作",
-  "/forum": "进入拾星指南",
-  "/profile": "进入个人中心",
-  "/guide": "进入秋招流程",
-  "/login": "进入登录",
-  "/admin": "进入管理后台",
+  "/explore": "前往岗位坐标",
+  "/my": "前往投递管理",
+  "/resume": "前往简历制作",
+  "/forum": "前往拾星指南",
+  "/profile": "前往个人中心",
+  "/guide": "前往秋招流程",
+  "/login": "前往登录",
+  "/admin": "前往管理后台",
 };
 
 export function SceneArrivalVeil() {
@@ -39,7 +39,7 @@ export function SceneArrivalVeil() {
 
   const label = Object.entries(DESTINATION_LABELS).find(([route]) =>
     route === "/admin" ? pathname.startsWith(route) : pathname === route,
-  )?.[1] ?? "进入工作台";
+  )?.[1] ?? "前往工作台";
 
   return (
     <div className="scene-arrival-veil" aria-hidden="true">

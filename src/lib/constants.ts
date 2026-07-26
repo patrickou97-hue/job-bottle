@@ -28,7 +28,7 @@ export const APPLICATION_CANDIDATE_STAGE = ["evaluating", "saved", "preparing"] 
 
 export const APPLICATION_CANDIDATE_STAGE_LABELS = {
   evaluating: "待评估",
-  saved: "已收藏",
+  saved: "候选中",
   preparing: "准备中",
 } as const;
 

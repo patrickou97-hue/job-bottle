@@ -28,7 +28,7 @@ export function ResumePdfExportButton({
 
     try {
       if (!preserveDraft()) {
-        setMessage("浏览器存储空间不足，当前简历尚未安全保存。请压缩或删除照片后重试");
+        setMessage("浏览器存储空间不足，当前简历尚未完整保存。请压缩或删除照片后重试。");
         return;
       }
       const authenticated = await hasVerifiedDownloadSession();
@@ -36,17 +36,17 @@ export function ResumePdfExportButton({
       if (!authenticated) {
         const query = searchParams.toString();
         const next = `${pathname}${query ? `?${query}` : ""}`;
-        setMessage("当前简历已保存在本浏览器，注册或登录后即可下载");
+        setMessage("当前简历已保存在本浏览器。注册或登录后即可下载。");
         router.push(`/login?next=${encodeURIComponent(next)}&mode=register&reason=resume-download`);
         return;
       }
 
       await exportResumeToPdf(resume);
       void track("resume_exported", { resume_id: resume.id, template_id: resume.templateId });
-      setMessage("PDF 已开始下载");
+      setMessage("PDF 已开始下载。");
     } catch (error) {
       console.error("Resume PDF export failed", error);
-      setMessage(error instanceof Error ? error.message : "PDF 生成失败，请稍后重试。");
+      setMessage(error instanceof Error ? error.message : "PDF 暂未生成，请稍后重试。");
     } finally {
       setIsExporting(false);
     }

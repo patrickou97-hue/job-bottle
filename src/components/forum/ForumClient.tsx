@@ -36,7 +36,8 @@ export function ForumClient() {
     setMessage("");
     try {
       if (!isSupabaseConfigured()) {
-        setMessage("请先配置数据库环境变量。");
+        console.error("Supabase environment variables are not configured.");
+        setMessage("拾星指南暂时无法读取，请稍后重试。");
         return;
       }
       const supabase = createClient();

@@ -92,33 +92,33 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
           </div>
 
           <dl className="mt-7 grid border-y border-[color:var(--line-ghost)] sm:grid-cols-2 lg:grid-cols-4 lg:divide-x lg:divide-[color:var(--line-ghost)]">
-            <MetaItem label="城市 / base" value={job.locations || "地点待补充"} />
+            <MetaItem label="工作地点" value={job.locations || "地点待补充"} />
             <MetaItem label="行业" value={job.industry || "暂无行业"} />
-            <MetaItem label="批次" value={job.batch_type || "暂无批次"} />
-            <MetaItem label="开启时间" value={job.opens_at ? formatShanghaiDateTime(job.opens_at) : job.start_date || "暂无"} />
+            <MetaItem label="招聘批次" value={job.batch_type || "批次待补充"} />
+            <MetaItem label="开放时间" value={job.opens_at ? formatShanghaiDateTime(job.opens_at) : job.start_date || "暂无"} />
           </dl>
         </section>
 
         <JobDetailActions job={job} initialApplication={application} />
 
         <section className="grid gap-x-10 gap-y-8 border-y border-[color:var(--line-ghost)] py-7 lg:grid-cols-2">
-          <DecisionSection title="工作职责" content={job.responsibilities} empty="原始岗位数据暂未拆分工作职责。" />
-          <DecisionSection title="必须条件" content={job.must_have} empty="原始岗位数据暂未标注必须条件。" />
-          <DecisionSection title="优先条件" content={job.preferred_qualifications} empty="原始岗位数据暂未标注优先条件。" />
+          <DecisionSection title="工作职责" content={job.responsibilities} empty="原始岗位信息尚未拆分工作职责。" />
+          <DecisionSection title="任职要求" content={job.must_have} empty="原始岗位信息尚未标注明确的任职要求。" />
+          <DecisionSection title="优先条件" content={job.preferred_qualifications} empty="原始岗位信息尚未标注优先条件。" />
           <div>
-            <h2 className="text-base font-semibold text-ink-primary">高频关键词</h2>
+            <h2 className="text-base font-semibold text-ink-primary">关键词</h2>
             {job.keywords?.length ? (
               <div className="mt-4 flex flex-wrap gap-2">
                 {job.keywords.map((keyword) => <span key={keyword} className="border border-[color:var(--line)] px-2.5 py-1 text-xs text-ink-secondary">{keyword}</span>)}
               </div>
-            ) : <p className="mt-3 text-sm leading-7 text-ink-muted">原始岗位数据暂未提取关键词。</p>}
+            ) : <p className="mt-3 text-sm leading-7 text-ink-muted">原始岗位信息尚未提取关键词。</p>}
           </div>
           {job.notes ? <DecisionSection title="补充信息" content={job.notes} className="lg:col-span-2" /> : null}
         </section>
 
         <section className="grid gap-8 lg:grid-cols-2">
           <RelatedJobs title="同公司其他岗位" jobs={related.sameCompany} />
-          <RelatedJobs title="相近行业岗位" jobs={related.sameIndustry} />
+          <RelatedJobs title="相近方向岗位" jobs={related.sameIndustry} />
         </section>
       </main>
     </PageShell>
@@ -142,7 +142,7 @@ function RelatedJobs({ title, jobs }: { title: string; jobs: Job[] }) {
     <section className="border-t border-[color:var(--line-ghost)] pt-5">
       <h2 className="text-base font-medium text-ink-primary">{title}</h2>
       {jobs.length === 0 ? (
-        <p className="mt-4 text-sm text-ink-muted">暂无更多岗位</p>
+        <p className="mt-4 text-sm text-ink-muted">暂时没有更多推荐</p>
       ) : (
         <div className="mt-4 grid gap-2">
           {jobs.map((job) => (

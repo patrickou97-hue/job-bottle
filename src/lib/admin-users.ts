@@ -78,7 +78,7 @@ export async function fetchAdminUsers(input: AdminUserQuery = {}) {
 
   const response = await fetch(`/api/admin/users?${params.toString()}`, { cache: "no-store" });
   const payload = await readJson(response);
-  if (!response.ok) throw new Error(getErrorMessage(payload, "用户列表读取失败，请稍后重试。"));
+  if (!response.ok) throw new Error(getErrorMessage(payload, "用户列表暂时无法读取，请稍后重试。"));
   return payload as AdminUsersResponse;
 }
 

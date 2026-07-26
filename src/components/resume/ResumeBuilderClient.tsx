@@ -187,9 +187,9 @@ export function ResumeBuilderClient({
             : Math.min(30_000, 2_000 * 2 ** Math.max(0, maxAttempts - 1));
           cloudRetryTimerRef.current = window.setTimeout(startWorker, delay);
         } else if (failedCount === 0 && pendingCloudSavesRef.current.size === 0) {
-          setSaveState("已同步到账号");
+          setSaveState("已同步至账户");
         } else if (savedCount > 0) {
-          setSaveState("部分简历同步失败，本地副本已保留");
+          setSaveState("部分简历未能同步，本地副本已保留");
         }
       });
     }
@@ -243,7 +243,7 @@ export function ResumeBuilderClient({
       (resume) => cloudFingerprintsRef.current.get(resume.id) !== JSON.stringify(resume),
     );
     if (dirtyResumes.length === 0) {
-      const timer = window.setTimeout(() => setSaveState("已同步到账号"), 120);
+      const timer = window.setTimeout(() => setSaveState("已同步至账户"), 120);
       return () => window.clearTimeout(timer);
     }
 
@@ -301,8 +301,8 @@ export function ResumeBuilderClient({
             mergedResumes.every(
               (resume) => cloudFingerprintsRef.current.get(resume.id) === JSON.stringify(resume),
             )
-              ? "已同步到账号"
-              : "正在合并本地与账号简历",
+              ? "已同步至账户"
+              : "正在合并本地与账户中的简历",
           );
           return;
         }
@@ -318,7 +318,7 @@ export function ResumeBuilderClient({
           setSaveState("云端简历库未升级，已保存到本地");
           return;
         }
-        setSaveState("云端读取暂时失败，简历已保存在本地");
+        setSaveState("暂时无法读取云端简历，本地副本已保留");
       } finally {
         if (hydratingUserIdRef.current === user.id) hydratingUserIdRef.current = null;
         if (mounted) setAuthResolved(true);
@@ -338,7 +338,7 @@ export function ResumeBuilderClient({
         setResumes(initial);
         setSelectedId(initial[0]?.id ?? null);
         setAuthResolved(true);
-        setSaveState("登录状态已退出，后续修改将保存在本地");
+        setSaveState("登录已失效，后续修改将保存在本地");
         return;
       }
       if (session?.user) {
@@ -413,8 +413,8 @@ export function ResumeBuilderClient({
     setShowImportDialog(false);
     setSaveState(
       storageMode === "cloud"
-        ? `${mode === "ai" ? "AI 复核结果" : "程序解析结果"}已导入，正在同步到账号`
-        : `${mode === "ai" ? "AI 复核结果" : "程序解析结果"}已导入并保存到本地`,
+        ? `${mode === "ai" ? "复核结果" : "本地识别结果"}已导入，正在同步至账户`
+        : `${mode === "ai" ? "复核结果" : "本地识别结果"}已导入并保存到本地`,
     );
     void track("resume_import_created", {
       resume_id: next.id,
@@ -441,18 +441,18 @@ export function ResumeBuilderClient({
       selectedResume.content.campus.length > 0 ||
       selectedResume.content.awards.length > 0;
     if (!hasTranslatableContent) {
-      setSaveState("当前简历还没有可翻译内容");
+      setSaveState("当前简历暂无可翻译内容。");
       return;
     }
     const sourceLanguage = getResumeLanguage(selectedResume.templateId);
     const targetLanguage: ResumeLanguage = sourceLanguage === "en-US" ? "zh-CN" : "en-US";
     setTranslating(true);
-    setSaveState(targetLanguage === "en-US" ? "AI 正在生成英文译本" : "AI 正在生成中文译本");
+    setSaveState(targetLanguage === "en-US" ? "正在生成英文译本" : "正在生成中文译本");
     const controller = new AbortController();
     translationAbortRef.current = controller;
     const progressTimer = window.setTimeout(() => {
       if (mountedRef.current && !controller.signal.aborted) {
-        setSaveState("AI 仍在翻译，原简历和已填内容均已安全保留");
+        setSaveState("翻译仍在进行，原简历与已填内容均已保留。");
       }
     }, 10_000);
     try {
@@ -461,14 +461,14 @@ export function ResumeBuilderClient({
       setResumes((current) => [next, ...current]);
       setSelectedId(next.id);
       setActiveSection("basic");
-      setSaveState(result.warnings.length > 0 ? "译本已生成，请重点检查专有名词" : "译本已生成，原简历保持不变");
+      setSaveState(result.warnings.length > 0 ? "译本已生成，请重点核对专有名词与经历细节。" : "译本已生成，原简历未改动。");
       void track("resume_translation_created", {
         source_resume_id: selectedResume.id,
         resume_id: next.id,
         target_language: targetLanguage,
       });
     } catch (error) {
-      setSaveState(error instanceof Error ? error.message : "AI 翻译失败，原简历未改变");
+      setSaveState(error instanceof Error ? error.message : "翻译暂时不可用，原简历未改动。");
     } finally {
       window.clearTimeout(progressTimer);
       if (translationAbortRef.current === controller) translationAbortRef.current = null;
@@ -540,20 +540,20 @@ export function ResumeBuilderClient({
   async function deleteResume(id: string) {
     if (pendingDeleteId !== id) {
       setPendingDeleteId(id);
-      setSaveState("再次点击删除即可确认，当前简历尚未删除");
+      setSaveState("再次点击“删除”以确认；当前简历尚未删除。");
       return;
     }
     setPendingDeleteId(null);
 
     if (storageMode !== "cloud" || !userId || !isSupabaseConfigured()) {
       removeResumeFromState(id);
-      setSaveState("简历已从当前浏览器删除");
+      setSaveState("已从当前浏览器删除");
       return;
     }
 
     deletedResumeIdsRef.current.add(id);
     pendingCloudSavesRef.current.delete(id);
-    setSaveState("正在从账号删除简历");
+    setSaveState("正在从账户删除");
     try {
       await cloudSaveWorkerRef.current;
       await deleteMyResume(createClient(), id);
@@ -566,7 +566,7 @@ export function ResumeBuilderClient({
         setSaveState("云端简历库未升级，当前简历未删除");
         return;
       }
-      setSaveState("删除失败，当前简历和已填内容均已保留，请检查网络后重试");
+      setSaveState("删除未完成，当前简历与已填内容均已保留。请检查网络后重试。");
       return;
     } finally {
       deletedResumeIdsRef.current.delete(id);
@@ -582,7 +582,7 @@ export function ResumeBuilderClient({
           </div>
         </section>
         <div className="empty-state">
-          <span className="loading-line">正在读取简历</span>
+          <span className="loading-line">正在整理简历</span>
         </div>
       </div>
     );
@@ -632,7 +632,7 @@ export function ResumeBuilderClient({
           <div className="min-w-0">
             <p className="text-sm font-semibold text-ink-primary">{targetJob.company} · {targetJob.role}</p>
             <p className="mt-1 text-sm leading-6 text-ink-muted">
-              {targetResume ? "这个岗位已有绑定版本，可以继续修改。" : "基于当前简历创建副本，并自动绑定到这个岗位。"}
+              {targetResume ? "该岗位已有绑定版本，可继续编辑。" : "将从当前简历创建副本，并自动绑定至该岗位。"}
             </p>
           </div>
           <Button className="shrink-0" onClick={prepareTargetResume}>
@@ -646,7 +646,7 @@ export function ResumeBuilderClient({
         <aside className="space-y-3 xl:sticky xl:top-24 xl:self-start xl:border-r xl:border-[color:var(--line-ghost)] xl:pr-5">
           <div className="flex items-center justify-between">
             <h2 className="section-title">我的简历</h2>
-            <span className="section-meta">{resumes.length} 份</span>
+            <span className="section-meta">共 {resumes.length} 份</span>
           </div>
           <div className="space-y-2">
             {resumes.map((resume) => {
@@ -669,11 +669,11 @@ export function ResumeBuilderClient({
                   <span className="mt-1 block text-xs text-ink-muted">{getResumeTargetLine(resume)}</span>
                 ) : null}
                 <span className="mt-2 block truncate text-xs text-[color:var(--aurora)]">
-                  {boundJob ? `绑定 ${boundJob.company_name}` : resume.linkedJobId ? "已绑定岗位" : "基础 / 方向版本"}
+                  {boundJob ? `绑定 ${boundJob.company_name}` : resume.linkedJobId ? "已绑定岗位" : "通用版 / 方向版"}
                 </span>
                 <span className="mt-2 flex flex-wrap gap-x-2 gap-y-1 text-[11px] text-ink-muted">
                   <span>{health.percent}% 完整</span>
-                  <span>{usageCount} 次使用</span>
+                  <span>已使用 {usageCount} 次</span>
                   <span>{formatDateTime(resume.updatedAt)}</span>
                 </span>
                 {health.missing.length > 0 ? <span className="mt-1 block truncate text-[11px] text-ink-muted">待补：{health.missing.join("、")}</span> : null}
@@ -687,24 +687,24 @@ export function ResumeBuilderClient({
           <section className="min-w-0 border-t border-[color:var(--line-ghost)] pt-5">
             <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="section-title">编辑内容</h2>
+                <h2 className="section-title">编辑简历</h2>
                 <p className="mt-1 text-xs text-ink-muted">
-                  {selectedResume.jobTarget || "可按岗位方向保留多个版本"}
+                  {selectedResume.jobTarget || "可按岗位方向保留不同版本"}
                 </p>
               </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   className="muted-button pressable inline-flex h-9 items-center gap-2 rounded-lg px-3 text-xs font-semibold disabled:pointer-events-none disabled:opacity-55"
-                  title={translating ? "取消本次翻译，原简历不会改变" : "AI 翻译会创建独立副本，不覆盖当前简历"}
+                  title={translating ? "取消本次翻译，原简历不会改变" : "翻译会创建独立副本，不会覆盖当前简历"}
                   onClick={() => void translateResume()}
                 >
                   {translating ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> : <Languages aria-hidden="true" className="size-4" />}
                   {translating
                     ? "取消翻译"
                     : getResumeLanguage(selectedResume.templateId) === "en-US"
-                      ? "AI 转中文"
-                      : "AI 转英文"}
+                      ? "转为中文"
+                      : "转为英文"}
                 </button>
                 <button
                   type="button"

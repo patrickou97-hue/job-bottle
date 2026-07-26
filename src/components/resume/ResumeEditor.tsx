@@ -143,7 +143,7 @@ export function ResumeEditor({
 
       {activeSection === "work" ? (
         <CollectionEditor
-          title="实习 / 工作经历"
+          title="实习与工作经历"
           addLabel="新增经历"
           items={resume.content.work}
           onAdd={() => patchContent({ work: [...resume.content.work, createBlankExperience()] })}
@@ -326,14 +326,14 @@ function PhotoField({ value, onChange }: { value: string; onChange: (value: stri
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
-      setMessage("照片不能超过 10MB，请压缩后重试。");
+      setMessage("照片不能超过 10 MB，请压缩后重试。");
       return;
     }
     try {
       const dataUrl = await cropPhotoToPortrait(file);
       onChange(dataUrl);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "照片处理失败，请换一张图片。");
+      setMessage(error instanceof Error ? error.message : "照片处理未完成，请更换图片后重试。");
     }
   }
 
@@ -406,7 +406,7 @@ async function cropPhotoToPortrait(file: File) {
   canvas.width = outputWidth;
   canvas.height = outputHeight;
   const context = canvas.getContext("2d");
-  if (!context) throw new Error("浏览器无法处理这张照片，请换一张图片。");
+  if (!context) throw new Error("当前浏览器无法处理这张照片，请更换图片。");
   context.fillStyle = "#ffffff";
   context.fillRect(0, 0, outputWidth, outputHeight);
   context.drawImage(
@@ -426,11 +426,11 @@ async function cropPhotoToPortrait(file: File) {
 function loadImageFromFile(file: File) {
   return new Promise<HTMLImageElement>((resolve, reject) => {
     const reader = new FileReader();
-    reader.onerror = () => reject(new Error("照片读取失败，请换一张图片。"));
+    reader.onerror = () => reject(new Error("照片读取失败，请更换图片。"));
     reader.onload = () => {
       const image = new Image();
       image.onload = () => resolve(image);
-      image.onerror = () => reject(new Error("照片格式无法识别，请换一张图片。"));
+      image.onerror = () => reject(new Error("无法识别照片格式，请更换图片。"));
       image.src = String(reader.result);
     };
     reader.readAsDataURL(file);
@@ -499,7 +499,7 @@ function CollectionEditor<T extends { id: string }>({
           {addLabel}
         </Button>
       </div>
-      {items.length === 0 ? <p className="text-sm text-ink-muted">暂无内容。</p> : null}
+      {items.length === 0 ? <p className="text-sm text-ink-muted">暂时没有内容。</p> : null}
       {items.map((item, index) => (
         <div key={item.id} className="space-y-4 border-t border-[color:var(--line-ghost)] pt-4">
           <div className="flex items-center justify-between gap-3">
@@ -568,7 +568,7 @@ function ProjectEditor({ item, onChange }: { item: ResumeProject; onChange: (ite
         <TextField label="角色" value={item.role} onChange={(value) => patch({ role: value })} />
         <TextField label="开始时间（可选）" value={item.startDate} onChange={(value) => patch({ startDate: value })} />
         <TextField label="结束时间（可选）" value={item.endDate} onChange={(value) => patch({ endDate: value })} />
-        <TextField label="技术栈或关键词" value={item.keywords} onChange={(value) => patch({ keywords: value })} />
+        <TextField label="技术或关键词" value={item.keywords} onChange={(value) => patch({ keywords: value })} />
       </FieldGrid>
       <BulletEditor bullets={item.bullets} onChange={(bullets) => patch({ bullets })} />
     </div>
@@ -632,7 +632,7 @@ function PolishableItem({ children, onPolish }: { children: React.ReactNode; onP
           onClick={onPolish}
         >
           <Sparkles aria-hidden="true" className="size-3.5 text-white" />
-          AI 润色
+          智能润色
         </button>
       </div>
       {children}
@@ -691,7 +691,7 @@ function BulletEditor({
               rows={4}
               aria-label={`${label}第 ${index + 1} 条`}
               className="field-shell min-h-28 w-full resize-y px-3.5 py-3 text-sm leading-6 placeholder:text-ink-muted"
-              placeholder="写清你做了什么、怎么做，以及最后的结果"
+              placeholder="说明你做了什么、如何推进，以及取得了什么结果"
               onChange={(event) => update(index, event.target.value)}
             />
           )}

@@ -40,22 +40,22 @@ export function StarInterviewConnectClient({
         error?: string;
         data?: { code: string; state: string };
       };
-      if (!response.ok || !payload.data) throw new Error(payload.error || "授权失败，请重试。");
+      if (!response.ok || !payload.data) throw new Error(payload.error || "连接未完成，请重试。");
       const callback = new URL("starinterview://auth/callback");
       callback.hash = new URLSearchParams({
         code: payload.data.code,
         state: payload.data.state,
       }).toString();
       window.location.assign(callback.toString());
-      setMessage("授权完成，正在返回诘星…");
+      setMessage("连接完成，正在返回诘星…");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "授权失败，请重试。");
+      setMessage(error instanceof Error ? error.message : "连接未完成，请重试。");
       setBusy(false);
     }
   }
 
   if (!validRequest) {
-    return <ConnectError text="授权链接已失效，请返回诘星 App 后重新连接。" />;
+    return <ConnectError text="授权链接已失效，请返回诘星 App 重新连接。" />;
   }
 
   return (
@@ -64,13 +64,13 @@ export function StarInterviewConnectClient({
         <span className="grid size-11 place-items-center rounded-2xl bg-[#7E7CB5] text-lg font-semibold text-[#F1EFFF]">诘</span>
         <div>
           <p className="text-sm font-semibold text-ink-primary">诘星 StarInterview</p>
-          <p className="text-xs text-ink-muted">使用拾星账户安全连接</p>
+          <p className="text-xs text-ink-muted">由拾星账户安全连接</p>
         </div>
       </div>
 
       <h1 className="mt-8 text-3xl font-semibold tracking-[-0.03em] text-ink-primary">连接拾星简历库</h1>
       <p className="mt-3 text-sm leading-7 text-ink-secondary">
-        诘星会只读访问当前拾星账户下的全部简历，供你在 App 中选择使用；不会修改或删除拾星中的原始简历。
+        诘星将以只读方式访问当前拾星账户中的全部简历，供你在 App 内选择使用；不会修改或删除拾星中的原始简历。
       </p>
 
       {!signedIn ? (
@@ -88,7 +88,7 @@ export function StarInterviewConnectClient({
           </div>
 
           <div className="info-banner mt-5 text-sm">
-            连接后，当前账户已有及以后新建的简历都会显示在诘星中。导入或制作简历将在拾星网页完成。
+            连接后，当前账户中已有及此后新建的简历都会显示在诘星中；简历的导入与编辑仍在拾星网页完成。
           </div>
           {message ? <p className="info-banner mt-5 text-sm">{message}</p> : null}
           <button
@@ -97,12 +97,12 @@ export function StarInterviewConnectClient({
             onClick={authorize}
             disabled={busy}
           >
-            {busy ? "正在授权…" : "允许只读访问并返回诘星"}
+            {busy ? "正在建立连接…" : "允许只读访问，返回诘星"}
           </button>
         </>
       )}
 
-      <p className="mt-4 text-center text-xs leading-5 text-ink-muted">授权码单次有效，登录会话可随时在诘星内撤销。</p>
+      <p className="mt-4 text-center text-xs leading-5 text-ink-muted">授权码仅可使用一次；连接可随时在诘星中撤销。</p>
     </div>
   );
 }
@@ -111,7 +111,7 @@ function ConnectError({ text }: { text: string }) {
   return (
     <div className="surface-card rounded-[28px] p-7 sm:p-9">
       <p className="text-xs font-semibold tracking-[0.18em] text-ink-muted">STARINTERVIEW</p>
-      <h1 className="mt-4 text-2xl font-semibold text-ink-primary">无法连接诘星</h1>
+      <h1 className="mt-4 text-2xl font-semibold text-ink-primary">未能连接诘星</h1>
       <p className="mt-3 text-sm leading-7 text-ink-secondary">{text}</p>
     </div>
   );

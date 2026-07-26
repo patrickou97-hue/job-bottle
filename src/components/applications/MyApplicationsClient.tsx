@@ -52,7 +52,8 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
     setMessage("");
     try {
       if (!isSupabaseConfigured()) {
-        setMessage("请先配置数据库环境变量。");
+        console.error("Supabase environment variables are not configured.");
+        setMessage("投递记录暂时无法读取，请稍后重试。");
         return;
       }
       const supabase = createClient();
@@ -75,7 +76,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
       setResumes(resumeResult);
     } catch {
       if (requestId !== loadRequestRef.current) return;
-      setMessage("读取投递失败，请稍后再试。");
+      setMessage("投递记录暂时无法读取，请稍后重试。");
     } finally {
       if (requestId === loadRequestRef.current) setLoading(false);
     }
@@ -147,8 +148,8 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
         <div className="progress-summary grid grid-cols-2 gap-x-6 gap-y-5 px-4 py-3 md:grid-cols-4 md:px-5">
           <StatBlock value={applications.length} label="全部记录" />
           <StatBlock value={activeApplications.length} label="进行中" />
-          <StatBlock value={tasks.length} label="待处理" />
-          <StatBlock value={materialReadyCount} label="已绑简历" />
+          <StatBlock value={tasks.length} label="待跟进" />
+          <StatBlock value={materialReadyCount} label="已绑定简历" />
         </div>
       </section>
 
@@ -156,13 +157,13 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
 
       {loading || redirecting ? (
         <div className="empty-state">
-          <span className="loading-line">{redirecting ? "正在前往登录" : "正在读取投递"}</span>
+          <span className="loading-line">{redirecting ? "正在前往登录" : "正在整理投递记录"}</span>
         </div>
       ) : applications.length === 0 ? (
         <section className="empty-state border-y border-[color:var(--line-ghost)]">
           <div>
-            <h2>从一个岗位开始</h2>
-            <p>从岗位坐标添加岗位后，在这里更新投递状态</p>
+            <h2>从第一颗星开始</h2>
+            <p>先从岗位坐标收入一个岗位，再在这里记录每一步进展。</p>
             <Link href="/explore" className="gold-button mt-5 inline-flex rounded-lg px-4 py-2 text-sm font-medium">
               去岗位坐标
             </Link>
@@ -174,12 +175,12 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
             <div className="list-surface">
               <div className="section-heading px-4 pt-4 sm:px-5">
                 <div>
-                  <h2 className="section-title">本周求职行动</h2>
+                  <h2 className="section-title">本周待办</h2>
                 </div>
                 <span className="section-meta">{tasks.length} 项</span>
               </div>
               {tasks.length === 0 ? (
-                <div className="px-4 pb-5 text-sm text-ink-muted">当前没有需要处理的投递。</div>
+                <div className="px-4 pb-5 text-sm text-ink-muted">本周暂时没有需要处理的投递。</div>
               ) : (
                 tasks.map((task) => (
                   <button
@@ -222,7 +223,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
                   ))}
                 </div>
               ) : (
-                <p className="mt-4 text-sm leading-6 text-ink-secondary">进行中的岗位都已经关联简历版本。</p>
+                <p className="mt-4 text-sm leading-6 text-ink-secondary">进行中的岗位均已绑定简历版本。</p>
               )}
               <Link href="/resume" className="text-action mt-5 text-sm">
                 管理简历
@@ -271,7 +272,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
             {view === "list" ? (
               filtered.length === 0 ? (
                 <div className="empty-state border-y border-[color:var(--line-ghost)]">
-                  <div><h3>没有匹配的投递</h3><p>调整搜索或阶段筛选后再查看。</p></div>
+                  <div><h3>没有符合条件的投递</h3><p>调整关键词或阶段筛选后再试。</p></div>
                 </div>
               ) : (
                 <div className="divide-y divide-[color:var(--line-ghost)] border-y border-[color:var(--line-ghost)]">
@@ -292,8 +293,8 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
               filtered.length === 0 ? (
                 <div className="empty-state border-y border-[color:var(--line-ghost)]">
                   <div>
-                    <h3>没有匹配的投递</h3>
-                    <p>调整搜索或阶段筛选后再查看。</p>
+                    <h3>没有符合条件的投递</h3>
+                    <p>调整关键词或阶段筛选后再试。</p>
                   </div>
                 </div>
               ) : (
@@ -308,7 +309,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
                         <span className="text-sm tabular-nums text-ink-secondary">{column.applications.length}</span>
                       </div>
                       <div className="mt-4 space-y-2">
-                        {column.applications.length === 0 ? <p className="py-3 text-xs text-ink-muted">暂时没有记录</p> : null}
+                        {column.applications.length === 0 ? <p className="py-3 text-xs text-ink-muted">这一阶段暂无记录</p> : null}
                         {column.applications.map((application) => <motion.div layout key={application.id} transition={layoutTransition}><PipelineItem application={application} resumes={resumes} onOpen={() => setDrawerApplication(application)} /></motion.div>)}
                       </div>
                     </section>
@@ -333,10 +334,10 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
 }
 
 function getApplicationPhase(applications: ApplicationWithJob[]) {
-  if (applications.length === 0) return "先建立候选岗位，再按优先级推进准备与投递";
-  if (applications.some((item) => ["first_round", "second_round", "final_round"].includes(item.status))) return "跟进面试安排，及时记录下一步动作";
-  if (applications.some((item) => item.status !== "opened")) return "处理近期节点，更新已投岗位的最新进展";
-  return "评估候选岗位，绑定简历并完成投递准备";
+  if (applications.length === 0) return "先收录候选岗位，再按优先级推进准备与投递。";
+  if (applications.some((item) => ["first_round", "second_round", "final_round"].includes(item.status))) return "跟进面试安排，及时记下下一步。";
+  if (applications.some((item) => item.status !== "opened")) return "处理临近节点，更新已投岗位的最新进展。";
+  return "评估候选岗位，绑定简历并完成投递准备。";
 }
 
 function PipelineItem({ application, resumes, onOpen }: { application: ApplicationWithJob; resumes: ResumeDocument[]; onOpen: () => void }) {

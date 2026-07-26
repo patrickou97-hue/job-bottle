@@ -29,7 +29,8 @@ export function AdminJobsClient() {
     try {
       if (!isSupabaseConfigured()) {
         setIsAdmin(false);
-        setMessage("请先配置数据库环境变量。");
+        console.error("Supabase environment variables are not configured.");
+        setMessage("岗位数据暂时无法读取，请稍后重试。");
         return;
       }
       const supabase = createClient();
@@ -90,7 +91,8 @@ export function AdminJobsClient() {
 
   async function saveJob(payload: Omit<Job, "id" | "created_at" | "updated_at">, id?: string) {
     if (!isSupabaseConfigured()) {
-      setMessage("请先配置数据库环境变量。");
+      console.error("Supabase environment variables are not configured.");
+      setMessage("岗位暂未更新，请稍后重试。");
       return;
     }
     const supabase = createClient();
@@ -111,7 +113,8 @@ export function AdminJobsClient() {
 
   async function deleteJob(job: Job) {
     if (!isSupabaseConfigured()) {
-      setMessage("请先配置数据库环境变量。");
+      console.error("Supabase environment variables are not configured.");
+      setMessage("岗位暂未更新，请稍后重试。");
       return;
     }
     const { error } = await createClient().from("jobs").delete().eq("id", job.id);
@@ -124,7 +127,8 @@ export function AdminJobsClient() {
 
   async function toggleActive(job: Job) {
     if (!isSupabaseConfigured()) {
-      setMessage("请先配置数据库环境变量。");
+      console.error("Supabase environment variables are not configured.");
+      setMessage("岗位暂未删除，请稍后重试。");
       return;
     }
     const { error } = await createClient()

@@ -15,15 +15,15 @@ export default function LoginPage() {
         <section className="hidden border-r border-[color:var(--line-ghost)] bg-[#eef1f5] px-10 py-16 lg:flex lg:flex-col lg:justify-between">
           <div>
             <p className="text-sm font-semibold text-[#12294e]">拾星 · StarJob</p>
-            <h1 className="mt-8 max-w-md text-4xl font-semibold leading-tight text-[#1d1d1f]">「用星瓶收录明日坐标」</h1>
+            <h1 className="mt-8 max-w-md text-4xl font-semibold leading-tight text-[#1d1d1f]">把明日的坐标，收进星瓶。</h1>
           </div>
-          <p className="max-w-sm text-sm leading-7 text-[#6e6e73]">让拾星StarJob成为你秋招路上的超级伙伴</p>
+          <p className="max-w-sm text-sm leading-7 text-[#6e6e73]">让岗位、简历与每一步进展，都有迹可循。</p>
         </section>
         <div className="flex items-start justify-center px-5 py-8 sm:px-8 sm:py-12 lg:items-center lg:bg-white lg:py-10">
         <Suspense
           fallback={
             <div className="empty-state">
-              <span className="loading-line">正在打开登录</span>
+              <span className="loading-line">正在为你打开拾星</span>
             </div>
           }
         >

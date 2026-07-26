@@ -3,7 +3,7 @@ import { FeedbackClient } from "@/components/feedback/FeedbackClient";
 import { UserShell } from "@/components/layout/UserShell";
 
 export const metadata: Metadata = {
-  title: "问题反馈",
+  title: "帮助与反馈",
   robots: { index: false, follow: false },
 };
 

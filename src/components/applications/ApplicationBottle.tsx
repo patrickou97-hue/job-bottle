@@ -150,9 +150,9 @@ export function ApplicationBottle({
           <FiligreeDivider className="relative my-4" />
 
           <div className="mx-auto grid max-w-md grid-cols-4 gap-5 max-sm:grid-cols-2 lg:max-w-none">
-            <BottleStat label="捕获" value={applications.length} />
-            <BottleStat label="投递" value={appliedCount} />
-            <BottleStat label="面试" value={interviewCount} />
+            <BottleStat label="已收录" value={applications.length} />
+            <BottleStat label="已投递" value={appliedCount} />
+            <BottleStat label="已进面" value={interviewCount} />
             <BottleStat label="Offer" value={offerCount} />
           </div>
 
@@ -164,10 +164,10 @@ export function ApplicationBottle({
             {shareState === "generating" ? "正在生成" : "分享我的星瓶"}
           </Button>
           {shareState === "done" ? (
-            <p className="mt-2 text-center text-xs text-ink-muted">已生成 PNG 和 PDF</p>
+            <p className="mt-2 text-center text-xs text-ink-muted">分享图已生成（PNG / PDF）</p>
           ) : null}
           {shareState === "error" ? (
-            <p className="mt-2 text-center text-xs text-red-200">生成失败，请稍后重试。</p>
+            <p className="mt-2 text-center text-xs text-red-200">分享图暂未生成，请稍后重试。</p>
           ) : null}
 
           {applications.length > 0 && displayApp ? (

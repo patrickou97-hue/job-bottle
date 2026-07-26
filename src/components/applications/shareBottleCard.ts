@@ -25,7 +25,7 @@ export async function downloadBottleShareCard({
   canvas.width = CARD_WIDTH;
   canvas.height = CARD_HEIGHT;
   const context = canvas.getContext("2d");
-  if (!context) throw new Error("无法生成分享图，请稍后重试。");
+  if (!context) throw new Error("分享图暂未生成，请稍后重试。");
 
   const [bottleImage, qrImage, logoImage, bottleSnapshot] = await Promise.all([
     loadImage(`${window.location.origin}/assets/star-bottle-image2.png`),
@@ -184,7 +184,7 @@ function drawBottleSnapshot(
   context.fillText("星瓶", x + 42, y + height + 54);
   context.fillStyle = "rgba(201,197,228,0.5)";
   context.font = "500 20px sans-serif";
-  context.fillText("收录明日的坐标", x + 42, y + height + 88);
+  context.fillText("把明日的坐标收进星瓶", x + 42, y + height + 88);
 }
 
 function drawShareStory(context: CanvasRenderingContext2D, applications: ApplicationWithJob[]) {
@@ -208,20 +208,20 @@ function drawShareStory(context: CanvasRenderingContext2D, applications: Applica
 
   context.fillStyle = "rgba(201,197,228,0.8)";
   context.font = "700 30px sans-serif";
-  context.fillText("秋招线索", x, y);
+  context.fillText("本季足迹", x, y);
 
-  drawShareMetric(context, x, y + 92, "已收到 Offer", `${offerCount} 份`);
+  drawShareMetric(context, x, y + 92, "已获 Offer", `${offerCount} 份`);
   drawShareMetric(context, x, y + 174, "已投递", `${appliedCount} 份`);
   drawShareMetric(context, x, y + 256, "已进面", `${interviewCount} 次`);
 
   context.fillStyle = "rgba(201,197,228,0.8)";
   context.font = "700 28px sans-serif";
-  context.fillText("投递企业", x, y + 396);
+  context.fillText("涉及企业", x, y + 396);
 
   if (companies.length === 0) {
     context.fillStyle = "rgba(201,197,228,0.6)";
     context.font = "600 23px sans-serif";
-    context.fillText("还没有点亮岗位星", x, y + 468);
+    context.fillText("星瓶里还没有岗位星", x, y + 468);
     return;
   }
 
@@ -273,7 +273,7 @@ function drawShareFooter(context: CanvasRenderingContext2D, qrImage: HTMLImageEl
 
   context.fillStyle = "#12294E";
   context.font = "800 33px sans-serif";
-  context.fillText("扫码获取我的秋招专属星瓶", CARD_PADDING + 32, qrY + 44);
+  context.fillText("扫码开启你的秋招星瓶", CARD_PADDING + 32, qrY + 44);
 
   context.fillStyle = "rgba(18,41,78,0.68)";
   context.font = "600 21px sans-serif";
@@ -386,7 +386,7 @@ function canvasToBlob(canvas: HTMLCanvasElement, type: string) {
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((blob) => {
       if (blob) resolve(blob);
-      else reject(new Error("分享图生成失败。"));
+      else reject(new Error("分享图暂未生成，请稍后重试。"));
     }, type);
   });
 }

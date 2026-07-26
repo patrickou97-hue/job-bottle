@@ -68,7 +68,7 @@ export function NebulaNode({
         {name}
       </span>
       <span className="relative z-10 mt-1 text-xs text-ink-muted">
-        {capturedCount > 0 ? `${count} 个岗位 · ${capturedCount} 已捕获` : `${count} 个岗位`}
+        {capturedCount > 0 ? `${count} 个岗位 · 已收录 ${capturedCount} 个` : `${count} 个岗位`}
       </span>
     </motion.button>
   );

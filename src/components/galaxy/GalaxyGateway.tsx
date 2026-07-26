@@ -13,14 +13,14 @@ export function GalaxyGateway() {
         <GalaxyChoice
           href="/galaxy/region"
           title="地区星系"
-          description="按北京、上海、深圳等城市星云聚合岗位，适合先确定工作地点。"
+          description="从城市出发，查看北京、上海、深圳等地的校招机会，适合已经明确工作地点的你。"
           imageSrc="/assets/nebula/nebula-region.png"
           tone="rgba(126,124,181,0.3)"
         />
         <GalaxyChoice
           href="/galaxy/industry"
           title="行业星系"
-          description="按互联网、金融、咨询、科技等行业星云聚合岗位，适合先确定方向。"
+          description="从方向出发，查看金融、互联网、咨询、科技等行业机会，适合仍在比较职业路径的你。"
           imageSrc="/assets/nebula/nebula-industry.png"
           tone="rgba(127,85,104,0.28)"
         />

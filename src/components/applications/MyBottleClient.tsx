@@ -21,7 +21,8 @@ export function MyBottleClient({ loginNextPath = "/bottle" }: { loginNextPath?: 
     setMessage("");
     try {
       if (!isSupabaseConfigured()) {
-        setMessage("请先配置数据库环境变量。");
+        console.error("Supabase environment variables are not configured.");
+        setMessage("星瓶暂时无法打开，请稍后重试。");
         return;
       }
       const supabase = createClient();
@@ -36,7 +37,7 @@ export function MyBottleClient({ loginNextPath = "/bottle" }: { loginNextPath?: 
       setApplications(rows);
       void track("bottle_view", { count: rows.length });
     } catch {
-      setMessage("加载失败，请稍后再试。");
+      setMessage("星瓶暂时无法打开，请稍后重试。");
     } finally {
       setLoading(false);
     }
@@ -69,7 +70,7 @@ export function MyBottleClient({ loginNextPath = "/bottle" }: { loginNextPath?: 
       <section className="page-hero">
         <div>
           <p className="page-kicker">投递记录</p>
-          <h1 className="page-title">星瓶</h1>
+          <h1 className="page-title">我的星瓶</h1>
         </div>
         <div className="progress-summary px-4 py-2 md:px-5 md:py-3">
           <p className="text-sm leading-7 text-ink-secondary">
@@ -86,7 +87,7 @@ export function MyBottleClient({ loginNextPath = "/bottle" }: { loginNextPath?: 
 
       {loading || redirecting ? (
         <div className="empty-state">
-          <span className="loading-line">{redirecting ? "正在前往登录" : "正在读取星瓶"}</span>
+          <span className="loading-line">{redirecting ? "正在前往登录" : "正在打开星瓶"}</span>
         </div>
       ) : (
         <div className="mx-auto max-w-5xl">

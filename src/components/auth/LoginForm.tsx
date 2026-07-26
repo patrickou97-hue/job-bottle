@@ -19,13 +19,13 @@ import { cn } from "@/lib/utils";
 const loginSchema = z.object({
   account: z.string().min(1, "请输入账号或邮箱。"),
   password: z.string().min(6, "密码至少需要 6 位。"),
-  displayName: z.string().max(24, "用户名不超过 24 个字。").optional(),
-  city: z.string().max(30, "城市不超过 30 个字。").optional(),
-  school: z.string().max(40, "学校不超过 40 个字。").optional(),
-  major: z.string().max(40, "专业不超过 40 个字。").optional(),
-  graduationYear: z.string().max(12, "毕业年份不超过 12 个字。").optional(),
-  preferredRegions: z.string().max(80, "意向地区太长了。").optional(),
-  targetRoles: z.string().max(120, "意向岗位太长了。").optional(),
+  displayName: z.string().max(24, "用户名最多填写 24 个字。").optional(),
+  city: z.string().max(30, "城市最多填写 30 个字。").optional(),
+  school: z.string().max(40, "学校最多填写 40 个字。").optional(),
+  major: z.string().max(40, "专业最多填写 40 个字。").optional(),
+  graduationYear: z.string().max(12, "毕业年份最多填写 12 个字。").optional(),
+  preferredRegions: z.string().max(80, "意向地区填写内容过长，请适当精简。").optional(),
+  targetRoles: z.string().max(120, "意向岗位填写内容过长，请适当精简。").optional(),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -67,14 +67,15 @@ export function LoginForm() {
 
     try {
       if (!isSupabaseConfigured()) {
-        setMessage("请先配置数据库环境变量。");
+        console.error("Supabase environment variables are not configured.");
+        setMessage("登录服务暂时不可用，请稍后重试。");
         return;
       }
       const supabase = createClient();
       if (mode === "register") {
         const emailResult = z.string().email().safeParse(values.account.trim());
         if (!emailResult.success) {
-          setMessage("注册时请输入有效邮箱。");
+          setMessage("请输入有效的注册邮箱。");
           return;
         }
         const registrationEmail = emailResult.data;
@@ -118,7 +119,7 @@ export function LoginForm() {
           return;
         }
         setMode("login");
-        setMessage("注册成功。若系统要求邮箱验证，请先完成确认，再登录返回简历制作。");
+        setMessage("注册成功。若需邮箱验证，请先完成确认；登录后将返回简历制作页面。");
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
           email: normalizeLoginAccount(values.account),
@@ -147,11 +148,11 @@ export function LoginForm() {
         body: JSON.stringify({ code: wechatCode }),
       });
       const payload = await response.json().catch(() => ({})) as { error?: string };
-      if (!response.ok) throw new Error(payload.error || "微信网页登录失败，请重试。");
+      if (!response.ok) throw new Error(payload.error || "微信登录未完成，请重新尝试。");
       router.push(getSafeNextPath(searchParams.get("next")));
       router.refresh();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "微信网页登录失败，请重试。");
+      setMessage(error instanceof Error ? error.message : "微信登录未完成，请重新尝试。");
     } finally {
       setBusy(false);
     }
@@ -168,10 +169,10 @@ export function LoginForm() {
       </h1>
       <p className="mt-3 text-center text-sm leading-6 text-ink-secondary">
         {searchParams.get("reason") === "resume-download"
-          ? "当前简历已保存在本浏览器，注册或登录后会自动带你返回下载"
+          ? "当前简历已保存在本浏览器。完成注册或登录后，将自动返回下载页面。"
           : isRegister
-          ? "注册后保存岗位、简历和投递记录"
-          : "登录后查看投递记录"}
+          ? "注册后，保存岗位、简历与投递记录。"
+          : "登录后，继续查看与整理投递进展。"}
       </p>
 
       {!isRegister ? (
@@ -202,7 +203,7 @@ export function LoginForm() {
       {!isRegister && loginMethod === "wechat" ? (
         <form className="mt-6 space-y-5" onSubmit={onWechatCodeSubmit}>
           <div className="info-banner text-sm leading-6">
-            打开拾星小程序，在“我的”里生成 8 位网页登录码。验证码 5 分钟内有效，使用一次后立即失效。
+            打开拾星小程序，在“我的”中生成 8 位网页登录码。登录码 5 分钟内有效，使用一次后立即失效。
           </div>
           <label className="block">
             <span className="mb-2 block text-sm text-ink-secondary">网页登录码</span>
@@ -217,7 +218,7 @@ export function LoginForm() {
           </label>
           {message ? <p className="info-banner text-sm">{message}</p> : null}
           <Button type="submit" className="w-full" disabled={busy || wechatCode.length !== 8}>
-            使用微信账号登录
+            使用微信账户登录
           </Button>
         </form>
       ) : (

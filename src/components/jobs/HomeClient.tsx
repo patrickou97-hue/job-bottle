@@ -92,7 +92,8 @@ export function HomeClient() {
       if (!isSupabaseConfigured()) {
         setJobs([]);
         setApplications([]);
-        setMessage("请先配置数据库环境变量，再读取岗位数据库。");
+        console.error("Supabase environment variables are not configured.");
+        setMessage("岗位暂时无法读取，请稍后重试。");
         return;
       }
       const supabase = createClient();
@@ -126,8 +127,8 @@ export function HomeClient() {
     } catch {
       if (requestId !== loadRequestRef.current) return;
       setMessage(typeof navigator !== "undefined" && !navigator.onLine
-        ? "当前处于离线状态。筛选条件已保留，联网后可再次加载岗位。"
-        : "岗位数据暂时无法读取，请检查网络后重试。");
+        ? "当前网络不可用，筛选条件已保留。联网后可重新加载岗位。"
+        : "岗位暂时无法读取，请检查网络后重试。");
     } finally {
       if (requestId === loadRequestRef.current) setLoading(false);
     }
@@ -234,7 +235,8 @@ export function HomeClient() {
     let applyWindowNavigated = false;
     try {
       if (!isSupabaseConfigured()) {
-        setMessage("请先配置数据库环境变量，再保存投递记录。");
+        console.error("Supabase environment variables are not configured.");
+        setMessage("操作未完成；当前记录与已填内容均已保留。请稍后重试。");
         return;
       }
       if (!currentUserId) {
@@ -265,7 +267,7 @@ export function HomeClient() {
       if (!existing) {
         if (!isValidHttpUrl(job.apply_url)) {
           applyWindow?.close();
-          setMessage("投递链接格式不正确，暂未加入星瓶。请通过反馈告诉我们。");
+          setMessage("投递链接无法识别，岗位尚未收入星瓶。请通过反馈告知我们。");
           return;
         }
         const application = await upsertApplication(supabase, user.id, job.id, "preparing");
@@ -281,7 +283,7 @@ export function HomeClient() {
           companyName: job.company_name,
           progressNote: application.progress_note,
         });
-        setMessage("已加入星瓶并打开官网。返回后确认是否完成投递。");
+        setMessage("岗位已收入星瓶，投递官网已打开。返回后，请确认是否完成投递。");
         return;
       }
 
@@ -299,14 +301,14 @@ export function HomeClient() {
         void track("candidate_stage_updated", { job_id: job.id, stage: nextStage });
         setMessage(
           nextStage === "saved"
-            ? "已保留为候选岗位。可以设置优先级，或继续开始准备。"
-            : "已进入准备中。先绑定岗位简历，准备好后再记录投递。",
+            ? "已列入候选。你可以设置优先级，或开始准备。"
+            : "已进入准备阶段。建议先建立岗位简历，再记录投递。",
         );
         return;
       }
 
       if (!isValidHttpUrl(job.apply_url)) {
-        setMessage("投递链接格式不正确，当前记录和已填内容都已保留。");
+        setMessage("投递链接无法识别；当前记录与已填内容均已保留。");
         return;
       }
 
@@ -318,27 +320,27 @@ export function HomeClient() {
         companyName: job.company_name,
         progressNote: existing.progress_note,
       });
-      setMessage("官网已打开。返回后确认投递结果，候选记录会继续保留。");
+      setMessage("投递官网已打开。返回后，请确认是否完成投递。");
     } catch (error) {
       if (!applyWindowNavigated) applyWindow?.close();
-      setMessage(error instanceof Error ? error.message : "岗位操作失败，当前记录和已填内容都已保留，请稍后重试。");
+      setMessage(error instanceof Error ? error.message : "操作未完成；当前记录与已填内容均已保留。请稍后重试。");
     }
   }
 
   function openApplicationWebsite(job: Job, applyWindow: Window | null) {
     if (applyWindow) {
       applyWindow.opener = null;
-      applyWindow.document.title = "正在打开投递官网";
+      applyWindow.document.title = "正在前往投递官网";
       applyWindow.document.body.style.margin = "0";
       applyWindow.document.body.style.background = "#000001";
       applyWindow.document.body.style.color = "#F1EFFF";
       applyWindow.document.body.style.fontFamily = '-apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif';
-      applyWindow.document.body.innerHTML = '<main style="min-height:100vh;display:grid;place-items:center;text-align:center;"><div><p style="font-size:15px;">正在打开投递官网</p><p style="font-size:12px;color:#918CAE;">返回后确认是否完成投递</p></div></main>';
+      applyWindow.document.body.innerHTML = '<main style="min-height:100vh;display:grid;place-items:center;text-align:center;"><div><p style="font-size:15px;">正在前往投递官网</p><p style="font-size:12px;color:#918CAE;">返回后确认投递结果</p></div></main>';
       applyWindow.location.href = sanitizeApplicationUrl(job.apply_url);
       return true;
     }
     if (safeOpenUrl(job.apply_url)) return true;
-    setMessage("浏览器阻止了新窗口，请允许本站打开投递页面后重试。");
+    setMessage("浏览器拦截了新窗口。请允许拾星打开投递页面后重试。");
     return false;
   }
 
@@ -384,7 +386,7 @@ export function HomeClient() {
       }
       setPendingApplyConfirmation(null);
       setShowApplyConfirmation(false);
-      setMessage("仍保留在“准备中”，可以稍后继续记录投递。");
+      setMessage("仍保留在“准备中”，之后可以继续更新。");
       return;
     }
 
@@ -401,7 +403,7 @@ export function HomeClient() {
       });
       setPendingApplyConfirmation(null);
       setShowApplyConfirmation(false);
-      setMessage(status === "applied" ? "已确认投递，岗位已出现在投递星图。" : "已标记为不投了。");
+      setMessage(status === "applied" ? "投递已记录，这颗星已进入你的投递星图。" : "已结束这次考虑。");
       if (status === "applied") {
         void track("application_recorded", {
           job_id: pendingApplyConfirmation.jobId,
@@ -409,7 +411,7 @@ export function HomeClient() {
       }
       await loadData();
     } catch {
-      setMessage("状态更新失败，请稍后再试。");
+      setMessage("状态暂未更新，请稍后重试。");
     } finally {
       setConfirmBusy(false);
     }
@@ -492,7 +494,7 @@ export function HomeClient() {
       <section id="job-map" className="border-t border-[color:var(--line-ghost)] pt-6">
         <div className="section-heading items-end">
           <div>
-            <h2 className="section-title">岗位地图</h2>
+            <h2 className="section-title">岗位分布</h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-secondary">
               按省份查看当前筛选下的岗位分布，点选地图后，右侧预览和下方清单会同步更新。
             </p>
@@ -503,7 +505,7 @@ export function HomeClient() {
         </div>
         {loading ? (
           <div className="grid min-h-[390px] place-items-center border-y border-[color:var(--line-ghost)] text-sm text-ink-muted">
-            <span className="loading-line">正在绘制全国岗位分布</span>
+            <span className="loading-line">正在绘制岗位地图</span>
           </div>
         ) : (
           <ChinaJobMap
@@ -536,7 +538,7 @@ export function HomeClient() {
           <div className="section-heading">
             <div className="flex items-baseline gap-2">
               <h2 className="section-title">
-                {loading ? "正在读取" : filters.location ? `${getLocationFilterLabel(filters.location)} · ${filteredJobs.length} 个岗位` : `岗位清单 · ${filteredJobs.length} 个`}
+                {loading ? "正在整理岗位" : filters.location ? `${getLocationFilterLabel(filters.location)} · ${filteredJobs.length} 个岗位` : `岗位清单 · ${filteredJobs.length} 个`}
               </h2>
               {!loading && filteredJobs.length !== jobs.length && (
                 <span className="text-xs text-ink-muted">
@@ -549,18 +551,18 @@ export function HomeClient() {
 
           {loading ? (
             <div className="empty-state">
-              <span className="loading-line">正在读取岗位</span>
+              <span className="loading-line">正在整理岗位</span>
             </div>
           ) : jobs.length === 0 ? (
             <EmptyState
-              title="暂无开放岗位"
-              body="当前没有可展示的岗位，请稍后再查看。"
+              title="暂时没有开放岗位"
+              body="当前没有可展示的岗位，稍后再来看看。"
               action={<Button onClick={loadData}>刷新</Button>}
             />
           ) : filteredJobs.length === 0 ? (
             <EmptyState
-              title="没有找到匹配岗位"
-              body="可以减少筛选条件，或更换关键词后再试。"
+              title="没有找到合适的岗位"
+              body="试着减少筛选条件，或换一个关键词。"
               action={
                 <Button variant="secondary" onClick={() => handleFiltersChange(EMPTY_JOB_FILTERS)}>
                   清空筛选
@@ -682,10 +684,10 @@ function JobRadarHeader({
 
       <div className="progress-summary px-4 py-2 md:px-5 md:py-3">
         <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
-          <StatNumber value={stats.visibleJobs} label="当前岗位" />
-          <StatNumber value={stats.companyCount} label="公司" />
-          <StatNumber value={stats.savedJobs} label="已收录" />
-          <StatNumber value={stats.recentJobs} label="近 7 天新发现" />
+          <StatNumber value={stats.visibleJobs} label="开放岗位" />
+          <StatNumber value={stats.companyCount} label="覆盖公司" />
+          <StatNumber value={stats.savedJobs} label="已收入星瓶" />
+          <StatNumber value={stats.recentJobs} label="近 7 日新增" />
         </div>
       </div>
 
@@ -784,11 +786,11 @@ function getActiveFilterChips(
   if (filters.batchType) chips.push(`批次：${filters.batchType}`);
   if (filters.location) chips.push(`地点：${getLocationFilterLabel(filters.location)}`);
   filters.categories.forEach((category) => chips.push(`类别：${category}`));
-  if (filters.sortBy === "start_date_desc") chips.push("最新开启");
-  if (filters.sortBy === "start_date_asc") chips.push("开启时间优先");
-  if (filters.sortBy === "company_asc") chips.push("公司名称排序");
-  if (discoveryScope === "recent") chips.push("近 7 天新上");
-  if (discoveryScope === "recent_preference") chips.push("近 7 天 · 符合偏好");
+  if (filters.sortBy === "start_date_desc") chips.push("最新开放");
+  if (filters.sortBy === "start_date_asc") chips.push("最早开放");
+  if (filters.sortBy === "company_asc") chips.push("按公司名称");
+  if (discoveryScope === "recent") chips.push("近 7 日新增");
+  if (discoveryScope === "recent_preference") chips.push("近 7 日新增 · 符合偏好");
   if (jobView === "unapplied") chips.push("只看未投递");
   if (jobView === "applied") chips.push("只看已投递");
   return chips;

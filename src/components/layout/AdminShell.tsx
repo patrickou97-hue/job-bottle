@@ -30,7 +30,10 @@ export function AdminShell({ children }: { children: ReactNode }) {
     async function checkAdmin() {
       try {
         if (!isSupabaseConfigured()) {
-          if (mounted) setMessage("请先配置数据库环境变量。");
+          if (mounted) {
+            console.error("Supabase environment variables are not configured.");
+            setMessage("暂时无法核验管理员权限。");
+          }
           return;
         }
         const supabase = createClient();

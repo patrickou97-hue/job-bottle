@@ -103,24 +103,24 @@ export function JobFilterBar({
             onChange={(event) => onDiscoveryScopeChange(event.target.value as JobDiscoveryScope)}
           >
             <option value="all">全部岗位</option>
-            <option value="recent">近 7 天新上 · {recentCount}</option>
+            <option value="recent">近 7 日新增 · {recentCount}</option>
             <option value="recent_preference" disabled={!hasPreferences}>
-              近 7 天 · 符合偏好 · {recentPreferenceCount}
+              近 7 日新增 · 符合偏好 · {recentPreferenceCount}
             </option>
           </Select>
           <p className="mt-2 text-xs leading-5 text-ink-muted">
             {hasPreferences ? (
-              "新上按本站收录时间计算；偏好同时匹配已填写的意向地区与岗位。"
+              "新增以本站收录时间为准；偏好匹配会同时参考意向地区与意向岗位。"
             ) : (
               <>
-                新上按本站收录时间计算。{isAuthenticated ? "填写" : "登录并填写"}
+                新增以本站收录时间为准。{isAuthenticated ? "填写" : "登录并填写"}
                 <Link
                   href={isAuthenticated ? "/profile" : "/login?next=%2Fprofile"}
                   className="mx-1 text-action underline-offset-4 hover:underline"
                 >
                   求职偏好
                 </Link>
-                后可启用匹配。
+                后，可查看匹配岗位。
               </>
             )}
           </p>
@@ -137,7 +137,7 @@ export function JobFilterBar({
               className="pl-10"
               value={filters.keyword}
               onChange={(event) => setFilter({ keyword: event.target.value })}
-              placeholder="搜索公司或岗位"
+              placeholder="搜索公司或岗位名称"
             />
           </div>
         </label>
@@ -158,7 +158,7 @@ export function JobFilterBar({
         </label>
 
         <label className="block">
-          <span className="mb-2 block text-sm text-ink-secondary">批次类型</span>
+          <span className="mb-2 block text-sm text-ink-secondary">招聘批次</span>
           <Select
             value={filters.batchType}
             onChange={(event) => setFilter({ batchType: event.target.value })}
@@ -197,10 +197,10 @@ export function JobFilterBar({
               setFilter({ sortBy: event.target.value as JobFilters["sortBy"] })
             }
           >
-            <option value="start_date_desc">最新开启</option>
-            <option value="updated_desc">最近更新优先</option>
-            <option value="start_date_asc">最早开启</option>
-            <option value="company_asc">公司名称排序</option>
+            <option value="start_date_desc">最新开放</option>
+            <option value="updated_desc">最近更新</option>
+            <option value="start_date_asc">最早开放</option>
+            <option value="company_asc">按公司名称</option>
           </Select>
         </label>
 
@@ -277,7 +277,7 @@ function LocationFilter({
         onChange={onLevelChange}
       />
 
-      {level === "nationwide" ? <p className="mt-2 text-xs leading-5 text-ink-muted">匹配标注为全国或全球的岗位</p> : null}
+      {level === "nationwide" ? <p className="mt-2 text-xs leading-5 text-ink-muted">查看标注为全国或全球的岗位</p> : null}
 
       {level === "province" ? (
         <label className="mt-3 block">

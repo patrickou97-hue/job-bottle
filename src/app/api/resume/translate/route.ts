@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) {
-    return NextResponse.json({ error: "请先登录，再使用 AI 翻译" }, { status: 401 });
+    return NextResponse.json({ error: "请先登录，再使用翻译功能。" }, { status: 401 });
   }
 
   const body = await request.json().catch(() => null);
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
   const baseUrl = process.env.MIMO_BASE_URL;
   const model = process.env.MIMO_MODEL;
   if (!apiKey || !baseUrl || !model) {
-    return NextResponse.json({ error: "AI 翻译尚未配置，请联系管理员检查服务设置" }, { status: 503 });
+    return NextResponse.json({ error: "翻译暂时不可用，原简历未改动。" }, { status: 503 });
   }
 
   const { data: rateSlot, error: rateSlotError } = await supabase.rpc("take_resume_ai_rate_slot");
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "AI 请求保护服务暂时不可用，请稍后重试" }, { status: 503 });
   }
   if (!rateSlot) {
-    return NextResponse.json({ error: "AI 翻译请求较频繁，请十分钟后再试" }, { status: 429, headers: { "Retry-After": "600" } });
+    return NextResponse.json({ error: "翻译请求较频繁，请十分钟后再试。" }, { status: 429, headers: { "Retry-After": "600" } });
   }
 
   try {
@@ -257,14 +257,14 @@ function logServerError(scope: string, error: unknown) {
 
 function mapUpstreamError(error: unknown) {
   if (error instanceof DOMException && error.name === "AbortError") {
-    return NextResponse.json({ error: "AI 翻译请求超时，原简历未改变，请重试" }, { status: 504 });
+    return NextResponse.json({ error: "翻译请求超时，原简历未改动，请重试。" }, { status: 504 });
   }
   if (error instanceof UpstreamError) {
     if (error.status === 401 || error.status === 403) return NextResponse.json({ error: "AI 服务鉴权失败，请联系管理员检查配置" }, { status: 502 });
     if (error.status === 429) return NextResponse.json({ error: "AI 服务繁忙，请稍后重试" }, { status: 429 });
     if (error.kind === "empty") return NextResponse.json({ error: "AI 未返回译文，原简历未改变，请重试" }, { status: 502 });
   }
-  return NextResponse.json({ error: "AI 翻译暂时不可用，原简历未改变，请稍后重试" }, { status: 502 });
+  return NextResponse.json({ error: "翻译暂时不可用，原简历未改动。" }, { status: 502 });
 }
 
 const RESULT_SHAPE = `只返回以下严格 JSON，不要 Markdown：

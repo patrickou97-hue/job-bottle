@@ -103,7 +103,7 @@ export function AdminUsersClient() {
         .catch((error) => {
           if (cancelled) return;
           setState("error");
-          setMessage(error instanceof Error ? error.message : "用户列表读取失败，请稍后重试。");
+          setMessage(error instanceof Error ? error.message : "用户列表暂时无法读取，请稍后重试。");
         })
         .finally(() => {
           if (!cancelled) setRefreshing(false);
@@ -124,7 +124,7 @@ export function AdminUsersClient() {
     const draft = drafts[user.id] ?? { displayName: user.displayName, role: user.role };
     if (draft.role !== user.role && confirmRoleId !== user.id) {
       setConfirmRoleId(user.id);
-      setMessage(`再次点击“确认身份”将把 ${user.email} 的身份改为${draft.role === "admin" ? "管理员" : "普通用户"}。`);
+      setMessage(`再次点击“确认身份”，将把 ${user.email} 的身份改为${draft.role === "admin" ? "管理员" : "普通用户"}。`);
       return;
     }
     void saveUser(user);
@@ -153,7 +153,7 @@ export function AdminUsersClient() {
       setConfirmRoleId("");
       setMessage(`${result.user.email} 的账户设置已更新。`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "用户账户更新失败，原设置未改变。");
+      setMessage(error instanceof Error ? error.message : "用户账户未能更新，原设置未改变。");
     } finally {
       setSavingId("");
     }
@@ -170,14 +170,14 @@ export function AdminUsersClient() {
       return;
     }
     setConfirmDisableId(user.id);
-    setMessage(`再次点击“确认停用”将阻止 ${user.email} 登录，现有数据会保留。`);
+    setMessage(`再次点击“确认停用”，将阻止 ${user.email} 登录；现有数据不会删除。`);
   }
 
   function requestEmailConfirmation(user: AdminUserSummary) {
     if (user.accountType === "wechat" || user.emailConfirmedAt) return;
     if (confirmEmailId !== user.id) {
       setConfirmEmailId(user.id);
-      setMessage(`再次点击“确认邮箱”将跳过验证邮件，把 ${user.email} 设为已确认。`);
+      setMessage(`再次点击“确认邮箱”，将跳过验证邮件并把 ${user.email} 标记为已确认。`);
       return;
     }
     void confirmEmail(user);
@@ -203,7 +203,7 @@ export function AdminUsersClient() {
         ? `${result.user.email} 的邮箱状态已正常，账户仍处于停用状态。`
         : `${result.user.email} 的邮箱状态已正常。`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "邮箱确认状态更新失败，原状态未改变。");
+      setMessage(error instanceof Error ? error.message : "邮箱确认状态未能更新，原设置未改变。");
     } finally {
       setSavingId("");
     }
@@ -214,7 +214,7 @@ export function AdminUsersClient() {
     if (confirmAccessId !== user.id) {
       setConfirmAccessId(user.id);
       setMessage(
-        `再次点击将${user.starInterviewUnlimitedAccess ? "关闭" : "开启"} ${user.email} 的 StarInterview 无限访问。`,
+        `再次点击，将${user.starInterviewUnlimitedAccess ? "关闭" : "开启"} ${user.email} 的 StarInterview 无限访问权限。`,
       );
       return;
     }
@@ -249,10 +249,10 @@ export function AdminUsersClient() {
       }
       setConfirmAccessId("");
       setMessage(
-        `${user.email} 已${result.starInterviewUnlimitedAccess ? "开启" : "关闭"} StarInterview 无限访问。`,
+        `${user.email} 的 StarInterview 无限访问权限已${result.starInterviewUnlimitedAccess ? "开启" : "关闭"}。`,
       );
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "StarInterview 访问权限更新失败，原设置未改变。");
+      setMessage(error instanceof Error ? error.message : "StarInterview 访问权限未能更新，原设置未改变。");
     } finally {
       setSavingId("");
     }
@@ -297,9 +297,9 @@ export function AdminUsersClient() {
 
   const metricItems = [
     { label: "全部用户", value: metrics.totalUsers, helper: "注册账户", activity: "all" as const, icon: UsersRound },
-    { label: "24h 活跃", value: metrics.active24h, helper: "最近登录", activity: "24h" as const, icon: Activity },
-    { label: "3 日活跃", value: metrics.active3d, helper: "最近登录", activity: "3d" as const, icon: Clock3 },
-    { label: "从未登录", value: metrics.neverSignedIn, helper: metrics.disabledUsers ? `${metrics.disabledUsers} 个已停用` : "尚无成功登录", activity: "never" as const, icon: UserRound },
+    { label: "24 小时内活跃", value: metrics.active24h, helper: "最近登录", activity: "24h" as const, icon: Activity },
+    { label: "3 日内活跃", value: metrics.active3d, helper: "最近登录", activity: "3d" as const, icon: Clock3 },
+    { label: "从未登录", value: metrics.neverSignedIn, helper: metrics.disabledUsers ? `${metrics.disabledUsers} 个已停用` : "尚无登录记录", activity: "never" as const, icon: UserRound },
   ];
 
   return (
@@ -339,7 +339,7 @@ export function AdminUsersClient() {
         >
           <span className="flex items-center gap-2 text-xs font-medium text-ink-muted"><Sparkles aria-hidden="true" className="size-4 text-nebula-blue" />StarInterview 无限访问</span>
           <strong className="mt-2 block text-2xl font-semibold tabular-nums tracking-[-0.04em] text-ink-primary">{metrics.starInterviewUnlimitedUsers}</strong>
-          <span className="mt-1 block text-xs text-ink-muted">点击查看已授权用户</span>
+          <span className="mt-1 block text-xs text-ink-muted">查看已授权用户</span>
         </button>
       </section>
 
@@ -410,10 +410,10 @@ export function AdminUsersClient() {
           <label className="sm:col-span-2 xl:col-span-1">
             <span className="mb-1.5 block text-xs font-medium text-ink-muted">排序</span>
             <Select value={sort} onChange={(event) => { setSort(event.target.value as AdminUserSort); setPage(1); }}>
-              <option value="activity_desc">最近活跃优先</option>
-              <option value="created_desc">最新注册优先</option>
-              <option value="created_asc">最早注册优先</option>
-              <option value="email_asc">邮箱名称排序</option>
+              <option value="activity_desc">最近活跃</option>
+              <option value="created_desc">最新注册</option>
+              <option value="created_asc">最早注册</option>
+              <option value="email_asc">按邮箱排序</option>
             </Select>
           </label>
         </div>
@@ -429,7 +429,7 @@ export function AdminUsersClient() {
 
       {users.length === 0 ? (
         <div className="empty-state">
-          <p>没有匹配的用户账户。</p>
+          <p>没有符合条件的用户账户。</p>
           {hasFilters ? <Button variant="secondary" className="mt-4" onClick={resetFilters}>清空筛选</Button> : null}
         </div>
       ) : (
@@ -450,7 +450,7 @@ export function AdminUsersClient() {
                     <span className="flex min-w-0 items-center gap-2">
                       {user.role === "admin" ? <Shield aria-hidden="true" className="size-4 shrink-0 text-nebula-blue" /> : <UserRound aria-hidden="true" className="size-4 shrink-0 text-ink-muted" />}
                       <strong className="truncate text-sm font-semibold text-ink-primary">{user.email}</strong>
-                      {isSelf ? <span className="shrink-0 text-xs text-[color:var(--aurora)]">当前账号</span> : null}
+                      {isSelf ? <span className="shrink-0 text-xs text-[color:var(--aurora)]">当前账户</span> : null}
                     </span>
                     <span className="mt-1.5 block truncate text-xs text-ink-muted">{user.displayName} · {user.school || "学校未填写"} · {user.targetRoles.join("、") || "方向未填写"}</span>
                   </span>
@@ -460,7 +460,7 @@ export function AdminUsersClient() {
                   </span>
                   <span className="flex flex-wrap items-center gap-2">
                     <StatusTag tone={user.role === "admin" ? "blue" : "neutral"}>{user.role === "admin" ? "管理员" : "普通用户"}</StatusTag>
-                    <StatusTag tone={user.starInterviewUnlimitedAccess ? "gold" : "neutral"}>{user.starInterviewUnlimitedAccess ? "StarInterview 无限" : "标准访问"}</StatusTag>
+                    <StatusTag tone={user.starInterviewUnlimitedAccess ? "gold" : "neutral"}>{user.starInterviewUnlimitedAccess ? "StarInterview 无限访问" : "标准访问"}</StatusTag>
                     {disabled ? <StatusTag tone="danger">已停用</StatusTag> : null}
                     {user.accountType !== "wechat" && !user.emailConfirmedAt ? <StatusTag tone="neutral">邮箱未确认</StatusTag> : null}
                   </span>
@@ -488,13 +488,13 @@ export function AdminUsersClient() {
                         <div className="mt-3 flex items-center justify-between gap-4">
                           <div>
                             <p className="text-sm font-semibold text-ink-primary">{user.starInterviewUnlimitedAccess ? "无限访问" : "标准访问"}</p>
-                            <p className="mt-1 text-xs leading-5 text-ink-muted">{user.starInterviewAccessSource === "admin_default" ? "管理员初始权限，尚未单独调整" : user.starInterviewAccessSource === "explicit" ? "已由主管理员单独设置" : "普通用户默认状态"}</p>
+                            <p className="mt-1 text-xs leading-5 text-ink-muted">{user.starInterviewAccessSource === "admin_default" ? "沿用管理员默认权限，尚未单独设置" : user.starInterviewAccessSource === "explicit" ? "已由主管理员单独设置" : "普通用户默认权限"}</p>
                           </div>
                           <button type="button" role="switch" aria-checked={user.starInterviewUnlimitedAccess} aria-label={`调整 ${user.email} 的 StarInterview 无限访问`} disabled={!canManageStarInterviewAccess || refreshing || savingId === user.id} onClick={() => void requestStarInterviewAccessToggle(user)} className={cn("relative h-7 w-12 shrink-0 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--aurora)] disabled:cursor-not-allowed disabled:opacity-45", user.starInterviewUnlimitedAccess ? "border-nebula-blue/70 bg-nebula-blue/75" : "border-[color:var(--line)] bg-[color:var(--surface-hover-bg)]")}>
                             <span className={cn("absolute left-0 top-1 size-[18px] rounded-full bg-white shadow-sm transition-transform", user.starInterviewUnlimitedAccess ? "translate-x-6" : "translate-x-1")} />
                           </button>
                         </div>
-                        {!canManageStarInterviewAccess ? <p className="mt-3 text-xs leading-5 text-ink-muted">只有主管理员可以调整此权限。</p> : confirmAccessId === user.id ? <p className="mt-3 text-xs leading-5 text-[#d8a8b7]">再次点击开关以确认变更。</p> : null}
+                        {!canManageStarInterviewAccess ? <p className="mt-3 text-xs leading-5 text-ink-muted">仅主管理员可调整此权限。</p> : confirmAccessId === user.id ? <p className="mt-3 text-xs leading-5 text-[#d8a8b7]">请再次点击开关确认变更。</p> : null}
                       </div>
                     </div>
                     <details className="mt-5 border-t border-[color:var(--line-ghost)] pt-4 text-xs text-ink-muted">

@@ -19,7 +19,8 @@ export function CsvImportPanel() {
   useEffect(() => {
     async function checkAdmin() {
       if (!isSupabaseConfigured()) {
-        setMessage("请先配置数据库环境变量。");
+        console.error("Supabase environment variables are not configured.");
+        setMessage("岗位库暂时无法读取，请稍后重试。");
         return;
       }
       const supabase = createClient();
@@ -65,7 +66,8 @@ export function CsvImportPanel() {
     setMessage("");
     try {
       if (!isSupabaseConfigured()) {
-        setMessage("请先配置数据库环境变量。");
+        console.error("Supabase environment variables are not configured.");
+        setMessage("导入暂时不可用，请稍后重试。");
         return;
       }
       const payload = validRows.map((row) => ({
@@ -108,7 +110,7 @@ export function CsvImportPanel() {
         `导入完成：成功 ${dedupedPayload.length} 条，跳过 ${invalidRows.length + payload.length - dedupedPayload.length} 条重复或无效数据。`,
       );
     } catch {
-      setMessage("导入失败，请确认管理员权限或检查数据。");
+      setMessage("导入失败，请检查管理员权限或数据内容。");
     } finally {
       setBusy(false);
     }

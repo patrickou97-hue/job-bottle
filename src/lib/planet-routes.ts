@@ -16,7 +16,7 @@ export const PLANET_ROUTES: PlanetRoute[] = [
   {
     id: 'jobs',
     label: '岗位坐标',
-    description: '浏览、筛选和收录岗位',
+    description: '浏览岗位，按方向筛选并收入星瓶',
     href: '/explore',
     orbitRadius: 420,
     orbitDuration: 104,
@@ -27,7 +27,7 @@ export const PLANET_ROUTES: PlanetRoute[] = [
   {
     id: 'applications',
     label: '投递管理',
-    description: '更新投递记录和进度',
+    description: '梳理投递流程，记录每一步进展',
     href: '/my',
     orbitRadius: 610,
     orbitDuration: 124,
@@ -39,7 +39,7 @@ export const PLANET_ROUTES: PlanetRoute[] = [
   {
     id: 'bottle',
     label: '星瓶',
-    description: '查看投递记录',
+    description: '回看已收录的岗位与求职轨迹',
     href: '/bottle',
     orbitRadius: 610,
     orbitDuration: 114,
@@ -51,7 +51,7 @@ export const PLANET_ROUTES: PlanetRoute[] = [
   {
     id: 'resume',
     label: '简历制作',
-    description: '编辑、预览并导出 PDF',
+    description: '编辑、预览并导出你的简历',
     href: '/resume',
     orbitRadius: 800,
     orbitDuration: 130,
@@ -73,7 +73,7 @@ export const PLANET_ROUTES: PlanetRoute[] = [
   {
     id: 'admin',
     label: '管理入口',
-    description: '维护岗位数据和导入记录',
+    description: '维护岗位数据与导入记录',
     href: '/admin',
     orbitRadius: 990,
     orbitDuration: 152,

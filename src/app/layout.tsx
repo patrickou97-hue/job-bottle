@@ -22,20 +22,20 @@ export const metadata: Metadata = {
     template: `%s｜${SITE_NAME}`,
   },
   applicationName: SITE_NAME,
-  description: "面向学生秋招投递的岗位信息管理与进度记录工具。",
+  description: "汇集校招岗位，整理简历与网申进度，把每一个值得奔赴的机会收进星瓶。",
   manifest: "/manifest.webmanifest",
   openGraph: {
     type: "website",
     locale: "zh_CN",
     siteName: SITE_NAME,
     title: SITE_NAME,
-    description: "发现校招岗位、管理投递进度，把重要机会收进自己的星瓶。",
+    description: "汇集校招岗位，整理简历与网申进度，把每一个值得奔赴的机会收进星瓶。",
     images: [{ url: DEFAULT_SHARE_IMAGE, alt: "拾星 StarJob" }],
   },
   twitter: {
     card: "summary_large_image",
     title: SITE_NAME,
-    description: "发现校招岗位、管理投递进度，把重要机会收进自己的星瓶。",
+    description: "汇集校招岗位，整理简历与网申进度，把每一个值得奔赴的机会收进星瓶。",
     images: [DEFAULT_SHARE_IMAGE],
   },
 };

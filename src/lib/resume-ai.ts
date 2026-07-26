@@ -61,16 +61,16 @@ export async function requestResumePolish(input: ResumePolishRequest, externalSi
     });
     const payload = await response.json().catch(() => null) as ResumePolishResult | { error?: string } | null;
     if (!response.ok) {
-      throw new Error(payload && "error" in payload && payload.error ? payload.error : "AI 润色失败，请稍后重试");
+      throw new Error(payload && "error" in payload && payload.error ? payload.error : "润色暂时不可用，请稍后重试。");
     }
     if (!isResumePolishResult(payload)) {
-      throw new Error("AI 返回内容格式异常，原文未改变，请重新生成");
+      throw new Error("生成结果格式异常，原文未改动，请重新生成。");
     }
     return payload;
   } catch (error) {
     if (controller.signal.aborted) {
-      if (externalSignal?.aborted) throw new Error("已取消 AI 润色，原文未改变");
-      throw new Error("AI 润色请求超时，原文未改变，请重试");
+      if (externalSignal?.aborted) throw new Error("已取消润色，原文未改动。");
+      throw new Error("润色请求超时，原文未改动，请重试。");
     }
     throw error;
   } finally {
