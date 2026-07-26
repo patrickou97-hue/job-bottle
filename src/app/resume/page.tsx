@@ -12,6 +12,7 @@ type ResumePageProps = {
     company?: string;
     job?: string;
     role?: string;
+    action?: string;
   }>;
 };
 
@@ -24,10 +25,13 @@ export default async function ResumePage({ searchParams }: ResumePageProps) {
         role: params.role?.trim() || "目标岗位",
       }
     : null;
+  const initialAction = params.action === "import" || params.action === "create"
+    ? params.action
+    : null;
 
   return (
     <UserShell>
-      <ResumeBuilderClient targetJob={targetJob} />
+      <ResumeBuilderClient targetJob={targetJob} initialAction={initialAction} />
     </UserShell>
   );
 }

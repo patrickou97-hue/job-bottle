@@ -9,7 +9,7 @@ const NEXT_BIN = new URL("node_modules/.bin/next", ROOT);
 const SOURCE_INVARIANTS = [
   {
     file: "src/lib/star-interview-auth.ts",
-    mustInclude: ["TOKEN_AUDIENCE = \"star-interview\"", "STAR_INTERVIEW_SESSION_SECRET", "pkceChallenge", "install_id_hash", "x-starinterview-install-id", "selected_resume_ids", "revoked_at", "timingSafeEqual"],
+    mustInclude: ["TOKEN_AUDIENCE = \"star-interview\"", "STAR_INTERVIEW_SESSION_SECRET", "pkceChallenge", "install_id_hash", "x-starinterview-install-id", "selected_resume_ids: []", "revoked_at", "timingSafeEqual"],
     mustNotInclude: ["MINIPROGRAM_SESSION_SECRET", "MINIPROGRAM_AUDIENCE"],
     label: "诘星账号授权使用独立 audience、密钥、PKCE、设备绑定和可撤销会话",
   },
@@ -21,9 +21,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/star-interview/resumes/[id]/route.ts",
-    mustInclude: ["selectedResumeIds.includes", ".eq(\"user_id\", access.sub)", "phone: \"\"", "email: \"\"", "photoDataUrl: \"\""],
+    mustInclude: [".eq(\"user_id\", access.sub)", "phone: \"\"", "email: \"\"", "photoDataUrl: \"\""],
     mustNotInclude: ["MINIPROGRAM_SESSION_SECRET"],
-    label: "诘星只读取用户显式授权的简历并在服务端去除联系方式和照片",
+    label: "诘星只读取当前用户拥有的简历并在服务端去除联系方式和照片",
   },
   {
     file: "src/app/api/star-interview/completion/route.ts",

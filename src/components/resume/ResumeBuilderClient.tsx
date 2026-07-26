@@ -58,7 +58,13 @@ type PendingCloudSave = {
 
 const MAX_BACKGROUND_SYNC_ATTEMPTS = 3;
 
-export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJobContext | null }) {
+export function ResumeBuilderClient({
+  targetJob = null,
+  initialAction = null,
+}: {
+  targetJob?: TargetJobContext | null;
+  initialAction?: "import" | "create" | null;
+}) {
   const [resumes, setResumes] = useState<ResumeDocument[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<EditorSection>("basic");
@@ -69,8 +75,8 @@ export function ResumeBuilderClient({ targetJob = null }: { targetJob?: TargetJo
   const [saveState, setSaveState] = useState("已保存到本地");
   const [storageMode, setStorageMode] = useState<StorageMode>("local");
   const [userId, setUserId] = useState<string | null>(null);
-  const [showImportDialog, setShowImportDialog] = useState(false);
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(initialAction === "import");
+  const [showCreateDialog, setShowCreateDialog] = useState(initialAction === "create");
   const [translating, setTranslating] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const cloudFingerprintsRef = useRef(new Map<string, string>());

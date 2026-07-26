@@ -73,17 +73,8 @@ export async function createStarInterviewAuthorizationCode(input: {
   installId: string;
   pkceChallenge: string;
   state: string;
-  selectedResumeIds: string[];
 }) {
   const admin = createAdminClient();
-  const { data: ownedResumes, error: resumeError } = await admin
-    .from("resumes")
-    .select("id")
-    .eq("user_id", input.userId)
-    .in("id", input.selectedResumeIds);
-  if (resumeError) throw resumeError;
-  if ((ownedResumes ?? []).length !== input.selectedResumeIds.length) return null;
-
   const code = randomBytes(32).toString("base64url");
   const expiresAt = Date.now() + AUTH_CODE_TTL_SECONDS * 1_000;
   const { error } = await admin.from("star_interview_auth_codes").insert({
@@ -93,7 +84,7 @@ export async function createStarInterviewAuthorizationCode(input: {
     pkce_challenge: input.pkceChallenge,
     state_hash: hash(input.state),
     scopes: [...STAR_INTERVIEW_SCOPES],
-    selected_resume_ids: input.selectedResumeIds,
+    selected_resume_ids: [],
     expires_at: new Date(expiresAt).toISOString(),
   });
   if (error) throw error;
@@ -140,7 +131,6 @@ export async function exchangeStarInterviewAuthorizationCode(input: {
     userId: current.user_id,
     installIdHash: current.install_id_hash,
     scopes: current.scopes,
-    selectedResumeIds: current.selected_resume_ids,
   });
 }
 
@@ -148,7 +138,6 @@ async function createSession(input: {
   userId: string;
   installIdHash: string;
   scopes: string[];
-  selectedResumeIds: string[];
 }) {
   const admin = createAdminClient();
   const refreshToken = randomBytes(32).toString("base64url");
@@ -160,7 +149,7 @@ async function createSession(input: {
       install_id_hash: input.installIdHash,
       refresh_token_hash: hash(refreshToken),
       scopes: input.scopes,
-      selected_resume_ids: input.selectedResumeIds,
+      selected_resume_ids: [],
       expires_at: new Date(refreshTokenExpiresAt).toISOString(),
     })
     .select("id")
@@ -243,14 +232,14 @@ export async function authenticateStarInterviewRequest(request: NextRequest) {
   if (!access) return null;
   const { data, error } = await createAdminClient()
     .from("star_interview_sessions")
-    .select("id,install_id_hash,selected_resume_ids")
+    .select("id,install_id_hash")
     .eq("id", access.sid)
     .eq("user_id", access.sub)
     .is("revoked_at", null)
     .gt("expires_at", new Date().toISOString())
     .maybeSingle();
   if (error || !data || !safeEqual(data.install_id_hash, hash(installId))) return null;
-  return { ...access, selectedResumeIds: data.selected_resume_ids };
+  return access;
 }
 
 export async function revokeStarInterviewSession(sessionId: string, userId: string) {

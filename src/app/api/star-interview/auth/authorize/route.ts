@@ -9,7 +9,6 @@ const schema = z.object({
   installId: z.uuid(),
   state: z.string().regex(/^[a-zA-Z0-9_-]{32,128}$/),
   pkceChallenge: z.string().regex(/^[a-zA-Z0-9_-]{43,128}$/),
-  selectedResumeIds: z.array(z.uuid()).min(1).max(10),
 }).strict();
 
 export async function POST(request: Request) {
@@ -26,13 +25,7 @@ export async function POST(request: Request) {
     if (error || !user) {
       return NextResponse.json({ error: "请先登录拾星，再授权诘星。" }, { status: 401 });
     }
-    const authorization = await createStarInterviewAuthorizationCode({
-      userId: user.id,
-      ...parsed.data,
-    });
-    if (!authorization) {
-      return NextResponse.json({ error: "所选简历不存在或无权访问。" }, { status: 404 });
-    }
+    const authorization = await createStarInterviewAuthorizationCode({ userId: user.id, ...parsed.data });
     return NextResponse.json(
       { data: { ...authorization, state: parsed.data.state } },
       { headers: { "Cache-Control": "no-store" } },

@@ -2,20 +2,12 @@
 
 import { useState } from "react";
 
-type ResumeSummary = {
-  id: string;
-  title: string;
-  targetRole: string;
-  updatedAt: string;
-};
-
 type Props = {
   state: string;
   installId: string;
   pkceChallenge: string;
   signedIn: boolean;
   displayName: string;
-  resumes: ResumeSummary[];
 };
 
 export function StarInterviewConnectClient({
@@ -24,9 +16,7 @@ export function StarInterviewConnectClient({
   pkceChallenge,
   signedIn,
   displayName,
-  resumes,
 }: Props) {
-  const [selectedId, setSelectedId] = useState(resumes[0]?.id ?? "");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const query = new URLSearchParams({ state, install_id: installId, code_challenge: pkceChallenge });
@@ -44,7 +34,6 @@ export function StarInterviewConnectClient({
           state,
           installId,
           pkceChallenge,
-          selectedResumeIds: [selectedId],
         }),
       });
       const payload = (await response.json().catch(() => ({}))) as {
@@ -79,9 +68,9 @@ export function StarInterviewConnectClient({
         </div>
       </div>
 
-      <h1 className="mt-8 text-3xl font-semibold tracking-[-0.03em] text-ink-primary">选择用于面试的简历</h1>
+      <h1 className="mt-8 text-3xl font-semibold tracking-[-0.03em] text-ink-primary">连接拾星简历库</h1>
       <p className="mt-3 text-sm leading-7 text-ink-secondary">
-        诘星只会读取你选择的简历，并在本机保存面试快照；不会修改或删除拾星中的原始简历。
+        诘星会只读访问当前拾星账户下的全部简历，供你在 App 中选择使用；不会修改或删除拾星中的原始简历。
       </p>
 
       {!signedIn ? (
@@ -98,43 +87,17 @@ export function StarInterviewConnectClient({
             <span className="font-medium text-ink-primary">{displayName}</span>
           </div>
 
-          <div className="mt-5 space-y-2">
-            {resumes.map((resume) => {
-              const selected = selectedId === resume.id;
-              return (
-                <button
-                  key={resume.id}
-                  type="button"
-                  className={`pressable flex w-full items-center gap-4 rounded-2xl border px-4 py-4 text-left transition ${
-                    selected
-                      ? "border-[#7E7CB5] bg-[#7E7CB5]/12"
-                      : "border-[color:var(--line-ghost)] bg-[color:var(--surface-soft-bg)]"
-                  }`}
-                  onClick={() => setSelectedId(resume.id)}
-                >
-                  <span className={`size-3 rounded-full border ${selected ? "border-[#7E7CB5] bg-[#7E7CB5]" : "border-[color:var(--line-strong)]"}`} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-semibold text-ink-primary">{resume.title}</span>
-                    <span className="mt-1 block truncate text-xs text-ink-muted">
-                      {resume.targetRole || "通用简历"} · 更新于 {new Date(resume.updatedAt).toLocaleDateString("zh-CN")}
-                    </span>
-                  </span>
-                </button>
-              );
-            })}
+          <div className="info-banner mt-5 text-sm">
+            连接后，当前账户已有及以后新建的简历都会显示在诘星中。导入或制作简历将在拾星网页完成。
           </div>
-
-          {resumes.length === 0 ? (
-            <div className="info-banner mt-5 text-sm">当前账户还没有云端简历，请先在拾星创建或上传一份简历。</div>
-          ) : null}
           {message ? <p className="info-banner mt-5 text-sm">{message}</p> : null}
           <button
             type="button"
             className="pressable mt-6 min-h-12 w-full rounded-xl bg-[#7E7CB5] px-5 text-sm font-semibold text-[#F1EFFF] disabled:opacity-50"
             onClick={authorize}
-            disabled={busy || !selectedId}
+            disabled={busy}
           >
-            {busy ? "正在授权…" : "允许只读导入并返回诘星"}
+            {busy ? "正在授权…" : "允许只读访问并返回诘星"}
           </button>
         </>
       )}

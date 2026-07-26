@@ -15,7 +15,6 @@ export async function GET(request: NextRequest) {
       .from("resumes")
       .select("*")
       .eq("user_id", access.sub)
-      .in("id", access.selectedResumeIds)
       .order("updated_at", { ascending: false });
     if (error) throw error;
     return NextResponse.json(

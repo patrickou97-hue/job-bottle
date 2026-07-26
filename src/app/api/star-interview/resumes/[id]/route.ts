@@ -14,9 +14,6 @@ export async function GET(
     return NextResponse.json({ error: "登录状态已失效，请重新连接拾星。" }, { status: 401 });
   }
   const { id } = await params;
-  if (!access.selectedResumeIds.includes(id)) {
-    return NextResponse.json({ error: "简历不存在。" }, { status: 404 });
-  }
   try {
     const { data, error } = await createAdminClient()
       .from("resumes")

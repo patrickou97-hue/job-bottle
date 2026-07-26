@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { StarInterviewConnectClient } from "./StarInterviewConnectClient";
-import { resumeRowToDocument } from "@/lib/resume-sync";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
@@ -23,24 +22,6 @@ export default async function StarInterviewConnectPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  let resumes: { id: string; title: string; targetRole: string; updatedAt: string }[] = [];
-  if (user) {
-    const { data } = await supabase
-      .from("resumes")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("updated_at", { ascending: false })
-      .limit(20);
-    resumes = (data ?? []).map((row) => {
-      const resume = resumeRowToDocument(row);
-      return {
-        id: resume.id,
-        title: resume.title,
-        targetRole: resume.targetRole,
-        updatedAt: resume.updatedAt,
-      };
-    });
-  }
   const displayName =
     (typeof user?.user_metadata?.display_name === "string" && user.user_metadata.display_name) ||
     "拾星用户";
@@ -55,7 +36,6 @@ export default async function StarInterviewConnectPage({
           pkceChallenge={pkceChallenge}
           signedIn={Boolean(user)}
           displayName={displayName}
-          resumes={resumes}
         />
       </div>
     </main>
