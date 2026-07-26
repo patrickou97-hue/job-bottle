@@ -36,6 +36,8 @@ export function LoginForm() {
   const [mode, setMode] = useState<"login" | "register">(
     searchParams.get("mode") === "register" ? "register" : "login",
   );
+  const [loginMethod, setLoginMethod] = useState<"email" | "wechat">("email");
+  const [wechatCode, setWechatCode] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const {
@@ -134,6 +136,27 @@ export function LoginForm() {
     }
   }
 
+  async function onWechatCodeSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/auth/wechat-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: wechatCode }),
+      });
+      const payload = await response.json().catch(() => ({})) as { error?: string };
+      if (!response.ok) throw new Error(payload.error || "微信网页登录失败，请重试。");
+      router.push(getSafeNextPath(searchParams.get("next")));
+      router.refresh();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "微信网页登录失败，请重试。");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const isRegister = mode === "register";
   const selectedRegions = splitProfileInput(useWatch({ control, name: "preferredRegions" }));
   const selectedRoles = splitProfileInput(useWatch({ control, name: "targetRoles" }));
@@ -151,7 +174,54 @@ export function LoginForm() {
           : "登录后查看投递记录"}
       </p>
 
-      <form className="mt-8 space-y-5" onSubmit={handleSubmit(onSubmit)}>
+      {!isRegister ? (
+        <div className="mt-7 grid grid-cols-2 rounded-xl bg-[color:var(--surface-hover-bg)] p-1">
+          <button
+            type="button"
+            className={cn(
+              "min-h-10 rounded-lg px-3 text-sm font-medium transition",
+              loginMethod === "email" ? "bg-[color:var(--surface-strong-bg)] text-ink-primary shadow-sm" : "text-ink-muted",
+            )}
+            onClick={() => { setLoginMethod("email"); setMessage(""); }}
+          >
+            邮箱登录
+          </button>
+          <button
+            type="button"
+            className={cn(
+              "min-h-10 rounded-lg px-3 text-sm font-medium transition",
+              loginMethod === "wechat" ? "bg-[color:var(--surface-strong-bg)] text-ink-primary shadow-sm" : "text-ink-muted",
+            )}
+            onClick={() => { setLoginMethod("wechat"); setMessage(""); }}
+          >
+            微信登录
+          </button>
+        </div>
+      ) : null}
+
+      {!isRegister && loginMethod === "wechat" ? (
+        <form className="mt-6 space-y-5" onSubmit={onWechatCodeSubmit}>
+          <div className="info-banner text-sm leading-6">
+            打开拾星小程序，在“我的”里生成 8 位网页登录码。验证码 5 分钟内有效，使用一次后立即失效。
+          </div>
+          <label className="block">
+            <span className="mb-2 block text-sm text-ink-secondary">网页登录码</span>
+            <Input
+              value={wechatCode}
+              onChange={(event) => setWechatCode(event.target.value.replace(/\D/g, "").slice(0, 8))}
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              placeholder="请输入 8 位数字"
+              className="text-center font-mono text-lg tracking-[0.24em]"
+            />
+          </label>
+          {message ? <p className="info-banner text-sm">{message}</p> : null}
+          <Button type="submit" className="w-full" disabled={busy || wechatCode.length !== 8}>
+            使用微信账号登录
+          </Button>
+        </form>
+      ) : (
+      <form className={!isRegister ? "mt-6 space-y-5" : "mt-8 space-y-5"} onSubmit={handleSubmit(onSubmit)}>
         {isRegister ? (
           <label className="block">
             <span className="mb-2 block text-sm text-ink-secondary">用户名</span>
@@ -257,12 +327,14 @@ export function LoginForm() {
           {isRegister ? "注册" : "登录"}
         </Button>
       </form>
+      )}
 
       <button
         type="button"
         className="text-action mx-auto mt-5 flex justify-center text-sm"
         onClick={() => {
           setMode(isRegister ? "login" : "register");
+          setLoginMethod("email");
           setMessage("");
         }}
       >

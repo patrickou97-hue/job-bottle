@@ -202,3 +202,20 @@ export function authenticateMiniProgramRequest(request: NextRequest) {
   if (!authorization?.startsWith("Bearer ")) return null;
   return verifyMiniProgramAccessToken(authorization.slice(7));
 }
+
+export async function isActiveMiniProgramSession(
+  access: AccessTokenPayload,
+) {
+  const admin = createAdminClient();
+  const now = new Date().toISOString();
+  const { data, error } = await admin
+    .from("miniprogram_sessions")
+    .select("id")
+    .eq("id", access.sid)
+    .eq("user_id", access.sub)
+    .is("revoked_at", null)
+    .gt("expires_at", now)
+    .maybeSingle();
+  if (error) throw error;
+  return Boolean(data);
+}

@@ -9,6 +9,10 @@ import type {
   AdminUserSummary,
   AdminUserUpdate,
 } from "@/lib/admin-users";
+import {
+  getAccountType,
+  isWechatInternalEmail,
+} from "@/lib/account-identity";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { Database, Profile, ProfileRole } from "@/lib/types";
@@ -21,6 +25,7 @@ const USAGE_PAGE_SIZE = 1000;
 const HOUR_MS = 60 * 60 * 1000;
 
 type AdminProfile = Pick<Profile, "id" | "display_name" | "role" | "school" | "target_roles">;
+type AdminWechatIdentity = { id: string; user_id: string };
 
 export async function GET(request: NextRequest) {
   const access = await requireAdmin();
@@ -30,10 +35,19 @@ export async function GET(request: NextRequest) {
     const filters = parseListFilters(request.nextUrl.searchParams);
     const admin = createAdminClient();
     const authUsers = await listAllAuthUsers(admin);
-    const profiles = await fetchProfiles(admin, authUsers.map((user) => user.id));
+    const authUserIds = authUsers.map((user) => user.id);
+    const [profiles, wechatIdentities] = await Promise.all([
+      fetchProfiles(admin, authUserIds),
+      fetchWechatIdentities(admin, authUserIds),
+    ]);
     const metrics = buildMetrics(authUsers);
     const filteredUsers = authUsers
-      .filter((user) => matchesFilters(user, profiles.get(user.id), filters))
+      .filter((user) => matchesFilters(
+        user,
+        profiles.get(user.id),
+        wechatIdentities.get(user.id),
+        filters,
+      ))
       .sort(getUserComparator(filters.sort));
     const totalFiltered = filteredUsers.length;
     const totalPages = Math.max(1, Math.ceil(totalFiltered / filters.pageSize));
@@ -48,6 +62,7 @@ export async function GET(request: NextRequest) {
     const users = pageUsers.map((user) => toSummary(
       user,
       profiles.get(user.id),
+      wechatIdentities.get(user.id),
       applicationCounts.get(user.id) ?? 0,
       resumeCounts.get(user.id) ?? 0,
     ));
@@ -82,12 +97,14 @@ export async function PATCH(request: NextRequest) {
     }
 
     const admin = createAdminClient();
-    const [applicationCountResult, resumeCountResult] = await Promise.all([
+    const [applicationCountResult, resumeCountResult, wechatIdentityResult] = await Promise.all([
       admin.from("user_applications").select("id", { count: "exact", head: true }).eq("user_id", input.id),
       admin.from("resumes").select("id", { count: "exact", head: true }).eq("user_id", input.id),
+      admin.from("wechat_identities").select("id,user_id").eq("user_id", input.id).maybeSingle(),
     ]);
     if (applicationCountResult.error) throw applicationCountResult.error;
     if (resumeCountResult.error) throw resumeCountResult.error;
+    if (wechatIdentityResult.error) throw wechatIdentityResult.error;
 
     const { data: previousAuth, error: previousAuthError } = await admin.auth.admin.getUserById(input.id);
     if (previousAuthError) throw previousAuthError;
@@ -117,6 +134,7 @@ export async function PATCH(request: NextRequest) {
       user: toSummary(
         authData.user,
         profile as Profile,
+        (wechatIdentityResult.data as AdminWechatIdentity | null) ?? undefined,
         applicationCountResult.count ?? 0,
         resumeCountResult.count ?? 0,
       ),
@@ -132,15 +150,23 @@ async function confirmUserEmail(id: string) {
   const admin = createAdminClient();
   const { data: previousAuth, error: previousAuthError } = await admin.auth.admin.getUserById(id);
   if (previousAuthError) throw previousAuthError;
+  if (!previousAuth.user.email || isWechatInternalEmail(previousAuth.user.email)) {
+    return NextResponse.json(
+      { error: "微信技术账号没有可确认的真实邮箱。" },
+      { status: 400 },
+    );
+  }
 
-  const [{ data: profile, error: profileError }, applicationCountResult, resumeCountResult] = await Promise.all([
+  const [{ data: profile, error: profileError }, applicationCountResult, resumeCountResult, wechatIdentityResult] = await Promise.all([
     admin.from("profiles").select("id,display_name,role,school,target_roles").eq("id", id).maybeSingle(),
     admin.from("user_applications").select("id", { count: "exact", head: true }).eq("user_id", id),
     admin.from("resumes").select("id", { count: "exact", head: true }).eq("user_id", id),
+    admin.from("wechat_identities").select("id,user_id").eq("user_id", id).maybeSingle(),
   ]);
   if (profileError) throw profileError;
   if (applicationCountResult.error) throw applicationCountResult.error;
   if (resumeCountResult.error) throw resumeCountResult.error;
+  if (wechatIdentityResult.error) throw wechatIdentityResult.error;
 
   let user = previousAuth.user;
   if (!user.email_confirmed_at) {
@@ -153,6 +179,7 @@ async function confirmUserEmail(id: string) {
     user: toSummary(
       user,
       (profile as AdminProfile | null) ?? undefined,
+      (wechatIdentityResult.data as AdminWechatIdentity | null) ?? undefined,
       applicationCountResult.count ?? 0,
       resumeCountResult.count ?? 0,
     ),
@@ -204,15 +231,27 @@ function isConfirmEmailUpdate(value: unknown): value is { id: string; action: "c
   return typeof input.id === "string" && Boolean(input.id) && input.action === "confirm_email";
 }
 
-function toSummary(user: User, profile: AdminProfile | undefined, applicationCount: number, resumeCount: number): AdminUserSummary {
+function toSummary(
+  user: User,
+  profile: AdminProfile | undefined,
+  wechatIdentity: AdminWechatIdentity | undefined,
+  applicationCount: number,
+  resumeCount: number,
+): AdminUserSummary {
+  const accountType = getAccountType(user.email, Boolean(wechatIdentity));
+  const realEmail = user.email && !isWechatInternalEmail(user.email)
+    ? user.email
+    : null;
   return {
     id: user.id,
-    email: user.email ?? "未设置邮箱",
+    email: realEmail ?? "微信用户",
+    accountType,
+    wechatIdentityId: wechatIdentity?.id ?? null,
     displayName: profile?.display_name ?? "秋招用户",
     role: profile?.role ?? "user",
     createdAt: user.created_at,
     lastSignInAt: user.last_sign_in_at ?? null,
-    emailConfirmedAt: user.email_confirmed_at ?? null,
+    emailConfirmedAt: realEmail ? user.email_confirmed_at ?? null : null,
     bannedUntil: isFutureDate(user.banned_until) ? user.banned_until ?? null : null,
     applicationCount,
     resumeCount,
@@ -278,6 +317,21 @@ async function fetchProfiles(admin: SupabaseClient<Database>, ids: string[]) {
   return profiles;
 }
 
+async function fetchWechatIdentities(admin: SupabaseClient<Database>, ids: string[]) {
+  const identities = new Map<string, AdminWechatIdentity>();
+  for (let index = 0; index < ids.length; index += DATABASE_CHUNK_SIZE) {
+    const chunk = ids.slice(index, index + DATABASE_CHUNK_SIZE);
+    if (!chunk.length) continue;
+    const { data, error } = await admin
+      .from("wechat_identities")
+      .select("id,user_id")
+      .in("user_id", chunk);
+    if (error) throw error;
+    (data as AdminWechatIdentity[]).forEach((identity) => identities.set(identity.user_id, identity));
+  }
+  return identities;
+}
+
 async function fetchUsageCounts(
   admin: SupabaseClient<Database>,
   table: "user_applications" | "resumes",
@@ -317,11 +371,13 @@ function buildMetrics(users: User[]): AdminUserMetrics {
 function matchesFilters(
   user: User,
   profile: AdminProfile | undefined,
+  wechatIdentity: AdminWechatIdentity | undefined,
   filters: ReturnType<typeof parseListFilters>,
 ) {
   if (filters.query) {
     const haystack = [
       user.id,
+      wechatIdentity?.id,
       user.email,
       profile?.display_name,
       profile?.school,
@@ -335,7 +391,8 @@ function matchesFilters(
   const disabled = isFutureDate(user.banned_until);
   if (filters.status === "enabled" && disabled) return false;
   if (filters.status === "disabled" && !disabled) return false;
-  if (filters.status === "unconfirmed" && user.email_confirmed_at) return false;
+  const hasRealEmail = Boolean(user.email && !isWechatInternalEmail(user.email));
+  if (filters.status === "unconfirmed" && (!hasRealEmail || user.email_confirmed_at)) return false;
 
   const lastSignIn = getTimestamp(user.last_sign_in_at);
   const now = Date.now();

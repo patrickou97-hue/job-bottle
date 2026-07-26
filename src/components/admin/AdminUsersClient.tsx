@@ -164,7 +164,7 @@ export function AdminUsersClient() {
   }
 
   function requestEmailConfirmation(user: AdminUserSummary) {
-    if (user.emailConfirmedAt) return;
+    if (user.accountType === "wechat" || user.emailConfirmedAt) return;
     if (confirmEmailId !== user.id) {
       setConfirmEmailId(user.id);
       setMessage(`再次点击“确认邮箱”将跳过验证邮件，把 ${user.email} 设为已确认。`);
@@ -347,10 +347,25 @@ export function AdminUsersClient() {
                   <div className="flex flex-wrap items-center gap-2">
                     {user.role === "admin" ? <Shield aria-hidden="true" className="size-4 text-nebula-blue" /> : <UserRound aria-hidden="true" className="size-4 text-ink-muted" />}
                     <h2 className="truncate text-base font-semibold text-ink-primary">{user.email}</h2>
+                    <span className="text-xs text-ink-muted">
+                      {user.accountType === "wechat"
+                        ? "仅微信登录"
+                        : user.accountType === "linked"
+                          ? "邮箱与微信已绑定"
+                          : "仅邮箱登录"}
+                    </span>
                     {isSelf ? <span className="text-xs text-[color:var(--aurora)]">当前账号</span> : null}
                     {disabled ? <span className="text-xs text-[#d8a8b7]">已停用</span> : null}
-                    {!user.emailConfirmedAt ? <span className="text-xs text-ink-muted">邮箱未确认</span> : null}
+                    {user.accountType !== "wechat" && !user.emailConfirmedAt ? <span className="text-xs text-ink-muted">邮箱未确认</span> : null}
                   </div>
+                  <p className="mt-2 break-all font-mono text-[11px] leading-5 text-ink-muted">
+                    用户 ID：{user.id}
+                  </p>
+                  {user.wechatIdentityId ? (
+                    <p className="break-all font-mono text-[11px] leading-5 text-ink-muted">
+                      微信身份 ID：{user.wechatIdentityId}
+                    </p>
+                  ) : null}
                   <p className="mt-2 text-sm text-ink-secondary">{user.school || "学校未填写"} · {user.targetRoles.join("、") || "求职方向未填写"}</p>
                   <p className="mt-2 text-xs text-ink-muted">
                     {user.applicationCount} 条投递 · {user.resumeCount} 份简历 · {formatLastActivity(user.lastSignInAt)}
@@ -373,7 +388,7 @@ export function AdminUsersClient() {
                 </div>
 
                 <div className="flex flex-wrap gap-2 lg:justify-end">
-                  {!user.emailConfirmedAt ? (
+                  {user.accountType !== "wechat" && !user.emailConfirmedAt ? (
                     <Button
                       variant="secondary"
                       disabled={refreshing || savingId === user.id}

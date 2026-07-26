@@ -223,6 +223,22 @@ export type MiniProgramSession = {
   last_used_at: string;
 };
 
+export type WechatWebLoginCode = {
+  id: string;
+  user_id: string;
+  code_hash: string;
+  expires_at: string;
+  used_at: string | null;
+  created_at: string;
+};
+
+export type WechatWebLoginAttempt = {
+  fingerprint_hash: string;
+  window_started_at: string;
+  attempts: number;
+  updated_at: string;
+};
+
 export type ForumPostWithComments = ForumPostView & {
   comments: ForumCommentView[];
 };
@@ -482,6 +498,38 @@ export type Database = {
         };
         Relationships: [];
       };
+      wechat_web_login_codes: {
+        Row: WechatWebLoginCode;
+        Insert: {
+          id?: string;
+          user_id: string;
+          code_hash: string;
+          expires_at: string;
+          used_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          code_hash?: string;
+          expires_at?: string;
+          used_at?: string | null;
+        };
+        Relationships: [];
+      };
+      wechat_web_login_attempts: {
+        Row: WechatWebLoginAttempt;
+        Insert: {
+          fingerprint_hash: string;
+          window_started_at?: string;
+          attempts?: number;
+          updated_at?: string;
+        };
+        Update: {
+          window_started_at?: string;
+          attempts?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -492,6 +540,22 @@ export type Database = {
       take_resume_ai_rate_slot: {
         Args: Record<string, never>;
         Returns: boolean;
+      };
+      reserve_wechat_web_login_code: {
+        Args: {
+          p_user_id: string;
+          p_code_hash: string;
+          p_expires_at: string;
+        };
+        Returns: boolean;
+      };
+      take_wechat_web_login_attempt_slot: {
+        Args: { p_fingerprint_hash: string };
+        Returns: boolean;
+      };
+      consume_wechat_web_login_code: {
+        Args: { p_code_hash: string };
+        Returns: string | null;
       };
       merge_duplicate_jobs: {
         Args: Record<string, never>;

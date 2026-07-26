@@ -1,8 +1,11 @@
 import type { ProfileRole } from "@/lib/types";
+import type { AccountType } from "@/lib/account-identity";
 
 export type AdminUserSummary = {
   id: string;
   email: string;
+  accountType: AccountType;
+  wechatIdentityId: string | null;
   displayName: string;
   role: ProfileRole;
   createdAt: string;

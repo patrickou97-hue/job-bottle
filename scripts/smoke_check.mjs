@@ -314,6 +314,24 @@ const SOURCE_INVARIANTS = [
     label: "登录页统一使用 StarJob 品牌名与新版秋招文案",
   },
   {
+    file: "src/app/api/auth/wechat-code/route.ts",
+    mustInclude: ["hasTrustedOrigin", "getRequestFingerprint", "WechatWebLoginRateLimitError", "email_kind: \"internal\"", "verifyOtp", "Cache-Control"],
+    mustNotInclude: ["console.log", "console.warn", "console.error"],
+    label: "微信网页登录消费接口校验同源、持久限流且不记录验证码或身份凭证",
+  },
+  {
+    file: "src/lib/wechat-web-login.ts",
+    mustInclude: ["reserve_wechat_web_login_code", "take_wechat_web_login_attempt_slot", "consume_wechat_web_login_code", "randomInt", "CODE_TTL_MS = 5 * 60 * 1000"],
+    mustNotInclude: [".delete()"],
+    label: "微信网页登录码使用数据库原子预留、猜码限流和单次消费",
+  },
+  {
+    file: "src/app/api/admin/users/route.ts",
+    mustInclude: ["getAccountType", "wechatIdentityId", "isWechatInternalEmail", "微信技术账号没有可确认的真实邮箱"],
+    mustNotInclude: ["const accountType = wechatIdentity ? \"wechat\" : \"email\""],
+    label: "后台区分邮箱、微信和已绑定账号并隔离技术邮箱",
+  },
+  {
     file: "src/lib/constants.ts",
     mustInclude: ["拾星 StarJob"],
     mustNotInclude: ["Job Bottle", "Starjob"],
