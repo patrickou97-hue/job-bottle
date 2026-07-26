@@ -527,8 +527,8 @@ function EducationEditor({ item, onChange }: { item: ResumeEducation; onChange: 
       <TextField label="学位" value={item.degree} onChange={(value) => patch({ degree: value })} />
       <TextField label="专业" value={item.major} onChange={(value) => patch({ major: value })} />
       <TextField label="GPA" value={item.gpa} onChange={(value) => patch({ gpa: value })} />
-      <TextField label="开始时间" value={item.startDate} onChange={(value) => patch({ startDate: value })} />
-      <TextField label="结束时间" value={item.endDate} onChange={(value) => patch({ endDate: value })} />
+      <TextField label="开始时间（可选）" value={item.startDate} onChange={(value) => patch({ startDate: value })} />
+      <TextField label="结束时间（可选）" value={item.endDate} onChange={(value) => patch({ endDate: value })} />
       <TextField label="相关课程" value={item.courses} onChange={(value) => patch({ courses: value })} />
       <TextField label="荣誉奖项" value={item.honors} onChange={(value) => patch({ honors: value })} />
     </FieldGrid>
@@ -543,8 +543,8 @@ function ExperienceEditor({ item, onChange }: { item: ResumeExperience; onChange
         <TextField label="公司名称" value={item.company} onChange={(value) => patch({ company: value })} />
         <TextField label="岗位名称" value={item.title} onChange={(value) => patch({ title: value })} />
         <TextField label="地点" value={item.location} onChange={(value) => patch({ location: value })} />
-        <TextField label="开始时间" value={item.startDate} onChange={(value) => patch({ startDate: value })} />
-        <TextField label="结束时间" value={item.endDate} onChange={(value) => patch({ endDate: value })} />
+        <TextField label="开始时间（可选）" value={item.startDate} onChange={(value) => patch({ startDate: value })} />
+        <TextField label="结束时间（可选）" value={item.endDate} onChange={(value) => patch({ endDate: value })} />
         <label className="flex items-end gap-2 pb-2 text-sm text-ink-secondary">
           <input
             type="checkbox"
@@ -566,8 +566,8 @@ function ProjectEditor({ item, onChange }: { item: ResumeProject; onChange: (ite
       <FieldGrid>
         <TextField label="项目名称" value={item.name} onChange={(value) => patch({ name: value })} />
         <TextField label="角色" value={item.role} onChange={(value) => patch({ role: value })} />
-        <TextField label="开始时间" value={item.startDate} onChange={(value) => patch({ startDate: value })} />
-        <TextField label="结束时间" value={item.endDate} onChange={(value) => patch({ endDate: value })} />
+        <TextField label="开始时间（可选）" value={item.startDate} onChange={(value) => patch({ startDate: value })} />
+        <TextField label="结束时间（可选）" value={item.endDate} onChange={(value) => patch({ endDate: value })} />
         <TextField label="技术栈或关键词" value={item.keywords} onChange={(value) => patch({ keywords: value })} />
       </FieldGrid>
       <BulletEditor bullets={item.bullets} onChange={(bullets) => patch({ bullets })} />
@@ -678,12 +678,23 @@ function BulletEditor({
         </button>
       </div>
       {bullets.map((bullet, index) => (
-        <div key={index} className="grid grid-cols-[1fr_auto] items-center gap-2">
-          <Input
-            value={bullet}
-            placeholder={compact ? "例如 SQL" : "用一句话写清动作、方法和结果"}
-            onChange={(event) => update(index, event.target.value)}
-          />
+        <div key={index} className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
+          {compact ? (
+            <Input
+              value={bullet}
+              placeholder="例如 SQL"
+              onChange={(event) => update(index, event.target.value)}
+            />
+          ) : (
+            <textarea
+              value={bullet}
+              rows={4}
+              aria-label={`${label}第 ${index + 1} 条`}
+              className="field-shell min-h-28 w-full resize-y px-3.5 py-3 text-sm leading-6 placeholder:text-ink-muted"
+              placeholder="写清你做了什么、怎么做，以及最后的结果"
+              onChange={(event) => update(index, event.target.value)}
+            />
+          )}
           <div className="flex items-center gap-1">
             <IconButton label="上移" onClick={() => move(index, -1)}>
               <ArrowUp aria-hidden="true" className="size-3.5" />

@@ -285,9 +285,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/resume/ResumeEditor.tsx",
-    mustInclude: ["PhotoField", "cropPhotoToPortrait", "上传照片", "复制通用简历后", "AI 润色", "ResumePolishDialog", "bg-[#12294e]", "rounded-lg", "focus-visible:ring-[#12294e]/40", "mergeBullets", "撤销"],
+    mustInclude: ["PhotoField", "cropPhotoToPortrait", "上传照片", "复制通用简历后", "AI 润色", "ResumePolishDialog", "bg-[#12294e]", "rounded-lg", "focus-visible:ring-[#12294e]/40", "mergeBullets", "撤销", "开始时间（可选）", "结束时间（可选）", "<textarea", "rows={4}", "min-h-28", "resize-y"],
     mustNotInclude: ["模板风格", "RESUME_TEMPLATES"],
-    label: "简历编辑器聚焦内容填写并支持岗位关联",
+    label: "简历编辑器提供更大的多行描述框并允许日期留空",
   },
   {
     file: "src/components/resume/ResumeTemplatePicker.tsx",
@@ -339,9 +339,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/resume/resumePdf.ts",
-    mustInclude: ["jsPDF", "NotoSerifSC-Regular-common-v1.ttf", "NotoSerifSC-Bold-common-v1.ttf", "NotoSerifSC-Regular-full-v1.ttf", "NotoSerifSC-Bold-full-v1.ttf", "NEXT_PUBLIC_RESUME_FONT_FULL_REGULAR_URL", "NEXT_PUBLIC_RESUME_FONT_FULL_BOLD_URL", "same-origin-common", "cos-full", "same-origin-full", "FONT_TIMEOUT_MS = 10_000", "resetResumePdfCaches", "selectedFontCache", "fontSourceCache", "previewMeasurementPdfCache", "bundleId", "__resumeFontFamily", "regularFileName", "boldFileName", "cache: \"force-cache\"", "format: \"a4\"", "PAGE_WIDTH = 595.28", "PAGE_HEIGHT = 841.89", "exportResumeToPdf", "createResumePreviewLayout", "ResumePreviewOperation", "width: state.pdf.getTextWidth(text)", "addPage(\"a4\", \"portrait\")", "addFileToVFS", "getTemplateOptions", "getResumeTargetLine", "consulting", "technical", "academic", "english_classic", "english_modern", "isEnglishResumeTemplate", "EDUCATION", "Boolean(basics.photoDataUrl) && !isEnglish", "const photoBottom = photoY + photoHeight", "Math.max(y, hasPhoto ? photoBottom", "state.y = headerContentBottom + 15"],
+    mustInclude: ["jsPDF", "NotoSerifSC-Regular-common-v1.ttf", "NotoSerifSC-Bold-common-v1.ttf", "NotoSerifSC-Regular-full-v1.ttf", "NotoSerifSC-Bold-full-v1.ttf", "NEXT_PUBLIC_RESUME_FONT_FULL_REGULAR_URL", "NEXT_PUBLIC_RESUME_FONT_FULL_BOLD_URL", "same-origin-common", "cos-full", "same-origin-full", "FONT_TIMEOUT_MS = 10_000", "resetResumePdfCaches", "selectedFontCache", "fontSourceCache", "previewMeasurementPdfCache", "bundleId", "__resumeFontFamily", "regularFileName", "boldFileName", "cache: \"force-cache\"", "format: \"a4\"", "PAGE_WIDTH = 595.28", "PAGE_HEIGHT = 841.89", "exportResumeToPdf", "createResumePreviewLayout", "ResumePreviewOperation", "width: state.pdf.getTextWidth(text)", "addPage(\"a4\", \"portrait\")", "addFileToVFS", "getTemplateOptions", "getResumeTargetLine", "consulting", "technical", "academic", "english_classic", "english_modern", "isEnglishResumeTemplate", "EDUCATION", "Boolean(basics.photoDataUrl) && !isEnglish", "const photoBottom = photoY + photoHeight", "Math.max(y, hasPhoto ? photoBottom", "state.y = headerContentBottom + 15", "items.filter(hasEducationContent)", "items.filter(hasExperienceContent)", "items.filter(hasProjectContent)", "if (!cleanLeftText && !cleanRightText) return", "hasInterests ? copy.skills : \"技能\""],
     mustNotInclude: ["NEXT_PUBLIC_RESUME_FONT_REGULAR_URL", "NEXT_PUBLIC_RESUME_FONT_BOLD_URL", "html2canvas", "window.print", "addPage(\"letter\""],
-    label: "简历预览与 PDF 共用三级字体选择、矢量 A4 坐标和分页规则",
+    label: "简历预览与 PDF 共用排版并隐藏空字段、空经历和未填写的兴趣标题",
   },
   {
     file: "src/lib/resume-font-profile.ts",

@@ -267,7 +267,7 @@ function renderResume(
   renderHeader(state, resume, options);
   renderEducation(state, resume.content.education, options, copy);
   renderExperienceSection(state, copy.experience, resume.content.work, options, copy);
-  renderProjectSection(state, copy.projects, resume.content.projects, options, copy);
+  renderProjectSection(state, copy.projects, resume.content.projects, options);
   renderCustomSection(state, copy.campus, resume.content.campus, options, copy);
   renderCustomSection(state, copy.awards, resume.content.awards, options, copy);
   renderCustomSection(state, copy.certifications, resume.content.certifications, options, copy);
@@ -376,11 +376,12 @@ function renderHeader(state: LayoutState, resume: ResumeDocument, options: PdfOp
 }
 
 function renderEducation(state: LayoutState, items: ResumeEducation[], options: PdfOptions, copy: ResumeCopy) {
-  if (items.length === 0) return;
+  const visibleItems = items.filter(hasEducationContent);
+  if (visibleItems.length === 0) return;
   sectionTitle(state, copy.education, options);
 
-  items.forEach((item) => {
-    row(state, item.school || copy.school, formatRange(item.startDate, item.endDate), options, true);
+  visibleItems.forEach((item) => {
+    row(state, item.school, formatRange(item.startDate, item.endDate), options, true);
     const meta = [item.major, item.degree, item.gpa].filter(Boolean).join(" · ");
     if (meta) {
       textLine(state, meta, options.bodySize, "normal");
@@ -402,12 +403,13 @@ function renderExperienceSection(
   options: PdfOptions,
   copy: ResumeCopy,
 ) {
-  if (items.length === 0) return;
+  const visibleItems = items.filter(hasExperienceContent);
+  if (visibleItems.length === 0) return;
   sectionTitle(state, title, options);
 
-  items.forEach((item) => {
-    row(state, item.company || copy.company, formatRange(item.startDate, item.endDate, item.current, copy.present), options, true);
-    row(state, item.title || copy.position, item.location, options, false);
+  visibleItems.forEach((item) => {
+    row(state, item.company, formatRange(item.startDate, item.endDate, item.current, copy.present), options, true);
+    row(state, item.title, item.location, options, false);
     item.bullets.map(cleanText).filter(Boolean).forEach((line) => bullet(state, line, options));
     state.y += options.itemGap;
   });
@@ -418,13 +420,13 @@ function renderProjectSection(
   title: string,
   items: ResumeProject[],
   options: PdfOptions,
-  copy: ResumeCopy,
 ) {
-  if (items.length === 0) return;
+  const visibleItems = items.filter(hasProjectContent);
+  if (visibleItems.length === 0) return;
   sectionTitle(state, title, options);
 
-  items.forEach((item) => {
-    const titleText = [item.name || copy.project, item.role].filter(Boolean).join(" - ");
+  visibleItems.forEach((item) => {
+    const titleText = [item.name, item.role].filter(Boolean).join(" - ");
     row(state, titleText, formatRange(item.startDate, item.endDate), options, true);
     if (item.keywords) textLine(state, item.keywords, options.bodySize, "normal");
     item.bullets.map(cleanText).filter(Boolean).forEach((line) => bullet(state, line, options));
@@ -468,7 +470,13 @@ function renderSkills(
   const lines = [...languageLines, ...skillLines];
   if (lines.length === 0) return;
 
-  sectionTitle(state, copy.skills, options);
+  const hasInterests = skills.some((group) => {
+    const category = cleanText(group.category);
+    return /兴趣|爱好|interests?|hobbies?/i.test(category)
+      && group.skills.some((skill) => Boolean(cleanText(skill)));
+  });
+  const title = isEnglishResumeTemplate(options.templateId) || hasInterests ? copy.skills : "技能";
+  sectionTitle(state, title, options);
   lines.forEach((line) => textLine(state, line, options.bodySize, "normal"));
 }
 
@@ -509,13 +517,17 @@ function row(
   options: PdfOptions,
   bold: boolean,
 ) {
+  const cleanLeftText = cleanText(leftText);
+  const cleanRightText = cleanText(rightText);
+  if (!cleanLeftText && !cleanRightText) return;
+
   ensureSpace(state, options.bodySize * options.lineHeight + 1);
   setFont(state, options.bodySize, bold ? "bold" : "normal");
-  const rightWidth = rightText ? state.pdf.getTextWidth(rightText) + 8 : 0;
+  const rightWidth = cleanRightText ? state.pdf.getTextWidth(cleanRightText) + 8 : 0;
   const leftWidth = state.right - state.left - rightWidth;
-  const lines = wrapText(state, leftText, leftWidth);
+  const lines = wrapText(state, cleanLeftText, leftWidth);
   drawText(state, lines[0] ?? "", state.left, state.y);
-  if (rightText) drawRight(state, rightText, state.right, state.y);
+  if (cleanRightText) drawRight(state, cleanRightText, state.right, state.y);
   state.y += options.bodySize * options.lineHeight;
   lines.slice(1).forEach((line) => {
     ensureSpace(state, options.bodySize * options.lineHeight);
@@ -839,6 +851,41 @@ function formatRange(start: string, end: string, current = false, present = "至
   if (!startText) return endText;
   if (!endText) return startText;
   return `${startText} - ${endText}`;
+}
+
+function hasEducationContent(item: ResumeEducation) {
+  return [
+    item.school,
+    item.degree,
+    item.major,
+    item.startDate,
+    item.endDate,
+    item.gpa,
+    item.courses,
+    item.honors,
+  ].some((value) => Boolean(cleanText(value)));
+}
+
+function hasExperienceContent(item: ResumeExperience) {
+  return [
+    item.company,
+    item.title,
+    item.location,
+    item.startDate,
+    item.endDate,
+    ...item.bullets,
+  ].some((value) => Boolean(cleanText(value)));
+}
+
+function hasProjectContent(item: ResumeProject) {
+  return [
+    item.name,
+    item.role,
+    item.startDate,
+    item.endDate,
+    item.keywords,
+    ...item.bullets,
+  ].some((value) => Boolean(cleanText(value)));
 }
 
 function getResumeCopy(templateId: ResumeTemplateId): ResumeCopy {
