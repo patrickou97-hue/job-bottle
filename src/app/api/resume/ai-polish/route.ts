@@ -34,6 +34,10 @@ const resultSchema = z.object({
   })).max(20),
   suggestions: z.array(z.string().trim().min(1).max(500)).max(12),
   warnings: z.array(z.string().trim().min(1).max(500)).max(12),
+  verificationItems: z.array(z.object({
+    detail: z.string().trim().min(1).max(500),
+    reason: z.string().trim().min(1).max(500),
+  })).max(12),
 }).strict();
 
 type PolishResult = z.infer<typeof resultSchema>;
@@ -234,6 +238,7 @@ function normalizeResultCandidate(value: unknown, source: z.infer<typeof inputSc
     changes,
     suggestions: Array.isArray(candidate.suggestions) ? candidate.suggestions : [],
     warnings: Array.isArray(candidate.warnings) ? candidate.warnings : [],
+    verificationItems: Array.isArray(candidate.verificationItems) ? candidate.verificationItems : [],
   };
 }
 
@@ -271,13 +276,15 @@ function mapUpstreamError(error: unknown) {
 }
 
 const RESULT_SHAPE = `只返回以下严格 JSON：
-{"summary":"string","revised":{"title":"string","subtitle":"string","bullets":["string"]},"changes":[{"type":"clarity|structure|relevance|wording|grammar","description":"string"}],"suggestions":["string"],"warnings":["string"]}`;
+{"summary":"string","revised":{"title":"string","subtitle":"string","bullets":["string"]},"changes":[{"type":"clarity|structure|relevance|wording|grammar","description":"string"}],"suggestions":["string"],"warnings":["string"],"verificationItems":[{"detail":"建议稿中需要用户核实的具体表述","reason":"为什么该细节无法由原文确认"}]}`;
 
-const SYSTEM_PROMPT = `你是严谨的简历编辑，只润色用户给出的单段经历并返回严格 JSON。
+const SYSTEM_PROMPT = `你是严谨的简历编辑。以下规则来自 resume-experience-rewriter：先区分已确认事实、可安全推导、待确认信息与禁止写入内容，再润色用户给出的单段经历并返回严格 JSON。
 规则：
 1. 保留全部事实、时间、组织、岗位、项目和责任等级；title、subtitle 原样返回。
-2. 不得虚构数字、成果、客户、技能或职责，不把“协助/参与/支持”升级为主导或负责。
-3. 优化清晰度、专业性、行动方法和岗位相关性；没有结果时不强补结果，只在 suggestions 提醒。
-4. 删除重复套话和夸张 AI 表达，中文自然克制，英文简洁职业。
-5. 信息不足或冲突时保守处理并写入 warnings。
-6. 不输出 Markdown、代码块或额外解释。`;
+2. 不得虚构或推测数字、成果、客户、组织、技能、职责等级和因果关系；不把“协助/参与/支持”升级为主导或负责，没有结果时不强补结果。
+3. 优化清晰度、结构、业务逻辑和岗位相关性。优先写清业务目标、个人责任、判断维度、行动、调整、结果与复用；原文无法支持的部分放入 suggestions。
+4. 当原文明显缺少方法、范围或业务背景时，可以结合上下文在建议稿中补充少量非量化候选细节，但必须同时逐项写入 verificationItems：detail 必须引用建议稿中的具体新增表述，reason 必须说明原文为何无法确认。无法列明的候选细节不得写入建议稿。
+5. verificationItems 只用于用户核实，不代表事实。若没有补充任何原文之外的候选细节，返回空数组。
+6. 信息冲突、口径不明、责任边界不清或可能经不起面试追问时保守处理，并写入 warnings；数字缺口、结果缺口和证据缺口只写 suggestions，不用占位数字污染建议稿。
+7. 删除重复套话和夸张 AI 表达，中文自然克制，英文简洁职业。
+8. 不输出 Markdown、代码块或额外解释。`;

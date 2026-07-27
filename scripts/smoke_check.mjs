@@ -721,13 +721,13 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/resume/ai-polish/route.ts",
-    mustInclude: ["MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL", "auth.getUser", "REQUEST_TIMEOUT_MS", "MAX_OUTPUT_TOKENS", "response_format", "json_object", "createPolishCacheKey", "X-StarJob-AI-Cache", "take_resume_ai_rate_slot", "logServerError", "不得虚构", "不把“协助/参与/支持”升级", "不强补结果", "warnings", "严格 JSON", "resultSchema", "parseResult", "normalizeResultCandidate", "typeof change === \"string\"", "title: source.title", "subtitle: source.subtitle", "原文未改变"],
+    mustInclude: ["MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL", "auth.getUser", "REQUEST_TIMEOUT_MS", "MAX_OUTPUT_TOKENS", "response_format", "json_object", "createPolishCacheKey", "X-StarJob-AI-Cache", "take_resume_ai_rate_slot", "logServerError", "不得虚构", "不把“协助/参与/支持”升级", "不强补结果", "verificationItems", "待确认信息", "只用于用户核实", "warnings", "严格 JSON", "resultSchema", "parseResult", "normalizeResultCandidate", "typeof change === \"string\"", "title: source.title", "subtitle: source.subtitle", "原文未改变"],
     mustNotInclude: ["NEXT_PUBLIC_MIMO", "console.log", "SUPABASE_SERVICE_ROLE_KEY"],
     label: "简历分段润色仅在服务端调用 MiMo 并限制幻觉、输入、超时和频率",
   },
   {
     file: "src/components/resume/ResumePolishDialog.tsx",
-    mustInclude: ["当前经历的全部描述", "仅处理当前段落", "原文", "建议稿", "调整说明", "建议补充", "风险提示", "应用修改", "保留原文", "重新生成", "CommunityHelpLink"],
+    mustInclude: ["当前经历的全部描述", "仅处理当前段落", "原文", "建议稿", "调整说明", "建议补充", "风险提示", "应用修改", "AI 补充的细节，采用前请核实", "我已逐项核实", "核实后应用", "verificationConfirmed", "保留原文", "重新生成", "CommunityHelpLink"],
     mustNotInclude: ["MiMo", "第三方", "MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL"],
     label: "AI 结果先对比确认且客户端不暴露供应商或服务端配置",
   },
@@ -1108,7 +1108,7 @@ const REQUIRED_TEXT = {
   "/forum": ["拾星指南"],
   "/extension": ["一份简历，", "抵达更多坐标", "把拾星简历同步到浏览器", "获取安装包", "正在检测网申助手"],
   "/extension/guide": ["安装拾星网申助手", "加载已解压的扩展", "同步简历"],
-  "/interview": ["谛听察意", "应答成章", "先听懂", "协助你结构化表达你曾经做过的事", "陪你把话表达清楚"],
+  "/interview": ["谛听察意", "应答成章", "先听懂", "协助你结构化表达", "你曾经做过的事", "陪你把话", "表达清楚"],
   "/admin": ["管理后台"],
 };
 

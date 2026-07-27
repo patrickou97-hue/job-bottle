@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { LoaderCircle, RefreshCw, Sparkles, X } from "lucide-react";
+import { AlertTriangle, LoaderCircle, RefreshCw, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { CommunityHelpLink } from "@/components/ui/CommunityHelpLink";
 import { Select } from "@/components/ui/Select";
@@ -49,6 +49,7 @@ export function ResumePolishDialog({
   const [result, setResult] = useState<ResumePolishResult | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [verificationConfirmed, setVerificationConfirmed] = useState(false);
   const requestAbortRef = useRef<AbortController | null>(null);
   const mountedRef = useRef(true);
 
@@ -80,6 +81,7 @@ export function ResumePolishDialog({
     }
     setBusy(true);
     setError("");
+    setVerificationConfirmed(false);
     const controller = new AbortController();
     requestAbortRef.current = controller;
     try {
@@ -130,14 +132,14 @@ export function ResumePolishDialog({
         <div className="grid gap-4 border-b border-[color:var(--line-ghost)] py-5 sm:grid-cols-2">
           <label className="block">
             <span className="mb-2 block text-xs font-medium text-ink-muted">润色范围</span>
-            <Select value={scope} onChange={(event) => { setScope(event.target.value); setResult(null); }}>
+            <Select value={scope} onChange={(event) => { setScope(event.target.value); setResult(null); setVerificationConfirmed(false); }}>
               <option value="all">当前经历的全部描述</option>
               {target.content.bullets.map((bullet, index) => <option key={index} value={index}>第 {index + 1} 条 · {bullet.slice(0, 24) || "空白"}</option>)}
             </Select>
           </label>
           <label className="block">
             <span className="mb-2 block text-xs font-medium text-ink-muted">润色目标</span>
-            <Select value={instruction} onChange={(event) => { setInstruction(event.target.value as ResumePolishInstruction); setResult(null); }}>
+            <Select value={instruction} onChange={(event) => { setInstruction(event.target.value as ResumePolishInstruction); setResult(null); setVerificationConfirmed(false); }}>
               {instructionOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
             </Select>
           </label>
@@ -153,6 +155,38 @@ export function ResumePolishDialog({
             <ResultBlock title="调整说明" items={[result.summary, ...result.changes.map((change) => change.description)]} />
             <ResultBlock title="建议补充" items={result.suggestions} empty="暂无" />
             <ResultBlock title="风险提示" items={result.warnings} empty="暂无" warning />
+            {result.verificationItems.length > 0 ? (
+              <section className="border-l-2 border-[#b78845] bg-[#b78845]/10 px-4 py-3 text-[#744013]">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle aria-hidden="true" className="mt-1 size-4 shrink-0" />
+                  <div>
+                    <h3 className="font-semibold">AI 补充的细节，采用前请核实</h3>
+                    <p className="mt-1 text-xs leading-5">以下内容来自上下文推断，不是你已确认的事实。请确认自己确实做过，并能在面试中解释。</p>
+                  </div>
+                </div>
+                <ul className="mt-3 space-y-2">
+                  {result.verificationItems.map((item, index) => (
+                    <li key={`${item.detail}-${index}`}>
+                      <span className="font-medium">{item.detail}</span>
+                      <span className="block text-xs leading-5 opacity-80">{item.reason}</span>
+                    </li>
+                  ))}
+                </ul>
+                <label className="mt-4 flex cursor-pointer items-start gap-2 text-sm font-medium">
+                  <input
+                    type="checkbox"
+                    className="mt-1"
+                    checked={verificationConfirmed}
+                    onChange={(event) => setVerificationConfirmed(event.target.checked)}
+                  />
+                  我已逐项核实，以上细节真实且可以解释
+                </label>
+              </section>
+            ) : (
+              <p className="border-l border-[color:var(--line)] pl-3 text-xs leading-5 text-ink-muted">
+                建议稿未加入需要额外核实的推断细节，采用前仍请对照原文检查。
+              </p>
+            )}
           </div>
         ) : null}
 
@@ -165,7 +199,14 @@ export function ResumePolishDialog({
             {busy ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> : result ? <RefreshCw aria-hidden="true" className="size-4" /> : <Sparkles aria-hidden="true" className="size-4" />}
             {busy ? "取消" : result ? "重新生成" : "生成建议"}
           </Button>
-          {result ? <Button onClick={() => onApply(result, bulletIndex)}>应用修改</Button> : null}
+          {result ? (
+            <Button
+              disabled={result.verificationItems.length > 0 && !verificationConfirmed}
+              onClick={() => onApply(result, bulletIndex)}
+            >
+              {result.verificationItems.length > 0 ? "核实后应用" : "应用修改"}
+            </Button>
+          ) : null}
         </footer>
       </section>
     </div>

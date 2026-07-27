@@ -39,12 +39,18 @@ export type ResumePolishChange = {
   description: string;
 };
 
+export type ResumePolishVerificationItem = {
+  detail: string;
+  reason: string;
+};
+
 export type ResumePolishResult = {
   summary: string;
   revised: ResumePolishContent;
   changes: ResumePolishChange[];
   suggestions: string[];
   warnings: string[];
+  verificationItems: ResumePolishVerificationItem[];
 };
 
 export async function requestResumePolish(input: ResumePolishRequest, externalSignal?: AbortSignal) {
@@ -93,5 +99,9 @@ function isResumePolishResult(value: unknown): value is ResumePolishResult {
     && Array.isArray(result.suggestions)
     && result.suggestions.every((item) => typeof item === "string")
     && Array.isArray(result.warnings)
-    && result.warnings.every((item) => typeof item === "string");
+    && result.warnings.every((item) => typeof item === "string")
+    && Array.isArray(result.verificationItems)
+    && result.verificationItems.every((item) => item
+      && typeof item.detail === "string"
+      && typeof item.reason === "string");
 }
