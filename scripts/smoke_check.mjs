@@ -1090,7 +1090,7 @@ const REQUIRED_FILES = [
   "public/assets/nebula/cutouts/nebula-industry-energy.png",
   "public/brand/star-interview/app-icon.png",
   "public/brand/star-interview/wordmark.png",
-  "public/brand/star-interview/product-home.png",
+  "public/brand/star-interview/product-live-coach.png",
 ];
 const REQUIRED_TEXT = {
   "/": ["拾星"],

@@ -89,11 +89,13 @@
 .vanishingStage {
   position: absolute;
   inset: 0;
+  isolation: isolate;
   transform-style: preserve-3d;
 }
 
 .phraseAnchor {
   position: absolute;
+  z-index: 1;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
@@ -123,11 +125,36 @@
 
 .vanishingPoint {
   position: absolute;
+  z-index: 4;
   left: 50%;
   top: 50%;
-  width: 18px;
-  height: 18px;
-  margin: -9px 0 0 -9px;
+  width: 96px;
+  height: 96px;
+  margin: -48px 0 0 -48px;
+  opacity: 1;
+  will-change: transform;
+}
+
+.vanishingPoint::before,
+.vanishingPoint::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+.vanishingPoint::before {
+  inset: -18px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(3, 4, 8, 0.98) 0 30%,
+    rgba(3, 4, 8, 0.82) 48%,
+    rgba(3, 4, 8, 0) 76%
+  );
+}
+
+.vanishingPoint::after {
+  inset: 0;
   clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
   background: #fff;
   filter:
@@ -348,10 +375,18 @@
 .chapterCopy h2 {
   max-width: 720px;
   margin: 0;
-  font-size: clamp(2.7rem, 5.4vw, 6rem);
+  font-size: clamp(2.7rem, 4.6vw, 5rem);
   font-weight: 650;
   letter-spacing: -0.07em;
   line-height: 1.02;
+}
+
+.semanticLine,
+.questionFragments strong span {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  white-space: nowrap;
 }
 
 .chapterBody {
@@ -464,10 +499,22 @@
 }
 
 .bridge > p:first-child {
+  display: flex;
+  align-items: center;
+  gap: 16px;
   margin: 0;
-  color: rgba(228, 226, 241, 0.56);
-  font-size: 13px;
-  letter-spacing: 0.12em;
+  color: #d8d5fa;
+  font-size: clamp(1.2rem, 2vw, 1.9rem);
+  font-weight: 650;
+  letter-spacing: -0.025em;
+}
+
+.bridge > p:first-child::before {
+  content: "";
+  width: clamp(30px, 4vw, 58px);
+  height: 2px;
+  flex: 0 0 auto;
+  background: linear-gradient(to right, #a8a3ed, rgba(168, 163, 237, 0.08));
 }
 
 .bridge h2 {
@@ -600,7 +647,7 @@
   }
 
   .chapterCopy h2 {
-    font-size: clamp(2.75rem, 13vw, 4.6rem);
+    font-size: clamp(2.6rem, 11.4vw, 4.6rem);
   }
 
   .chapterBody {

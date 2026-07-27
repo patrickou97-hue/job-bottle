@@ -37,8 +37,7 @@ export function StarInterviewTeaser() {
     target: tunnelRef,
     offset: ["start start", "end end"],
   });
-  const pointScale = useTransform(scrollYProgress, [0.08, 0.72, 0.96], [0.58, 1.08, 3.2]);
-  const pointOpacity = useTransform(scrollYProgress, [0, 0.72, 0.94, 1], [0.35, 1, 1, 0]);
+  const pointScale = useTransform(scrollYProgress, [0.08, 0.68, 0.9, 0.98], [0.145, 0.27, 0.7, 1]);
   const tunnelDarkness = useTransform(scrollYProgress, [0, 0.74, 1], [0, 0.28, 0.9]);
   const cueOpacity = useTransform(scrollYProgress, [0, 0.12], [1, 0]);
 
@@ -73,11 +72,12 @@ export function StarInterviewTeaser() {
                 reducedMotion={Boolean(reducedMotion)}
               />
             ))}
-            <motion.span
-              className={styles.vanishingPoint}
-              style={reducedMotion ? undefined : { scale: pointScale, opacity: pointOpacity }}
-            />
           </div>
+          <motion.span
+            className={styles.vanishingPoint}
+            style={reducedMotion ? undefined : { scale: pointScale }}
+            aria-hidden="true"
+          />
 
           <motion.div className={styles.scrollCue} style={reducedMotion ? undefined : { opacity: cueOpacity }}>
             <span>向下，穿过这些声音</span>
@@ -131,10 +131,10 @@ export function StarInterviewTeaser() {
 
         <figure className={styles.productFigure}>
           <Image
-            src="/brand/star-interview/product-home.png"
+            src="/brand/star-interview/product-live-coach.png"
             alt="诘星 StarInterview macOS 实机界面"
-            width={2440}
-            height={1786}
+            width={2458}
+            height={1594}
             sizes="(max-width: 768px) 94vw, 88vw"
             className={styles.productImage}
             priority
@@ -154,7 +154,12 @@ export function StarInterviewTeaser() {
           <ChapterCopy
             index="01"
             eyebrow="LISTEN"
-            title="先听懂，对方真正想问什么。"
+            title={
+              <>
+                <span className={styles.semanticLine}>先听懂，对方</span>
+                <span className={styles.semanticLine}>真正想问什么。</span>
+              </>
+            }
             id="listen-title"
             reducedMotion={Boolean(reducedMotion)}
           >
@@ -171,7 +176,10 @@ export function StarInterviewTeaser() {
           >
             <div className={styles.questionFragments}>
               <span>请介绍一个</span>
-              <strong>你真正解决过的难题</strong>
+              <strong>
+                <span>你真正解决过的</span>
+                <span>难题</span>
+              </strong>
               <span>当时你做了什么？</span>
             </div>
             <div className={styles.waveform}>
@@ -186,7 +194,12 @@ export function StarInterviewTeaser() {
           <ChapterCopy
             index="02"
             eyebrow="RECALL"
-            title="协助你结构化表达你曾经做过的事。"
+            title={
+              <>
+                <span className={styles.semanticLine}>协助你结构化表达</span>
+                <span className={styles.semanticLine}>你曾经做过的事。</span>
+              </>
+            }
             id="resume-title"
             reducedMotion={Boolean(reducedMotion)}
           >
@@ -199,7 +212,12 @@ export function StarInterviewTeaser() {
           <ChapterCopy
             index="03"
             eyebrow="RESPOND"
-            title="陪你把话表达清楚。"
+            title={
+              <>
+                <span className={styles.semanticLine}>陪你把话</span>
+                <span className={styles.semanticLine}>表达清楚。</span>
+              </>
+            }
             id="answer-title"
             reducedMotion={Boolean(reducedMotion)}
           >
@@ -258,7 +276,7 @@ function ChapterCopy({
 }: {
   index: string;
   eyebrow: string;
-  title: string;
+  title: ReactNode;
   id: string;
   children: ReactNode;
   reducedMotion: boolean;
