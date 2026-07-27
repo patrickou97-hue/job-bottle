@@ -810,6 +810,14 @@ export type Database = {
         };
         Returns: Record<string, unknown>;
       };
+      complete_star_interview_recharge: {
+        Args: {
+          p_order_id: string;
+          p_provider_order_id: string;
+          p_transaction_id: string;
+        };
+        Returns: Record<string, unknown>;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

@@ -38,6 +38,13 @@ export function StarInterviewBillingClient() {
   const [data, setData] = useState<BillingData | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [message, setMessage] = useState("");
+  const [checkout, setCheckout] = useState<{
+    orderId: string;
+    amountFen: number;
+    expiresAt: string;
+    qrDataUrl: string;
+  } | null>(null);
+  const [checkoutState, setCheckoutState] = useState<"idle" | "creating">("idle");
 
   const load = useCallback(async () => {
     setState("loading");
@@ -82,6 +89,22 @@ export function StarInterviewBillingClient() {
   }
 
   const unlimited = data.accessMode === "unlimited";
+  async function createRecharge(amountFen: number) {
+    setCheckoutState("creating");
+    setMessage("");
+    const response = await fetch("/api/star-interview/recharge", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amountFen }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    setCheckoutState("idle");
+    if (!response.ok) {
+      setMessage(typeof payload.error === "string" ? payload.error : "充值订单创建失败。");
+      return;
+    }
+    setCheckout(payload);
+  }
   return (
     <main className="observatory-page">
       <header className="page-hero border-b border-[color:var(--line-ghost)] pb-10">
@@ -122,8 +145,29 @@ export function StarInterviewBillingClient() {
         {data.recharge.available ? (
           <div className="border-l border-[color:var(--line-ghost)] pl-6">
             <p className="text-sm font-semibold text-ink-primary">微信扫码充值</p>
-            <p className="mt-2 text-sm leading-6 text-ink-secondary">支付通道已配置。选择金额后将生成一次性支付二维码。</p>
-            <p className="mt-5 text-sm text-ink-muted">收银台接口将在商户联调通过后开放。</p>
+            {checkout ? (
+              <div className="mt-5 flex flex-col gap-5 sm:flex-row sm:items-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={checkout.qrDataUrl} alt={`微信支付 ¥${fen(checkout.amountFen)} 二维码`} className="size-48 rounded-lg border border-[color:var(--line-ghost)] bg-white p-2" />
+                <div>
+                  <strong className="text-2xl tabular-nums text-ink-primary">¥{fen(checkout.amountFen)}</strong>
+                  <p className="mt-2 text-sm leading-6 text-ink-secondary">请使用微信扫描二维码。支付成功后余额会由签名回调自动到账。</p>
+                  <p className="mt-2 text-xs text-ink-muted">二维码于 {formatDate(checkout.expiresAt)} 失效</p>
+                  <Button variant="secondary" className="mt-4" onClick={() => void load()}>我已支付，刷新余额</Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <p className="mt-2 text-sm leading-6 text-ink-secondary">选择金额后生成 15 分钟有效的一次性支付二维码。</p>
+                <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {[1_000, 2_000, 4_000, 10_000].map((amount) => (
+                    <Button key={amount} variant="secondary" disabled={checkoutState === "creating"} onClick={() => void createRecharge(amount)}>
+                      ¥{fen(amount)}
+                    </Button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         ) : (
           <div className="border-l-2 border-aurum/60 pl-6">
