@@ -2,14 +2,22 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import {
   fetchMimoJSON,
+  getChatCompletionsUrl,
   getMimoConfiguration,
   mapStarInterviewError,
+  StarInterviewUpstreamError,
   validateStarInterviewClient,
 } from "@/lib/star-interview-server";
+import {
+  CompletionStreamUpstreamError,
+  openCompletionSSE,
+  runBeforeExposingCompletionStream,
+} from "@/lib/star-interview-completion-stream";
 import {
   chargeStarInterviewUsage,
   requireStarInterviewUsageAccess,
   starInterviewUsageHeaders,
+  type StarInterviewUsageAccess,
 } from "@/lib/star-interview-access";
 import { starInterviewChargeHeaders } from "@/lib/star-interview-billing";
 
@@ -26,7 +34,7 @@ const requestSchema = z.object({
   messages: z.array(messageSchema).min(1).max(4),
   temperature: z.number().min(0).max(1).optional().nullable(),
   max_tokens: z.number().int().min(1).max(3_500).optional().nullable(),
-  stream: z.literal(false),
+  stream: z.boolean(),
   meterKey: z.string().uuid(),
 }).strict().refine(
   (value) => value.messages.reduce((sum, message) => sum + message.content.length, 0) <= 60_000,
@@ -56,6 +64,13 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    if (parsed.data.stream) {
+      return await streamCompletion({
+        authorization: authorization.access,
+        config,
+        input: parsed.data,
+      });
+    }
     const payload = await fetchMimoJSON({
       apiKey: config.apiKey,
       baseUrl: config.baseUrl,
@@ -86,4 +101,62 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return mapStarInterviewError(error, "AI 生成");
   }
+}
+
+async function streamCompletion({
+  authorization,
+  config,
+  input,
+}: {
+  authorization: StarInterviewUsageAccess;
+  config: NonNullable<ReturnType<typeof getMimoConfiguration>>;
+  input: z.infer<typeof requestSchema>;
+}) {
+  let upstream: ReadableStream<Uint8Array>;
+  try {
+    upstream = await openCompletionSSE({
+      url: getChatCompletionsUrl(config.baseUrl),
+      apiKey: config.apiKey,
+      timeoutMs: 55_000,
+      body: {
+        model: config.llmModel,
+        messages: input.messages,
+        temperature: input.temperature,
+        max_tokens: input.max_tokens,
+        stream: true,
+        response_format: { type: "json_object" },
+      },
+    });
+  } catch (error) {
+    if (error instanceof CompletionStreamUpstreamError) {
+      throw new StarInterviewUpstreamError(error.status);
+    }
+    throw error;
+  }
+
+  const charge = await runBeforeExposingCompletionStream(
+    upstream,
+    () => chargeStarInterviewUsage(authorization, {
+      feature: "completion",
+      meterKey: input.meterKey,
+      units: 1,
+    }),
+  );
+  if ("response" in charge) {
+    await upstream.cancel("completion charge rejected").catch(() => undefined);
+    return charge.response;
+  }
+
+  return new Response(upstream, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/event-stream; charset=utf-8",
+      "Cache-Control": "no-store, no-transform",
+      Connection: "keep-alive",
+      "X-Accel-Buffering": "no",
+      "X-StarInterview-Service": "cloud-v1-stream",
+      ...starInterviewUsageHeaders(authorization),
+      ...starInterviewChargeHeaders(charge.result),
+    },
+  });
 }
