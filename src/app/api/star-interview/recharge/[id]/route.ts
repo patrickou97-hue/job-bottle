@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { authenticateStarInterviewAppRequest } from "@/lib/star-interview-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
 import {
   closeWechatNativeOrder,
   getWechatPayConfiguration,
@@ -19,12 +19,8 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  if (!hasTrustedOrigin(request)) {
-    return noStore({ error: "充值查询来源无法验证。" }, 403);
-  }
-  const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) return noStore({ error: "请先登录拾星查询充值结果。" }, 401);
+  const access = await authenticateStarInterviewAppRequest(request);
+  if (!access) return noStore({ error: "诘星登录状态已失效，请重新连接拾星。" }, 401);
   const parsedId = idSchema.safeParse((await params).id);
   if (!parsedId.success) return noStore({ error: "充值订单不存在。" }, 404);
 
@@ -33,7 +29,7 @@ export async function POST(
     .from("star_interview_recharge_orders")
     .select("id,user_id,amount_fen,status,provider_order_id,provider_transaction_id,expires_at,provider_last_checked_at")
     .eq("id", parsedId.data)
-    .eq("user_id", user.id)
+    .eq("user_id", access.sub)
     .maybeSingle();
   if (error) return noStore({ error: "充值结果暂时无法查询。" }, 500);
   if (!order || !order.provider_order_id) return noStore({ error: "充值订单不存在。" }, 404);
@@ -85,7 +81,7 @@ export async function POST(
         updated_at: new Date().toISOString(),
       })
       .eq("id", order.id)
-      .eq("user_id", user.id)
+      .eq("user_id", access.sub)
       .eq("status", "pending");
     if (updateError) throw updateError;
     return noStore({ status: localStatus, paid: false });
@@ -139,11 +135,4 @@ function noStore(body: Record<string, unknown>, status = 200) {
     status,
     headers: { "Cache-Control": "private, no-store" },
   });
-}
-
-function hasTrustedOrigin(request: NextRequest) {
-  const origin = request.headers.get("origin");
-  const fetchSite = request.headers.get("sec-fetch-site");
-  return (origin === request.nextUrl.origin || origin === "https://www.starjob.space")
-    && (!fetchSite || fetchSite === "same-origin");
 }

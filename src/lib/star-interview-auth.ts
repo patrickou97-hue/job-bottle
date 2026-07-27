@@ -242,6 +242,11 @@ export async function authenticateStarInterviewRequest(request: NextRequest) {
   return access;
 }
 
+export async function authenticateStarInterviewAppRequest(request: NextRequest) {
+  if (request.headers.get("x-starinterview-client") !== "macos-v1") return null;
+  return authenticateStarInterviewRequest(request);
+}
+
 export async function revokeStarInterviewSession(sessionId: string, userId: string) {
   const { error } = await createAdminClient()
     .from("star_interview_sessions")

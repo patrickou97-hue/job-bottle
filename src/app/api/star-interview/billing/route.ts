@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { authenticateStarInterviewAppRequest } from "@/lib/star-interview-auth";
 import { resolveStarInterviewAccessMode } from "@/lib/star-interview-access";
 import {
   getStarInterviewWallet,
@@ -6,25 +7,26 @@ import {
   STAR_INTERVIEW_PRICING,
 } from "@/lib/star-interview-billing";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
 import { getWechatPayConfiguration } from "@/lib/wechat-pay";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
-  const supabase = await createClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) {
-    return NextResponse.json({ error: "请先登录拾星查看诘星余额。" }, { status: 401 });
+export async function GET(request: NextRequest) {
+  const access = await authenticateStarInterviewAppRequest(request);
+  if (!access) {
+    return NextResponse.json(
+      { error: "诘星登录状态已失效，请重新连接拾星。" },
+      { status: 401, headers: { "Cache-Control": "no-store" } },
+    );
   }
 
   try {
     const admin = createAdminClient();
     const [{ data: profile }, { data: auth }, wallet, ledger] = await Promise.all([
-      admin.from("profiles").select("role").eq("id", user.id).maybeSingle(),
-      admin.auth.admin.getUserById(user.id),
-      getStarInterviewWallet(user.id),
-      listStarInterviewLedger(user.id),
+      admin.from("profiles").select("role").eq("id", access.sub).maybeSingle(),
+      admin.auth.admin.getUserById(access.sub),
+      getStarInterviewWallet(access.sub),
+      listStarInterviewLedger(access.sub),
     ]);
     const mode = auth.user
       ? resolveStarInterviewAccessMode(auth.user, profile?.role ?? "user")

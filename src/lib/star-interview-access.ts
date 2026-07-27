@@ -75,7 +75,7 @@ export async function requireStarInterviewUsageAccess(
             code: "STAR_INTERVIEW_BALANCE_INSUFFICIENT",
             balanceFen: wallet.balanceFen,
             requiredFen: minimumFen,
-            rechargeUrl: "https://www.starjob.space/billing",
+            action: "OPEN_BILLING_IN_APP",
           },
           { status: 402, headers: { "Cache-Control": "no-store" } },
         ),
@@ -114,7 +114,7 @@ export async function chargeStarInterviewUsage(
         code: "STAR_INTERVIEW_BALANCE_INSUFFICIENT",
         balanceFen: result.balanceFen,
         requiredFen: result.requiredFen,
-        rechargeUrl: "https://www.starjob.space/billing",
+        action: "OPEN_BILLING_IN_APP",
       },
       {
         status: 402,

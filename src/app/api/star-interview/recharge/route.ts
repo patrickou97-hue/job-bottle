@@ -2,8 +2,8 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import QRCode from "qrcode";
 import { z } from "zod";
+import { authenticateStarInterviewAppRequest } from "@/lib/star-interview-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
 import {
   closeWechatNativeOrder,
   createWechatNativeOrder,
@@ -21,12 +21,8 @@ const schema = z.object({
 }).strict();
 
 export async function POST(request: NextRequest) {
-  if (!hasTrustedOrigin(request)) {
-    return noStore({ error: "充值请求来源无法验证。" }, 403);
-  }
-  const supabase = await createClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) return noStore({ error: "请先登录拾星充值。" }, 401);
+  const access = await authenticateStarInterviewAppRequest(request);
+  if (!access) return noStore({ error: "诘星登录状态已失效，请重新连接拾星。" }, 401);
   if (!getWechatPayConfiguration()) {
     return noStore({ error: "微信支付通道尚未配置完成。" }, 503);
   }
@@ -39,7 +35,7 @@ export async function POST(request: NextRequest) {
   const outTradeNo = `SI${Date.now().toString(36)}${randomBytes(5).toString("hex")}`.slice(0, 32);
   const { data, error: createError } = await admin.rpc("create_star_interview_recharge_order", {
     p_order_id: orderId,
-    p_user_id: user.id,
+    p_user_id: access.sub,
     p_amount_fen: parsed.data.amountFen,
     p_provider_order_id: outTradeNo,
     p_client_request_id: parsed.data.idempotencyKey,
@@ -79,7 +75,7 @@ export async function POST(request: NextRequest) {
         updated_at: new Date().toISOString(),
       })
       .eq("id", order.id)
-      .eq("user_id", user.id)
+      .eq("user_id", access.sub)
       .eq("status", "pending");
     if (updateError) throw updateError;
     return noStore({
@@ -101,13 +97,6 @@ export async function POST(request: NextRequest) {
       .eq("status", "pending");
     return noStore({ error: "微信支付下单失败，本次未扣款。" }, 502);
   }
-}
-
-function hasTrustedOrigin(request: NextRequest) {
-  const origin = request.headers.get("origin");
-  const fetchSite = request.headers.get("sec-fetch-site");
-  return (origin === request.nextUrl.origin || origin === "https://www.starjob.space")
-    && (!fetchSite || fetchSite === "same-origin");
 }
 
 function noStore(body: Record<string, unknown>, status = 200) {
