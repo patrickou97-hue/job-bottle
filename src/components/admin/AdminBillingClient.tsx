@@ -1,7 +1,7 @@
 "use client";
 
-import { Coins, Send, UsersRound } from "lucide-react";
-import { useState } from "react";
+import { Coins, Search, Send, UsersRound } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
@@ -13,6 +13,44 @@ export function AdminBillingClient() {
   const [confirming, setConfirming] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [query, setQuery] = useState("");
+  const [users, setUsers] = useState<BalanceUser[]>([]);
+  const [listState, setListState] = useState<"loading" | "ready" | "error">("loading");
+  const [total, setTotal] = useState(0);
+
+  useEffect(() => {
+    let mounted = true;
+    void fetch("/api/admin/star-interview-balance", { cache: "no-store" })
+      .then(async (response) => ({ response, payload: await response.json().catch(() => ({})) }))
+      .then(({ response, payload }) => {
+        if (!mounted) return;
+        if (!response.ok) {
+          setMessage(typeof payload.error === "string" ? payload.error : "诘星余额列表暂时无法读取。");
+          setListState("error");
+          return;
+        }
+        setUsers(payload.users as BalanceUser[]);
+        setTotal(payload.total as number);
+        setListState("ready");
+      });
+    return () => { mounted = false; };
+  }, []);
+
+  async function loadUsers() {
+    setListState("loading");
+    const params = new URLSearchParams();
+    if (query.trim()) params.set("query", query.trim());
+    const response = await fetch(`/api/admin/star-interview-balance?${params}`, { cache: "no-store" });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      setMessage(typeof payload.error === "string" ? payload.error : "诘星余额列表暂时无法读取。");
+      setListState("error");
+      return;
+    }
+    setUsers(payload.users as BalanceUser[]);
+    setTotal(payload.total as number);
+    setListState("ready");
+  }
 
   async function submit() {
     if (!confirming) {
@@ -39,6 +77,7 @@ export function AdminBillingClient() {
     setMessage(response.ok
       ? `已向 ${payload.succeeded} 位用户发放 ¥${Number(amountYuan).toFixed(2)}。`
       : typeof payload.error === "string" ? payload.error : "余额发放失败。");
+    if (response.ok) void loadUsers();
   }
 
   return (
@@ -48,6 +87,56 @@ export function AdminBillingClient() {
         <h1 className="page-title mt-3">余额发放</h1>
         <p className="page-description mt-3">所有赠送都写入用户账本。重复请求由幂等键拦截，不会重复到账。</p>
       </header>
+      <section className="border-b border-[color:var(--line-ghost)] pb-9">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="section-eyebrow"><Coins className="size-4" />用户余额</p>
+            <h2 className="section-title mt-3">账户账本概览</h2>
+            <p className="mt-2 text-sm text-ink-muted">{total} 位用户 · 点击用户即可进入单独发放</p>
+          </div>
+          <div className="flex w-full gap-2 sm:w-auto">
+            <label className="relative min-w-0 flex-1 sm:w-80">
+              <span className="sr-only">搜索用户余额</span>
+              <Search className="pointer-events-none absolute left-3 top-3 size-4 text-ink-muted" />
+              <Input value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void loadUsers(); }} placeholder="姓名、邮箱或用户 ID" className="pl-9" />
+            </label>
+            <Button variant="secondary" onClick={() => void loadUsers()}>搜索</Button>
+          </div>
+        </div>
+        {listState === "loading" ? (
+          <div className="py-10 text-sm text-ink-muted"><span className="loading-line">正在读取用户余额</span></div>
+        ) : users.length ? (
+          <div className="mt-6 overflow-hidden border-y border-[color:var(--line-ghost)]">
+            <div className="hidden grid-cols-[minmax(220px,1.4fr)_110px_130px_130px] gap-4 border-b border-[color:var(--line-ghost)] py-3 text-xs font-medium text-ink-muted md:grid">
+              <span>用户</span><span>访问方式</span><span className="text-right">当前余额</span><span className="text-right">累计消耗</span>
+            </div>
+            {users.map((user) => (
+              <button
+                key={user.id}
+                type="button"
+                onClick={() => {
+                  setScope("single");
+                  setUserId(user.id);
+                  setConfirming(false);
+                  setMessage(`已选择 ${user.displayName}（${user.email}）。`);
+                }}
+                className="grid w-full gap-2 border-b border-[color:var(--line-ghost)] py-4 text-left transition-colors last:border-b-0 hover:bg-[color:var(--surface-hover-bg)]/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--aurora)] md:grid-cols-[minmax(220px,1.4fr)_110px_130px_130px] md:items-center md:gap-4"
+              >
+                <span className="min-w-0">
+                  <strong className="block truncate text-sm text-ink-primary">{user.displayName}</strong>
+                  <span className="mt-1 block truncate text-xs text-ink-muted">{user.email}</span>
+                </span>
+                <span className="text-xs text-ink-secondary">{user.accessMode === "unlimited" ? "无限使用" : "标准计费"}</span>
+                <strong className="text-sm tabular-nums text-ink-primary md:text-right">¥{fen(user.balanceFen)}</strong>
+                <span className="text-sm tabular-nums text-ink-secondary md:text-right">¥{fen(user.nominalSpentFen)}</span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-6 border-y border-[color:var(--line-ghost)] py-10 text-sm text-ink-muted">没有符合条件的用户。</div>
+        )}
+      </section>
+
       <section className="grid gap-8 lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)]">
         <div>
           <p className="section-eyebrow"><UsersRound className="size-4" />发放范围</p>
@@ -71,4 +160,19 @@ export function AdminBillingClient() {
       </section>
     </div>
   );
+}
+
+type BalanceUser = {
+  id: string;
+  email: string;
+  displayName: string;
+  accessMode: "standard" | "unlimited";
+  balanceFen: number;
+  totalSpentFen: number;
+  nominalSpentFen: number;
+  updatedAt: string | null;
+};
+
+function fen(value: number) {
+  return (value / 100).toFixed(2);
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { User } from "@supabase/supabase-js";
 import { z } from "zod";
 import { adjustStarInterviewBalance } from "@/lib/star-interview-billing";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -15,12 +16,61 @@ const schema = z.object({
   message: "请选择发放对象。",
 });
 
-export async function POST(request: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user || user.email?.toLowerCase() !== PRIMARY_ADMIN_EMAIL) {
-    return NextResponse.json({ error: "只有主管理员可以发放诘星余额。" }, { status: 403 });
+export async function GET(request: NextRequest) {
+  const access = await requirePrimaryAdmin();
+  if ("response" in access) return access.response;
+  const query = request.nextUrl.searchParams.get("query")?.trim().toLowerCase() ?? "";
+  const page = Math.max(1, Number(request.nextUrl.searchParams.get("page") ?? 1));
+  const pageSize = 30;
+  try {
+    const admin = createAdminClient();
+    const authUsers = await listAllUsers();
+    const ids = authUsers.map((user) => user.id);
+    const [{ data: profiles, error: profileError }, { data: wallets, error: walletError }] = await Promise.all([
+      admin.from("profiles").select("id,display_name,role").in("id", ids),
+      admin.from("star_interview_wallets").select("*").in("user_id", ids),
+    ]);
+    if (profileError || walletError) throw profileError ?? walletError;
+    const profileById = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
+    const walletById = new Map((wallets ?? []).map((wallet) => [wallet.user_id, wallet]));
+    const matched = authUsers.filter((user) => {
+      if (!query) return true;
+      const profile = profileById.get(user.id);
+      return [user.email, profile?.display_name, user.id]
+        .some((value) => value?.toLowerCase().includes(query));
+    });
+    const total = matched.length;
+    const users = matched
+      .slice((page - 1) * pageSize, page * pageSize)
+      .map((user) => {
+        const profile = profileById.get(user.id);
+        const wallet = walletById.get(user.id);
+        return {
+          id: user.id,
+          email: user.email ?? "微信账户",
+          displayName: profile?.display_name || "拾星用户",
+          accessMode: resolveAccessMode(user, profile?.role ?? "user"),
+          balanceFen: wallet?.balance_fen ?? 0,
+          totalSpentFen: wallet?.total_spent_fen ?? 0,
+          nominalSpentFen: wallet?.nominal_spent_fen ?? 0,
+          updatedAt: wallet?.updated_at ?? null,
+        };
+      });
+    return NextResponse.json({
+      users,
+      page,
+      pageSize,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / pageSize)),
+    });
+  } catch {
+    return NextResponse.json({ error: "诘星余额列表暂时无法读取。" }, { status: 500 });
   }
+}
+
+export async function POST(request: NextRequest) {
+  const access = await requirePrimaryAdmin();
+  if ("response" in access) return access.response;
   const parsed = schema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "发放参数无效。" }, { status: 400 });
@@ -39,7 +89,7 @@ export async function POST(request: NextRequest) {
         entryType: "admin_grant",
         referenceKey: `admin:${parsed.data.idempotencyKey}:${userId}`,
         note: parsed.data.reason,
-        actorUserId: user.id,
+        actorUserId: access.userId,
       })));
       succeeded += results.length;
     }
@@ -50,13 +100,32 @@ export async function POST(request: NextRequest) {
 }
 
 async function listAllUserIds() {
+  return (await listAllUsers()).map((user) => user.id);
+}
+
+async function listAllUsers() {
   const admin = createAdminClient();
-  const ids: string[] = [];
+  const users: User[] = [];
   for (let page = 1; ; page += 1) {
     const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 1_000 });
     if (error) throw error;
-    ids.push(...data.users.map((user) => user.id));
+    users.push(...data.users);
     if (data.users.length < 1_000) break;
   }
-  return ids;
+  return users;
+}
+
+async function requirePrimaryAdmin() {
+  const supabase = await createClient();
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user || user.email?.toLowerCase() !== PRIMARY_ADMIN_EMAIL) {
+    return { response: NextResponse.json({ error: "只有主管理员可以管理诘星余额。" }, { status: 403 }) };
+  }
+  return { userId: user.id };
+}
+
+function resolveAccessMode(user: User, role: string) {
+  const explicit = user.app_metadata?.star_interview_unlimited_access;
+  if (typeof explicit === "boolean") return explicit ? "unlimited" : "standard";
+  return role === "admin" ? "unlimited" : "standard";
 }
