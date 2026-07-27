@@ -686,7 +686,10 @@ export type Database = {
           provider: "wechat_native";
           provider_order_id: string | null;
           provider_transaction_id: string | null;
+          client_request_id: string | null;
           code_url: string | null;
+          provider_trade_state: string | null;
+          provider_last_checked_at: string | null;
           expires_at: string;
           paid_at: string | null;
           created_at: string;
@@ -700,7 +703,10 @@ export type Database = {
           provider?: "wechat_native";
           provider_order_id?: string | null;
           provider_transaction_id?: string | null;
+          client_request_id?: string | null;
           code_url?: string | null;
+          provider_trade_state?: string | null;
+          provider_last_checked_at?: string | null;
           expires_at: string;
           paid_at?: string | null;
           created_at?: string;
@@ -710,7 +716,10 @@ export type Database = {
           status?: "pending" | "paid" | "closed" | "refunded";
           provider_order_id?: string | null;
           provider_transaction_id?: string | null;
+          client_request_id?: string | null;
           code_url?: string | null;
+          provider_trade_state?: string | null;
+          provider_last_checked_at?: string | null;
           paid_at?: string | null;
           updated_at?: string;
         };
@@ -818,6 +827,17 @@ export type Database = {
           p_order_id: string;
           p_provider_order_id: string;
           p_transaction_id: string;
+        };
+        Returns: Record<string, unknown>;
+      };
+      create_star_interview_recharge_order: {
+        Args: {
+          p_order_id: string;
+          p_user_id: string;
+          p_amount_fen: number;
+          p_provider_order_id: string;
+          p_client_request_id: string;
+          p_expires_at: string;
         };
         Returns: Record<string, unknown>;
       };

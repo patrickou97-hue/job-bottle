@@ -1,63 +1,144 @@
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import QRCode from "qrcode";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { createWechatNativeOrder, getWechatPayConfiguration } from "@/lib/wechat-pay";
+import {
+  closeWechatNativeOrder,
+  createWechatNativeOrder,
+  getWechatPayConfiguration,
+} from "@/lib/wechat-pay";
 
-const schema = z.object({ amountFen: z.union([
-  z.literal(1_000),
-  z.literal(2_000),
-  z.literal(4_000),
-  z.literal(10_000),
-]) }).strict();
+const schema = z.object({
+  amountFen: z.union([
+    z.literal(1_000),
+    z.literal(2_000),
+    z.literal(4_000),
+    z.literal(10_000),
+  ]),
+  idempotencyKey: z.string().uuid(),
+}).strict();
 
 export async function POST(request: NextRequest) {
+  if (!hasTrustedOrigin(request)) {
+    return noStore({ error: "充值请求来源无法验证。" }, 403);
+  }
   const supabase = await createClient();
   const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) return NextResponse.json({ error: "请先登录拾星充值。" }, { status: 401 });
+  if (error || !user) return noStore({ error: "请先登录拾星充值。" }, 401);
   if (!getWechatPayConfiguration()) {
-    return NextResponse.json({ error: "微信支付通道尚未配置完成。" }, { status: 503 });
+    return noStore({ error: "微信支付通道尚未配置完成。" }, 503);
   }
   const parsed = schema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) return NextResponse.json({ error: "请选择有效的充值金额。" }, { status: 400 });
+  if (!parsed.success) return noStore({ error: "请选择有效的充值金额。" }, 400);
 
   const admin = createAdminClient();
   const expiresAt = new Date(Date.now() + 15 * 60 * 1_000);
+  const orderId = randomUUID();
   const outTradeNo = `SI${Date.now().toString(36)}${randomBytes(5).toString("hex")}`.slice(0, 32);
-  const { data: order, error: insertError } = await admin
-    .from("star_interview_recharge_orders")
-    .insert({
-      user_id: user.id,
-      amount_fen: parsed.data.amountFen,
-      provider_order_id: outTradeNo,
-      expires_at: expiresAt.toISOString(),
-    })
-    .select("id,amount_fen,expires_at")
-    .single();
-  if (insertError) return NextResponse.json({ error: "充值订单创建失败。" }, { status: 500 });
+  const { data, error: createError } = await admin.rpc("create_star_interview_recharge_order", {
+    p_order_id: orderId,
+    p_user_id: user.id,
+    p_amount_fen: parsed.data.amountFen,
+    p_provider_order_id: outTradeNo,
+    p_client_request_id: parsed.data.idempotencyKey,
+    p_expires_at: expiresAt.toISOString(),
+  });
+  if (createError) {
+    const tooMany = createError.message.includes("too many pending");
+    return noStore(
+      { error: tooMany ? "待支付订单较多，请完成或等待订单失效后再试。" : "充值订单创建失败。" },
+      tooMany ? 429 : 500,
+    );
+  }
+  const order = asOrder(data);
+  if (!order) return noStore({ error: "充值订单创建失败。" }, 500);
+
+  if (order.codeUrl) {
+    return noStore({
+      orderId: order.id,
+      amountFen: order.amountFen,
+      expiresAt: order.expiresAt,
+      qrDataUrl: await createQrDataUrl(order.codeUrl),
+    });
+  }
 
   try {
     const codeUrl = await createWechatNativeOrder({
-      outTradeNo,
-      amountFen: order.amount_fen,
-      expiresAt: expiresAt.toISOString(),
+      outTradeNo: order.providerOrderId,
+      amountFen: order.amountFen,
+      expiresAt: order.expiresAt,
       attach: order.id,
     });
-    await admin.from("star_interview_recharge_orders")
-      .update({ code_url: codeUrl, updated_at: new Date().toISOString() })
-      .eq("id", order.id);
-    return NextResponse.json({
+    const { error: updateError } = await admin.from("star_interview_recharge_orders")
+      .update({
+        code_url: codeUrl,
+        provider_trade_state: "NOTPAY",
+        provider_last_checked_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", order.id)
+      .eq("user_id", user.id)
+      .eq("status", "pending");
+    if (updateError) throw updateError;
+    return noStore({
       orderId: order.id,
-      amountFen: order.amount_fen,
-      expiresAt: order.expires_at,
-      qrDataUrl: await QRCode.toDataURL(codeUrl, { margin: 1, width: 280, errorCorrectionLevel: "M" }),
+      amountFen: order.amountFen,
+      expiresAt: order.expiresAt,
+      qrDataUrl: await createQrDataUrl(codeUrl),
     });
   } catch {
+    await closeWechatNativeOrder(order.providerOrderId).catch(() => undefined);
     await admin.from("star_interview_recharge_orders")
-      .update({ status: "closed", updated_at: new Date().toISOString() })
-      .eq("id", order.id);
-    return NextResponse.json({ error: "微信支付下单失败，本次未扣款。" }, { status: 502 });
+      .update({
+        status: "closed",
+        provider_trade_state: "CREATE_FAILED",
+        provider_last_checked_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", order.id)
+      .eq("status", "pending");
+    return noStore({ error: "微信支付下单失败，本次未扣款。" }, 502);
   }
+}
+
+function hasTrustedOrigin(request: NextRequest) {
+  const origin = request.headers.get("origin");
+  const fetchSite = request.headers.get("sec-fetch-site");
+  return (origin === request.nextUrl.origin || origin === "https://www.starjob.space")
+    && (!fetchSite || fetchSite === "same-origin");
+}
+
+function noStore(body: Record<string, unknown>, status = 200) {
+  return NextResponse.json(body, {
+    status,
+    headers: { "Cache-Control": "private, no-store" },
+  });
+}
+
+function asOrder(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const record = value as Record<string, unknown>;
+  if (typeof record.id !== "string"
+    || typeof record.provider_order_id !== "string"
+    || typeof record.expires_at !== "string"
+    || !Number.isFinite(Number(record.amount_fen))) {
+    return null;
+  }
+  return {
+    id: record.id,
+    providerOrderId: record.provider_order_id,
+    expiresAt: record.expires_at,
+    amountFen: Math.round(Number(record.amount_fen)),
+    codeUrl: typeof record.code_url === "string" ? record.code_url : null,
+  };
+}
+
+function createQrDataUrl(codeUrl: string) {
+  return QRCode.toDataURL(codeUrl, {
+    margin: 1,
+    width: 280,
+    errorCorrectionLevel: "M",
+  });
 }

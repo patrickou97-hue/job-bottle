@@ -45,6 +45,7 @@ export function StarInterviewBillingClient() {
     qrDataUrl: string;
   } | null>(null);
   const [checkoutState, setCheckoutState] = useState<"idle" | "creating">("idle");
+  const [paymentCheckState, setPaymentCheckState] = useState<"idle" | "checking">("idle");
 
   const load = useCallback(async () => {
     setState("loading");
@@ -76,6 +77,46 @@ export function StarInterviewBillingClient() {
     return () => { mounted = false; };
   }, []);
 
+  const checkRecharge = useCallback(async (orderId: string, announceFailure = false) => {
+    setPaymentCheckState("checking");
+    const response = await fetch(`/api/star-interview/recharge/${orderId}`, {
+      method: "POST",
+      cache: "no-store",
+    });
+    const payload = await response.json().catch(() => ({}));
+    setPaymentCheckState("idle");
+    if (!response.ok) {
+      if (announceFailure) {
+        setMessage(typeof payload.error === "string" ? payload.error : "支付结果暂时无法确认。");
+      }
+      return;
+    }
+    if (payload.status === "paid") {
+      setCheckout(null);
+      setMessage("充值已到账，余额和账本已更新。");
+      await load();
+    } else if (payload.status === "closed") {
+      setCheckout(null);
+      setMessage("该支付二维码已失效，本次未扣款。");
+    }
+  }, [load]);
+
+  useEffect(() => {
+    if (!checkout?.orderId) return;
+    const orderId = checkout.orderId;
+    let stopped = false;
+    let timer: number | undefined;
+    const poll = async () => {
+      await checkRecharge(orderId);
+      if (!stopped) timer = window.setTimeout(() => void poll(), 4_000);
+    };
+    void poll();
+    return () => {
+      stopped = true;
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
+  }, [checkout?.orderId, checkRecharge]);
+
   if (state === "loading") {
     return <div className="empty-state"><span className="loading-line">正在读取诘星余额</span></div>;
   }
@@ -92,10 +133,11 @@ export function StarInterviewBillingClient() {
   async function createRecharge(amountFen: number) {
     setCheckoutState("creating");
     setMessage("");
+    const idempotencyKey = crypto.randomUUID();
     const response = await fetch("/api/star-interview/recharge", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amountFen }),
+      body: JSON.stringify({ amountFen, idempotencyKey }),
     });
     const payload = await response.json().catch(() => ({}));
     setCheckoutState("idle");
@@ -145,6 +187,11 @@ export function StarInterviewBillingClient() {
         {data.recharge.available ? (
           <div className="border-l border-[color:var(--line-ghost)] pl-6">
             <p className="text-sm font-semibold text-ink-primary">微信扫码充值</p>
+            {message ? (
+              <p className="mt-3 border-l-2 border-nebula-blue/70 pl-3 text-sm leading-6 text-ink-secondary" role="status">
+                {message}
+              </p>
+            ) : null}
             {checkout ? (
               <div className="mt-5 flex flex-col gap-5 sm:flex-row sm:items-center">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -153,7 +200,14 @@ export function StarInterviewBillingClient() {
                   <strong className="text-2xl tabular-nums text-ink-primary">¥{fen(checkout.amountFen)}</strong>
                   <p className="mt-2 text-sm leading-6 text-ink-secondary">请使用微信扫描二维码。支付成功后余额会由签名回调自动到账。</p>
                   <p className="mt-2 text-xs text-ink-muted">二维码于 {formatDate(checkout.expiresAt)} 失效</p>
-                  <Button variant="secondary" className="mt-4" onClick={() => void load()}>我已支付，刷新余额</Button>
+                  <Button
+                    variant="secondary"
+                    className="mt-4"
+                    disabled={paymentCheckState === "checking"}
+                    onClick={() => void checkRecharge(checkout.orderId, true)}
+                  >
+                    {paymentCheckState === "checking" ? "正在确认支付" : "检查支付结果"}
+                  </Button>
                 </div>
               </div>
             ) : (
