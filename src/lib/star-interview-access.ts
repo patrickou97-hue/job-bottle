@@ -5,6 +5,12 @@ import { NextResponse } from "next/server";
 import type { User } from "@supabase/supabase-js";
 import { authenticateStarInterviewRequest } from "@/lib/star-interview-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  consumeStarInterviewUsage,
+  getStarInterviewWallet,
+  starInterviewChargeHeaders,
+  type StarInterviewChargeResult,
+} from "@/lib/star-interview-billing";
 import type { ProfileRole } from "@/lib/types";
 
 const STAR_INTERVIEW_ACCESS_KEY = "star_interview_unlimited_access";
@@ -16,12 +22,8 @@ export type StarInterviewUsageAccess = {
   userId: string;
   sessionId: string;
   mode: StarInterviewAccessMode;
-  usagePolicy: "unlimited" | "metered_not_enforced";
+  usagePolicy: "unlimited" | "metered";
 };
-
-type UsageDecision =
-  | { allowed: true; reservationId: string | null }
-  | { allowed: false; status: 402 | 429; error: string; retryAfter?: number };
 
 /**
  * Central access gate for every paid StarInterview capability.
@@ -32,7 +34,7 @@ type UsageDecision =
  */
 export async function requireStarInterviewUsageAccess(
   request: NextRequest,
-  feature: StarInterviewFeature,
+  _feature: StarInterviewFeature,
 ) {
   const session = await authenticateStarInterviewRequest(request);
   if (!session) {
@@ -62,29 +64,66 @@ export async function requireStarInterviewUsageAccess(
     auth.user,
     profile?.role ?? "user",
   );
-  const usage = await reserveStarInterviewUsage({
-    userId: session.sub,
-    feature,
-    mode,
-  });
-  if (!usage.allowed) {
-    const headers: Record<string, string> = { "Cache-Control": "no-store" };
-    if (usage.retryAfter) headers["Retry-After"] = String(usage.retryAfter);
-    return {
-      response: NextResponse.json(
-        { error: usage.error, code: "STAR_INTERVIEW_USAGE_LIMIT" },
-        { status: usage.status, headers },
-      ),
-    };
+  if (mode === "standard") {
+    const wallet = await getStarInterviewWallet(session.sub);
+    const minimumFen = _feature === "completion" ? 80 : 1;
+    if (wallet.balanceFen < minimumFen) {
+      return {
+        response: NextResponse.json(
+          {
+            error: "诘星余额不足，请充值后继续。",
+            code: "STAR_INTERVIEW_BALANCE_INSUFFICIENT",
+            balanceFen: wallet.balanceFen,
+            requiredFen: minimumFen,
+            rechargeUrl: "https://www.starjob.space/billing",
+          },
+          { status: 402, headers: { "Cache-Control": "no-store" } },
+        ),
+      };
+    }
   }
-
   return {
     access: {
       userId: session.sub,
       sessionId: session.sid,
       mode,
-      usagePolicy: mode === "unlimited" ? "unlimited" : "metered_not_enforced",
+      usagePolicy: mode === "unlimited" ? "unlimited" : "metered",
     } satisfies StarInterviewUsageAccess,
+  };
+}
+
+export async function chargeStarInterviewUsage(
+  access: StarInterviewUsageAccess,
+  input: { feature: StarInterviewFeature; meterKey: string; units: number },
+): Promise<
+  | { result: StarInterviewChargeResult }
+  | { response: NextResponse }
+> {
+  const result = await consumeStarInterviewUsage({
+    userId: access.userId,
+    feature: input.feature,
+    meterKey: input.meterKey,
+    units: input.units,
+    mode: access.mode,
+  });
+  if (result.allowed) return { result };
+  return {
+    response: NextResponse.json(
+      {
+        error: "诘星余额不足，请充值后继续。",
+        code: "STAR_INTERVIEW_BALANCE_INSUFFICIENT",
+        balanceFen: result.balanceFen,
+        requiredFen: result.requiredFen,
+        rechargeUrl: "https://www.starjob.space/billing",
+      },
+      {
+        status: 402,
+        headers: {
+          "Cache-Control": "no-store",
+          ...starInterviewChargeHeaders(result),
+        },
+      },
+    ),
   };
 }
 
@@ -104,22 +143,6 @@ export function resolveStarInterviewAccessMode(
     return explicitValue ? "unlimited" : "standard";
   }
   return role === "admin" ? "unlimited" : "standard";
-}
-
-async function reserveStarInterviewUsage(input: {
-  userId: string;
-  feature: StarInterviewFeature;
-  mode: StarInterviewAccessMode;
-}): Promise<UsageDecision> {
-  if (input.mode === "unlimited") {
-    return { allowed: true, reservationId: null };
-  }
-
-  // Billing integration seam:
-  // atomically reserve one ASR-duration or completion-token unit here, then
-  // return 402/429 when the user's purchased balance or rate quota is exhausted.
-  // Until the usage ledger ships, authenticated standard users remain enabled.
-  return { allowed: true, reservationId: null };
 }
 
 function isDisabled(user: Pick<User, "banned_until">) {

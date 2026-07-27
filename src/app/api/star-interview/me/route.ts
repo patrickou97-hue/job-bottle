@@ -3,6 +3,7 @@ import { isWechatInternalEmail } from "@/lib/account-identity";
 import { authenticateStarInterviewRequest } from "@/lib/star-interview-auth";
 import { resolveStarInterviewAccessMode } from "@/lib/star-interview-access";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getStarInterviewWallet, STAR_INTERVIEW_PRICING } from "@/lib/star-interview-billing";
 
 export const dynamic = "force-dynamic";
 
@@ -13,9 +14,10 @@ export async function GET(request: NextRequest) {
   }
   try {
     const admin = createAdminClient();
-    const [{ data: profile, error }, { data: auth }] = await Promise.all([
+    const [{ data: profile, error }, { data: auth }, wallet] = await Promise.all([
       admin.from("profiles").select("display_name,city,school,major,role").eq("id", access.sub).maybeSingle(),
       admin.auth.admin.getUserById(access.sub),
+      getStarInterviewWallet(access.sub),
     ]);
     if (error) throw error;
     const rawEmail = auth.user?.email ?? "";
@@ -38,7 +40,9 @@ export async function GET(request: NextRequest) {
             mode: starInterviewAccessMode,
             usagePolicy: starInterviewAccessMode === "unlimited"
               ? "unlimited"
-              : "metered_not_enforced",
+              : "metered",
+            wallet,
+            pricing: STAR_INTERVIEW_PRICING,
           },
         },
       },

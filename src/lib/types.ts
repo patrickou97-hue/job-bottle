@@ -267,6 +267,34 @@ export type WechatWebLoginAttempt = {
   updated_at: string;
 };
 
+export type StarInterviewWallet = {
+  user_id: string;
+  balance_fen: number;
+  total_granted_fen: number;
+  total_recharged_fen: number;
+  total_spent_fen: number;
+  nominal_spent_fen: number;
+  currency: "CNY";
+  created_at: string;
+  updated_at: string;
+};
+
+export type StarInterviewLedgerEntry = {
+  id: string;
+  user_id: string;
+  entry_type: "usage" | "admin_grant" | "recharge" | "refund" | "correction";
+  amount_fen: number;
+  nominal_amount_fen: number;
+  balance_after_fen: number;
+  feature: "asr" | "completion" | null;
+  units: number | null;
+  reference_key: string;
+  note: string | null;
+  actor_user_id: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+};
+
 export type ForumPostWithComments = ForumPostView & {
   comments: ForumCommentView[];
 };
@@ -600,6 +628,91 @@ export type Database = {
         };
         Relationships: [];
       };
+      star_interview_wallets: {
+        Row: StarInterviewWallet;
+        Insert: {
+          user_id: string;
+          balance_fen?: number;
+          total_granted_fen?: number;
+          total_recharged_fen?: number;
+          total_spent_fen?: number;
+          nominal_spent_fen?: number;
+          currency?: "CNY";
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Omit<StarInterviewWallet, "user_id" | "created_at">>;
+        Relationships: [];
+      };
+      star_interview_ledger: {
+        Row: StarInterviewLedgerEntry;
+        Insert: Omit<StarInterviewLedgerEntry, "id" | "created_at"> & {
+          id?: string;
+          created_at?: string;
+        };
+        Update: Partial<Omit<StarInterviewLedgerEntry, "id" | "user_id" | "created_at">>;
+        Relationships: [];
+      };
+      star_interview_usage_meters: {
+        Row: {
+          user_id: string;
+          feature: "asr" | "completion";
+          meter_key: string;
+          max_units: number;
+          nominal_cost_fen: number;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          feature: "asr" | "completion";
+          meter_key: string;
+          max_units?: number;
+          nominal_cost_fen?: number;
+          updated_at?: string;
+        };
+        Update: {
+          max_units?: number;
+          nominal_cost_fen?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      star_interview_recharge_orders: {
+        Row: {
+          id: string;
+          user_id: string;
+          amount_fen: number;
+          status: "pending" | "paid" | "closed" | "refunded";
+          provider: "wechat_native";
+          provider_order_id: string | null;
+          code_url: string | null;
+          expires_at: string;
+          paid_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          amount_fen: number;
+          status?: "pending" | "paid" | "closed" | "refunded";
+          provider?: "wechat_native";
+          provider_order_id?: string | null;
+          code_url?: string | null;
+          expires_at: string;
+          paid_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          status?: "pending" | "paid" | "closed" | "refunded";
+          provider_order_id?: string | null;
+          code_url?: string | null;
+          paid_at?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       wechat_web_login_codes: {
         Row: WechatWebLoginCode;
         Insert: {
@@ -671,6 +784,31 @@ export type Database = {
           applications_moved: number;
           applications_removed: number;
         }[];
+      };
+      get_star_interview_wallet: {
+        Args: { p_user_id: string };
+        Returns: Record<string, unknown>;
+      };
+      consume_star_interview_usage: {
+        Args: {
+          p_user_id: string;
+          p_feature: "asr" | "completion";
+          p_meter_key: string;
+          p_units: number;
+          p_unlimited: boolean;
+        };
+        Returns: Record<string, unknown>;
+      };
+      adjust_star_interview_balance: {
+        Args: {
+          p_user_id: string;
+          p_amount_fen: number;
+          p_entry_type: "admin_grant" | "recharge" | "refund" | "correction";
+          p_reference_key: string;
+          p_note: string;
+          p_actor_user_id: string | null;
+        };
+        Returns: Record<string, unknown>;
       };
     };
     Enums: Record<string, never>;

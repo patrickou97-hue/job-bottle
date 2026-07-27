@@ -7,9 +7,11 @@ import {
   validateStarInterviewClient,
 } from "@/lib/star-interview-server";
 import {
+  chargeStarInterviewUsage,
   requireStarInterviewUsageAccess,
   starInterviewUsageHeaders,
 } from "@/lib/star-interview-access";
+import { starInterviewChargeHeaders } from "@/lib/star-interview-billing";
 
 export const maxDuration = 60;
 export const preferredRegion = "hkg1";
@@ -25,6 +27,7 @@ const requestSchema = z.object({
   temperature: z.number().min(0).max(1).optional().nullable(),
   max_tokens: z.number().int().min(1).max(3_500).optional().nullable(),
   stream: z.literal(false),
+  meterKey: z.string().uuid(),
 }).strict().refine(
   (value) => value.messages.reduce((sum, message) => sum + message.content.length, 0) <= 60_000,
   "消息内容过长",
@@ -58,17 +61,26 @@ export async function POST(request: NextRequest) {
       baseUrl: config.baseUrl,
       timeoutMs: 55_000,
       body: {
-        ...parsed.data,
         model: config.llmModel,
+        messages: parsed.data.messages,
+        temperature: parsed.data.temperature,
+        max_tokens: parsed.data.max_tokens,
         stream: false,
         response_format: { type: "json_object" },
       },
     });
+    const charge = await chargeStarInterviewUsage(authorization.access, {
+      feature: "completion",
+      meterKey: parsed.data.meterKey,
+      units: 1,
+    });
+    if ("response" in charge) return charge.response;
     return NextResponse.json(payload, {
       headers: {
         "Cache-Control": "no-store",
         "X-StarInterview-Service": "cloud-v1",
         ...starInterviewUsageHeaders(authorization.access),
+        ...starInterviewChargeHeaders(charge.result),
       },
     });
   } catch (error) {

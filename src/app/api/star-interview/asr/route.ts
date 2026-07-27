@@ -8,9 +8,11 @@ import {
   validateStarInterviewClient,
 } from "@/lib/star-interview-server";
 import {
+  chargeStarInterviewUsage,
   requireStarInterviewUsageAccess,
   starInterviewUsageHeaders,
 } from "@/lib/star-interview-access";
+import { starInterviewChargeHeaders } from "@/lib/star-interview-billing";
 
 export const maxDuration = 30;
 export const preferredRegion = "hkg1";
@@ -18,6 +20,8 @@ export const preferredRegion = "hkg1";
 const requestSchema = z.object({
   audio: z.string().min(100).max(3_500_000),
   language: z.enum(["auto", "zh", "en"]).default("auto"),
+  meterKey: z.string().uuid(),
+  durationMs: z.number().int().min(100).max(45_000),
 }).strict();
 
 export async function POST(request: NextRequest) {
@@ -61,6 +65,12 @@ export async function POST(request: NextRequest) {
     }) as { choices?: { message?: { content?: string } }[] } | null;
     const transcript = payload?.choices?.[0]?.message?.content?.trim();
     if (!transcript) throw new StarInterviewUpstreamError(502, "empty");
+    const charge = await chargeStarInterviewUsage(authorization.access, {
+      feature: "asr",
+      meterKey: parsed.data.meterKey,
+      units: parsed.data.durationMs,
+    });
+    if ("response" in charge) return charge.response;
     return NextResponse.json(
       { transcript },
       {
@@ -68,6 +78,7 @@ export async function POST(request: NextRequest) {
           "Cache-Control": "no-store",
           "X-StarInterview-Service": "cloud-v1",
           ...starInterviewUsageHeaders(authorization.access),
+          ...starInterviewChargeHeaders(charge.result),
         },
       },
     );

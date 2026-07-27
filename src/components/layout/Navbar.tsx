@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { BriefcaseIcon, FileTextIcon, FlaskIcon, ListChecksIcon, ShieldCheckIcon, SignOutIcon, UserCircleIcon } from "@phosphor-icons/react";
-import { BookOpen } from "lucide-react";
+import { BookOpen, WalletCards } from "lucide-react";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { getCurrentUserOrNull } from "@/lib/auth";
@@ -178,6 +178,10 @@ export function Navbar({ appearance = "work" }: { appearance?: "scene" | "work" 
                   管理
                 </Link>
               ) : null}
+              <Link href="/billing" className="text-action pressable h-9 px-2.5 text-sm" onClick={(event) => handleSceneLink(event, "/billing")}>
+                <WalletCards aria-hidden="true" className="size-4" />
+                诘星余额
+              </Link>
               <Link href="/profile" className="text-action pressable h-9 px-2.5 text-sm" onClick={(event) => handleSceneLink(event, "/profile")}>
                 <UserCircleIcon aria-hidden="true" className="size-4" weight="regular" />
                 {profile.display_name || "资料"}
