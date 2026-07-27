@@ -45,9 +45,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/lib/star-interview-access.ts",
-    mustInclude: ["authenticateStarInterviewRequest", "star_interview_unlimited_access", "metered_not_enforced", "reserveStarInterviewUsage", "createAdminClient"],
+    mustInclude: ["authenticateStarInterviewRequest", "star_interview_unlimited_access", '"metered"', "chargeStarInterviewUsage", "consumeStarInterviewUsage", "createAdminClient"],
     mustNotInclude: ["NEXT_PUBLIC_", "SUPABASE_SERVICE_ROLE_KEY"],
-    label: "诘星 ASR 与回答共用登录鉴权、无限访问权限和后续按量计费预留口",
+    label: "诘星 ASR 与回答共用登录鉴权、无限访问权限和按量计费扣费口",
   },
   {
     file: "src/app/layout.tsx",
@@ -1108,7 +1108,7 @@ const REQUIRED_TEXT = {
   "/forum": ["拾星指南"],
   "/extension": ["一份简历，", "抵达更多坐标", "把拾星简历同步到浏览器", "获取安装包", "正在检测网申助手"],
   "/extension/guide": ["安装拾星网申助手", "加载已解压的扩展", "同步简历"],
-  "/interview": ["谛听察意", "应答成章", "先听懂", "不是临场编造", "先给你一条路"],
+  "/interview": ["谛听察意", "应答成章", "先听懂", "协助你结构化表达你曾经做过的事", "陪你把话表达清楚"],
   "/admin": ["管理后台"],
 };
 

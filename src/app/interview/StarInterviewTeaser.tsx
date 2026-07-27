@@ -186,37 +186,20 @@ export function StarInterviewTeaser() {
           <ChapterCopy
             index="02"
             eyebrow="RECALL"
-            title="不是临场编造，是找回做过的事。"
+            title="协助你结构化表达你曾经做过的事。"
             id="resume-title"
             reducedMotion={Boolean(reducedMotion)}
           >
             诘星从你授权的拾星简历里寻找与问题有关的经历。项目、职责与结果，
             都来自你已经确认过的内容。
           </ChapterCopy>
-          <motion.div
-            className={styles.resumeVisual}
-            initial={reducedMotion ? false : { opacity: 0, x: 70 }}
-            whileInView={reducedMotion ? undefined : { opacity: 1, x: 0 }}
-            viewport={{ once: true, amount: 0.4 }}
-            transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
-            aria-hidden="true"
-          >
-            <span>拾星简历 · 已授权</span>
-            <p>校园咨询项目</p>
-            <h3>在两周内重新梳理调研路径，把零散访谈变成可验证的结论。</h3>
-            <div>
-              <i />
-              <i />
-              <i />
-            </div>
-          </motion.div>
         </section>
 
         <section className={`${styles.chapter} ${styles.answerChapter}`} aria-labelledby="answer-title">
           <ChapterCopy
             index="03"
             eyebrow="RESPOND"
-            title="先给你一条路，再陪你把话说完整。"
+            title="陪你把话表达清楚。"
             id="answer-title"
             reducedMotion={Boolean(reducedMotion)}
           >
