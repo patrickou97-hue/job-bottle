@@ -140,3 +140,35 @@ test("route charges once after upstream 200 and before exposing bytes", async ()
   assert.ok(chargeIndex < responseIndex);
   assert.match(streamFunction, /runBeforeExposingCompletionStream/);
 });
+
+test("route maps the compatible client token field to MiMo completion tokens", async () => {
+  const route = await readFile(
+    new URL("../src/app/api/star-interview/completion/route.ts", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(route, /max_tokens:\s*z\.number/);
+  assert.equal(
+    (route.match(/thinking:\s*\{\s*type:\s*"disabled"\s*\}/g) ?? []).length,
+    2,
+  );
+  assert.equal(
+    (route.match(/max_completion_tokens:\s*(?:parsed\.data|input)\.max_tokens/g) ?? []).length,
+    2,
+  );
+  assert.doesNotMatch(route, /^\s*max_tokens:\s*(?:parsed\.data|input)\.max_tokens,/m);
+});
+
+test("streaming interview times out at 12 seconds without shrinking resume parsing", async () => {
+  const route = await readFile(
+    new URL("../src/app/api/star-interview/completion/route.ts", import.meta.url),
+    "utf8",
+  );
+
+  assert.equal((route.match(/timeoutMs:\s*12_000/g) ?? []).length, 1);
+  assert.equal((route.match(/timeoutMs:\s*55_000/g) ?? []).length, 1);
+  const streamFunction = route.slice(route.indexOf("async function streamCompletion"));
+  assert.match(streamFunction, /timeoutMs:\s*12_000/);
+  assert.doesNotMatch(streamFunction, /timeoutMs:\s*55_000/);
+  assert.match(route, /max_tokens:\s*z\.number\(\)\.int\(\)\.min\(1\)\.max\(3_500\)/);
+});
