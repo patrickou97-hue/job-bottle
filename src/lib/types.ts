@@ -685,6 +685,7 @@ export type Database = {
           status: "pending" | "paid" | "closed" | "refunded";
           provider: "wechat_native";
           provider_order_id: string | null;
+          provider_transaction_id: string | null;
           code_url: string | null;
           expires_at: string;
           paid_at: string | null;
@@ -698,6 +699,7 @@ export type Database = {
           status?: "pending" | "paid" | "closed" | "refunded";
           provider?: "wechat_native";
           provider_order_id?: string | null;
+          provider_transaction_id?: string | null;
           code_url?: string | null;
           expires_at: string;
           paid_at?: string | null;
@@ -707,6 +709,7 @@ export type Database = {
         Update: {
           status?: "pending" | "paid" | "closed" | "refunded";
           provider_order_id?: string | null;
+          provider_transaction_id?: string | null;
           code_url?: string | null;
           paid_at?: string | null;
           updated_at?: string;
