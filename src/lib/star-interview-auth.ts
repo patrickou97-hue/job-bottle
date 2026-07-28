@@ -134,6 +134,17 @@ export async function exchangeStarInterviewAuthorizationCode(input: {
   });
 }
 
+export async function createStarInterviewSessionForUser(
+  userId: string,
+  installId: string,
+) {
+  return createSession({
+    userId,
+    installIdHash: hash(installId),
+    scopes: [...STAR_INTERVIEW_SCOPES],
+  });
+}
+
 async function createSession(input: {
   userId: string;
   installIdHash: string;
