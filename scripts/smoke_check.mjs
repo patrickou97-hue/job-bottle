@@ -27,7 +27,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/star-interview/completion/route.ts",
-    mustInclude: ["validateStarInterviewClient", "requireStarInterviewUsageAccess", "\"completion\"", "starInterviewUsageHeaders", "getMimoCompletionConfiguration", "STAR_INTERVIEW_FAST_ANSWER_MODEL", "response_format", "json_object", "Cache-Control", "no-store", "maxDuration = 60", "preferredRegion = \"hkg1\"", "max_tokens"],
+    mustInclude: ["validateStarInterviewClient", "requireStarInterviewUsageAccess", "\"completion\"", "starInterviewUsageHeaders", "getMimoConfiguration", "z.literal(\"mimo-v2.5\")", "response_format", "json_object", "Cache-Control", "no-store", "maxDuration = 60", "preferredRegion = \"hkg1\"", "max_tokens"],
     mustNotInclude: ["NEXT_PUBLIC_", "SUPABASE_SERVICE_ROLE_KEY"],
     label: "诘星 macOS 文本生成仅由服务端读取模型密钥并具备客户端校验与禁止缓存",
   },
@@ -38,14 +38,8 @@ const SOURCE_INVARIANTS = [
     label: "诘星实时语音转写走服务端代理且频率额度覆盖高频分片",
   },
   {
-    file: "src/app/api/star-interview/health/route.ts",
-    mustInclude: ["getMimoCompletionConfiguration", "STAR_INTERVIEW_FAST_ANSWER_MODEL", "fastAnswer", "\"ready\"", "\"unconfigured\"", "Cache-Control", "no-store"],
-    mustNotInclude: ["MIMO_FAST_ANSWER_API_KEY", "MIMO_API_KEY", "NEXT_PUBLIC_", "SUPABASE_SERVICE_ROLE_KEY"],
-    label: "诘星健康接口仅报告快速回答配置状态而不暴露任何密钥",
-  },
-  {
     file: "src/lib/star-interview-server.ts",
-    mustInclude: ["server-only", "x-starinterview-client", "x-starinterview-install-id", "x-forwarded-for", "MIMO_API_KEY", "MIMO_BASE_URL", "const llmModel = \"mimo-v2.5\"", "MIMO_FAST_ANSWER_API_KEY", "MIMO_FAST_ANSWER_BASE_URL", "mimo-v2.5-pro-ultraspeed", "https://api.xiaomimimo.com/v1", "MIMO_ASR_MODEL", "MIMO_ASR_BASE_URL", "https://token-plan-cn.xiaomimimo.com/v1"],
+    mustInclude: ["server-only", "x-starinterview-client", "x-starinterview-install-id", "x-forwarded-for", "MIMO_API_KEY", "MIMO_BASE_URL", "const llmModel = \"mimo-v2.5\"", "MIMO_ASR_MODEL", "MIMO_ASR_BASE_URL", "https://token-plan-cn.xiaomimimo.com/v1"],
     mustNotInclude: ["NEXT_PUBLIC_", "SUPABASE_SERVICE_ROLE_KEY"],
     label: "诘星云端配置和原始模型密钥只存在于服务端",
   },
