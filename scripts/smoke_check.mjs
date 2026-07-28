@@ -345,9 +345,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/layout/Navbar.tsx",
-    mustInclude: ["岗位坐标", "投递管理", "简历制作", "href: \"/extension\"", "label: \"网申助手\"", "BETA", "nav-beta", "拾星指南", "星瓶", "个人中心", "href: \"/feedback\"", "label: \"反馈\"", "mobileNavItems", "grid-cols-6", "移动主导航", "bottom-0", "primary-nav-indicator", "mobile-nav-indicator", "profile ? \"个人中心\" : \"登录\""],
+    mustInclude: ["岗位坐标", "投递管理", "简历制作", "href: \"/extension\"", "label: \"网申助手\"", "BETA", "nav-beta", "拾星指南", "星瓶", "个人中心", "href: \"/feedback\"", "label: \"反馈\"", "mobileNavItems", "grid-cols-6", "移动主导航", "bottom-0", "primary-nav-indicator", "mobile-nav-indicator", "profile ? \"个人中心\" : \"登录\"", "/interview?preview=recruitment#preview-recruitment"],
     mustNotInclude: ["找岗位", "求职交流", "label: \"我的\"", "label: \"首页\""],
-    label: "桌面顶部独立展示反馈入口且移动端保持原六项主导航",
+    label: "桌面顶部独立展示反馈入口、彩蛋直达诘星招募页且移动端保持原六项主导航",
   },
   {
     file: "src/components/resume/ResumePreview.tsx",
