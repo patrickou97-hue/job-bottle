@@ -159,6 +159,35 @@ test("route maps the compatible client token field to MiMo completion tokens", a
   assert.doesNotMatch(route, /^\s*max_tokens:\s*(?:parsed\.data|input)\.max_tokens,/m);
 });
 
+test("route allowlists the dedicated fast-answer model and resolves it server-side", async () => {
+  const route = await readFile(
+    new URL("../src/app/api/star-interview/completion/route.ts", import.meta.url),
+    "utf8",
+  );
+  const server = await readFile(
+    new URL("../src/lib/star-interview-server.ts", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(route, /STAR_INTERVIEW_FAST_ANSWER_MODEL/);
+  assert.match(route, /getMimoCompletionConfiguration\(parsed\.data\.model\)/);
+  assert.match(server, /MIMO_FAST_ANSWER_API_KEY/);
+  assert.match(server, /MIMO_FAST_ANSWER_BASE_URL/);
+  assert.match(server, /https:\/\/api\.xiaomimimo\.com\/v1/);
+  assert.match(server, /mimo-v2\.5-pro-ultraspeed/);
+});
+
+test("health reports fast-answer configuration without exposing credentials", async () => {
+  const health = await readFile(
+    new URL("../src/app/api/star-interview/health/route.ts", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(health, /fastAnswerConfigured/);
+  assert.match(health, /fastAnswer:\s*fastAnswerConfigured\s*\?\s*"ready"/);
+  assert.doesNotMatch(health, /MIMO_FAST_ANSWER_API_KEY/);
+});
+
 test("streaming interview times out at 12 seconds without shrinking resume parsing", async () => {
   const route = await readFile(
     new URL("../src/app/api/star-interview/completion/route.ts", import.meta.url),

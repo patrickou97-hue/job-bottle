@@ -72,6 +72,31 @@ export function getMimoConfiguration() {
   return { apiKey, baseUrl, llmModel, asrModel, asrBaseUrl };
 }
 
+export const STAR_INTERVIEW_FAST_ANSWER_MODEL = "mimo-v2.5-pro-ultraspeed";
+
+export function getMimoCompletionConfiguration(
+  requestedModel: "mimo-v2.5" | typeof STAR_INTERVIEW_FAST_ANSWER_MODEL,
+) {
+  if (requestedModel === STAR_INTERVIEW_FAST_ANSWER_MODEL) {
+    const apiKey = process.env.MIMO_FAST_ANSWER_API_KEY;
+    if (!apiKey) return null;
+    return {
+      apiKey,
+      baseUrl: process.env.MIMO_FAST_ANSWER_BASE_URL
+        || "https://api.xiaomimimo.com/v1",
+      llmModel: STAR_INTERVIEW_FAST_ANSWER_MODEL,
+    };
+  }
+
+  const config = getMimoConfiguration();
+  if (!config) return null;
+  return {
+    apiKey: config.apiKey,
+    baseUrl: config.baseUrl,
+    llmModel: config.llmModel,
+  };
+}
+
 export function getChatCompletionsUrl(baseUrl: string) {
   const normalized = baseUrl.trim().replace(/\/+$/, "");
   return normalized.endsWith("/chat/completions")
