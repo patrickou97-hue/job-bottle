@@ -786,6 +786,24 @@ const SOURCE_INVARIANTS = [
     label: "管理员用户页用摘要表、组合筛选和展开编辑管理账户及 StarInterview 权限",
   },
   {
+    file: "src/components/admin/AdminBillingClient.tsx",
+    mustInclude: ["返回管理后台", "搜索后显示账户", "不再默认展示全部用户", "单人发放", "全员发放", "最近账本", "确认并发放", "summaryOnly=1", "userId="],
+    mustNotInclude: ["用户管理 → 技术信息", "SUPABASE_SERVICE_ROLE_KEY"],
+    label: "余额管理页搜索后才展示账户并在同一工作区完成核对、发放和账本追溯",
+  },
+  {
+    file: "src/app/admin/billing/page.tsx",
+    mustInclude: ["AdminShell", "AdminBillingClient"],
+    mustNotInclude: [],
+    label: "余额管理页接入统一后台权限壳层和返回导航",
+  },
+  {
+    file: "src/app/api/admin/star-interview-balance/route.ts",
+    mustInclude: ["summaryOnly", "selectedUserId", "star_interview_ledger", "fundedUsers", "totalBalanceFen", "requirePrimaryAdmin", "idempotencyKey"],
+    mustNotInclude: ["NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY"],
+    label: "余额管理 API 独立提供概览、搜索结果、单用户账本和幂等发放",
+  },
+  {
     file: "src/app/api/announcements/latest/route.ts",
     mustInclude: ["auth.getUser", "createAdminClient", "forum_posts", ".eq(\"category\", \"公告\")", "profile.role === \"admin\"", "accountCreatedAt >= announcementCreatedAt", "latest_announcement_seen_id", "private, no-store"],
     mustNotInclude: ["NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY", "email", "password"],

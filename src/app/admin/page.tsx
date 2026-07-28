@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Database, Rows3, Users } from "lucide-react";
+import { Coins, Database, Rows3, Users } from "lucide-react";
 import { AdminShell } from "@/components/layout/AdminShell";
 
 const adminActions = [
@@ -20,6 +20,12 @@ const adminActions = [
     title: "用户管理",
     body: "查看用户账户、使用情况和邮箱状态，管理账户身份与登录权限。",
     icon: Users,
+  },
+  {
+    href: "/admin/billing",
+    title: "余额管理",
+    body: "搜索账户、核对余额并发放诘星使用额度，查看最近账本记录。",
+    icon: Coins,
   },
 ];
 

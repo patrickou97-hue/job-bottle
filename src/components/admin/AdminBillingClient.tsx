@@ -1,166 +1,615 @@
 "use client";
 
-import { Coins, Search, Send, UsersRound } from "lucide-react";
+import Link from "next/link";
+import {
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  CircleDollarSign,
+  Coins,
+  History,
+  Search,
+  Send,
+  ShieldAlert,
+  UserRound,
+  UsersRound,
+  WalletCards,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { cn, formatDateTime } from "@/lib/utils";
+
+const AMOUNT_PRESETS = ["10", "20", "50", "100"];
+
+const EMPTY_SUMMARY: BalanceSummary = {
+  totalUsers: 0,
+  fundedUsers: 0,
+  unlimitedUsers: 0,
+  totalBalanceFen: 0,
+};
 
 export function AdminBillingClient() {
-  const [scope, setScope] = useState<"single" | "all">("single");
-  const [userId, setUserId] = useState("");
+  const [mode, setMode] = useState<"single" | "batch">("single");
+  const [summary, setSummary] = useState<BalanceSummary>(EMPTY_SUMMARY);
+  const [summaryState, setSummaryState] = useState<"loading" | "ready" | "error">("loading");
+  const [query, setQuery] = useState("");
+  const [searchedQuery, setSearchedQuery] = useState("");
+  const [users, setUsers] = useState<BalanceUser[]>([]);
+  const [searchState, setSearchState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [selectedUser, setSelectedUser] = useState<BalanceUser | null>(null);
+  const [ledger, setLedger] = useState<LedgerEntry[]>([]);
+  const [ledgerState, setLedgerState] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [amountYuan, setAmountYuan] = useState("20");
   const [reason, setReason] = useState("诘星体验余额");
   const [confirming, setConfirming] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
-  const [query, setQuery] = useState("");
-  const [users, setUsers] = useState<BalanceUser[]>([]);
-  const [listState, setListState] = useState<"loading" | "ready" | "error">("loading");
-  const [total, setTotal] = useState(0);
+  const [messageTone, setMessageTone] = useState<"info" | "success" | "error">("info");
 
   useEffect(() => {
-    let mounted = true;
-    void fetch("/api/admin/star-interview-balance", { cache: "no-store" })
-      .then(async (response) => ({ response, payload: await response.json().catch(() => ({})) }))
-      .then(({ response, payload }) => {
-        if (!mounted) return;
-        if (!response.ok) {
-          setMessage(typeof payload.error === "string" ? payload.error : "诘星余额列表暂时无法读取。");
-          setListState("error");
-          return;
-        }
-        setUsers(payload.users as BalanceUser[]);
-        setTotal(payload.total as number);
-        setListState("ready");
-      });
-    return () => { mounted = false; };
+    void loadSummary();
   }, []);
 
-  async function loadUsers() {
-    setListState("loading");
-    const params = new URLSearchParams();
-    if (query.trim()) params.set("query", query.trim());
+  async function loadSummary() {
+    setSummaryState("loading");
+    const response = await fetch("/api/admin/star-interview-balance?summaryOnly=1", { cache: "no-store" });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      setSummaryState("error");
+      return;
+    }
+    setSummary(payload.summary as BalanceSummary);
+    setSummaryState("ready");
+  }
+
+  async function searchUsers(nextPage = 1) {
+    const normalizedQuery = query.trim();
+    if (!normalizedQuery) {
+      setSearchState("idle");
+      setUsers([]);
+      setTotal(0);
+      setPage(1);
+      setTotalPages(1);
+      setMessage("");
+      return;
+    }
+
+    setSearchState("loading");
+    setMessage("");
+    setConfirming(false);
+    const params = new URLSearchParams({ query: normalizedQuery, page: String(nextPage) });
     const response = await fetch(`/api/admin/star-interview-balance?${params}`, { cache: "no-store" });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
-      setMessage(typeof payload.error === "string" ? payload.error : "诘星余额列表暂时无法读取。");
-      setListState("error");
+      setMessage(typeof payload.error === "string" ? payload.error : "用户余额暂时无法读取。");
+      setMessageTone("error");
+      setSearchState("error");
       return;
     }
     setUsers(payload.users as BalanceUser[]);
+    setSearchedQuery(normalizedQuery);
+    setPage(payload.page as number);
     setTotal(payload.total as number);
-    setListState("ready");
+    setTotalPages(payload.totalPages as number);
+    setSearchState("ready");
+  }
+
+  async function selectUser(user: BalanceUser) {
+    setMode("single");
+    setSelectedUser(user);
+    setConfirming(false);
+    setMessage("");
+    setLedger([]);
+    setLedgerState("loading");
+    const response = await fetch(`/api/admin/star-interview-balance?userId=${encodeURIComponent(user.id)}`, {
+      cache: "no-store",
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      setLedgerState("error");
+      return;
+    }
+    setSelectedUser(payload.user as BalanceUser);
+    setLedger(payload.ledger as LedgerEntry[]);
+    setLedgerState("ready");
+  }
+
+  function resetConfirmation() {
+    setConfirming(false);
+    setMessage("");
   }
 
   async function submit() {
-    if (!confirming) {
-      setConfirming(true);
-      setMessage(scope === "all" ? "请再次点击确认：余额将发放给全部注册用户。" : "请再次点击确认本次单用户发放。");
+    const amount = Number(amountYuan);
+    if (!Number.isFinite(amount) || amount < 1 || amount > 1_000) {
+      setMessage("发放金额需在 ¥1.00 至 ¥1,000.00 之间。");
+      setMessageTone("error");
       return;
     }
+    if (!reason.trim()) {
+      setMessage("请填写账本说明。");
+      setMessageTone("error");
+      return;
+    }
+    if (mode === "single" && !selectedUser) {
+      setMessage("请先搜索并选择一个用户。");
+      setMessageTone("error");
+      return;
+    }
+    if (!confirming) {
+      setConfirming(true);
+      setMessageTone("info");
+      setMessage(
+        mode === "batch"
+          ? `将向全部 ${summary.totalUsers} 位注册用户发放 ¥${amount.toFixed(2)}，请再次点击确认。`
+          : `将向 ${selectedUser?.displayName} 发放 ¥${amount.toFixed(2)}，请再次点击确认。`,
+      );
+      return;
+    }
+
     setSaving(true);
     setMessage("");
-    const amountFen = Math.round(Number(amountYuan) * 100);
     const response = await fetch("/api/admin/star-interview-balance", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        ...(scope === "all" ? { allUsers: true } : { userIds: [userId.trim()] }),
-        amountFen,
-        reason,
+        ...(mode === "batch" ? { allUsers: true } : { userIds: [selectedUser?.id] }),
+        amountFen: Math.round(amount * 100),
+        reason: reason.trim(),
         idempotencyKey: crypto.randomUUID(),
       }),
     });
     const payload = await response.json().catch(() => ({}));
     setSaving(false);
     setConfirming(false);
-    setMessage(response.ok
-      ? `已向 ${payload.succeeded} 位用户发放 ¥${Number(amountYuan).toFixed(2)}。`
-      : typeof payload.error === "string" ? payload.error : "余额发放失败。");
-    if (response.ok) void loadUsers();
+
+    if (!response.ok) {
+      setMessage(typeof payload.error === "string" ? payload.error : "余额发放失败。");
+      setMessageTone("error");
+      return;
+    }
+
+    setMessage(`发放完成：${payload.succeeded} 位用户已到账 ¥${amount.toFixed(2)}。`);
+    setMessageTone("success");
+    void loadSummary();
+    if (selectedUser && mode === "single") {
+      const responseAfterGrant = await fetch(
+        `/api/admin/star-interview-balance?userId=${encodeURIComponent(selectedUser.id)}`,
+        { cache: "no-store" },
+      );
+      const payloadAfterGrant = await responseAfterGrant.json().catch(() => ({}));
+      if (responseAfterGrant.ok) {
+        setSelectedUser(payloadAfterGrant.user as BalanceUser);
+        setLedger(payloadAfterGrant.ledger as LedgerEntry[]);
+        setLedgerState("ready");
+      }
+    }
   }
 
   return (
-    <div className="space-y-8">
-      <header className="border-b border-[color:var(--line-ghost)] pb-7">
-        <p className="page-kicker">StarInterview · 计费</p>
-        <h1 className="page-title mt-3">余额发放</h1>
-        <p className="page-description mt-3">所有赠送都写入用户账本。重复请求由幂等键拦截，不会重复到账。</p>
-      </header>
-      <section className="border-b border-[color:var(--line-ghost)] pb-9">
-        <div className="flex flex-wrap items-end justify-between gap-4">
+    <div className="mx-auto max-w-[1180px] space-y-9 pb-16">
+      <header className="border-b border-[color:var(--line-ghost)] px-1 pb-8 sm:px-2">
+        <Link
+          href="/admin"
+          className="text-action -ml-2 mb-6 inline-flex h-9 items-center gap-2 px-2 text-sm"
+        >
+          <ArrowLeft aria-hidden="true" className="size-4" />
+          返回管理后台
+        </Link>
+        <div className="flex flex-wrap items-end justify-between gap-6">
           <div>
-            <p className="section-eyebrow"><Coins className="size-4" />用户余额</p>
-            <h2 className="section-title mt-3">账户账本概览</h2>
-            <p className="mt-2 text-sm text-ink-muted">{total} 位用户 · 点击用户即可进入单独发放</p>
+            <p className="page-kicker">StarInterview · 账户资金</p>
+            <h1 className="page-title mt-3">余额管理</h1>
+            <p className="page-description mt-3 max-w-2xl">
+              搜索并确认账户后再发放余额。每笔操作都会写入账本，支持追溯且不会重复到账。
+            </p>
           </div>
-          <div className="flex w-full gap-2 sm:w-auto">
-            <label className="relative min-w-0 flex-1 sm:w-80">
-              <span className="sr-only">搜索用户余额</span>
-              <Search className="pointer-events-none absolute left-3 top-3 size-4 text-ink-muted" />
-              <Input value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void loadUsers(); }} placeholder="姓名、邮箱或用户 ID" className="pl-9" />
-            </label>
-            <Button variant="secondary" onClick={() => void loadUsers()}>搜索</Button>
+          <div className="flex rounded-xl bg-[color:var(--surface-subtle-bg)] p-1" aria-label="发放模式">
+            <button
+              type="button"
+              onClick={() => {
+                setMode("single");
+                resetConfirmation();
+              }}
+              className={modeButtonClass(mode === "single")}
+              aria-pressed={mode === "single"}
+            >
+              <UserRound aria-hidden="true" className="size-4" />
+              单人发放
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMode("batch");
+                resetConfirmation();
+              }}
+              className={modeButtonClass(mode === "batch")}
+              aria-pressed={mode === "batch"}
+            >
+              <UsersRound aria-hidden="true" className="size-4" />
+              全员发放
+            </button>
           </div>
         </div>
-        {listState === "loading" ? (
-          <div className="py-10 text-sm text-ink-muted"><span className="loading-line">正在读取用户余额</span></div>
-        ) : users.length ? (
-          <div className="mt-6 overflow-hidden border-y border-[color:var(--line-ghost)]">
-            <div className="hidden grid-cols-[minmax(220px,1.4fr)_110px_130px_130px] gap-4 border-b border-[color:var(--line-ghost)] py-3 text-xs font-medium text-ink-muted md:grid">
-              <span>用户</span><span>访问方式</span><span className="text-right">当前余额</span><span className="text-right">累计消耗</span>
-            </div>
-            {users.map((user) => (
-              <button
-                key={user.id}
-                type="button"
-                onClick={() => {
-                  setScope("single");
-                  setUserId(user.id);
-                  setConfirming(false);
-                  setMessage(`已选择 ${user.displayName}（${user.email}）。`);
-                }}
-                className="grid w-full gap-2 border-b border-[color:var(--line-ghost)] py-4 text-left transition-colors last:border-b-0 hover:bg-[color:var(--surface-hover-bg)]/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--aurora)] md:grid-cols-[minmax(220px,1.4fr)_110px_130px_130px] md:items-center md:gap-4"
-              >
-                <span className="min-w-0">
-                  <strong className="block truncate text-sm text-ink-primary">{user.displayName}</strong>
-                  <span className="mt-1 block truncate text-xs text-ink-muted">{user.email}</span>
-                </span>
-                <span className="text-xs text-ink-secondary">{user.accessMode === "unlimited" ? "无限使用" : "标准计费"}</span>
-                <strong className="text-sm tabular-nums text-ink-primary md:text-right">¥{fen(user.balanceFen)}</strong>
-                <span className="text-sm tabular-nums text-ink-secondary md:text-right">¥{fen(user.nominalSpentFen)}</span>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <div className="mt-6 border-y border-[color:var(--line-ghost)] py-10 text-sm text-ink-muted">没有符合条件的用户。</div>
-        )}
+      </header>
+
+      <section className="grid gap-px overflow-hidden rounded-[22px] border border-[color:var(--line-ghost)] bg-[color:var(--line-ghost)] sm:grid-cols-2 xl:grid-cols-4">
+        <SummaryMetric
+          label="注册账户"
+          value={summaryState === "ready" ? String(summary.totalUsers) : "—"}
+          helper="全部 StarInterview 账户"
+        />
+        <SummaryMetric
+          label="有余额账户"
+          value={summaryState === "ready" ? String(summary.fundedUsers) : "—"}
+          helper="当前余额大于 ¥0"
+        />
+        <SummaryMetric
+          label="无限使用"
+          value={summaryState === "ready" ? String(summary.unlimitedUsers) : "—"}
+          helper="仍记录影子消耗"
+        />
+        <SummaryMetric
+          label="账户余额合计"
+          value={summaryState === "ready" ? `¥${fen(summary.totalBalanceFen)}` : "—"}
+          helper={summaryState === "error" ? "概览暂时无法读取" : "所有账户当前余额"}
+        />
       </section>
 
-      <section className="grid gap-8 lg:grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)]">
-        <div>
-          <p className="section-eyebrow"><UsersRound className="size-4" />发放范围</p>
-          <div className="mt-4 flex gap-2">
-            <Button variant={scope === "single" ? "primary" : "secondary"} onClick={() => { setScope("single"); setConfirming(false); }}>单个用户</Button>
-            <Button variant={scope === "all" ? "primary" : "secondary"} onClick={() => { setScope("all"); setConfirming(false); }}>全部用户</Button>
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(340px,0.84fr)_minmax(0,1.16fr)]">
+        <section
+          aria-labelledby="account-search-title"
+          className="rounded-[24px] border border-[color:var(--line-ghost)] bg-[color:var(--surface-read-bg-strong)] p-5 sm:p-7"
+        >
+          <div className="flex items-start gap-3">
+            <Search aria-hidden="true" className="mt-1 size-5 text-[color:var(--aurora)]" />
+            <div>
+              <h2 id="account-search-title" className="section-title">查找账户</h2>
+              <p className="mt-2 text-sm leading-6 text-ink-secondary">输入姓名、邮箱或用户 ID，不再默认展示全部用户。</p>
+            </div>
           </div>
-          <p className="mt-4 text-sm leading-7 text-ink-secondary">单个发放时，可从“用户管理 → 技术信息”复制用户 ID。</p>
-        </div>
-        <div className="space-y-4 border-l border-[color:var(--line-ghost)] pl-6">
-          {scope === "single" ? <label><span className="mb-1.5 block text-xs text-ink-muted">用户 ID</span><Input value={userId} onChange={(event) => { setUserId(event.target.value); setConfirming(false); }} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" /></label> : <div className="border-l-2 border-aurum/60 pl-4 text-sm leading-6 text-ink-secondary">本次操作会覆盖全部已注册账户，包括无限账户；无限账户余额会增加，但仍只记录影子消耗。</div>}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label><span className="mb-1.5 block text-xs text-ink-muted">发放金额（元）</span><Input type="number" min="1" max="1000" step="1" value={amountYuan} onChange={(event) => { setAmountYuan(event.target.value); setConfirming(false); }} /></label>
-            <label><span className="mb-1.5 block text-xs text-ink-muted">账本说明</span><Input value={reason} onChange={(event) => { setReason(event.target.value); setConfirming(false); }} /></label>
+
+          <div className="mt-6 flex gap-2">
+            <label className="min-w-0 flex-1">
+              <span className="sr-only">搜索用户</span>
+              <Input
+                value={query}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  if (!event.target.value.trim()) {
+                    setSearchState("idle");
+                    setUsers([]);
+                  }
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") void searchUsers(1);
+                }}
+                placeholder="姓名、邮箱或用户 ID"
+              />
+            </label>
+            <Button variant="secondary" onClick={() => void searchUsers(1)} disabled={!query.trim()}>
+              搜索
+            </Button>
           </div>
-          {message ? <p className="border-l-2 border-nebula-blue/70 pl-3 text-sm leading-6 text-ink-secondary" role="status">{message}</p> : null}
-          <Button disabled={saving || !reason.trim() || !amountYuan || (scope === "single" && !userId.trim())} onClick={() => void submit()}>
-            {confirming ? <Coins className="size-4" /> : <Send className="size-4" />}{saving ? "正在发放" : confirming ? "确认发放" : "发放余额"}
-          </Button>
-        </div>
-      </section>
+
+          <div className="mt-6 min-h-64 border-t border-[color:var(--line-ghost)]">
+            {searchState === "idle" ? (
+              <SearchEmpty />
+            ) : searchState === "loading" ? (
+              <div className="py-10 text-sm text-ink-muted">
+                <span className="loading-line">正在查找账户</span>
+              </div>
+            ) : searchState === "error" ? (
+              <div className="py-10 text-sm text-[color:var(--text-danger)]">搜索失败，请稍后重试。</div>
+            ) : users.length ? (
+              <>
+                <div className="flex items-center justify-between px-1 py-4 text-xs text-ink-muted">
+                  <span>“{searchedQuery}”找到 {total} 位用户</span>
+                  {totalPages > 1 ? <span>{page} / {totalPages} 页</span> : null}
+                </div>
+                <div className="border-y border-[color:var(--line-ghost)]">
+                  {users.map((user) => {
+                    const active = selectedUser?.id === user.id;
+                    return (
+                      <button
+                        key={user.id}
+                        type="button"
+                        onClick={() => void selectUser(user)}
+                        className={cn(
+                          "group grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-b border-[color:var(--line-ghost)] px-4 py-4 text-left transition-colors last:border-b-0 hover:bg-[color:var(--surface-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--aurora)]",
+                          active && "bg-[color:var(--surface-hover-bg)]",
+                        )}
+                      >
+                        <span className="min-w-0">
+                          <span className="flex items-center gap-2">
+                            <strong className="truncate text-sm text-ink-primary">{user.displayName}</strong>
+                            {user.accessMode === "unlimited" ? (
+                              <span className="rounded-full bg-[color:var(--surface-subtle-bg)] px-2 py-0.5 text-[11px] text-ink-secondary">无限</span>
+                            ) : null}
+                          </span>
+                          <span className="mt-1 block truncate text-xs text-ink-muted">{user.email}</span>
+                        </span>
+                        <span className="text-right">
+                          <strong className="block text-sm tabular-nums text-ink-primary">¥{fen(user.balanceFen)}</strong>
+                          <span className="mt-1 block text-[11px] text-ink-muted">选择账户</span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {totalPages > 1 ? (
+                  <div className="mt-4 flex items-center justify-end gap-2">
+                    <Button
+                      variant="secondary"
+                      className="min-h-9 px-3"
+                      disabled={page <= 1}
+                      onClick={() => void searchUsers(page - 1)}
+                    >
+                      <ChevronLeft aria-hidden="true" className="size-4" />
+                      上一页
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      className="min-h-9 px-3"
+                      disabled={page >= totalPages}
+                      onClick={() => void searchUsers(page + 1)}
+                    >
+                      下一页
+                      <ChevronRight aria-hidden="true" className="size-4" />
+                    </Button>
+                  </div>
+                ) : null}
+              </>
+            ) : (
+              <div className="py-10">
+                <p className="text-sm font-medium text-ink-primary">没有找到匹配账户</p>
+                <p className="mt-2 text-sm text-ink-muted">检查姓名或邮箱，也可以粘贴完整用户 ID。</p>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section
+          aria-labelledby="grant-title"
+          className="rounded-[24px] border border-[color:var(--line-ghost)] bg-[color:var(--surface-read-bg-strong)] p-5 sm:p-7"
+        >
+          <div className="flex items-start gap-3">
+            <CircleDollarSign aria-hidden="true" className="mt-1 size-5 text-[color:var(--aurora)]" />
+            <div>
+              <h2 id="grant-title" className="section-title">设置发放</h2>
+              <p className="mt-2 text-sm leading-6 text-ink-secondary">
+                {mode === "single" ? "核对选中账户与余额，再填写金额和账本说明。" : "全员发放属于高影响操作，需要二次确认。"}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6 rounded-2xl bg-[color:var(--surface-subtle-bg)] p-5 sm:p-6">
+            {mode === "single" ? (
+              selectedUser ? (
+                <div className="flex flex-wrap items-start justify-between gap-5">
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-ink-muted">发放对象</p>
+                    <h3 className="mt-2 truncate text-lg font-semibold text-ink-primary">{selectedUser.displayName}</h3>
+                    <p className="mt-1 truncate text-sm text-ink-secondary">{selectedUser.email}</p>
+                    <p className="mt-2 font-mono text-[11px] text-ink-muted">{selectedUser.id}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-7 gap-y-2 text-right">
+                    <MetricPair label="当前余额" value={`¥${fen(selectedUser.balanceFen)}`} />
+                    <MetricPair label="累计消耗" value={`¥${fen(selectedUser.nominalSpentFen)}`} />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-start gap-3 py-1">
+                  <UserRound aria-hidden="true" className="mt-0.5 size-5 text-ink-muted" />
+                  <div>
+                    <p className="text-sm font-medium text-ink-primary">尚未选择账户</p>
+                    <p className="mt-1 text-sm leading-6 text-ink-muted">先在左侧搜索结果中选择一位用户。</p>
+                  </div>
+                </div>
+              )
+            ) : (
+              <div className="flex items-start gap-3">
+                <ShieldAlert aria-hidden="true" className="mt-0.5 size-5 text-[color:var(--text-danger)]" />
+                <div>
+                  <p className="text-sm font-medium text-ink-primary">将覆盖全部 {summary.totalUsers} 位注册用户</p>
+                  <p className="mt-1 text-sm leading-6 text-ink-secondary">
+                    包括无限使用账户。余额仍会增加，无限账户继续只记录影子消耗。
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-6 space-y-5">
+            <div>
+              <span className="block text-xs font-medium text-ink-muted">快捷金额</span>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {AMOUNT_PRESETS.map((amount) => (
+                  <button
+                    key={amount}
+                    type="button"
+                    onClick={() => {
+                      setAmountYuan(amount);
+                      resetConfirmation();
+                    }}
+                    className={cn(
+                      "pressable min-h-10 rounded-lg border px-4 text-sm tabular-nums transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--aurora)]",
+                      amountYuan === amount
+                        ? "border-[color:var(--aurora)] bg-[color:var(--surface-hover-bg)] text-ink-primary"
+                        : "border-[color:var(--line)] text-ink-secondary hover:border-[color:var(--line-strong)] hover:text-ink-primary",
+                    )}
+                  >
+                    ¥{amount}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label>
+                <span className="mb-1.5 block text-xs font-medium text-ink-muted">发放金额（元）</span>
+                <Input
+                  type="number"
+                  min="1"
+                  max="1000"
+                  step="1"
+                  value={amountYuan}
+                  onChange={(event) => {
+                    setAmountYuan(event.target.value);
+                    resetConfirmation();
+                  }}
+                />
+              </label>
+              <label>
+                <span className="mb-1.5 block text-xs font-medium text-ink-muted">账本说明</span>
+                <Input
+                  value={reason}
+                  maxLength={120}
+                  onChange={(event) => {
+                    setReason(event.target.value);
+                    resetConfirmation();
+                  }}
+                  placeholder="例如：内测体验余额"
+                />
+              </label>
+            </div>
+
+            {message ? (
+              <p
+                className={cn(
+                  "border-l-2 pl-3 text-sm leading-6",
+                  messageTone === "error" && "border-[color:var(--text-danger)] text-[color:var(--text-danger)]",
+                  messageTone === "success" && "border-[color:var(--aurora)] text-ink-primary",
+                  messageTone === "info" && "border-aurum/70 text-ink-secondary",
+                )}
+                role="status"
+              >
+                {message}
+              </p>
+            ) : null}
+
+            <div className="flex flex-wrap items-center justify-between gap-4 border-t border-[color:var(--line-ghost)] pt-5">
+              <p className="text-xs leading-5 text-ink-muted">确认后立即到账，并写入管理员发放记录。</p>
+              <Button
+                variant={mode === "batch" && confirming ? "danger" : "primary"}
+                disabled={saving || !reason.trim() || !amountYuan || (mode === "single" && !selectedUser)}
+                onClick={() => void submit()}
+              >
+                {confirming ? <Coins aria-hidden="true" className="size-4" /> : <Send aria-hidden="true" className="size-4" />}
+                {saving ? "正在发放" : confirming ? "确认并发放" : "发放余额"}
+              </Button>
+            </div>
+          </div>
+
+          {mode === "single" && selectedUser ? (
+            <div className="mt-10 border-t border-[color:var(--line-ghost)] pt-7">
+              <div className="flex items-center gap-2">
+                <History aria-hidden="true" className="size-4 text-ink-muted" />
+                <h3 className="text-sm font-semibold text-ink-primary">最近账本</h3>
+              </div>
+              {ledgerState === "loading" ? (
+                <div className="py-7 text-sm text-ink-muted"><span className="loading-line">正在读取账本</span></div>
+              ) : ledgerState === "error" ? (
+                <p className="py-7 text-sm text-[color:var(--text-danger)]">最近账本暂时无法读取。</p>
+              ) : ledger.length ? (
+                <div className="mt-4 divide-y divide-[color:var(--line-ghost)] overflow-hidden rounded-2xl border border-[color:var(--line-ghost)]">
+                  {ledger.map((entry) => (
+                    <div key={entry.id} className="grid grid-cols-[minmax(0,1fr)_auto] gap-4 px-4 py-4">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm text-ink-primary">{entry.note || ledgerLabel(entry)}</p>
+                        <p className="mt-1 text-xs text-ink-muted">
+                          {ledgerLabel(entry)} · {formatDateTime(entry.created_at)}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <strong className={cn(
+                          "block text-sm tabular-nums",
+                          entry.amount_fen > 0 ? "text-[color:var(--aurora)]" : "text-ink-primary",
+                        )}>
+                          {entry.amount_fen > 0 ? "+" : ""}¥{fen(entry.amount_fen)}
+                        </strong>
+                        <span className="mt-1 block text-[11px] tabular-nums text-ink-muted">
+                          余额 ¥{fen(entry.balance_after_fen)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="py-7 text-sm text-ink-muted">这个账户还没有账本记录。</p>
+              )}
+            </div>
+          ) : null}
+        </section>
+      </div>
     </div>
   );
 }
+
+function SummaryMetric({ label, value, helper }: { label: string; value: string; helper: string }) {
+  return (
+    <div className="bg-[color:var(--surface-read-bg-strong)] px-6 py-6">
+      <p className="text-xs font-medium text-ink-muted">{label}</p>
+      <p className="mt-2 text-2xl font-semibold tabular-nums tracking-[-0.02em] text-ink-primary">{value}</p>
+      <p className="mt-1 text-xs text-ink-muted">{helper}</p>
+    </div>
+  );
+}
+
+function MetricPair({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-xs text-ink-muted">{label}</p>
+      <p className="mt-1 text-base font-semibold tabular-nums text-ink-primary">{value}</p>
+    </div>
+  );
+}
+
+function SearchEmpty() {
+  return (
+    <div className="flex min-h-64 items-center justify-center py-10 text-center">
+      <div>
+        <WalletCards aria-hidden="true" className="mx-auto size-7 text-ink-muted" />
+        <p className="mt-4 text-sm font-medium text-ink-primary">搜索后显示账户</p>
+        <p className="mt-2 max-w-64 text-sm leading-6 text-ink-muted">页面不会再铺出全部用户，结果只在需要时出现。</p>
+      </div>
+    </div>
+  );
+}
+
+function modeButtonClass(active: boolean) {
+  return cn(
+    "pressable inline-flex min-h-10 items-center gap-2 whitespace-nowrap rounded-lg px-3.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--aurora)]",
+    active
+      ? "bg-[color:var(--background)] text-ink-primary shadow-[0_1px_2px_rgba(16,31,54,0.08)]"
+      : "text-ink-muted hover:text-ink-primary",
+  );
+}
+
+function ledgerLabel(entry: LedgerEntry) {
+  if (entry.entry_type === "admin_grant") return "管理员发放";
+  if (entry.entry_type === "recharge") return "用户充值";
+  if (entry.entry_type === "refund") return "余额退款";
+  if (entry.entry_type === "correction") return "账本修正";
+  if (entry.feature === "asr") return "语音识别";
+  if (entry.feature === "completion") return "回答生成";
+  return "服务使用";
+}
+
+function fen(value: number) {
+  return (value / 100).toFixed(2);
+}
+
+type BalanceSummary = {
+  totalUsers: number;
+  fundedUsers: number;
+  unlimitedUsers: number;
+  totalBalanceFen: number;
+};
 
 type BalanceUser = {
   id: string;
@@ -168,11 +617,20 @@ type BalanceUser = {
   displayName: string;
   accessMode: "standard" | "unlimited";
   balanceFen: number;
+  totalGrantedFen: number;
+  totalRechargedFen: number;
   totalSpentFen: number;
   nominalSpentFen: number;
   updatedAt: string | null;
 };
 
-function fen(value: number) {
-  return (value / 100).toFixed(2);
-}
+type LedgerEntry = {
+  id: string;
+  entry_type: "usage" | "admin_grant" | "recharge" | "refund" | "correction";
+  amount_fen: number;
+  nominal_amount_fen: number;
+  balance_after_fen: number;
+  feature: "asr" | "completion" | null;
+  note: string | null;
+  created_at: string;
+};

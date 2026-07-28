@@ -20,8 +20,14 @@ export async function GET(request: NextRequest) {
   const access = await requirePrimaryAdmin();
   if ("response" in access) return access.response;
   const query = request.nextUrl.searchParams.get("query")?.trim().toLowerCase() ?? "";
-  const page = Math.max(1, Number(request.nextUrl.searchParams.get("page") ?? 1));
+  const selectedUserId = request.nextUrl.searchParams.get("userId")?.trim() ?? "";
+  const summaryOnly = request.nextUrl.searchParams.get("summaryOnly") === "1";
+  const requestedPage = Number(request.nextUrl.searchParams.get("page") ?? 1);
+  const page = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
   const pageSize = 30;
+  if (selectedUserId && !z.string().uuid().safeParse(selectedUserId).success) {
+    return NextResponse.json({ error: "用户 ID 格式无效。" }, { status: 400 });
+  }
   try {
     const admin = createAdminClient();
     const authUsers = await listAllUsers();
@@ -33,6 +39,48 @@ export async function GET(request: NextRequest) {
     if (profileError || walletError) throw profileError ?? walletError;
     const profileById = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
     const walletById = new Map((wallets ?? []).map((wallet) => [wallet.user_id, wallet]));
+    const allUsers = authUsers.map((user) => {
+      const profile = profileById.get(user.id);
+      const wallet = walletById.get(user.id);
+      return {
+        id: user.id,
+        email: user.email ?? "微信账户",
+        displayName: profile?.display_name || "拾星用户",
+        accessMode: resolveAccessMode(user, profile?.role ?? "user"),
+        balanceFen: wallet?.balance_fen ?? 0,
+        totalGrantedFen: wallet?.total_granted_fen ?? 0,
+        totalRechargedFen: wallet?.total_recharged_fen ?? 0,
+        totalSpentFen: wallet?.total_spent_fen ?? 0,
+        nominalSpentFen: wallet?.nominal_spent_fen ?? 0,
+        updatedAt: wallet?.updated_at ?? null,
+      };
+    });
+    const summary = {
+      totalUsers: allUsers.length,
+      fundedUsers: allUsers.filter((user) => user.balanceFen > 0).length,
+      unlimitedUsers: allUsers.filter((user) => user.accessMode === "unlimited").length,
+      totalBalanceFen: allUsers.reduce((sum, user) => sum + user.balanceFen, 0),
+    };
+
+    if (summaryOnly) {
+      return NextResponse.json({ summary });
+    }
+
+    if (selectedUserId) {
+      const selectedUser = allUsers.find((user) => user.id === selectedUserId);
+      if (!selectedUser) {
+        return NextResponse.json({ error: "没有找到这个用户。" }, { status: 404 });
+      }
+      const { data: ledger, error: ledgerError } = await admin
+        .from("star_interview_ledger")
+        .select("id,entry_type,amount_fen,nominal_amount_fen,balance_after_fen,feature,note,created_at")
+        .eq("user_id", selectedUserId)
+        .order("created_at", { ascending: false })
+        .limit(8);
+      if (ledgerError) throw ledgerError;
+      return NextResponse.json({ user: selectedUser, ledger: ledger ?? [] });
+    }
+
     const matched = authUsers.filter((user) => {
       if (!query) return true;
       const profile = profileById.get(user.id);
@@ -40,24 +88,15 @@ export async function GET(request: NextRequest) {
         .some((value) => value?.toLowerCase().includes(query));
     });
     const total = matched.length;
-    const users = matched
+    const matchedIds = new Set(
+      matched
       .slice((page - 1) * pageSize, page * pageSize)
-      .map((user) => {
-        const profile = profileById.get(user.id);
-        const wallet = walletById.get(user.id);
-        return {
-          id: user.id,
-          email: user.email ?? "微信账户",
-          displayName: profile?.display_name || "拾星用户",
-          accessMode: resolveAccessMode(user, profile?.role ?? "user"),
-          balanceFen: wallet?.balance_fen ?? 0,
-          totalSpentFen: wallet?.total_spent_fen ?? 0,
-          nominalSpentFen: wallet?.nominal_spent_fen ?? 0,
-          updatedAt: wallet?.updated_at ?? null,
-        };
-      });
+      .map((user) => user.id),
+    );
+    const users = allUsers.filter((user) => matchedIds.has(user.id));
     return NextResponse.json({
       users,
+      summary,
       page,
       pageSize,
       total,
