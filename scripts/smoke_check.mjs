@@ -297,9 +297,15 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/lib/resume.ts",
-    mustInclude: ["ResumeDocument", "ResumeContent", "ResumeLanguage", "createSampleResume", "createEmptyResume(language", "loadLocalResumes", "adoptLocalResumesForUser", "GUEST_STORAGE_KEY", "USER_STORAGE_KEY_PREFIX", "createResumeId", "linkedJobId", "photoDataUrl", "compact", "classic", "modern", "consulting", "technical", "academic", "english_classic", "english_modern", "紧凑中文", "经典商科", "现代单栏", "咨询投研", "技术简洁", "学术研究", "English Classic", "English Modern", "isEnglishResumeTemplate", "getResumeLanguage", "getDefaultResumeTemplate", "getEquivalentTemplateForLanguage", "isResumeId", "getResumeTargetLine"],
+    mustInclude: ["ResumeDocument", "ResumeContent", "ResumeLanguage", "ResumeCustomSection", "date?: string", "createSampleResume", "createEmptyResume(language", "createBlankCustomSection", "date: \"\"", "loadLocalResumes", "adoptLocalResumesForUser", "GUEST_STORAGE_KEY", "USER_STORAGE_KEY_PREFIX", "createResumeId", "linkedJobId", "photoDataUrl", "compact", "classic", "modern", "consulting", "technical", "academic", "english_classic", "english_modern", "紧凑中文", "经典商科", "现代单栏", "咨询投研", "技术简洁", "学术研究", "English Classic", "English Modern", "isEnglishResumeTemplate", "getResumeLanguage", "getDefaultResumeTemplate", "getEquivalentTemplateForLanguage", "isResumeId", "getResumeTargetLine"],
     mustNotInclude: ["const STORAGE_KEY = \"job_bottle_resumes_v1\""],
     label: "简历制作器定义结构化模型、多模板和按账号隔离的本地持久化",
+  },
+  {
+    file: "src/components/resume/ResumeEditor.tsx",
+    mustInclude: ["title=\"自定义模块\"", "showDate", "时间（可选）", "item.date ?? \"\"", "{ ...item, date: value }"],
+    mustNotInclude: ["type=\"date\""],
+    label: "自定义模块提供自由文本时间字段且不限制用户的时间表达",
   },
   {
     file: "src/components/resume/ResumeBuilderClient.tsx",
@@ -399,13 +405,13 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/resume/resumePdf.ts",
-    mustInclude: ["jsPDF", "NotoSerifSC-Regular-common-v1.ttf", "NotoSerifSC-Bold-common-v1.ttf", "NotoSerifSC-Regular-full-v1.ttf", "NotoSerifSC-Bold-full-v1.ttf", "NEXT_PUBLIC_RESUME_FONT_FULL_REGULAR_URL", "NEXT_PUBLIC_RESUME_FONT_FULL_BOLD_URL", "same-origin-common", "cos-full", "same-origin-full", "FONT_TIMEOUT_MS = 10_000", "resetResumePdfCaches", "selectedFontCache", "fontSourceCache", "previewMeasurementPdfCache", "bundleId", "__resumeFontFamily", "regularFileName", "boldFileName", "cache: \"force-cache\"", "format: \"a4\"", "PAGE_WIDTH = 595.28", "PAGE_HEIGHT = 841.89", "exportResumeToPdf", "createResumePreviewLayout", "ResumePreviewOperation", "width: state.pdf.getTextWidth(text)", "addPage(\"a4\", \"portrait\")", "addFileToVFS", "getTemplateOptions", "getResumeTargetLine", "consulting", "technical", "academic", "english_classic", "english_modern", "isEnglishResumeTemplate", "EDUCATION", "Boolean(basics.photoDataUrl) && !isEnglish", "const photoBottom = photoY + photoHeight", "Math.max(y, hasPhoto ? photoBottom", "state.y = headerContentBottom + 15", "items.filter(hasEducationContent)", "items.filter(hasExperienceContent)", "items.filter(hasProjectContent)", "if (!cleanLeftText && !cleanRightText) return", "hasInterests ? copy.skills : \"技能\""],
+    mustInclude: ["jsPDF", "NotoSerifSC-Regular-common-v1.ttf", "NotoSerifSC-Bold-common-v1.ttf", "NotoSerifSC-Regular-full-v1.ttf", "NotoSerifSC-Bold-full-v1.ttf", "NEXT_PUBLIC_RESUME_FONT_FULL_REGULAR_URL", "NEXT_PUBLIC_RESUME_FONT_FULL_BOLD_URL", "same-origin-common", "cos-full", "same-origin-full", "FONT_TIMEOUT_MS = 10_000", "resetResumePdfCaches", "selectedFontCache", "fontSourceCache", "previewMeasurementPdfCache", "bundleId", "__resumeFontFamily", "regularFileName", "boldFileName", "cache: \"force-cache\"", "format: \"a4\"", "PAGE_WIDTH = 595.28", "PAGE_HEIGHT = 841.89", "exportResumeToPdf", "createResumePreviewLayout", "ResumePreviewOperation", "width: state.pdf.getTextWidth(text)", "addPage(\"a4\", \"portrait\")", "addFileToVFS", "getTemplateOptions", "getResumeTargetLine", "consulting", "technical", "academic", "english_classic", "english_modern", "isEnglishResumeTemplate", "EDUCATION", "Boolean(basics.photoDataUrl) && !isEnglish", "const photoBottom = photoY + photoHeight", "Math.max(y, hasPhoto ? photoBottom", "state.y = headerContentBottom + 15", "items.filter(hasEducationContent)", "items.filter(hasExperienceContent)", "items.filter(hasProjectContent)", "section.date ?? \"\"", "sectionTitle(state, title || copy.additional, options, headingDate)", "function sectionTitle(state: LayoutState, title: string, options: PdfOptions, rightText = \"\")", "if (!cleanLeftText && !cleanRightText) return", "hasInterests ? copy.skills : \"技能\""],
     mustNotInclude: ["NEXT_PUBLIC_RESUME_FONT_REGULAR_URL", "NEXT_PUBLIC_RESUME_FONT_BOLD_URL", "html2canvas", "window.print", "addPage(\"letter\""],
     label: "简历预览与 PDF 共用排版并隐藏空字段、空经历和未填写的兴趣标题",
   },
   {
     file: "src/lib/resume-font-profile.ts",
-    mustInclude: ["collectResumeText", "selectResumeFontProfile", "selectResumeDocumentFontProfile", "codePointAt", "RESUME_FONT_COMMON_RANGES", "customSections"],
+    mustInclude: ["collectResumeText", "selectResumeFontProfile", "selectResumeDocumentFontProfile", "codePointAt", "RESUME_FONT_COMMON_RANGES", "customSections", "section.date ?? \"\""],
     mustNotInclude: ["fetch("],
     label: "简历字体 profile 由完整文本和生成的 common 覆盖数据纯函数决定",
   },

@@ -48,7 +48,11 @@ const projectSchema = z.object({
   keywords: text(500),
 }).strict();
 const skillSchema = z.object({ category: text(120), skills: z.array(text(120)).max(30) }).strict();
-const customSectionSchema = z.object({ title: text(180), bullets }).strict();
+const customSectionSchema = z.object({
+  title: text(180),
+  date: text(80).optional().default(""),
+  bullets,
+}).strict();
 const draftSchema = z.object({
   language: z.enum(["zh-CN", "en-US"]),
   title: text(180),
@@ -307,7 +311,7 @@ function mapUpstreamError(error: unknown) {
 }
 
 const RESULT_SHAPE = `只返回以下严格 JSON，不要 Markdown：
-{"summary":"string","draft":{"language":"zh-CN|en-US","title":"string","targetRole":"string","basics":{"name":"string","englishName":"string","phone":"string","email":"string","city":"string","linkedin":"string","github":"string","website":"string","targetRole":"string"},"education":[{"school":"string","degree":"string","major":"string","startDate":"string","endDate":"string","gpa":"string","courses":"string","honors":"string"}],"work":[{"company":"string","title":"string","location":"string","startDate":"string","endDate":"string","current":false,"bullets":["string"]}],"projects":[{"name":"string","role":"string","startDate":"string","endDate":"string","bullets":["string"],"keywords":"string"}],"skills":[{"category":"string","skills":["string"]}],"campus":[{"title":"string","bullets":["string"]}],"awards":[{"title":"string","bullets":["string"]}],"certifications":[{"title":"string","bullets":["string"]}],"languages":[{"title":"string","bullets":["string"]}],"customSections":[{"title":"string","bullets":["string"]}]},"warnings":["string"]}`;
+{"summary":"string","draft":{"language":"zh-CN|en-US","title":"string","targetRole":"string","basics":{"name":"string","englishName":"string","phone":"string","email":"string","city":"string","linkedin":"string","github":"string","website":"string","targetRole":"string"},"education":[{"school":"string","degree":"string","major":"string","startDate":"string","endDate":"string","gpa":"string","courses":"string","honors":"string"}],"work":[{"company":"string","title":"string","location":"string","startDate":"string","endDate":"string","current":false,"bullets":["string"]}],"projects":[{"name":"string","role":"string","startDate":"string","endDate":"string","bullets":["string"],"keywords":"string"}],"skills":[{"category":"string","skills":["string"]}],"campus":[{"title":"string","bullets":["string"]}],"awards":[{"title":"string","bullets":["string"]}],"certifications":[{"title":"string","bullets":["string"]}],"languages":[{"title":"string","bullets":["string"]}],"customSections":[{"title":"string","date":"string","bullets":["string"]}]},"warnings":["string"]}`;
 
 const SYSTEM_PROMPT = `你是拾星简历导入校对器。程序已经先从用户自己的文件提取文本并生成本地草稿；你的任务是依据原文复核、拆分并映射为拾星简历结构。
 规则：

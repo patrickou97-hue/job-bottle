@@ -69,6 +69,10 @@ const textSectionSchema = z.object({
   bullets,
 });
 
+const customSectionSchema = textSectionSchema.extend({
+  date: text(80).optional().default(""),
+});
+
 const contentSchema = z.object({
   basics: basicsSchema,
   education: z.array(educationSchema).max(30),
@@ -79,7 +83,7 @@ const contentSchema = z.object({
   awards: z.array(textSectionSchema).max(30),
   certifications: z.array(textSectionSchema).max(30),
   languages: z.array(textSectionSchema).max(30),
-  customSections: z.array(textSectionSchema).max(30),
+  customSections: z.array(customSectionSchema).max(30),
 });
 
 const templateSchema = z.enum([

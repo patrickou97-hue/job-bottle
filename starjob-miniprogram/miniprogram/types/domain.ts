@@ -121,6 +121,7 @@ export type ResumeSkillGroup = {
 export type ResumeTextSection = {
   id: string;
   title: string;
+  date?: string;
   bullets: string[];
 };
 

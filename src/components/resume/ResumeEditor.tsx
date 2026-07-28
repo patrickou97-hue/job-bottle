@@ -222,6 +222,7 @@ export function ResumeEditor({
           <CustomSectionGroup
             title="自定义模块"
             items={resume.content.customSections}
+            showDate
             onChange={(items) => patchContent({ customSections: items })}
             onPolish={(item) => setPolishTarget(toCustomTarget(item, "custom", "自定义模块"))}
           />
@@ -588,11 +589,13 @@ function SkillEditor({ item, onChange }: { item: ResumeSkillGroup; onChange: (it
 function CustomSectionGroup({
   title,
   items,
+  showDate = false,
   onChange,
   onPolish,
 }: {
   title: string;
   items: ResumeCustomSection[];
+  showDate?: boolean;
   onChange: (items: ResumeCustomSection[]) => void;
   onPolish: (item: ResumeCustomSection) => void;
 }) {
@@ -611,6 +614,13 @@ function CustomSectionGroup({
               value={item.title}
               onChange={(value) => onChange(replaceById(items, { ...item, title: value }))}
             />
+            {showDate ? (
+              <TextField
+                label="时间（可选）"
+                value={item.date ?? ""}
+                onChange={(value) => onChange(replaceById(items, { ...item, date: value }))}
+              />
+            ) : null}
             <BulletEditor
               bullets={item.bullets}
               onChange={(bullets) => onChange(replaceById(items, { ...item, bullets }))}

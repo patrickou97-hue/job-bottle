@@ -57,7 +57,7 @@ export type ImportedResumeDraft = {
   awards: Array<{ title: string; bullets: string[] }>;
   certifications: Array<{ title: string; bullets: string[] }>;
   languages: Array<{ title: string; bullets: string[] }>;
-  customSections: Array<{ title: string; bullets: string[] }>;
+  customSections: Array<{ title: string; date?: string; bullets: string[] }>;
 };
 
 export type ResumeImportLocalResult = {

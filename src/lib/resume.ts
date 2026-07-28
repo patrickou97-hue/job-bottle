@@ -65,6 +65,7 @@ export type ResumeSkillGroup = {
 export type ResumeCustomSection = {
   id: string;
   title: string;
+  date?: string;
   bullets: string[];
 };
 
@@ -477,6 +478,7 @@ export function createBlankCustomSection(title = "自定义模块"): ResumeCusto
   return {
     id: createId("section"),
     title,
+    date: "",
     bullets: [""],
   };
 }

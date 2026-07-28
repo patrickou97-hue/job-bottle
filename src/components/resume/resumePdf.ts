@@ -449,13 +449,19 @@ function renderCustomSection(
   options: PdfOptions,
   copy: ResumeCopy,
 ) {
-  const cleanSections = sections.filter((section) => cleanText(section.title) || section.bullets.some(cleanText));
+  const cleanSections = sections.filter((section) =>
+    cleanText(section.title) || cleanText(section.date ?? "") || section.bullets.some(cleanText));
   if (cleanSections.length === 0) return;
-  sectionTitle(state, title || copy.additional, options);
+  const headingDate = cleanSections.length === 1 && cleanSections[0]?.title === title
+    ? cleanText(cleanSections[0]?.date ?? "")
+    : "";
+  sectionTitle(state, title || copy.additional, options, headingDate);
 
   cleanSections.forEach((section) => {
-    if (section.title && section.title !== title) {
-      textLine(state, section.title, options.bodySize, "bold");
+    const itemTitle = cleanText(section.title);
+    const itemDate = cleanText(section.date ?? "");
+    if (itemTitle !== cleanText(title) || (itemDate && itemDate !== headingDate)) {
+      row(state, itemTitle === cleanText(title) ? "" : itemTitle, itemDate, options, true);
     }
     section.bullets.map(cleanText).filter(Boolean).forEach((line) => bullet(state, line, options));
     state.y += options.itemGap;
@@ -488,15 +494,20 @@ function renderSkills(
   lines.forEach((line) => textLine(state, line, options.bodySize, "normal"));
 }
 
-function sectionTitle(state: LayoutState, title: string, options: PdfOptions) {
+function sectionTitle(state: LayoutState, title: string, options: PdfOptions, rightText = "") {
   state.y += options.sectionGap;
   ensureSpace(state, options.headingSize + 5);
   setFont(state, options.headingSize, "bold");
 
   const templateStyle = getResumeTemplateStyle(options.templateId);
+  const cleanRightText = cleanText(rightText);
   if (templateStyle.section === "accent") {
     setFont(state, options.headingSize, "bold", templateStyle.accent);
     drawText(state, title, state.left, state.y);
+    if (cleanRightText) {
+      setFont(state, options.bodySize, "normal", templateStyle.accent);
+      drawRight(state, cleanRightText, state.right, state.y);
+    }
     drawLine(state, state.left, state.y + 4.2, state.right, state.y + 4.2, "#cfd6df", 0.7);
     state.y += options.headingSize * 1.08;
     return;
@@ -504,11 +515,18 @@ function sectionTitle(state: LayoutState, title: string, options: PdfOptions) {
 
   drawText(state, title, state.left, state.y);
   const titleWidth = state.pdf.getTextWidth(title);
+  let lineRight = state.right;
+  if (cleanRightText) {
+    setFont(state, options.bodySize, "normal");
+    const rightWidth = state.pdf.getTextWidth(cleanRightText);
+    drawRight(state, cleanRightText, state.right, state.y);
+    lineRight = state.right - rightWidth - 5;
+  }
   drawLine(
     state,
     state.left + titleWidth + 5,
     state.y - 3.5,
-    state.right,
+    Math.max(state.left + titleWidth + 5, lineRight),
     state.y - 3.5,
     templateStyle.accent,
     templateStyle.section === "strong" ? 1 : 0.7,

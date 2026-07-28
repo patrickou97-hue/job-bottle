@@ -14,6 +14,10 @@
         <text class="editor-label">标题</text>
         <input class="editor-input" value="{{item.title}}" data-path="resume.content.{{sectionKey}}[{{index}}].title" bindinput="onFieldInput" maxlength="160" />
       </label>
+      <label class="editor-field" wx:if="{{showDate}}">
+        <text class="editor-label">时间（可选）</text>
+        <input class="editor-input" value="{{item.date}}" data-path="resume.content.{{sectionKey}}[{{index}}].date" bindinput="onFieldInput" maxlength="80" placeholder="例如：2024.09—2025.06" />
+      </label>
       <label class="editor-field">
         <text class="editor-label">内容</text>
         <textarea class="editor-textarea editor-textarea-large" value="{{item.bulletsText}}" data-path="resume.content.{{sectionKey}}[{{index}}].bulletsText" bindinput="onFieldInput" placeholder="每行一条内容" maxlength="6000" auto-height />
@@ -193,7 +197,7 @@
     <view class="editor-section" wx:elif="{{activeSection === 'awards'}}"><view class="section-heading"><text class="section-heading-title">荣誉奖项</text></view><template is="text-section-list" data="{{sectionKey: 'awards', sectionLabel: '奖项', items: resume.content.awards}}" /></view>
     <view class="editor-section" wx:elif="{{activeSection === 'certifications'}}"><view class="section-heading"><text class="section-heading-title">证书</text></view><template is="text-section-list" data="{{sectionKey: 'certifications', sectionLabel: '证书', items: resume.content.certifications}}" /></view>
     <view class="editor-section" wx:elif="{{activeSection === 'languages'}}"><view class="section-heading"><text class="section-heading-title">语言能力</text></view><template is="text-section-list" data="{{sectionKey: 'languages', sectionLabel: '语言能力', items: resume.content.languages}}" /></view>
-    <view class="editor-section" wx:elif="{{activeSection === 'customSections'}}"><view class="section-heading"><text class="section-heading-title">其他内容</text></view><template is="text-section-list" data="{{sectionKey: 'customSections', sectionLabel: '自定义内容', items: resume.content.customSections}}" /></view>
+    <view class="editor-section" wx:elif="{{activeSection === 'customSections'}}"><view class="section-heading"><text class="section-heading-title">其他内容</text></view><template is="text-section-list" data="{{sectionKey: 'customSections', sectionLabel: '自定义内容', items: resume.content.customSections, showDate: true}}" /></view>
 
     <view class="editor-bottom-save">
       <button class="primary-button" loading="{{saving}}" disabled="{{saving || !dirty}}" bindtap="onSave">{{dirty ? '保存到云端' : '已同步云端'}}</button>

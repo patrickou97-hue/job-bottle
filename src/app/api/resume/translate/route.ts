@@ -41,7 +41,11 @@ const projectSchema = z.object({
   keywords: text(500),
 }).strict();
 const skillSchema = z.object({ category: text(120), skills: z.array(text(120)).max(30) }).strict();
-const customSectionSchema = z.object({ title: text(180), bullets }).strict();
+const customSectionSchema = z.object({
+  title: text(180),
+  date: text(80).optional().default(""),
+  bullets,
+}).strict();
 const resumeSchema = z.object({
   title: text(180),
   targetRole: text(180),
@@ -230,6 +234,10 @@ function preserveDeterministicStructure(
       startDate: source.projects[index]?.startDate ?? "",
       endDate: source.projects[index]?.endDate ?? "",
     })),
+    customSections: translated.customSections.map((item, index) => ({
+      ...item,
+      date: source.customSections[index]?.date ?? "",
+    })),
   };
 }
 
@@ -268,7 +276,7 @@ function mapUpstreamError(error: unknown) {
 }
 
 const RESULT_SHAPE = `只返回以下严格 JSON，不要 Markdown：
-{"summary":"string","translated":{"title":"string","targetRole":"string","jobTarget":"string","basics":{"name":"string","englishName":"string","city":"string","targetRole":"string"},"education":[{"school":"string","degree":"string","major":"string","startDate":"string","endDate":"string","gpa":"string","courses":"string","honors":"string"}],"work":[{"company":"string","title":"string","location":"string","startDate":"string","endDate":"string","current":false,"bullets":["string"]}],"projects":[{"name":"string","role":"string","startDate":"string","endDate":"string","bullets":["string"],"keywords":"string"}],"skills":[{"category":"string","skills":["string"]}],"campus":[{"title":"string","bullets":["string"]}],"awards":[{"title":"string","bullets":["string"]}],"certifications":[{"title":"string","bullets":["string"]}],"languages":[{"title":"string","bullets":["string"]}],"customSections":[{"title":"string","bullets":["string"]}]},"warnings":["string"]}`;
+{"summary":"string","translated":{"title":"string","targetRole":"string","jobTarget":"string","basics":{"name":"string","englishName":"string","city":"string","targetRole":"string"},"education":[{"school":"string","degree":"string","major":"string","startDate":"string","endDate":"string","gpa":"string","courses":"string","honors":"string"}],"work":[{"company":"string","title":"string","location":"string","startDate":"string","endDate":"string","current":false,"bullets":["string"]}],"projects":[{"name":"string","role":"string","startDate":"string","endDate":"string","bullets":["string"],"keywords":"string"}],"skills":[{"category":"string","skills":["string"]}],"campus":[{"title":"string","bullets":["string"]}],"awards":[{"title":"string","bullets":["string"]}],"certifications":[{"title":"string","bullets":["string"]}],"languages":[{"title":"string","bullets":["string"]}],"customSections":[{"title":"string","date":"string","bullets":["string"]}]},"warnings":["string"]}`;
 
 const SYSTEM_PROMPT = `你是严谨的双语简历翻译器。把用户提供的整份结构化简历翻译成目标语言并返回严格 JSON。
 规则：
@@ -277,5 +285,5 @@ const SYSTEM_PROMPT = `你是严谨的双语简历翻译器。把用户提供的
 3. 公司、学校、专业、证书等专有名词有明确通行译名时使用通行译名；无法确认时保留原文并写入 warnings。
 4. 中文转英文时使用简洁职业表达；英文转中文时使用自然、克制的简历语言。不要逐字硬译，也不要改变事实。
 5. name 与 englishName 均保留：有明确英文名时用于 englishName；无法确认姓名译法时保留原文，不自行创造英文名。
-6. startDate、endDate、current 和 GPA 原样返回。空字符串保持为空。
+6. startDate、endDate、date、current 和 GPA 原样返回。空字符串保持为空。
 7. 始终返回完整 JSON，不输出 Markdown、代码块或额外解释。`;

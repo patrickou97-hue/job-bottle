@@ -613,6 +613,7 @@ function createSectionItem(section: EditorSection) {
   return {
     id: createId("section"),
     title: "",
+    ...(section === "customSections" ? { date: "" } : {}),
     bullets: [],
     bulletsText: "",
   } satisfies EditorTextSection;

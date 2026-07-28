@@ -74,7 +74,10 @@
     <view class="preview-section" wx:for="{{resume.otherSections}}" wx:key="id">
       <text class="preview-section-title">{{item.sectionLabel}}</text>
       <view class="preview-entry">
-        <text class="entry-title">{{item.title}}</text>
+        <view class="entry-heading">
+          <text class="entry-title">{{item.title}}</text>
+          <text class="entry-date" wx:if="{{item.date}}">{{item.date}}</text>
+        </view>
         <view class="bullet-row" wx:for="{{item.bullets}}" wx:for-item="bullet" wx:key="*this">
           <text class="bullet-dot">•</text><text class="entry-body" user-select>{{bullet}}</text>
         </view>
