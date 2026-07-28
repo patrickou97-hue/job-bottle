@@ -292,7 +292,7 @@ function StarInterviewRecruitmentDetail() {
             <Sparkles aria-hidden="true" className="size-4" />
             <p className="text-xs font-semibold tracking-[0.08em]">PREVIEW 体验招募</p>
           </div>
-          <h3 className="mt-3 text-lg font-semibold text-ink-primary">完整介绍和申请入口已藏在诘星宣传页里</h3>
+          <h3 className="mt-3 text-lg font-semibold text-ink-primary">完整介绍和申请入口在诘星宣传页中</h3>
           <p className="mt-2 text-sm leading-6 text-ink-secondary">
             查看诘星能做什么、哪些用户适合参与，以及 ¥100 体验额度和邮件发包安排。
           </p>
