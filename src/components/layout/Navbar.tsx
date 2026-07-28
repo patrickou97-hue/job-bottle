@@ -106,11 +106,11 @@ export function Navbar({ appearance = "work" }: { appearance?: "scene" | "work" 
         <div className="mx-auto flex h-15 w-full max-w-[1320px] items-center gap-4 px-4 sm:px-6 lg:px-8">
         <div className="flex shrink-0 items-center gap-2.5">
           <Link
-            href="/interview?preview=recruitment#preview-recruitment"
+            href="/interview?preview=recruitment"
             aria-label="发现诘星 StarInterview 彩蛋"
             title="有一颗新星正在靠近"
             className="group grid size-8 place-items-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--aurora)]"
-            onClick={(event) => handleSceneLink(event, "/interview?preview=recruitment#preview-recruitment")}
+            onClick={(event) => handleSceneLink(event, "/interview?preview=recruitment")}
           >
             <motion.span
               className="relative grid size-6 place-items-center"
