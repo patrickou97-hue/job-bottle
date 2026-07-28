@@ -1,14 +1,19 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { BookOpen, Megaphone, Pencil, Pin, PinOff, Sparkles, Trash2 } from "lucide-react";
+import { ArrowUpRight, BookOpen, Megaphone, Pencil, Pin, PinOff, Sparkles, Trash2 } from "lucide-react";
 import { deletePost, setPostPinned, updatePost } from "@/lib/forum";
 import { formatDateTime } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
+import {
+  STAR_INTERVIEW_RECRUITMENT_TAG,
+  isStarInterviewRecruitmentPost,
+} from "@/components/forum/starInterviewRecruitment";
 import type { ForumPostView } from "@/lib/types";
 
 type PostCardProps = {
@@ -171,8 +176,13 @@ export function PostCard({
             <span className="font-medium text-[color:var(--text-secondary)]">拾星官方</span>
             <span aria-hidden="true">·</span>
             <span>发布于 {formatDateTime(post.created_at)}</span>
-            {post.tags.length > 0 ? (
-              <span>{post.tags.map((tag) => `#${tag}`).join(" ")}</span>
+            {post.tags.some((tag) => tag !== STAR_INTERVIEW_RECRUITMENT_TAG) ? (
+              <span>
+                {post.tags
+                  .filter((tag) => tag !== STAR_INTERVIEW_RECRUITMENT_TAG)
+                  .map((tag) => `#${tag}`)
+                  .join(" ")}
+              </span>
             ) : null}
           </div>
         </div>
@@ -237,9 +247,12 @@ export function PostCard({
                 </div>
               </form>
             ) : (
-              <div className="max-w-3xl whitespace-pre-wrap text-[15px] leading-8 text-ink-secondary">
-                {post.content}
-              </div>
+              <>
+                <div className="max-w-3xl whitespace-pre-wrap text-[15px] leading-8 text-ink-secondary">
+                  {post.content}
+                </div>
+                {isStarInterviewRecruitmentPost(post) ? <StarInterviewRecruitmentDetail /> : null}
+              </>
             )}
 
             {isAdmin && !editing ? (
@@ -264,6 +277,35 @@ export function PostCard({
         ) : null}
       </AnimatePresence>
     </motion.article>
+  );
+}
+
+function StarInterviewRecruitmentDetail() {
+  return (
+    <aside
+      aria-label="了解诘星 StarInterview Preview 体验招募"
+      className="mt-8 max-w-3xl rounded-2xl border border-[color:var(--line-ghost)] bg-[color:var(--surface-read-bg-strong)] p-5 sm:p-6"
+    >
+      <div className="grid gap-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+        <div>
+          <div className="flex items-center gap-2 text-[color:var(--aurora)]">
+            <Sparkles aria-hidden="true" className="size-4" />
+            <p className="text-xs font-semibold tracking-[0.08em]">PREVIEW 体验招募</p>
+          </div>
+          <h3 className="mt-3 text-lg font-semibold text-ink-primary">完整介绍和申请入口已藏在诘星宣传页里</h3>
+          <p className="mt-2 text-sm leading-6 text-ink-secondary">
+            查看诘星能做什么、哪些用户适合参与，以及 ¥100 体验额度和邮件发包安排。
+          </p>
+        </div>
+        <Link
+          href="/interview?preview=recruitment#preview-recruitment"
+          className="gold-button pressable inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--aurora)]"
+        >
+          了解详情
+          <ArrowUpRight aria-hidden="true" className="size-4" />
+        </Link>
+      </div>
+    </aside>
   );
 }
 

@@ -9,7 +9,9 @@ import {
   useScroll,
   useTransform,
 } from "motion/react";
+import { Check, Gift, Mail, Send } from "lucide-react";
 import { type ReactNode, useRef } from "react";
+import { STAR_INTERVIEW_APPLICATION_MAILTO } from "@/components/forum/starInterviewRecruitment";
 import styles from "./StarInterviewTeaser.module.css";
 
 type TunnelPhrase = {
@@ -30,7 +32,7 @@ const TUNNEL_PHRASES: TunnelPhrase[] = [
   { text: "面试焦虑", x: "25vw", y: "39vh", size: "clamp(2.8rem, 5.8vw, 6.5rem)", tone: "quiet", delay: 0.15 },
 ];
 
-export function StarInterviewTeaser() {
+export function StarInterviewTeaser({ showRecruitment = false }: { showRecruitment?: boolean }) {
   const tunnelRef = useRef<HTMLElement>(null);
   const reducedMotion = useReducedMotion();
   const { scrollYProgress } = useScroll({
@@ -110,7 +112,7 @@ export function StarInterviewTeaser() {
             </h1>
           </div>
           <div className={styles.launchLine}>
-            <span>即将上线</span>
+            <span>{showRecruitment ? "Preview 体验招募中" : "即将上线"}</span>
             <i aria-hidden="true" />
           </div>
           <motion.h2
@@ -128,6 +130,8 @@ export function StarInterviewTeaser() {
             先给出清晰的回答结构，再陪你把表达补充完整。
           </p>
         </header>
+
+        {showRecruitment ? <RecruitmentDetails /> : null}
 
         <figure className={styles.productFigure}>
           <Image
@@ -263,6 +267,95 @@ export function StarInterviewTeaser() {
         </footer>
       </section>
     </main>
+  );
+}
+
+function RecruitmentDetails() {
+  return (
+    <section id="preview-recruitment" className={styles.recruitment} aria-labelledby="recruitment-title">
+      <div className={styles.recruitmentHeading}>
+        <p>STARINTERVIEW PREVIEW · FIRST ACCESS</p>
+        <h2 id="recruitment-title">
+          把下一场面试，
+          <span>带进诘星。</span>
+        </h2>
+        <p>
+          我们正在邀请首批体验用户，在真实线上面试场景中试用诘星。
+          这不是公开下载；申请通过后，我们会通过邮件发送安装包并开通体验额度。
+        </p>
+      </div>
+
+      <div className={styles.recruitmentGrid}>
+        <RecruitmentColumn
+          index="01"
+          title="诘星能做什么"
+          items={[
+            "分别接收面试官所在应用的系统音频与候选人的麦克风声音",
+            "结合你选择的拾星简历、岗位方向和面试场景理解问题",
+            "在主窗口与悬浮窗中同步给出可参考的回答内容",
+          ]}
+        />
+        <RecruitmentColumn
+          index="02"
+          title="本轮体验要求"
+          items={[
+            "使用 Mac，系统为 macOS 14 或更高版本",
+            "已有或愿意注册拾星 StarJob 账户",
+            "近期有线上面试，并愿意按提示授予麦克风及系统音频权限",
+            "愿意反馈识别、回答质量和实际使用过程中遇到的问题",
+          ]}
+        />
+        <RecruitmentColumn
+          index="03"
+          title="申请通过后"
+          items={[
+            "获得 ¥100 人民币等值的诘星体验额度",
+            "额度用于诘星语音识别和回答生成，不可提现或转让",
+            "通过申请邮件接收审核结果、安装包和后续体验说明",
+          ]}
+        />
+      </div>
+
+      <div className={styles.application}>
+        <div>
+          <p className={styles.applicationEyebrow}><Gift aria-hidden="true" />体验申请</p>
+          <h3>告诉我们，你准备把诘星用在哪一场面试里。</h3>
+          <p>
+            点击按钮会打开系统邮件，并自动填写收件人、主题和申请问题。
+            请补充接收安装包的邮箱，以及计划面试的岗位或方向，再确认发送。
+          </p>
+          <span><Mail aria-hidden="true" />raywang6688@outlook.com</span>
+        </div>
+        <a href={STAR_INTERVIEW_APPLICATION_MAILTO}>
+          <Send aria-hidden="true" />
+          发送体验申请
+        </a>
+      </div>
+    </section>
+  );
+}
+
+function RecruitmentColumn({
+  index,
+  title,
+  items,
+}: {
+  index: string;
+  title: string;
+  items: string[];
+}) {
+  return (
+    <div className={styles.recruitmentColumn}>
+      <p><span>{index}</span>{title}</p>
+      <ul>
+        {items.map((item) => (
+          <li key={item}>
+            <Check aria-hidden="true" />
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

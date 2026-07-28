@@ -655,9 +655,33 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/forum/ForumClient.tsx",
-    mustInclude: ["QUICK_LINKS", "常用入口", "浏览岗位坐标", "处理投递进度", "管理简历", "查看秋招流程"],
+    mustInclude: ["QUICK_LINKS", "常用入口", "浏览岗位坐标", "处理投递进度", "管理简历", "查看秋招流程", "STAR_INTERVIEW_RECRUITMENT_POST", "url.searchParams.get(\"preview\") === \"star-interview\"", "了解详情"],
     mustNotInclude: [],
-    label: "拾星指南在文章列表前提供常用入口",
+    label: "拾星指南提供常用入口及不写入线上数据的诘星招募公告预览",
+  },
+  {
+    file: "src/components/forum/starInterviewRecruitment.ts",
+    mustInclude: ["诘星 StarInterview Preview 体验招募中", "¥100 人民币等值", "raywang6688@outlook.com", "接收安装包的邮箱", "计划用于哪些岗位或方向的面试"],
+    mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY", "dangerouslySetInnerHTML"],
+    label: "诘星体验招募公告和申请邮件模板包含额度、收件人及必要申请信息",
+  },
+  {
+    file: "src/components/forum/PostCard.tsx",
+    mustInclude: ["STAR_INTERVIEW_RECRUITMENT_TAG", "/interview?preview=recruitment#preview-recruitment", "了解详情"],
+    mustNotInclude: ["mailto:raywang6688@outlook.com"],
+    label: "公告只提供了解详情入口且隐藏内部识别标签，不直接触发申请邮件",
+  },
+  {
+    file: "src/app/interview/StarInterviewTeaser.tsx",
+    mustInclude: ["showRecruitment", "preview-recruitment", "macOS 14", "¥100 人民币等值", "STAR_INTERVIEW_APPLICATION_MAILTO", "发送体验申请"],
+    mustNotInclude: ["dangerouslySetInnerHTML", "SUPABASE_SERVICE_ROLE_KEY"],
+    label: "诘星宣传页彩蛋交代体验要求、额度与最终邮件申请入口",
+  },
+  {
+    file: "src/app/interview/page.tsx",
+    mustInclude: ["searchParams", "params.preview === \"recruitment\""],
+    mustNotInclude: [],
+    label: "诘星宣传页仅在指定预览参数下显示体验招募彩蛋",
   },
   {
     file: "src/app/globals.css",

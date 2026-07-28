@@ -6,6 +6,11 @@ export const metadata: Metadata = {
   description: "诘星 StarInterview，拾星 StarJob 同系列的原生 macOS 面试辅助工具。",
 };
 
-export default function StarInterviewTeaserPage() {
-  return <StarInterviewTeaser />;
+export default async function StarInterviewTeaserPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ preview?: string }>;
+}) {
+  const params = await searchParams;
+  return <StarInterviewTeaser showRecruitment={params.preview === "recruitment"} />;
 }
