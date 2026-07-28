@@ -6,6 +6,7 @@ import type {
   ResumeDocument,
   ResumeTemplateId,
 } from "@/lib/resume";
+import { DEFAULT_RESUME_SECTION_ORDER, RESUME_SECTION_KEYS } from "@/lib/resume";
 
 const text = (max: number) => z.string().trim().max(max);
 const itemId = z.string().trim().min(1).max(100);
@@ -70,11 +71,22 @@ const textSectionSchema = z.object({
 });
 
 const customSectionSchema = textSectionSchema.extend({
+  role: text(180).optional().default(""),
   date: text(80).optional().default(""),
 });
 
+const sectionKeySchema = z.enum(RESUME_SECTION_KEYS);
+
 const contentSchema = z.object({
   basics: basicsSchema,
+  sectionOrder: z.array(sectionKeySchema)
+    .max(RESUME_SECTION_KEYS.length)
+    .optional()
+    .default([...DEFAULT_RESUME_SECTION_ORDER])
+    .transform((order) => [
+      ...new Set(order),
+      ...DEFAULT_RESUME_SECTION_ORDER.filter((key) => !order.includes(key)),
+    ]),
   education: z.array(educationSchema).max(30),
   work: z.array(experienceSchema).max(30),
   projects: z.array(projectSchema).max(30),

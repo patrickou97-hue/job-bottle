@@ -48,7 +48,7 @@ export type ResumeTranslationDraft = {
   awards: Array<{ title: string; bullets: string[] }>;
   certifications: Array<{ title: string; bullets: string[] }>;
   languages: Array<{ title: string; bullets: string[] }>;
-  customSections: Array<{ title: string; date?: string; bullets: string[] }>;
+  customSections: Array<{ title: string; role?: string; date?: string; bullets: string[] }>;
 };
 
 export type ResumeTranslationResult = {
@@ -150,6 +150,7 @@ export function createResumeFromTranslation(
         website: source.content.basics.website,
         photoDataUrl: source.content.basics.photoDataUrl,
       },
+      sectionOrder: [...source.content.sectionOrder],
       education: translated.education.map((item) => ({ ...item, id: createId("edu") })),
       work: translated.work.map((item) => ({ ...item, id: createId("work") })),
       projects: translated.projects.map((item) => ({ ...item, id: createId("project") })),

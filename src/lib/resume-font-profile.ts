@@ -54,7 +54,7 @@ export function collectResumeText(resume: ResumeDocument) {
     ...resume.content.languages,
     ...resume.content.customSections,
   ]) {
-    text.push(section.title, section.date ?? "", ...section.bullets);
+    text.push(section.title, section.role ?? "", section.date ?? "", ...section.bullets);
   }
 
   return text.filter(Boolean).join("\n");

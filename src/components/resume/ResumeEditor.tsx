@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, ImagePlus, Plus, RotateCcw, Sparkles, Trash2, X } from "lucide-react";
+import { Reorder, useDragControls, useReducedMotion } from "motion/react";
+import { ArrowDown, ArrowUp, GripVertical, ImagePlus, Plus, RotateCcw, Sparkles, Trash2, X } from "lucide-react";
 import { ResumePolishDialog, type ResumePolishTarget } from "@/components/resume/ResumePolishDialog";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -19,6 +20,7 @@ import {
   type ResumeEducation,
   type ResumeExperience,
   type ResumeProject,
+  type ResumeSectionKey,
   type ResumeSkillGroup,
   type ResumeCustomSection,
   isEnglishResumeTemplate,
@@ -26,10 +28,11 @@ import {
 import type { Job } from "@/lib/types";
 import type { ResumePolishResult, ResumePolishSectionType } from "@/lib/resume-ai";
 
-type EditorSection = "basic" | "education" | "work" | "projects" | "skills" | "other" | "target";
+type EditorSection = "basic" | "order" | "education" | "work" | "projects" | "skills" | "other" | "target";
 
 const EDITOR_SECTIONS: { id: EditorSection; label: string }[] = [
   { id: "basic", label: "基础" },
+  { id: "order", label: "排序" },
   { id: "education", label: "教育" },
   { id: "work", label: "经历" },
   { id: "projects", label: "项目" },
@@ -121,6 +124,13 @@ export function ResumeEditor({
             <TextField label="个人网站（可选）" value={resume.content.basics.website} onChange={(value) => patchBasics("website", value)} />
           </FieldGrid>
         </section>
+      ) : null}
+
+      {activeSection === "order" ? (
+        <SectionOrderEditor
+          order={resume.content.sectionOrder}
+          onChange={(sectionOrder) => patchContent({ sectionOrder })}
+        />
       ) : null}
 
       {activeSection === "education" ? (
@@ -223,6 +233,7 @@ export function ResumeEditor({
             title="自定义模块"
             items={resume.content.customSections}
             showDate
+            showRole
             onChange={(items) => patchContent({ customSections: items })}
             onPolish={(item) => setPolishTarget(toCustomTarget(item, "custom", "自定义模块"))}
           />
@@ -590,12 +601,14 @@ function CustomSectionGroup({
   title,
   items,
   showDate = false,
+  showRole = false,
   onChange,
   onPolish,
 }: {
   title: string;
   items: ResumeCustomSection[];
   showDate?: boolean;
+  showRole?: boolean;
   onChange: (items: ResumeCustomSection[]) => void;
   onPolish: (item: ResumeCustomSection) => void;
 }) {
@@ -614,6 +627,13 @@ function CustomSectionGroup({
               value={item.title}
               onChange={(value) => onChange(replaceById(items, { ...item, title: value }))}
             />
+            {showRole ? (
+              <TextField
+                label="职责（可选）"
+                value={item.role ?? ""}
+                onChange={(value) => onChange(replaceById(items, { ...item, role: value }))}
+              />
+            ) : null}
             {showDate ? (
               <TextField
                 label="时间（可选）"
@@ -724,10 +744,12 @@ function BulletEditor({
 
 function IconButton({
   label,
+  disabled = false,
   onClick,
   children,
 }: {
   label: string;
+  disabled?: boolean;
   onClick: () => void;
   children: React.ReactNode;
 }) {
@@ -737,6 +759,7 @@ function IconButton({
       className="muted-button pressable inline-flex size-8 items-center justify-center rounded-lg"
       aria-label={label}
       title={label}
+      disabled={disabled}
       onClick={onClick}
     >
       {children}
@@ -746,6 +769,125 @@ function IconButton({
 
 function replaceById<T extends { id: string }>(items: T[], nextItem: T) {
   return items.map((item) => (item.id === nextItem.id ? nextItem : item));
+}
+
+function moveByIndex<T>(items: T[], index: number, direction: -1 | 1) {
+  const target = index + direction;
+  if (index < 0 || target < 0 || target >= items.length) return items;
+  const next = [...items];
+  [next[index], next[target]] = [next[target], next[index]];
+  return next;
+}
+
+const SECTION_ORDER_LABELS: Record<ResumeSectionKey, string> = {
+  education: "教育背景",
+  work: "实习与工作经历",
+  projects: "项目经历",
+  campus: "校园经历",
+  awards: "获奖经历",
+  certifications: "证书",
+  skills: "技能",
+  languages: "语言能力",
+  customSections: "自定义模块",
+};
+
+function SectionOrderEditor({
+  order,
+  onChange,
+}: {
+  order: ResumeSectionKey[];
+  onChange: (order: ResumeSectionKey[]) => void;
+}) {
+  return (
+    <section className="space-y-4">
+      <div>
+        <h2 className="section-title">模块排序</h2>
+        <p className="mt-2 text-sm leading-6 text-ink-secondary">
+          拖住左侧把手移动整个模块，也可以使用上下按钮。调整会立即同步到 A4 预览、PDF 和云端简历。
+        </p>
+      </div>
+      <Reorder.Group
+        as="ol"
+        axis="y"
+        values={order}
+        onReorder={onChange}
+        className="divide-y divide-[color:var(--line-ghost)] border-y border-[color:var(--line-ghost)]"
+      >
+        {order.map((section, index) => (
+          <SortableSectionRow
+            key={section}
+            section={section}
+            index={index}
+            count={order.length}
+            onMove={(direction) => onChange(moveByIndex(order, index, direction))}
+          />
+        ))}
+      </Reorder.Group>
+    </section>
+  );
+}
+
+function SortableSectionRow({
+  section,
+  index,
+  count,
+  onMove,
+}: {
+  section: ResumeSectionKey;
+  index: number;
+  count: number;
+  onMove: (direction: -1 | 1) => void;
+}) {
+  const dragControls = useDragControls();
+  const reducedMotion = useReducedMotion();
+  const label = SECTION_ORDER_LABELS[section];
+
+  return (
+    <Reorder.Item
+      value={section}
+      dragListener={false}
+      dragControls={dragControls}
+      dragMomentum={false}
+      className="relative flex min-h-14 items-center gap-2 bg-[color:var(--surface-read-bg)] py-2 sm:gap-3"
+      transition={reducedMotion ? { duration: 0 } : { type: "spring", stiffness: 500, damping: 38 }}
+      whileDrag={reducedMotion ? undefined : {
+        scale: 1.01,
+        boxShadow: "0 12px 28px rgba(18, 41, 78, 0.14)",
+      }}
+    >
+      <button
+        type="button"
+        className="muted-button pressable inline-flex size-9 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg active:cursor-grabbing"
+        aria-label={`拖动${label}排序`}
+        title={`拖动${label}排序`}
+        onPointerDown={(event) => dragControls.start(event)}
+      >
+        <GripVertical aria-hidden="true" className="size-4" />
+      </button>
+      <span className="w-6 shrink-0 text-center text-xs tabular-nums text-ink-muted">
+        {index + 1}
+      </span>
+      <span className="min-w-0 flex-1 text-sm font-medium text-ink-primary">
+        {label}
+      </span>
+      <div className="flex items-center gap-1">
+        <IconButton
+          label={`上移${label}`}
+          disabled={index === 0}
+          onClick={() => onMove(-1)}
+        >
+          <ArrowUp aria-hidden="true" className="size-3.5" />
+        </IconButton>
+        <IconButton
+          label={`下移${label}`}
+          disabled={index === count - 1}
+          onClick={() => onMove(1)}
+        >
+          <ArrowDown aria-hidden="true" className="size-3.5" />
+        </IconButton>
+      </div>
+    </Reorder.Item>
+  );
 }
 
 function toEducationTarget(item: ResumeEducation): ResumePolishTarget {
@@ -776,7 +918,7 @@ function toProjectTarget(item: ResumeProject): ResumePolishTarget {
 }
 
 function toCustomTarget(item: ResumeCustomSection, sectionType: ResumePolishSectionType, label: string): ResumePolishTarget {
-  return { id: item.id, label, sectionType, content: { title: item.title, subtitle: "", bullets: item.bullets } };
+  return { id: item.id, label, sectionType, content: { title: item.title, subtitle: item.role ?? "", bullets: item.bullets } };
 }
 
 function mergeBullets(current: string[], revised: string[], bulletIndex: number | null) {

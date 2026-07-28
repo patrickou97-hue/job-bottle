@@ -321,15 +321,27 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/lib/resume.ts",
-    mustInclude: ["ResumeDocument", "ResumeContent", "ResumeLanguage", "ResumeCustomSection", "date?: string", "createSampleResume", "createEmptyResume(language", "createBlankCustomSection", "date: \"\"", "loadLocalResumes", "adoptLocalResumesForUser", "GUEST_STORAGE_KEY", "USER_STORAGE_KEY_PREFIX", "createResumeId", "linkedJobId", "photoDataUrl", "compact", "classic", "modern", "consulting", "technical", "academic", "english_classic", "english_modern", "紧凑中文", "经典商科", "现代单栏", "咨询投研", "技术简洁", "学术研究", "English Classic", "English Modern", "isEnglishResumeTemplate", "getResumeLanguage", "getDefaultResumeTemplate", "getEquivalentTemplateForLanguage", "isResumeId", "getResumeTargetLine"],
+    mustInclude: ["ResumeDocument", "ResumeContent", "ResumeLanguage", "ResumeCustomSection", "role?: string", "date?: string", "createSampleResume", "createEmptyResume(language", "createBlankCustomSection", "role: \"\"", "date: \"\"", "loadLocalResumes", "adoptLocalResumesForUser", "GUEST_STORAGE_KEY", "USER_STORAGE_KEY_PREFIX", "createResumeId", "linkedJobId", "photoDataUrl", "compact", "classic", "modern", "consulting", "technical", "academic", "english_classic", "english_modern", "紧凑中文", "经典商科", "现代单栏", "咨询投研", "技术简洁", "学术研究", "English Classic", "English Modern", "isEnglishResumeTemplate", "getResumeLanguage", "getDefaultResumeTemplate", "getEquivalentTemplateForLanguage", "isResumeId", "getResumeTargetLine"],
     mustNotInclude: ["const STORAGE_KEY = \"job_bottle_resumes_v1\""],
     label: "简历制作器定义结构化模型、多模板和按账号隔离的本地持久化",
   },
   {
     file: "src/components/resume/ResumeEditor.tsx",
-    mustInclude: ["title=\"自定义模块\"", "showDate", "时间（可选）", "item.date ?? \"\"", "{ ...item, date: value }"],
+    mustInclude: ["title=\"自定义模块\"", "showRole", "职责（可选）", "item.role ?? \"\"", "{ ...item, role: value }", "showDate", "时间（可选）", "item.date ?? \"\"", "{ ...item, date: value }"],
     mustNotInclude: ["type=\"date\""],
     label: "自定义模块提供自由文本时间字段且不限制用户的时间表达",
+  },
+  {
+    file: "src/components/resume/ResumeEditor.tsx",
+    mustInclude: ["模块排序", "SectionOrderEditor", "SortableSectionRow", "Reorder.Group", "Reorder.Item", "useDragControls", "拖住左侧把手", "拖动${label}排序", "sectionOrder", "moveByIndex"],
+    mustNotInclude: [],
+    label: "简历编辑器支持大模块与模块内条目的双层排序",
+  },
+  {
+    file: "src/components/resume/resumePdf.ts",
+    mustInclude: ["resume.content.sectionOrder.forEach", "case \"work\"", "case \"projects\"", "case \"customSections\""],
+    mustNotInclude: [],
+    label: "简历 A4 预览与 PDF 按用户保存的模块顺序渲染",
   },
   {
     file: "src/components/resume/ResumeBuilderClient.tsx",
@@ -1093,6 +1105,12 @@ const SOURCE_INVARIANTS = [
     mustInclude: ["export async function PUT", "RESUME_CONFLICT", "export async function DELETE", "action !== \"duplicate\"", ".eq(\"user_id\", identity.sub)"],
     mustNotInclude: ["content_json: body.content"],
     label: "小程序简历支持归属校验、冲突保护、更新、复制和删除",
+  },
+  {
+    file: "starjob-miniprogram/miniprogram/pages/resumes/editor.ts",
+    mustInclude: ["SECTION_ORDER_OPTIONS", "onMoveSection", "\"resume.content.sectionOrder\"", "onMoveItem"],
+    mustNotInclude: [],
+    label: "小程序简历支持大模块与模块内条目的双层排序",
   },
   {
     file: "src/app/api/miniprogram/resumes/[id]/pdf/route.ts",

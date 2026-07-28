@@ -65,12 +65,30 @@ export type ResumeSkillGroup = {
 export type ResumeCustomSection = {
   id: string;
   title: string;
+  role?: string;
   date?: string;
   bullets: string[];
 };
 
+export const RESUME_SECTION_KEYS = [
+  "education",
+  "work",
+  "projects",
+  "campus",
+  "awards",
+  "certifications",
+  "skills",
+  "languages",
+  "customSections",
+] as const;
+
+export type ResumeSectionKey = (typeof RESUME_SECTION_KEYS)[number];
+
+export const DEFAULT_RESUME_SECTION_ORDER: ResumeSectionKey[] = [...RESUME_SECTION_KEYS];
+
 export type ResumeContent = {
   basics: ResumeBasics;
+  sectionOrder: ResumeSectionKey[];
   education: ResumeEducation[];
   work: ResumeExperience[];
   projects: ResumeProject[];
@@ -218,6 +236,7 @@ export function createEmptyResume(language: ResumeLanguage = "zh-CN"): ResumeDoc
         website: "",
         targetRole: "",
       },
+      sectionOrder: [...DEFAULT_RESUME_SECTION_ORDER],
       education: [],
       work: [],
       projects: [],
@@ -255,6 +274,7 @@ export function createSampleResume(): ResumeDocument {
         website: "",
         targetRole: "产品经理实习生",
       },
+      sectionOrder: [...DEFAULT_RESUME_SECTION_ORDER],
       education: [
         {
           id: createId("edu"),
@@ -478,6 +498,7 @@ export function createBlankCustomSection(title = "自定义模块"): ResumeCusto
   return {
     id: createId("section"),
     title,
+    role: "",
     date: "",
     bullets: [""],
   };
@@ -485,6 +506,17 @@ export function createBlankCustomSection(title = "自定义模块"): ResumeCusto
 
 export function compactList(values: string[]) {
   return values.map((value) => value.trim()).filter(Boolean);
+}
+
+export function normalizeResumeSectionOrder(value: unknown): ResumeSectionKey[] {
+  const requested = Array.isArray(value)
+    ? value.filter((key): key is ResumeSectionKey =>
+        typeof key === "string" && RESUME_SECTION_KEYS.includes(key as ResumeSectionKey))
+    : [];
+  return [
+    ...new Set(requested),
+    ...RESUME_SECTION_KEYS.filter((key) => !requested.includes(key)),
+  ];
 }
 
 function normalizeResumeDocument(value: unknown): ResumeDocument | null {
@@ -510,6 +542,7 @@ function normalizeResumeDocument(value: unknown): ResumeDocument | null {
         ...fallback.content.basics,
         ...basics,
       },
+      sectionOrder: normalizeResumeSectionOrder(content.sectionOrder),
       education: Array.isArray(content.education) ? content.education : [],
       work: Array.isArray(content.work) ? content.work : [],
       projects: Array.isArray(content.projects) ? content.projects : [],

@@ -57,7 +57,7 @@ export type ImportedResumeDraft = {
   awards: Array<{ title: string; bullets: string[] }>;
   certifications: Array<{ title: string; bullets: string[] }>;
   languages: Array<{ title: string; bullets: string[] }>;
-  customSections: Array<{ title: string; date?: string; bullets: string[] }>;
+  customSections: Array<{ title: string; role?: string; date?: string; bullets: string[] }>;
 };
 
 export type ResumeImportLocalResult = {
@@ -158,6 +158,7 @@ export function createResumeFromImport(
         ...cleanBasics(draft.basics),
         targetRole: draft.basics.targetRole.trim() || draft.targetRole.trim(),
       },
+      sectionOrder: [...base.content.sectionOrder],
       education: draft.education.map((item) => ({ ...item, id: createId("edu") })),
       work: draft.work.map((item) => ({ ...item, id: createId("work"), bullets: cleanList(item.bullets) })),
       projects: draft.projects.map((item) => ({ ...item, id: createId("project"), bullets: cleanList(item.bullets) })),

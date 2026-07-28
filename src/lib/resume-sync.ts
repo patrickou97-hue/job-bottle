@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   createEmptyResume,
+  normalizeResumeSectionOrder,
   type ResumeContent,
   type ResumeDocument,
   type ResumeTemplateId,
@@ -58,6 +59,7 @@ function normalizeContent(value: unknown): ResumeContent {
 
   return {
     basics: { ...fallback.basics, ...(content.basics ?? {}) },
+    sectionOrder: normalizeResumeSectionOrder(content.sectionOrder),
     education: Array.isArray(content.education) ? content.education : [],
     work: Array.isArray(content.work) ? content.work : [],
     projects: Array.isArray(content.projects) ? content.projects : [],

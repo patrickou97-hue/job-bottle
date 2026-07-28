@@ -273,14 +273,44 @@ function renderResume(
 
   const copy = getResumeCopy(resume.templateId);
   renderHeader(state, resume, options);
-  renderEducation(state, resume.content.education, options, copy);
-  renderExperienceSection(state, copy.experience, resume.content.work, options, copy);
-  renderProjectSection(state, copy.projects, resume.content.projects, options);
-  renderCustomSection(state, copy.campus, resume.content.campus, options, copy);
-  renderCustomSection(state, copy.awards, resume.content.awards, options, copy);
-  renderCustomSection(state, copy.certifications, resume.content.certifications, options, copy);
-  renderSkills(state, resume.content.skills, resume.content.languages, options, copy);
-  resume.content.customSections.forEach((section) => renderCustomSection(state, section.title, [section], options, copy));
+  resume.content.sectionOrder.forEach((section) => {
+    switch (section) {
+      case "education":
+        renderEducation(state, resume.content.education, options, copy);
+        break;
+      case "work":
+        renderExperienceSection(state, copy.experience, resume.content.work, options, copy);
+        break;
+      case "projects":
+        renderProjectSection(state, copy.projects, resume.content.projects, options);
+        break;
+      case "campus":
+        renderCustomSection(state, copy.campus, resume.content.campus, options, copy);
+        break;
+      case "awards":
+        renderCustomSection(state, copy.awards, resume.content.awards, options, copy);
+        break;
+      case "certifications":
+        renderCustomSection(state, copy.certifications, resume.content.certifications, options, copy);
+        break;
+      case "skills":
+        renderSkills(state, resume.content.skills, [], options, copy);
+        break;
+      case "languages":
+        renderCustomSection(
+          state,
+          isEnglishResumeTemplate(options.templateId) ? "LANGUAGES" : "语言能力",
+          resume.content.languages,
+          options,
+          copy,
+        );
+        break;
+      case "customSections":
+        resume.content.customSections.forEach((customSection) =>
+          renderCustomSection(state, customSection.title, [customSection], options, copy));
+        break;
+    }
+  });
 
   return { page: state.page, y: state.y };
 }
@@ -450,7 +480,10 @@ function renderCustomSection(
   copy: ResumeCopy,
 ) {
   const cleanSections = sections.filter((section) =>
-    cleanText(section.title) || cleanText(section.date ?? "") || section.bullets.some(cleanText));
+    cleanText(section.title) ||
+    cleanText(section.role ?? "") ||
+    cleanText(section.date ?? "") ||
+    section.bullets.some(cleanText));
   if (cleanSections.length === 0) return;
   const headingDate = cleanSections.length === 1 && cleanSections[0]?.title === title
     ? cleanText(cleanSections[0]?.date ?? "")
@@ -459,9 +492,14 @@ function renderCustomSection(
 
   cleanSections.forEach((section) => {
     const itemTitle = cleanText(section.title);
+    const itemRole = cleanText(section.role ?? "");
     const itemDate = cleanText(section.date ?? "");
-    if (itemTitle !== cleanText(title) || (itemDate && itemDate !== headingDate)) {
-      row(state, itemTitle === cleanText(title) ? "" : itemTitle, itemDate, options, true);
+    const itemLabel = [
+      itemTitle === cleanText(title) ? "" : itemTitle,
+      itemRole,
+    ].filter(Boolean).join(" · ");
+    if (itemLabel || (itemDate && itemDate !== headingDate)) {
+      row(state, itemLabel, itemDate === headingDate ? "" : itemDate, options, true);
     }
     section.bullets.map(cleanText).filter(Boolean).forEach((line) => bullet(state, line, options));
     state.y += options.itemGap;

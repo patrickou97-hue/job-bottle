@@ -1,6 +1,10 @@
 import "server-only";
 
-import { createEmptyResume, type ResumeContent } from "@/lib/resume";
+import {
+  createEmptyResume,
+  normalizeResumeSectionOrder,
+  type ResumeContent,
+} from "@/lib/resume";
 import type { Job, Profile, ResumeRow, UserApplication } from "@/lib/types";
 
 export function toMiniProgramJob(job: Job) {
@@ -77,6 +81,7 @@ function normalizeResumeContent(value: unknown): ResumeContent {
   const content = value as Partial<ResumeContent>;
   return {
     basics: { ...fallback.basics, ...(content.basics ?? {}) },
+    sectionOrder: normalizeResumeSectionOrder(content.sectionOrder),
     education: Array.isArray(content.education) ? content.education : [],
     work: Array.isArray(content.work) ? content.work : [],
     projects: Array.isArray(content.projects) ? content.projects : [],
