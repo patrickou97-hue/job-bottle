@@ -642,48 +642,62 @@ export function ResumeBuilderClient({
         </section>
       ) : null}
 
-      <section className="grid gap-6 xl:grid-cols-[208px_minmax(0,1fr)]">
-        <aside className="space-y-3 xl:sticky xl:top-24 xl:self-start xl:border-r xl:border-[color:var(--line-ghost)] xl:pr-5">
-          <div className="flex items-center justify-between">
-            <h2 className="section-title">我的简历</h2>
-            <span className="section-meta">共 {resumes.length} 份</span>
+      <section
+        aria-labelledby="resume-library-title"
+        className="border-y border-[color:var(--line-ghost)] py-5"
+      >
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <h2 id="resume-library-title" className="section-title">我的简历</h2>
+            <p className="mt-1 text-xs text-ink-muted">切换版本，下方继续编辑并实时对照。</p>
           </div>
-          <div className="space-y-2">
-            {resumes.map((resume) => {
-              const health = getResumeHealth(resume);
-              const boundJob = jobs.find((job) => job.id === resume.linkedJobId);
-              const usageCount = applications.filter((application) => application.resume_id === resume.id).length;
-              return (
+          <span className="section-meta shrink-0">共 {resumes.length} 份</span>
+        </div>
+        <div className="resume-version-rail mt-4 pb-2">
+          {resumes.map((resume) => {
+            const health = getResumeHealth(resume);
+            const boundJob = jobs.find((job) => job.id === resume.linkedJobId);
+            const usageCount = applications.filter((application) => application.resume_id === resume.id).length;
+            return (
               <button
                 key={resume.id}
                 type="button"
+                aria-pressed={selectedResume.id === resume.id}
                 data-selected={selectedResume.id === resume.id}
-                className={`resume-list-item w-full rounded-lg px-3 py-2.5 text-left transition ${selectedResume.id === resume.id ? "text-ink-primary" : "text-ink-secondary"}`}
+                className={`resume-list-item resume-version-item min-w-0 px-4 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#12294e]/35 focus-visible:ring-inset ${selectedResume.id === resume.id ? "text-ink-primary" : "text-ink-secondary"}`}
                 onClick={() => setSelectedId(resume.id)}
               >
-                <span className="flex items-center gap-2 text-sm font-semibold">
-                  <FileText aria-hidden="true" className="size-4 text-nebula-blue" />
-                  {resume.title || "未命名简历"}
+                <span className="flex min-w-0 items-center gap-2 text-sm font-semibold">
+                  <FileText aria-hidden="true" className="size-4 shrink-0 text-nebula-blue" />
+                  <span className="truncate">{resume.title || "未命名简历"}</span>
                 </span>
                 {getResumeTargetLine(resume) ? (
-                  <span className="mt-1 block text-xs text-ink-muted">{getResumeTargetLine(resume)}</span>
-                ) : null}
-                <span className="mt-2 block truncate text-xs text-[color:var(--aurora)]">
+                  <span className="mt-1 block truncate text-xs text-ink-muted">{getResumeTargetLine(resume)}</span>
+                ) : (
+                  <span className="mt-1 block text-xs text-ink-muted">尚未填写求职方向</span>
+                )}
+                <span className="mt-3 block truncate text-xs text-[color:var(--aurora)]">
                   {boundJob ? `绑定 ${boundJob.company_name}` : resume.linkedJobId ? "已绑定岗位" : "通用版 / 方向版"}
                 </span>
-                <span className="mt-2 flex flex-wrap gap-x-2 gap-y-1 text-[11px] text-ink-muted">
+                <span className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-ink-muted">
                   <span>{health.percent}% 完整</span>
-                  <span>已使用 {usageCount} 次</span>
+                  <span aria-hidden="true">·</span>
+                  <span>使用 {usageCount} 次</span>
+                  <span aria-hidden="true">·</span>
                   <span>{formatDateTime(resume.updatedAt)}</span>
                 </span>
-                {health.missing.length > 0 ? <span className="mt-1 block truncate text-[11px] text-ink-muted">待补：{health.missing.join("、")}</span> : null}
+                {health.missing.length > 0 ? (
+                  <span className="mt-1 block truncate text-[11px] text-ink-muted">待补：{health.missing.join("、")}</span>
+                ) : (
+                  <span className="mt-1 block text-[11px] text-ink-muted">关键信息已齐全</span>
+                )}
               </button>
-              );
-            })}
-          </div>
-        </aside>
+            );
+          })}
+        </div>
+      </section>
 
-        <div className="grid gap-8 xl:grid-cols-[minmax(400px,0.9fr)_minmax(540px,1.1fr)] xl:items-start">
+      <section className="grid gap-10 xl:grid-cols-[minmax(0,1.08fr)_minmax(500px,0.92fr)] xl:items-start 2xl:grid-cols-[minmax(0,1.12fr)_minmax(540px,0.88fr)]">
           <section className="min-w-0 border-t border-[color:var(--line-ghost)] pt-5">
             <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -761,7 +775,6 @@ export function ResumeBuilderClient({
               <ResumePreview resume={selectedResume} />
             </div>
           </section>
-        </div>
       </section>
       <p className="border-t border-[color:var(--line-ghost)] pt-4 text-center text-xs leading-5 text-ink-muted">
         请谨慎审核 AI 输出的简历信息

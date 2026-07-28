@@ -68,6 +68,30 @@ const SOURCE_INVARIANTS = [
     label: "根布局错误边界可在全局渲染失败时恢复",
   },
   {
+    file: "src/components/ui/Input.tsx",
+    mustInclude: ["data-slot=\"input\"", "field-shell field-input", "min-w-0"],
+    mustNotInclude: [],
+    label: "全站输入框使用统一的轻量控件材质",
+  },
+  {
+    file: "src/components/ui/Textarea.tsx",
+    mustInclude: ["data-slot=\"textarea\"", "field-shell field-textarea"],
+    mustNotInclude: [],
+    label: "全站长文本框使用统一的轻量控件材质",
+  },
+  {
+    file: "src/components/ui/Select.tsx",
+    mustInclude: ["ChevronDown", "data-slot=\"select-wrapper\"", "data-slot=\"select\"", "field-shell field-select", "appearance-none", "pr-10"],
+    mustNotInclude: [],
+    label: "全站选择框使用统一材质与独立下拉箭头",
+  },
+  {
+    file: "src/app/globals.css",
+    mustInclude: [".field-shell:hover:not(:disabled):not(:focus)", ".field-shell:focus-visible", ".field-shell[aria-invalid=\"true\"]", ".field-select", ".theme-work .field-shell:focus-visible"],
+    mustNotInclude: [],
+    label: "表单控件具备统一的悬停、聚焦、错误和主题状态",
+  },
+  {
     file: "src/components/onboarding/WelcomeNotice.tsx",
     mustInclude: ["GUEST_NOTICE_KEY", "USER_NOTICE_METADATA_KEY", "auth.updateUser", "欢迎来到拾星", "Vercel", "Supabase", "不会向其他用户公开、出售或用于广告投放", "aria-modal=\"true\"", "Escape", "CommunityHelpLink"],
     mustNotInclude: ["开发者与管理员可见", "不会以任何方式泄露"],
@@ -309,7 +333,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/resume/ResumeBuilderClient.tsx",
-    mustInclude: ["ResumeEditor", "ResumePreview", "ResumePdfExportButton", "ResumePageTitle", "AI-Powered", "Snell Roundhand", "inline-block", "px-2", "新建简历", "实时预览", "共用同一套 A4 排版坐标", "prepareTargetResume", "创建岗位版本", "打开岗位版本", "linkedJobId: targetJob.id", "primaryRole", "targetRole: primaryRole", "linkedJobContext={targetJob}", "saveLocalResumes", "adoptLocalResumesForUser", "fetchMyResumes", "upsertMyResume", "MAX_BACKGROUND_SYNC_ATTEMPTS", "isResumeOwnershipConflictError", "onAuthStateChange", "visibilitychange", "正在合并本地与账户中的简历", "已同步至账户", "请谨慎审核 AI 输出的简历信息"],
+    mustInclude: ["ResumeEditor", "ResumePreview", "ResumePdfExportButton", "ResumePageTitle", "AI-Powered", "Snell Roundhand", "inline-block", "px-2", "新建简历", "实时预览", "共用同一套 A4 排版坐标", "resume-version-rail", "切换版本，下方继续编辑并实时对照", "xl:grid-cols-[minmax(0,1.08fr)_minmax(500px,0.92fr)]", "prepareTargetResume", "创建岗位版本", "打开岗位版本", "linkedJobId: targetJob.id", "primaryRole", "targetRole: primaryRole", "linkedJobContext={targetJob}", "saveLocalResumes", "adoptLocalResumesForUser", "fetchMyResumes", "upsertMyResume", "MAX_BACKGROUND_SYNC_ATTEMPTS", "isResumeOwnershipConflictError", "onAuthStateChange", "visibilitychange", "正在合并本地与账户中的简历", "已同步至账户", "请谨慎审核 AI 输出的简历信息"],
     mustNotInclude: ["requestAnimationFrame"],
     label: "简历制作器提供列表、编辑、预览、本地保存和账号同步",
   },
