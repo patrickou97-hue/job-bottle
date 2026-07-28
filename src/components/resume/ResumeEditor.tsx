@@ -36,7 +36,7 @@ const EDITOR_SECTIONS: { id: EditorSection; label: string }[] = [
   { id: "education", label: "教育" },
   { id: "work", label: "经历" },
   { id: "projects", label: "项目" },
-  { id: "skills", label: "技能" },
+  { id: "skills", label: "语言与技能" },
   { id: "other", label: "其他" },
   { id: "target", label: "岗位版本" },
 ];
@@ -188,19 +188,27 @@ export function ResumeEditor({
       ) : null}
 
       {activeSection === "skills" ? (
-        <CollectionEditor
-          title="技能"
-          addLabel="新增技能分类"
-          items={resume.content.skills}
-          onAdd={() => patchContent({ skills: [...resume.content.skills, createBlankSkillGroup()] })}
-          onRemove={(id) => patchContent({ skills: resume.content.skills.filter((item) => item.id !== id) })}
-          renderItem={(item) => (
-            <SkillEditor
-              item={item}
-              onChange={(next) => patchContent({ skills: replaceById(resume.content.skills, next) })}
-            />
-          )}
-        />
+        <div className="space-y-6">
+          <CollectionEditor
+            title="技能"
+            addLabel="新增技能分类"
+            items={resume.content.skills}
+            onAdd={() => patchContent({ skills: [...resume.content.skills, createBlankSkillGroup()] })}
+            onRemove={(id) => patchContent({ skills: resume.content.skills.filter((item) => item.id !== id) })}
+            renderItem={(item) => (
+              <SkillEditor
+                item={item}
+                onChange={(next) => patchContent({ skills: replaceById(resume.content.skills, next) })}
+              />
+            )}
+          />
+          <CustomSectionGroup
+            title="语言能力"
+            items={resume.content.languages}
+            onChange={(items) => patchContent({ languages: items })}
+            onPolish={(item) => setPolishTarget(toCustomTarget(item, "custom", "语言能力"))}
+          />
+        </div>
       ) : null}
 
       {activeSection === "other" ? (
@@ -222,12 +230,6 @@ export function ResumeEditor({
             items={resume.content.certifications}
             onChange={(items) => patchContent({ certifications: items })}
             onPolish={(item) => setPolishTarget(toCustomTarget(item, "custom", "证书"))}
-          />
-          <CustomSectionGroup
-            title="语言能力"
-            items={resume.content.languages}
-            onChange={(items) => patchContent({ languages: items })}
-            onPolish={(item) => setPolishTarget(toCustomTarget(item, "custom", "语言能力"))}
           />
           <CustomSectionGroup
             title="自定义模块"
@@ -786,8 +788,7 @@ const SECTION_ORDER_LABELS: Record<ResumeSectionKey, string> = {
   campus: "校园经历",
   awards: "获奖经历",
   certifications: "证书",
-  skills: "技能",
-  languages: "语言能力",
+  skills: "语言与技能",
   customSections: "自定义模块",
 };
 

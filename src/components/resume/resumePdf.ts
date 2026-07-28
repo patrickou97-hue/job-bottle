@@ -294,16 +294,7 @@ function renderResume(
         renderCustomSection(state, copy.certifications, resume.content.certifications, options, copy);
         break;
       case "skills":
-        renderSkills(state, resume.content.skills, [], options, copy);
-        break;
-      case "languages":
-        renderCustomSection(
-          state,
-          isEnglishResumeTemplate(options.templateId) ? "LANGUAGES" : "语言能力",
-          resume.content.languages,
-          options,
-          copy,
-        );
+        renderSkills(state, resume.content.skills, resume.content.languages, options, copy);
         break;
       case "customSections":
         resume.content.customSections.forEach((customSection) =>
@@ -527,7 +518,9 @@ function renderSkills(
     return /兴趣|爱好|interests?|hobbies?/i.test(category)
       && group.skills.some((skill) => Boolean(cleanText(skill)));
   });
-  const title = isEnglishResumeTemplate(options.templateId) || hasInterests ? copy.skills : "技能";
+  const title = isEnglishResumeTemplate(options.templateId)
+    ? (languageLines.length > 0 ? "LANGUAGES & SKILLS" : copy.skills)
+    : (languageLines.length > 0 ? "语言与技能" : hasInterests ? copy.skills : "技能");
   sectionTitle(state, title, options);
   lines.forEach((line) => textLine(state, line, options.bodySize, "normal"));
 }

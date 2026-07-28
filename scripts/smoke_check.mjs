@@ -333,13 +333,13 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/resume/ResumeEditor.tsx",
-    mustInclude: ["模块排序", "SectionOrderEditor", "SortableSectionRow", "Reorder.Group", "Reorder.Item", "useDragControls", "拖住左侧把手", "拖动${label}排序", "sectionOrder", "moveByIndex"],
+    mustInclude: ["模块排序", "语言与技能", "SectionOrderEditor", "SortableSectionRow", "Reorder.Group", "Reorder.Item", "useDragControls", "拖住左侧把手", "拖动${label}排序", "sectionOrder", "moveByIndex"],
     mustNotInclude: [],
-    label: "简历编辑器支持大模块与模块内条目的双层排序",
+    label: "简历编辑器仅在模块排序页支持大模块拖动排序",
   },
   {
     file: "src/components/resume/resumePdf.ts",
-    mustInclude: ["resume.content.sectionOrder.forEach", "case \"work\"", "case \"projects\"", "case \"customSections\""],
+    mustInclude: ["resume.content.sectionOrder.forEach", "case \"work\"", "case \"projects\"", "renderSkills(state, resume.content.skills, resume.content.languages", "\"语言与技能\"", "case \"customSections\""],
     mustNotInclude: [],
     label: "简历 A4 预览与 PDF 按用户保存的模块顺序渲染",
   },
@@ -1105,12 +1105,6 @@ const SOURCE_INVARIANTS = [
     mustInclude: ["export async function PUT", "RESUME_CONFLICT", "export async function DELETE", "action !== \"duplicate\"", ".eq(\"user_id\", identity.sub)"],
     mustNotInclude: ["content_json: body.content"],
     label: "小程序简历支持归属校验、冲突保护、更新、复制和删除",
-  },
-  {
-    file: "starjob-miniprogram/miniprogram/pages/resumes/editor.ts",
-    mustInclude: ["SECTION_ORDER_OPTIONS", "onMoveSection", "\"resume.content.sectionOrder\"", "onMoveItem"],
-    mustNotInclude: [],
-    label: "小程序简历支持大模块与模块内条目的双层排序",
   },
   {
     file: "src/app/api/miniprogram/resumes/[id]/pdf/route.ts",

@@ -78,7 +78,6 @@ export const RESUME_SECTION_KEYS = [
   "awards",
   "certifications",
   "skills",
-  "languages",
   "customSections",
 ] as const;
 
