@@ -362,7 +362,6 @@ html[data-scene-transition="arrived"] .scene-arrival-veil__stars {
   background:
     radial-gradient(circle at 35% 28%, rgba(241,239,255,0.92), rgba(126,124,181,0.66) 30%, rgba(18,41,78,0.94) 74%);
   box-shadow: 0 0 34px rgba(126, 124, 181, 0.3), inset -8px -10px 18px rgba(0,0,0,0.52);
-  animation: captureStar 920ms cubic-bezier(.2,.72,.22,1) forwards;
 }
 
 .capture-ring {
@@ -374,36 +373,6 @@ html[data-scene-transition="arrived"] .scene-arrival-veil__stars {
   border-radius: 999px;
   border: 1px solid rgba(201, 197, 228, 0.2);
   box-shadow: 0 0 44px rgba(126, 124, 181, 0.16);
-  animation: captureRing 820ms ease-out forwards;
-}
-
-@keyframes captureStar {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, 0, 0) scale(0.65);
-  }
-  18% {
-    opacity: 1;
-    transform: translate3d(-8px, -12px, 0) scale(1.08);
-  }
-  100% {
-    opacity: 0;
-    transform: translate3d(34vw, -34vh, 0) scale(0.36);
-  }
-}
-
-@keyframes captureRing {
-  0% {
-    opacity: 0;
-    transform: scale(0.38);
-  }
-  24% {
-    opacity: 0.82;
-  }
-  100% {
-    opacity: 0;
-    transform: scale(1.45);
-  }
 }
 
 .surface-subtle {

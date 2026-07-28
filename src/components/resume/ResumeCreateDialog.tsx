@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { ResumeTemplatePicker } from "@/components/resume/ResumeTemplatePicker";
 import { Button } from "@/components/ui/Button";
+import { MotionDialog } from "@/components/ui/MotionDialog";
 import {
   getDefaultResumeTemplate,
   type ResumeLanguage,
@@ -36,8 +37,11 @@ export function ResumeCreateDialog({
   }
 
   return (
-    <div className="theme-work fixed inset-0 z-[90] flex items-end justify-center bg-black/48 p-0 sm:items-center sm:p-6" role="presentation">
-      <section role="dialog" aria-modal="true" aria-labelledby="resume-create-title" className="apple-sheet max-h-[92svh] w-full max-w-4xl overflow-y-auto p-5 sm:p-7">
+    <MotionDialog
+      labelledBy="resume-create-title"
+      className="max-w-4xl p-5 sm:p-7"
+      onBackdropClick={onClose}
+    >
         <div className="mb-3 flex justify-center sm:hidden"><span className="apple-sheet-handle" /></div>
         <header className="flex items-start justify-between gap-4 border-b border-[color:var(--line-ghost)] pb-5">
           <div>
@@ -73,8 +77,7 @@ export function ResumeCreateDialog({
           <Button variant="secondary" onClick={onClose}>取消</Button>
           <Button onClick={() => onCreate(language, templateId)}>使用此模板</Button>
         </footer>
-      </section>
-    </div>
+    </MotionDialog>
   );
 }
 

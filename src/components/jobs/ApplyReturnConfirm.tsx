@@ -1,23 +1,35 @@
 "use client";
 
 import { Check, Clock3, X } from "lucide-react";
+import { motion } from "motion/react";
 import { Button } from "@/components/ui/Button";
+import { feedbackVariants, motionDuration, motionEase } from "@/lib/motion";
+import { cn } from "@/lib/utils";
 
 export function ApplyReturnConfirm({
   companyName,
   busy = false,
+  className,
   onApplied,
   onLater,
   onWithdraw,
 }: {
   companyName: string;
   busy?: boolean;
+  className?: string;
   onApplied: () => void;
   onLater: () => void;
   onWithdraw: () => void;
 }) {
   return (
-    <div className="action-bar px-4 py-3">
+    <motion.div
+      className={cn("action-bar px-4 py-3", className)}
+      variants={feedbackVariants}
+      initial="initial"
+      animate="enter"
+      exit="exit"
+      transition={{ duration: motionDuration.fast, ease: motionEase.enter }}
+    >
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="min-w-0">
           <div className="text-sm font-medium text-ink-primary">这次投递完成了吗？</div>
@@ -50,6 +62,6 @@ export function ApplyReturnConfirm({
           </Button>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

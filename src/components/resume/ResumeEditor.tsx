@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Reorder, useDragControls, useReducedMotion } from "motion/react";
+import { AnimatePresence, Reorder, useDragControls, useReducedMotion } from "motion/react";
 import { ArrowDown, ArrowUp, GripVertical, ImagePlus, Plus, RotateCcw, Sparkles, Trash2, X } from "lucide-react";
 import { ResumePolishDialog, type ResumePolishTarget } from "@/components/resume/ResumePolishDialog";
 import { Button } from "@/components/ui/Button";
@@ -274,19 +274,22 @@ export function ResumeEditor({
         </section>
       ) : null}
 
-      {polishTarget ? (
-        <ResumePolishDialog
-          target={polishTarget}
-          targetRole={resume.content.basics.targetRole || resume.targetRole}
-          jobDescription={jobDescription}
-          language={isEnglishResumeTemplate(resume.templateId) ? "en-US" : "zh-CN"}
-          onClose={() => setPolishTarget(null)}
-          onApply={(result, bulletIndex) => {
-            applyPolishResult(polishTarget, result, bulletIndex);
-            setPolishTarget(null);
-          }}
-        />
-      ) : null}
+      <AnimatePresence>
+        {polishTarget ? (
+          <ResumePolishDialog
+            key={`${polishTarget.sectionType}-${polishTarget.id}`}
+            target={polishTarget}
+            targetRole={resume.content.basics.targetRole || resume.targetRole}
+            jobDescription={jobDescription}
+            language={isEnglishResumeTemplate(resume.templateId) ? "en-US" : "zh-CN"}
+            onClose={() => setPolishTarget(null)}
+            onApply={(result, bulletIndex) => {
+              applyPolishResult(polishTarget, result, bulletIndex);
+              setPolishTarget(null);
+            }}
+          />
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 

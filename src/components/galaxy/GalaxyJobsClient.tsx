@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { AnimatePresence } from "motion/react";
 import { fetchMyApplications, updateApplication, upsertApplication } from "@/lib/applications";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { getCandidateStage } from "@/lib/career-workspace";
@@ -194,15 +195,18 @@ export function GalaxyJobsClient({ kind, slug }: { kind: GalaxyKind; slug: strin
           {message}
         </div>
       ) : null}
-      {pendingConfirmation && showConfirmation ? (
-        <ApplyReturnConfirm
-          companyName={pendingConfirmation.job.company_name}
-          busy={confirmBusy}
-          onApplied={() => void resolveApplyConfirmation("applied")}
-          onLater={() => void resolveApplyConfirmation("keep_opened")}
-          onWithdraw={() => void resolveApplyConfirmation("withdrawn")}
-        />
-      ) : null}
+      <AnimatePresence initial={false}>
+        {pendingConfirmation && showConfirmation ? (
+          <ApplyReturnConfirm
+            key={pendingConfirmation.id}
+            companyName={pendingConfirmation.job.company_name}
+            busy={confirmBusy}
+            onApplied={() => void resolveApplyConfirmation("applied")}
+            onLater={() => void resolveApplyConfirmation("keep_opened")}
+            onWithdraw={() => void resolveApplyConfirmation("withdrawn")}
+          />
+        ) : null}
+      </AnimatePresence>
       {loading ? (
         <div className="empty-state">
           <span className="loading-line">正在整理岗位</span>

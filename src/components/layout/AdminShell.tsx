@@ -4,10 +4,12 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ArrowLeft, Coins, Database, LogOut, Rows3, Settings, Users } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { SITE_NAME } from "@/lib/constants";
+import { feedbackVariants, motionDuration, motionEase } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 const adminNavItems = [
@@ -124,24 +126,35 @@ export function AdminShell({ children }: { children: ReactNode }) {
           </nav>
         </div>
       <main className="min-w-0 px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
-        {loading ? (
-          <div className="empty-state text-sm text-ink-secondary">
-            <span className="loading-line">正在确认管理员权限</span>
-          </div>
-        ) : allowed ? (
-          children
-        ) : (
-          <div className="form-section py-6">
-            <h1 className="text-2xl font-semibold text-ink-primary">管理后台</h1>
-            <p className="mt-3 text-sm text-ink-secondary">{message}</p>
-            <Link
-              href="/login?next=%2Fadmin"
-              className="gold-button mt-5 inline-flex h-10 items-center rounded-lg px-4 text-sm font-medium"
-            >
-              登录管理员账号
-            </Link>
-          </div>
-        )}
+        <AnimatePresence initial={false} mode="wait">
+          <motion.div
+            key={loading ? "loading" : allowed ? pathname : "denied"}
+            variants={feedbackVariants}
+            initial="initial"
+            animate="enter"
+            exit="exit"
+            transition={{ duration: motionDuration.fast, ease: motionEase.enter }}
+          >
+            {loading ? (
+              <div className="empty-state text-sm text-ink-secondary">
+                <span className="loading-line">正在确认管理员权限</span>
+              </div>
+            ) : allowed ? (
+              children
+            ) : (
+              <div className="form-section py-6">
+                <h1 className="text-2xl font-semibold text-ink-primary">管理后台</h1>
+                <p className="mt-3 text-sm text-ink-secondary">{message}</p>
+                <Link
+                  href="/login?next=%2Fadmin"
+                  className="gold-button mt-5 inline-flex h-10 items-center rounded-lg px-4 text-sm font-medium"
+                >
+                  登录管理员账号
+                </Link>
+              </div>
+            )}
+          </motion.div>
+        </AnimatePresence>
       </main>
       </div>
     </div>

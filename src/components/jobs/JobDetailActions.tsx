@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Archive } from "lucide-react";
+import { AnimatePresence } from "motion/react";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { updateApplication, upsertApplication } from "@/lib/applications";
 import { getApplicationStageLabel, getCandidateStage, getJobPrimaryAction } from "@/lib/career-workspace";
@@ -228,17 +229,18 @@ export function JobDetailActions({
           )}
         </div>
       </div>
-      {application && showApplyConfirmation ? (
-        <div className="mt-4">
+      <AnimatePresence initial={false}>
+        {application && showApplyConfirmation ? (
           <ApplyReturnConfirm
+            className="mt-4"
             companyName={job.company_name}
             busy={confirmBusy}
             onApplied={() => void resolveApplyConfirmation("applied")}
             onLater={() => void resolveApplyConfirmation("keep_opened")}
             onWithdraw={() => void resolveApplyConfirmation("withdrawn")}
           />
-        </div>
-      ) : null}
+        ) : null}
+      </AnimatePresence>
         {message && message !== "登录后，即可收录岗位。" ? (
         <p className="mt-3 text-xs text-nebula-silver">{message}</p>
       ) : null}

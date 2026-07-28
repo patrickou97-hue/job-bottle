@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { Copy, FileText, FileUp, Languages, LoaderCircle, Plus, Puzzle, Trash2 } from "lucide-react";
+import { AnimatePresence } from "motion/react";
 import { ResumeCreateDialog } from "@/components/resume/ResumeCreateDialog";
 import { ResumeEditor, type EditorSection } from "@/components/resume/ResumeEditor";
 import { ResumeImportDialog, type ResumeImportMode } from "@/components/resume/ResumeImportDialog";
@@ -613,19 +614,22 @@ export function ResumeBuilderClient({
         </div>
       </section>
 
-      {showImportDialog ? (
-        <ResumeImportDialog
-          onClose={() => setShowImportDialog(false)}
-          onImport={importResume}
-        />
-      ) : null}
-
-      {showCreateDialog ? (
-        <ResumeCreateDialog
-          onClose={() => setShowCreateDialog(false)}
-          onCreate={createResume}
-        />
-      ) : null}
+      <AnimatePresence>
+        {showImportDialog ? (
+          <ResumeImportDialog
+            key="resume-import"
+            onClose={() => setShowImportDialog(false)}
+            onImport={importResume}
+          />
+        ) : null}
+        {showCreateDialog ? (
+          <ResumeCreateDialog
+            key="resume-create"
+            onClose={() => setShowCreateDialog(false)}
+            onCreate={createResume}
+          />
+        ) : null}
+      </AnimatePresence>
 
       {targetJob ? (
         <section className="flex flex-col gap-4 border-y border-[color:var(--line-ghost)] py-5 sm:flex-row sm:items-center sm:justify-between">

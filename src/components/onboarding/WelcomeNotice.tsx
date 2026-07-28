@@ -4,8 +4,10 @@ import Link from "next/link";
 import { Check, LockKeyhole, Megaphone, Sparkles, X } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AnimatePresence } from "motion/react";
 import { Button } from "@/components/ui/Button";
 import { CommunityHelpLink } from "@/components/ui/CommunityHelpLink";
+import { MotionDialog } from "@/components/ui/MotionDialog";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { formatShanghaiDate } from "@/lib/dates";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
@@ -159,27 +161,21 @@ export function WelcomeNotice() {
     };
   }, [dismiss, notice]);
 
-  if (!notice) return null;
-
   const isUserWelcome = notice === "user";
   const isAnnouncement = notice === "announcement";
 
   return (
-    <div
-      className="theme-work fixed inset-0 z-[100] flex items-end justify-center bg-black/48 p-0 sm:items-center sm:p-6"
-      role="presentation"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) void dismiss();
-      }}
-    >
-      <section
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="welcome-notice-title"
-        aria-describedby="welcome-notice-description"
-        className="apple-sheet relative max-h-[92svh] w-full overflow-y-auto px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 sm:max-w-2xl sm:px-8 sm:pb-8 sm:pt-6"
-      >
+    <AnimatePresence>
+      {notice ? (
+        <MotionDialog
+          key={`${notice}-${announcement?.id ?? "welcome"}`}
+          ref={dialogRef}
+          labelledBy="welcome-notice-title"
+          describedBy="welcome-notice-description"
+          overlayClassName="z-[100]"
+          className="relative px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 sm:max-w-2xl sm:px-8 sm:pb-8 sm:pt-6"
+          onBackdropClick={() => void dismiss()}
+        >
         <div className="mb-3 flex justify-center sm:hidden"><span className="apple-sheet-handle" /></div>
         <button
           ref={closeButtonRef}
@@ -243,8 +239,9 @@ export function WelcomeNotice() {
             </Button>
           </div>
         </footer>
-      </section>
-    </div>
+        </MotionDialog>
+      ) : null}
+    </AnimatePresence>
   );
 }
 

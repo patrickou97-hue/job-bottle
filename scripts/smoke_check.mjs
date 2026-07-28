@@ -51,9 +51,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/layout.tsx",
-    mustInclude: ["@vercel/analytics/next", "<Analytics />", "<WelcomeNotice />"],
+    mustInclude: ["@vercel/analytics/next", "<Analytics />", "<AppMotionProvider>", "<WelcomeNotice />"],
     mustNotInclude: [],
-    label: "根布局启用 Vercel Web Analytics 并覆盖全站首次访问说明",
+    label: "根布局启用全站 Motion 配置、Vercel Web Analytics 与首次访问说明",
   },
   {
     file: "src/app/error.tsx",
@@ -93,9 +93,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/onboarding/WelcomeNotice.tsx",
-    mustInclude: ["GUEST_NOTICE_KEY", "USER_NOTICE_METADATA_KEY", "auth.updateUser", "欢迎来到拾星", "Vercel", "Supabase", "不会向其他用户公开、出售或用于广告投放", "aria-modal=\"true\"", "Escape", "CommunityHelpLink"],
+    mustInclude: ["GUEST_NOTICE_KEY", "USER_NOTICE_METADATA_KEY", "auth.updateUser", "欢迎来到拾星", "Vercel", "Supabase", "不会向其他用户公开、出售或用于广告投放", "MotionDialog", "AnimatePresence", "Escape", "CommunityHelpLink"],
     mustNotInclude: ["开发者与管理员可见", "不会以任何方式泄露"],
-    label: "游客与首次登录用户收到可访问且可兑现的产品和隐私说明",
+    label: "游客与首次登录用户收到可访问、带克制进出场动效且可兑现的产品和隐私说明",
   },
   {
     file: "src/lib/resume.ts",
@@ -219,9 +219,27 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/lib/motion.ts",
-    mustInclude: ["instant: 0.12", "normal: 0.26", "immersive: 0.92", "planetApproach", "pageVariants", "layoutTransition"],
+    mustInclude: ["instant: 0.12", "normal: 0.26", "immersive: 0.92", "planetApproach", "pageVariants", "layoutTransition", "modalBackdropVariants", "modalPanelVariants", "feedbackVariants"],
     mustNotInclude: ["gsap", "three"],
     label: "全站复用统一的动效时长、缓动和布局过渡",
+  },
+  {
+    file: "src/components/capture/CaptureAnimation.tsx",
+    mustInclude: ["motion.div", "useReducedMotion", "motionDuration.immersive", "motionEase.emphasized", "34vw", "-34vh"],
+    mustNotInclude: ["setTimeout(onDone, 980)", "animation:"],
+    label: "岗位收入星瓶反馈使用 Motion 且减弱动效时取消大范围位移",
+  },
+  {
+    file: "src/components/layout/AppMotionProvider.tsx",
+    mustInclude: ["MotionConfig", "reducedMotion=\"user\"", "motionDuration.normal", "motionEase.standard"],
+    mustNotInclude: ["always", "never"],
+    label: "全站 Motion 默认遵循用户的减弱动态效果偏好",
+  },
+  {
+    file: "src/components/ui/MotionDialog.tsx",
+    mustInclude: ["role=\"dialog\"", "aria-modal=\"true\"", "modalBackdropVariants", "modalPanelVariants", "useReducedMotion"],
+    mustNotInclude: ["backdrop-blur"],
+    label: "业务弹窗共享可访问且支持减弱动态效果的 Motion 进出场",
   },
   {
     file: "src/components/galaxy/CorePlanet.tsx",

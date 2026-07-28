@@ -466,15 +466,18 @@ export function HomeClient() {
         </div>
       ) : null}
 
-      {pendingApplyConfirmation && showApplyConfirmation ? (
-        <ApplyReturnConfirm
-          companyName={pendingApplyConfirmation.companyName}
-          busy={confirmBusy}
-          onApplied={() => void resolveApplyConfirmation("applied")}
-          onLater={() => void resolveApplyConfirmation("keep_opened")}
-          onWithdraw={() => void resolveApplyConfirmation("withdrawn")}
-        />
-      ) : null}
+      <AnimatePresence initial={false}>
+        {pendingApplyConfirmation && showApplyConfirmation ? (
+          <ApplyReturnConfirm
+            key={pendingApplyConfirmation.applicationId}
+            companyName={pendingApplyConfirmation.companyName}
+            busy={confirmBusy}
+            onApplied={() => void resolveApplyConfirmation("applied")}
+            onLater={() => void resolveApplyConfirmation("keep_opened")}
+            onWithdraw={() => void resolveApplyConfirmation("withdrawn")}
+          />
+        ) : null}
+      </AnimatePresence>
 
       <JobRadarHeader
         stats={radarStats}

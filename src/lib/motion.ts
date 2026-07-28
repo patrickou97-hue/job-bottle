@@ -21,6 +21,13 @@ export const layoutTransition: Transition = {
   ease: motionEase.standard,
 };
 
+export const springTransition: Transition = {
+  type: "spring",
+  stiffness: 420,
+  damping: 38,
+  mass: 0.82,
+};
+
 export const pageVariants: Variants = {
   initial: { opacity: 0, y: 8 },
   enter: { opacity: 1, y: 0 },
@@ -31,4 +38,22 @@ export const listItemVariants: Variants = {
   initial: { opacity: 0, y: 6 },
   enter: { opacity: 1, y: 0 },
   exit: { opacity: 0, y: -4 },
+};
+
+export const modalBackdropVariants: Variants = {
+  initial: { opacity: 0 },
+  enter: { opacity: 1 },
+  exit: { opacity: 0 },
+};
+
+export const modalPanelVariants: Variants = {
+  initial: { opacity: 0, y: 18, scale: 0.985 },
+  enter: { opacity: 1, y: 0, scale: 1 },
+  exit: { opacity: 0, y: 10, scale: 0.99 },
+};
+
+export const feedbackVariants: Variants = {
+  initial: { opacity: 0, y: -6, scale: 0.99 },
+  enter: { opacity: 1, y: 0, scale: 1 },
+  exit: { opacity: 0, y: -4, scale: 0.995 },
 };
