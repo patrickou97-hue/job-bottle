@@ -261,7 +261,10 @@ export function StarInterviewTeaser({ showRecruitment = false }: { showRecruitme
               height={493}
               className={styles.wordmark}
             />
-            <p>拾星 StarJob 同系列 · 原生 macOS 面试辅助工具 · 即将上线</p>
+            <p>
+              拾星 StarJob 同系列 · 原生 macOS 面试辅助工具 ·{" "}
+              {showRecruitment ? "Preview 体验招募中" : "即将上线"}
+            </p>
           </div>
           <Link href="/">继续使用拾星 <span aria-hidden="true">↗</span></Link>
         </footer>
