@@ -508,8 +508,11 @@ function renderSkills(
     .map((group) => formatSkillLine(group, copy.skillName))
     .filter(Boolean);
   const languageLines = languages
-    .flatMap((section) => section.bullets.map(cleanText).filter(Boolean))
-    .map((line) => `${copy.language}${line}`);
+    .flatMap((section) =>
+      section.bullets
+        .map(cleanText)
+        .filter(Boolean)
+        .map((line) => formatLanguageLine(section, line, copy.language)));
   const lines = [...languageLines, ...skillLines];
   if (lines.length === 0) return;
 
@@ -1006,6 +1009,13 @@ function formatSkillLine(group: ResumeSkillGroup, fallbackLabel: string) {
   const skills = group.skills.map(cleanText).filter(Boolean);
   if (!category && skills.length === 0) return "";
   return `${category || fallbackLabel}：${skills.join("、")}`;
+}
+
+function formatLanguageLine(section: ResumeCustomSection, line: string, fallbackLabel: string) {
+  const title = cleanText(section.title).replace(/[：:]\s*$/, "");
+  if (!title) return `${fallbackLabel}${line}`;
+  const separator = fallbackLabel.includes(":") ? ": " : "：";
+  return `${title}${separator}${line}`;
 }
 
 function cleanText(value: string) {

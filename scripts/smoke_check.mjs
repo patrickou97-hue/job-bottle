@@ -357,9 +357,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/resume/resumePdf.ts",
-    mustInclude: ["resume.content.sectionOrder.forEach", "case \"work\"", "case \"projects\"", "renderSkills(state, resume.content.skills, resume.content.languages", "\"语言与技能\"", "case \"customSections\""],
-    mustNotInclude: [],
-    label: "简历 A4 预览与 PDF 按用户保存的模块顺序渲染",
+    mustInclude: ["resume.content.sectionOrder.forEach", "case \"work\"", "case \"projects\"", "renderSkills(state, resume.content.skills, resume.content.languages", "\"语言与技能\"", "case \"customSections\"", "formatLanguageLine(section, line, copy.language)", "cleanText(section.title).replace(/[：:]"],
+    mustNotInclude: [".map((line) => `${copy.language}${line}`)"],
+    label: "简历 A4 预览与 PDF 按用户保存的模块顺序渲染且语言条目使用各自标题",
   },
   {
     file: "src/components/resume/ResumeBuilderClient.tsx",
