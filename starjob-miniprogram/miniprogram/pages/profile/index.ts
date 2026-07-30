@@ -5,16 +5,20 @@ import { hasActiveSession, saveSession } from "../../services/session";
 import type {
   AccountBindingResponse,
   AccountStatusResponse,
+  ApplicationListResponse,
+  JobListResponse,
   ProfileResponse,
+  ResumeListResponse,
   WebLoginCodeResponse,
 } from "../../types/api";
-import type { Profile } from "../../types/domain";
+import type { Job, Profile } from "../../types/domain";
 
 type ProfileView = Profile & {
   identitySummary: string;
   preferredRegionsLabel: string;
   targetRolesLabel: string;
 };
+type RecommendedJob = Job & { reason: string };
 
 Page({
   data: {
@@ -22,6 +26,11 @@ Page({
     loading: false,
     errorMessage: "",
     profile: null as ProfileView | null,
+    completionPercent: 0,
+    applicationCount: 0,
+    activeApplicationCount: 0,
+    resumeCount: 0,
+    recommendedJobs: [] as RecommendedJob[],
     avatarLetter: "星",
     loggingOut: false,
     generatingWebCode: false,
@@ -66,7 +75,9 @@ Page({
         draftPreferredRegions: response.data.profile.preferredRegions.join("、"),
         draftTargetRoles: response.data.profile.targetRoles.join("、"),
         profile: toProfileView(response.data.profile),
+        completionPercent: getProfileCompletion(response.data.profile),
       });
+      void this.loadWorkspace(response.data.profile);
       void this.loadAccountStatus();
     } catch (error) {
       this.setData({
@@ -75,6 +86,45 @@ Page({
           error instanceof Error ? error.message : "个人资料读取失败。",
       });
     }
+  },
+
+  async loadWorkspace(profile: Profile) {
+    const [applicationsResult, resumesResult, jobsResult] =
+      await Promise.allSettled([
+        apiRequest<ApplicationListResponse>("/applications"),
+        apiRequest<ResumeListResponse>("/resumes"),
+        apiRequest<JobListResponse>("/jobs", { auth: false }),
+      ]);
+    const applications =
+      applicationsResult.status === "fulfilled"
+        ? applicationsResult.value.data.applications
+        : [];
+    const resumes =
+      resumesResult.status === "fulfilled"
+        ? resumesResult.value.data.resumes
+        : [];
+    const jobs =
+      jobsResult.status === "fulfilled" ? jobsResult.value.data.jobs : [];
+    this.setData({
+      applicationCount: applications.length,
+      activeApplicationCount: applications.filter(
+        (item) => !["offer", "rejected", "withdrawn"].includes(item.status),
+      ).length,
+      resumeCount: resumes.length,
+      recommendedJobs: jobs
+        .filter((job) => jobMatchesPreferences(job, profile))
+        .slice(0, 3)
+        .map((job) => ({
+          ...job,
+          reason: getRecommendationReason(job, profile),
+        })),
+    });
+  },
+
+  onRecommendedJobTap(event: WechatMiniprogram.TouchEvent) {
+    const id = String(event.currentTarget.dataset.id || "");
+    if (!id) return;
+    wx.navigateTo({ url: `/pages/jobs/detail?id=${encodeURIComponent(id)}` });
   },
 
   onLogin() {
@@ -311,4 +361,59 @@ function toProfileView(profile: Profile): ProfileView {
     preferredRegionsLabel: profile.preferredRegions.join("、") || "未设置",
     targetRolesLabel: profile.targetRoles.join("、") || "未设置",
   };
+}
+
+function getProfileCompletion(profile: Profile) {
+  const checks = [
+    profile.displayName,
+    profile.phone,
+    profile.city,
+    profile.school,
+    profile.major,
+    profile.graduationYear,
+    profile.preferredRegions.length > 0 ? "yes" : "",
+    profile.targetRoles.length > 0 ? "yes" : "",
+  ];
+  return Math.round((checks.filter(Boolean).length / checks.length) * 100);
+}
+
+function jobMatchesPreferences(job: Job, profile: Profile) {
+  const regionMatched =
+    profile.preferredRegions.length === 0 ||
+    /全国|全球/u.test(job.locations) ||
+    profile.preferredRegions.some((region) => job.locations.includes(region));
+  const roleText = [
+    job.jobTitles,
+    job.industry,
+    ...job.jobCategories,
+    ...job.tags,
+  ]
+    .join(" ")
+    .toLowerCase();
+  const roleMatched =
+    profile.targetRoles.length === 0 ||
+    profile.targetRoles.some((role) => {
+      const normalized = role.toLowerCase();
+      if (roleText.includes(normalized)) return true;
+      return job.jobCategories.some((category) => {
+        const stem = category.replace(/类$/u, "").toLowerCase();
+        return normalized.includes(stem) || stem.includes(normalized);
+      });
+    });
+  return regionMatched && roleMatched;
+}
+
+function getRecommendationReason(job: Job, profile: Profile) {
+  const role = profile.targetRoles.find((item) =>
+    [job.jobTitles, job.industry, ...job.jobCategories]
+      .join(" ")
+      .toLowerCase()
+      .includes(item.toLowerCase()),
+  );
+  const region = profile.preferredRegions.find((item) =>
+    job.locations.includes(item),
+  );
+  return [role && `方向：${role}`, region && `地区：${region}`]
+    .filter(Boolean)
+    .join(" · ") || "符合当前求职偏好";
 }

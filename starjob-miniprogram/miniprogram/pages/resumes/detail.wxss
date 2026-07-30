@@ -29,9 +29,27 @@ page {
 }
 
 .resume-head {
+  position: relative;
   padding-bottom: 28rpx;
   border-bottom: 3rpx solid #12294e;
   text-align: center;
+}
+
+.resume-head-with-photo {
+  min-height: 154rpx;
+  padding-right: 128rpx;
+  padding-left: 128rpx;
+}
+
+.preview-photo {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 108rpx;
+  height: 142rpx;
+  border: 1rpx solid #d6dae1;
+  background: #f2f3f5;
+  object-fit: cover;
 }
 
 .preview-name,
@@ -209,4 +227,8 @@ page {
 .state-action {
   width: 250rpx;
   margin: 28rpx auto 0;
+}
+.preview-sections {
+  display: flex;
+  flex-direction: column;
 }

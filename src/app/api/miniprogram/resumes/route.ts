@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateMiniProgramRequest } from "@/lib/miniprogram-auth";
 import { toMiniProgramResume } from "@/lib/miniprogram-api";
+import { DEFAULT_RESUME_SECTION_ORDER } from "@/lib/resume";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -90,6 +91,7 @@ export async function POST(request: NextRequest) {
         website: "",
         targetRole,
       },
+      sectionOrder: [...DEFAULT_RESUME_SECTION_ORDER],
       education: [],
       work: [],
       projects: [],

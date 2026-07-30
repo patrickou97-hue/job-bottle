@@ -5,6 +5,8 @@ import type {
   ResumeDeleteResponse,
   ResumeDetailResponse,
   ResumeDuplicateResponse,
+  ResumePolishResult,
+  ResumeTranslationResponse,
   ResumeUpdateResponse,
 } from "../../types/api";
 import type {
@@ -13,6 +15,7 @@ import type {
   ResumeEducation,
   ResumeExperience,
   ResumeProject,
+  ResumeSectionKey,
   ResumeSkillGroup,
   ResumeTextSection,
 } from "../../types/domain";
@@ -42,6 +45,22 @@ type EditorContent = Omit<
   customSections: EditorTextSection[];
 };
 type EditorResume = Omit<ResumeDetail, "content"> & { content: EditorContent };
+type PolishableSection =
+  | "work"
+  | "projects"
+  | "campus"
+  | "awards"
+  | "certifications"
+  | "languages"
+  | "customSections";
+type PolishTarget = {
+  section: PolishableSection;
+  sectionType: "work" | "project" | "campus" | "award" | "custom";
+  index: number;
+  title: string;
+  subtitle: string;
+  originalBullets: string[];
+};
 
 type EditorSection =
   | "overview"
@@ -81,6 +100,20 @@ const TEMPLATE_OPTIONS = [
   { id: "english_modern", label: "English Modern" },
 ] as const;
 
+const SECTION_ORDER_OPTIONS: { id: ResumeSectionKey; label: string }[] = [
+  { id: "education", label: "教育背景" },
+  { id: "work", label: "实习与工作经历" },
+  { id: "projects", label: "项目经历" },
+  { id: "campus", label: "校园经历" },
+  { id: "awards", label: "荣誉奖项" },
+  { id: "certifications", label: "证书" },
+  { id: "skills", label: "语言与技能" },
+  { id: "customSections", label: "自定义模块" },
+];
+const SECTION_ORDER_LABELS = Object.fromEntries(
+  SECTION_ORDER_OPTIONS.map((option) => [option.id, option.label]),
+) as Record<ResumeSectionKey, string>;
+
 const DRAFT_PREFIX = "starjob_resume_draft_v1:";
 let draftTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -93,8 +126,14 @@ Page({
     errorMessage: "",
     activeSection: "overview" as EditorSection,
     sectionOptions: SECTION_OPTIONS,
+    sectionOrderOptions: SECTION_ORDER_OPTIONS,
+    sectionOrderLabels: SECTION_ORDER_LABELS,
     templateOptions: TEMPLATE_OPTIONS,
     resume: null as EditorResume | null,
+    polishTarget: null as PolishTarget | null,
+    polishResult: null as ResumePolishResult | null,
+    polishBusy: false,
+    verificationConfirmed: false,
   },
 
   onLoad(options: Record<string, string | undefined>) {
@@ -199,6 +238,44 @@ Page({
     this.scheduleDraft();
   },
 
+  onChoosePhoto() {
+    wx.chooseMedia({
+      count: 1,
+      mediaType: ["image"],
+      sourceType: ["album", "camera"],
+      sizeType: ["compressed"],
+      success: (result) => {
+        const file = result.tempFiles[0];
+        if (!file?.tempFilePath) return;
+        void prepareResumePhoto(file.tempFilePath)
+          .then((photoDataUrl) => {
+            this.setData({
+              "resume.content.basics.photoDataUrl": photoDataUrl,
+              dirty: true,
+            });
+            this.scheduleDraft();
+          })
+          .catch((error: unknown) => {
+            wx.showToast({
+              title:
+                error instanceof Error
+                  ? error.message
+                  : "照片处理失败，请重试",
+              icon: "none",
+            });
+          });
+      },
+    });
+  },
+
+  onRemovePhoto() {
+    this.setData({
+      "resume.content.basics.photoDataUrl": "",
+      dirty: true,
+    });
+    this.scheduleDraft();
+  },
+
   onAddItem(event: WechatMiniprogram.TouchEvent) {
     const section = String(event.currentTarget.dataset.section) as EditorSection;
     const resume = this.data.resume;
@@ -259,6 +336,151 @@ Page({
       dirty: true,
     });
     this.scheduleDraft();
+  },
+
+  onMoveSection(event: WechatMiniprogram.TouchEvent) {
+    const index = Number(event.currentTarget.dataset.index);
+    const direction = Number(event.currentTarget.dataset.direction);
+    const order = this.data.resume?.content.sectionOrder;
+    const target = index + direction;
+    if (
+      !order ||
+      !Number.isInteger(index) ||
+      !Number.isInteger(target) ||
+      target < 0 ||
+      target >= order.length
+    ) {
+      return;
+    }
+    const next = [...order];
+    [next[index], next[target]] = [next[target], next[index]];
+    this.setData({
+      "resume.content.sectionOrder": next,
+      dirty: true,
+    });
+    this.scheduleDraft();
+  },
+
+  onPolishItem(event: WechatMiniprogram.TouchEvent) {
+    if (this.data.polishBusy) return;
+    const section = String(
+      event.currentTarget.dataset.section || "",
+    ) as PolishableSection;
+    const index = Number(event.currentTarget.dataset.index);
+    const target = buildPolishTarget(this.data.resume, section, index);
+    if (!target) {
+      wx.showToast({ title: "请先填写至少一条内容", icon: "none" });
+      return;
+    }
+    const labels = ["更专业", "更简洁", "突出成果", "贴合目标岗位", "英文表达"];
+    const instructions = [
+      "professional",
+      "concise",
+      "results",
+      "relevance",
+      "english",
+    ] as const;
+    wx.showActionSheet({
+      itemList: labels,
+      success: (result) => {
+        const instruction = instructions[result.tapIndex];
+        if (!instruction) return;
+        void this.generatePolish(target, instruction);
+      },
+    });
+  },
+
+  async generatePolish(
+    target: PolishTarget,
+    instruction:
+      | "professional"
+      | "concise"
+      | "results"
+      | "relevance"
+      | "english",
+  ) {
+    const resume = this.data.resume;
+    if (!resume) return;
+    this.setData({
+      polishTarget: target,
+      polishResult: null,
+      polishBusy: true,
+      verificationConfirmed: false,
+      errorMessage: "",
+    });
+    try {
+      const result = await apiRequest<ResumePolishResult>(
+        "/resume/ai-polish",
+        {
+          method: "POST",
+          timeout: 25_000,
+          data: {
+            sectionType: target.sectionType,
+            content: {
+              title: target.title,
+              subtitle: target.subtitle,
+              bullets: target.originalBullets,
+            },
+            targetRole:
+              resume.content.basics.targetRole || resume.targetRole || "",
+            jobDescription: resume.jobTarget || "",
+            language: isEnglishTemplate(resume.templateId)
+              ? "en-US"
+              : "zh-CN",
+            instruction,
+          },
+        },
+      );
+      this.setData({ polishResult: result });
+    } catch (error) {
+      this.setData({
+        errorMessage:
+          error instanceof Error
+            ? error.message
+            : "润色暂时不可用，原文未改动。",
+        polishTarget: null,
+      });
+    } finally {
+      this.setData({ polishBusy: false });
+    }
+  },
+
+  onVerificationChange(event: WechatMiniprogram.CheckboxGroupChange) {
+    this.setData({
+      verificationConfirmed: event.detail.value.includes("confirmed"),
+    });
+  },
+
+  onClosePolish() {
+    if (this.data.polishBusy) return;
+    this.setData({
+      polishTarget: null,
+      polishResult: null,
+      verificationConfirmed: false,
+    });
+  },
+
+  onApplyPolish() {
+    const target = this.data.polishTarget;
+    const result = this.data.polishResult;
+    if (!target || !result) return;
+    if (
+      result.verificationItems.length > 0 &&
+      !this.data.verificationConfirmed
+    ) {
+      wx.showToast({ title: "请先逐项核实新增细节", icon: "none" });
+      return;
+    }
+    this.setData({
+      [`resume.content.${target.section}[${target.index}].bulletsText`]:
+        result.revised.bullets.join("\n"),
+      dirty: true,
+      polishTarget: null,
+      polishResult: null,
+      verificationConfirmed: false,
+    });
+    this.scheduleDraft();
+    wx.showToast({ title: "建议稿已应用", icon: "success" });
   },
 
   onSave() {
@@ -335,14 +557,59 @@ Page({
   },
 
   onMoreActions() {
+    const translateLabel = isEnglishTemplate(this.data.resume?.templateId)
+      ? "翻译为中文简历"
+      : "翻译为英文简历";
     wx.showActionSheet({
-      itemList: ["生成并预览 PDF", "复制为新简历", "删除简历"],
+      itemList: [
+        "生成并预览 PDF",
+        translateLabel,
+        "复制为新简历",
+        "删除简历",
+      ],
       success: (result) => {
         if (result.tapIndex === 0) void this.downloadPdf();
-        if (result.tapIndex === 1) void this.duplicateResume();
-        if (result.tapIndex === 2) this.confirmDelete();
+        if (result.tapIndex === 1) void this.translateResume();
+        if (result.tapIndex === 2) void this.duplicateResume();
+        if (result.tapIndex === 3) this.confirmDelete();
       },
     });
+  },
+
+  async translateResume() {
+    if (this.data.dirty) {
+      const saved = await this.saveResume(false);
+      if (!saved) return;
+    }
+    this.setData({ saving: true, errorMessage: "" });
+    try {
+      const response = await apiRequest<ResumeTranslationResponse>(
+        `/resumes/${encodeURIComponent(this.data.id)}/translate`,
+        { method: "POST", timeout: 45_000 },
+      );
+      const translated = response.data.resume;
+      const warningCopy = response.data.warnings.slice(0, 2).join("\n");
+      wx.showModal({
+        title: "翻译完成",
+        content: [response.data.summary, warningCopy].filter(Boolean).join("\n\n"),
+        showCancel: false,
+        confirmText: "检查译文",
+        success: () => {
+          wx.redirectTo({
+            url: `/pages/resumes/editor?id=${encodeURIComponent(translated.id)}`,
+          });
+        },
+      });
+    } catch (error) {
+      this.setData({
+        errorMessage:
+          error instanceof Error
+            ? error.message
+            : "翻译暂时不可用，原简历未改动。",
+      });
+    } finally {
+      this.setData({ saving: false });
+    }
   },
 
   async downloadPdf() {
@@ -457,6 +724,7 @@ function toEditorResume(resume: ResumeDetail): EditorResume {
     ...resume,
     content: {
       ...resume.content,
+      sectionOrder: normalizeSectionOrder(resume.content.sectionOrder),
       work: resume.content.work.map((item) => ({
         ...item,
         bulletsText: item.bullets.join("\n"),
@@ -476,6 +744,16 @@ function toEditorResume(resume: ResumeDetail): EditorResume {
       customSections: toEditorTextSections(resume.content.customSections),
     },
   };
+}
+
+function normalizeSectionOrder(value: ResumeSectionKey[] | undefined) {
+  const requested = Array.isArray(value)
+    ? value.filter((key) => SECTION_ORDER_OPTIONS.some((option) => option.id === key))
+    : [];
+  return [
+    ...new Set(requested),
+    ...SECTION_ORDER_OPTIONS.map((option) => option.id).filter((key) => !requested.includes(key)),
+  ];
 }
 
 function toEditorTextSections(items: ResumeTextSection[]) {
@@ -551,6 +829,63 @@ function createId(prefix: string) {
   return `${prefix}_${Date.now()}_${Math.round(Math.random() * 100_000)}`;
 }
 
+function isEnglishTemplate(templateId: string | undefined) {
+  return templateId === "english_classic" || templateId === "english_modern";
+}
+
+function buildPolishTarget(
+  resume: EditorResume | null,
+  section: PolishableSection,
+  index: number,
+): PolishTarget | null {
+  if (!resume || !Number.isInteger(index)) return null;
+  if (section === "work") {
+    const item = resume.content.work[index];
+    if (!item) return null;
+    const bullets = splitLines(item.bulletsText);
+    if (bullets.length === 0) return null;
+    return {
+      section,
+      sectionType: "work",
+      index,
+      title: item.company,
+      subtitle: [item.title, item.location].filter(Boolean).join(" · "),
+      originalBullets: bullets,
+    };
+  }
+  if (section === "projects") {
+    const item = resume.content.projects[index];
+    if (!item) return null;
+    const bullets = splitLines(item.bulletsText);
+    if (bullets.length === 0) return null;
+    return {
+      section,
+      sectionType: "project",
+      index,
+      title: item.name,
+      subtitle: item.role,
+      originalBullets: bullets,
+    };
+  }
+  const item = resume.content[section][index];
+  if (!item) return null;
+  const bullets = splitLines(item.bulletsText);
+  if (bullets.length === 0) return null;
+  return {
+    section,
+    sectionType:
+      section === "campus"
+        ? "campus"
+        : section === "awards"
+          ? "award"
+          : "custom",
+    index,
+    title: item.title,
+    subtitle: [item.role, item.date].filter(Boolean).join(" · "),
+    originalBullets: bullets,
+  };
+}
+
 function getSectionList(content: EditorContent, section: EditorSection) {
   if (
     section === "overview" ||
@@ -613,7 +948,7 @@ function createSectionItem(section: EditorSection) {
   return {
     id: createId("section"),
     title: "",
-    ...(section === "customSections" ? { date: "" } : {}),
+    ...(section === "customSections" ? { role: "", date: "" } : {}),
     bullets: [],
     bulletsText: "",
   } satisfies EditorTextSection;
@@ -643,6 +978,39 @@ function openPdf(filePath: string) {
       success: () => resolve(),
       fail: (error) =>
         reject(new Error(error.errMsg || "PDF 无法打开，请稍后重试。")),
+    });
+  });
+}
+
+async function prepareResumePhoto(filePath: string) {
+  const compressedPath = await compressResumePhoto(filePath);
+  const base64 = await readFileAsBase64(compressedPath);
+  const dataUrl = `data:image/jpeg;base64,${base64}`;
+  if (dataUrl.length > 2_400_000) {
+    throw new Error("照片仍然过大，请选择更小的图片。");
+  }
+  return dataUrl;
+}
+
+function compressResumePhoto(filePath: string) {
+  return new Promise<string>((resolve) => {
+    wx.compressImage({
+      src: filePath,
+      quality: 68,
+      compressedWidth: 720,
+      success: (result) => resolve(result.tempFilePath),
+      fail: () => resolve(filePath),
+    });
+  });
+}
+
+function readFileAsBase64(filePath: string) {
+  return new Promise<string>((resolve, reject) => {
+    wx.getFileSystemManager().readFile({
+      filePath,
+      encoding: "base64",
+      success: (result) => resolve(String(result.data || "")),
+      fail: () => reject(new Error("照片读取失败，请重新选择。")),
     });
   });
 }

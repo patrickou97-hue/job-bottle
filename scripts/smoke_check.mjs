@@ -495,7 +495,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/resume/import/route.ts",
-    mustInclude: ["auth.getUser", "take_resume_ai_rate_slot", "MIMO_API_KEY", "response_format", "json_object", "localDraft", "sourceText", "preserveDeterministicBasics", "language", "zh-CN", "en-US", "不得虚构", "区块", "Cache-Control", "no-store", "maxDuration = 45", "REQUEST_TIMEOUT_MS = 38_000", "buildLocalReviewHints", "bulletCount", "elapsedMs", "本地识别结果仍可直接导入"],
+    mustInclude: ["resolveResumeAiAccess", "access.takeRateSlot", "MIMO_API_KEY", "response_format", "json_object", "localDraft", "sourceText", "preserveDeterministicBasics", "language", "zh-CN", "en-US", "role", "不得虚构", "区块", "Cache-Control", "no-store", "maxDuration = 45", "REQUEST_TIMEOUT_MS = 38_000", "buildLocalReviewHints", "bulletCount", "elapsedMs", "本地识别结果仍可直接导入"],
     mustNotInclude: ["createAdminClient", "SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_", "request.formData", "console.log"],
     label: "AI 只复核提取文字与本地候选并以严格 JSON 返回完整简历草稿",
   },
@@ -531,9 +531,21 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/resume/translate/route.ts",
-    mustInclude: ["auth.getUser", "take_resume_ai_rate_slot", "MIMO_API_KEY", "response_format", "json_object", "hasMatchingStructure", "preserveDeterministicStructure", "不得润色", "Cache-Control", "no-store"],
+    mustInclude: ["resolveResumeAiAccess", "access.takeRateSlot", "MIMO_API_KEY", "response_format", "json_object", "hasMatchingStructure", "preserveDeterministicStructure", "不得润色", "Cache-Control", "no-store"],
     mustNotInclude: ["createAdminClient", "SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_", "console.log"],
     label: "整份简历 AI 翻译在服务端校验登录、频率、结构和确定性日期字段",
+  },
+  {
+    file: "src/lib/resume-ai-access.ts",
+    mustInclude: ["authenticateMiniProgramRequest", "createAdminClient", "createClient", "take_resume_ai_rate_slot_for_user", "take_resume_ai_rate_slot", "userId", "miniprogram", "web"],
+    mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_"],
+    label: "网页与小程序简历 AI 复用同一账号级访问和频率保护边界",
+  },
+  {
+    file: "supabase/migrations/20260730120000_miniprogram_resume_ai_rate_limit.sql",
+    mustInclude: ["pg_advisory_xact_lock", "resume_ai_rate_events", "interval '10 minutes'", "active_count >= 15", "revoke all", "grant execute", "service_role"],
+    mustNotInclude: ["grant execute on function public.take_resume_ai_rate_slot_for_user(uuid) to authenticated"],
+    label: "小程序简历 AI 频率函数仅开放给服务端角色并保持十五次十分钟窗口",
   },
   {
     file: "package.json",
@@ -805,7 +817,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/resume/ai-polish/route.ts",
-    mustInclude: ["MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL", "auth.getUser", "REQUEST_TIMEOUT_MS", "MAX_OUTPUT_TOKENS", "response_format", "json_object", "createPolishCacheKey", "X-StarJob-AI-Cache", "take_resume_ai_rate_slot", "logServerError", "不得虚构", "不把“协助/参与/支持”升级", "不强补结果", "verificationItems", "待确认信息", "只用于用户核实", "warnings", "严格 JSON", "resultSchema", "parseResult", "normalizeResultCandidate", "typeof change === \"string\"", "title: source.title", "subtitle: source.subtitle", "原文未改变"],
+    mustInclude: ["MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL", "resolveResumeAiAccess", "access.takeRateSlot", "REQUEST_TIMEOUT_MS", "MAX_OUTPUT_TOKENS", "response_format", "json_object", "createPolishCacheKey", "X-StarJob-AI-Cache", "logServerError", "不得虚构", "不把“协助/参与/支持”升级", "不强补结果", "verificationItems", "待确认信息", "只用于用户核实", "warnings", "严格 JSON", "resultSchema", "parseResult", "normalizeResultCandidate", "typeof change === \"string\"", "title: source.title", "subtitle: source.subtitle", "原文未改变"],
     mustNotInclude: ["NEXT_PUBLIC_MIMO", "console.log", "SUPABASE_SERVICE_ROLE_KEY"],
     label: "简历分段润色仅在服务端调用 MiMo 并限制幻觉、输入、超时和频率",
   },

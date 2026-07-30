@@ -54,6 +54,38 @@ export type ResumeDeleteResponse = ApiEnvelope<{
   deletedId: string;
 }>;
 
+export type ResumeImportResponse = ApiEnvelope<{
+  resume: ResumeDetail;
+  summary: string;
+  warnings: string[];
+  mode: "program" | "ai";
+}>;
+
+export type ResumeTranslationResponse = ApiEnvelope<{
+  resume: ResumeDetail;
+  summary: string;
+  warnings: string[];
+}>;
+
+export type ResumePolishResult = {
+  summary: string;
+  revised: {
+    title: string;
+    subtitle: string;
+    bullets: string[];
+  };
+  changes: {
+    type: "clarity" | "structure" | "relevance" | "wording" | "grammar";
+    description: string;
+  }[];
+  suggestions: string[];
+  warnings: string[];
+  verificationItems: {
+    detail: string;
+    reason: string;
+  }[];
+};
+
 export type ProfileResponse = ApiEnvelope<{
   profile: Profile;
 }>;

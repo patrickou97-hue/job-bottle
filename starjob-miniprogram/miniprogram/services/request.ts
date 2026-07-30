@@ -10,6 +10,7 @@ type RequestOptions = {
   data?: Record<string, unknown>;
   auth?: boolean;
   retryGetOnNetworkError?: boolean;
+  timeout?: number;
 };
 
 export class ApiError extends Error {
@@ -82,7 +83,7 @@ function requestOnce<T>(
       url: `${API_BASE_URL}${path}`,
       method: options.method,
       data: options.data,
-      timeout: 12_000,
+      timeout: options.timeout ?? 12_000,
       header: {
         "content-type": "application/json",
         ...(options.token

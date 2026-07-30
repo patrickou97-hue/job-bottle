@@ -9,11 +9,14 @@
       <text class="page-title">我的简历</text>
       <text class="page-description">与网页版共用同一份云端简历。</text>
     </view>
-    <button
-      class="create-trigger"
-      wx:if="{{resumeCreationAvailable}}"
-      bindtap="onToggleCreate"
-    >{{showCreateForm ? '取消' : '新建简历'}}</button>
+    <view class="header-actions">
+      <button class="import-trigger" bindtap="onToggleImport">{{showImportForm ? '取消导入' : '导入'}}</button>
+      <button
+        class="create-trigger"
+        wx:if="{{resumeCreationAvailable}}"
+        bindtap="onToggleCreate"
+      >{{showCreateForm ? '取消' : '新建'}}</button>
+    </view>
   </view>
 
   <view class="create-panel surface-card" wx:if="{{authenticated && showCreateForm}}">
@@ -55,6 +58,28 @@
       </scroll-view>
     </view>
     <button class="primary-button create-submit" loading="{{creating}}" disabled="{{creating}}" bindtap="onCreateResume">创建并同步</button>
+  </view>
+
+  <view class="create-panel surface-card" wx:if="{{authenticated && showImportForm}}">
+    <text class="create-title">导入已有简历</text>
+    <text class="import-helper">小程序支持粘贴简历文字或读取微信聊天中的 TXT。PDF、DOCX 请在网页版导入，原文件不会被小程序上传。</text>
+    <view class="import-tools">
+      <button class="import-tool" bindtap="onPasteResumeText">粘贴剪贴板</button>
+      <button class="import-tool" bindtap="onChooseResumeTextFile">选择 TXT</button>
+    </view>
+    <textarea
+      class="import-textarea"
+      value="{{importText}}"
+      bindinput="onImportTextInput"
+      placeholder="粘贴姓名、联系方式、教育、实习、项目和技能等简历文字"
+      maxlength="24000"
+      auto-height
+    />
+    <text class="import-count">{{importText.length}} / 24000</text>
+    <view class="import-actions">
+      <button class="secondary-button import-submit" loading="{{importingMode === 'program'}}" disabled="{{!!importingMode}}" data-mode="program" bindtap="onImportResume">直接结构识别</button>
+      <button class="primary-button import-submit" loading="{{importingMode === 'ai'}}" disabled="{{!!importingMode}}" data-mode="ai" bindtap="onImportResume">智能复核并导入</button>
+    </view>
   </view>
 
   <view class="state-panel" wx:if="{{!authenticated}}">

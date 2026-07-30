@@ -768,6 +768,10 @@ export type Database = {
         Args: Record<string, never>;
         Returns: boolean;
       };
+      take_resume_ai_rate_slot_for_user: {
+        Args: { target_user_id: string };
+        Returns: boolean;
+      };
       reserve_wechat_web_login_code: {
         Args: {
           p_user_id: string;

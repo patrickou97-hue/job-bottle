@@ -55,6 +55,7 @@
     <view class="apply-note">
       <text class="apply-note-title">关于官网投递</text>
       <text class="apply-note-copy">微信可能限制直接打开外部招聘网站。复制链接后，请在系统浏览器中继续投递。</text>
+      <button class="share-job-button" open-type="share">转发给同学</button>
     </view>
 
     <view class="action-bar">

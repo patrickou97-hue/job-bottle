@@ -9,7 +9,7 @@ Page({
     menuHeight: 32,
     menuLeft: 260,
     sceneActive: true,
-    activePlanet: "jobs",
+    activePlanet: "",
   },
 
   onLoad() {
@@ -23,7 +23,7 @@ Page({
 
   onShow() {
     this.getTabBar?.()?.setData({ selectedPath: "/pages/galaxy/index" });
-    this.setData({ sceneActive: true });
+    this.setData({ sceneActive: true, activePlanet: "" });
   },
 
   onHide() {
@@ -33,6 +33,10 @@ Page({
   onPlanetPress(event: WechatMiniprogram.TouchEvent) {
     const id = String(event.currentTarget.dataset.id || "jobs");
     this.setData({ activePlanet: id });
+  },
+
+  onPlanetRelease() {
+    this.setData({ activePlanet: "" });
   },
 
   onPlanetTap(event: WechatMiniprogram.TouchEvent) {

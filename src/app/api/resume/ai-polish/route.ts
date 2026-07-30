@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createHash } from "node:crypto";
-import { createClient } from "@/lib/supabase/server";
 import { RESUME_POLISH_INSTRUCTIONS, RESUME_POLISH_SECTION_TYPES } from "@/lib/resume-ai";
+import { resolveResumeAiAccess } from "@/lib/resume-ai-access";
 
 const REQUEST_TIMEOUT_MS = 18_000;
 const RESPONSE_CACHE_TTL_MS = 10 * 60 * 1_000;
@@ -50,9 +50,8 @@ export async function POST(request: NextRequest) {
   if (contentLength > 24_000) {
     return NextResponse.json({ error: "当前段落内容过长，请精简后重试" }, { status: 413 });
   }
-  const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
+  const access = await resolveResumeAiAccess(request);
+  if (!access) {
     return NextResponse.json({ error: "请先登录，再使用智能润色。" }, { status: 401 });
   }
 
@@ -75,14 +74,14 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const cacheKey = createPolishCacheKey(user.id, parsed.data);
+  const cacheKey = createPolishCacheKey(access.userId, parsed.data);
   const cached = polishCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) {
     return NextResponse.json(cached.result, { headers: { "Cache-Control": "no-store", "X-StarJob-AI-Cache": "HIT" } });
   }
   if (cached) polishCache.delete(cacheKey);
 
-  const { data: rateSlot, error: rateSlotError } = await supabase.rpc("take_resume_ai_rate_slot");
+  const { data: rateSlot, error: rateSlotError } = await access.takeRateSlot();
   if (rateSlotError) {
     logServerError("resume_ai_rate_slot", rateSlotError);
     return NextResponse.json(

@@ -16,13 +16,20 @@
     <view class="preview-actions">
       <button class="secondary-button preview-edit" bindtap="onEdit">编辑这份简历</button>
     </view>
-    <view class="resume-head">
+    <view class="resume-head {{resume.content.basics.photoDataUrl ? 'resume-head-with-photo' : ''}}">
+      <image
+        wx:if="{{resume.content.basics.photoDataUrl}}"
+        class="preview-photo"
+        src="{{resume.content.basics.photoDataUrl}}"
+        mode="aspectFill"
+      />
       <text class="preview-name">{{resume.content.basics.name || resume.title}}</text>
       <text class="preview-target">{{resume.content.basics.targetRole || resume.targetRole || resume.jobTarget}}</text>
       <text class="preview-contact" wx:if="{{resume.contactLine}}" user-select>{{resume.contactLine}}</text>
     </view>
 
-    <view class="preview-section" wx:if="{{resume.educationView.length}}">
+    <view class="preview-sections">
+    <view class="preview-section" style="order: {{resume.sectionPosition.education}}" wx:if="{{resume.educationView.length}}">
       <text class="preview-section-title">教育背景</text>
       <view class="preview-entry" wx:for="{{resume.educationView}}" wx:key="id">
         <view class="entry-heading">
@@ -35,7 +42,7 @@
       </view>
     </view>
 
-    <view class="preview-section" wx:if="{{resume.workView.length}}">
+    <view class="preview-section" style="order: {{resume.sectionPosition.work}}" wx:if="{{resume.workView.length}}">
       <text class="preview-section-title">实习与工作经历</text>
       <view class="preview-entry" wx:for="{{resume.workView}}" wx:key="id">
         <view class="entry-heading">
@@ -49,7 +56,7 @@
       </view>
     </view>
 
-    <view class="preview-section" wx:if="{{resume.projectsView.length}}">
+    <view class="preview-section" style="order: {{resume.sectionPosition.projects}}" wx:if="{{resume.projectsView.length}}">
       <text class="preview-section-title">项目经历</text>
       <view class="preview-entry" wx:for="{{resume.projectsView}}" wx:key="id">
         <view class="entry-heading">
@@ -63,25 +70,31 @@
       </view>
     </view>
 
-    <view class="preview-section" wx:if="{{resume.skillsView.length}}">
-      <text class="preview-section-title">技能</text>
+    <view class="preview-section" style="order: {{resume.sectionPosition.skills}}" wx:if="{{resume.skillsView.length || resume.languagesView.length}}">
+      <text class="preview-section-title">语言与技能</text>
+      <view class="skill-row" wx:for="{{resume.languagesView}}" wx:key="id">
+        <text class="skill-category">{{item.title}}</text>
+        <text class="entry-body" user-select>{{item.bulletsLabel}}</text>
+      </view>
       <view class="skill-row" wx:for="{{resume.skillsView}}" wx:key="id">
         <text class="skill-category">{{item.category}}</text>
         <text class="entry-body" user-select>{{item.skillsLabel}}</text>
       </view>
     </view>
 
-    <view class="preview-section" wx:for="{{resume.otherSections}}" wx:key="id">
+    <view class="preview-section" style="order: {{item.order}}" wx:for="{{resume.otherSections}}" wx:key="id">
       <text class="preview-section-title">{{item.sectionLabel}}</text>
       <view class="preview-entry">
         <view class="entry-heading">
           <text class="entry-title">{{item.title}}</text>
           <text class="entry-date" wx:if="{{item.date}}">{{item.date}}</text>
         </view>
+        <text class="entry-subtitle" wx:if="{{item.role}}">{{item.role}}</text>
         <view class="bullet-row" wx:for="{{item.bullets}}" wx:for-item="bullet" wx:key="*this">
           <text class="bullet-dot">•</text><text class="entry-body" user-select>{{bullet}}</text>
         </view>
       </view>
+    </view>
     </view>
 
     <view class="preview-footer">

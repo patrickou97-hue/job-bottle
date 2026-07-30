@@ -1,235 +1,137 @@
 page {
   overflow: hidden;
-  background: #030712;
+  background: #000001;
 }
 
 .galaxy-page {
   position: relative;
-  min-height: 100vh;
+  height: 100vh;
+  min-height: 1080rpx;
   overflow: hidden;
   padding-bottom: calc(118rpx + env(safe-area-inset-bottom));
   background:
-    radial-gradient(ellipse at 12% 36%, rgba(29, 58, 101, 0.34), transparent 38%),
-    radial-gradient(ellipse at 88% 72%, rgba(126, 84, 42, 0.11), transparent 34%),
-    linear-gradient(155deg, #02050c 0%, #07101f 48%, #0a1830 100%);
+    radial-gradient(ellipse at 14% 42%, rgba(18, 41, 78, 0.26), transparent 35%),
+    radial-gradient(ellipse at 88% 72%, rgba(86, 74, 113, 0.14), transparent 32%),
+    #000001;
   color: #f1efff;
 }
 
 .galaxy-header {
-  position: relative;
-  z-index: 20;
-  padding-right: 30rpx;
-  padding-left: 30rpx;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 30;
+  padding-left: 34rpx;
 }
 
 .brand-row {
   display: flex;
-  align-items: center;
   min-height: 32px;
-  transform: translateY(12rpx);
+  align-items: center;
 }
 
 .galaxy-wordmark {
-  width: 136rpx;
-  height: 60rpx;
-}
-
-.brand-english {
-  margin-left: 17rpx;
-  color: rgba(201, 197, 228, 0.54);
-  font-size: 17rpx;
-  font-weight: 650;
-  letter-spacing: 5rpx;
-}
-
-.welcome-copy {
-  margin-top: 52rpx;
-}
-
-.welcome-kicker,
-.welcome-title,
-.welcome-subtitle {
-  display: block;
-}
-
-.welcome-kicker {
-  color: rgba(201, 197, 228, 0.58);
-  font-size: 21rpx;
-  font-weight: 620;
-  letter-spacing: 3rpx;
-}
-
-.welcome-title {
-  margin-top: 13rpx;
-  font-size: 46rpx;
-  font-weight: 680;
-  letter-spacing: -1.5rpx;
-  line-height: 1.22;
-}
-
-.welcome-subtitle {
-  margin-top: 12rpx;
-  color: rgba(201, 197, 228, 0.66);
-  font-size: 24rpx;
-  line-height: 1.5;
+  width: 144rpx;
+  height: 64rpx;
+  filter: drop-shadow(0 0 18rpx rgba(126, 124, 181, 0.24));
 }
 
 .galaxy-scene {
-  position: relative;
+  position: absolute;
   z-index: 10;
-  height: min(790rpx, 53vh);
-  min-height: 650rpx;
-  margin-top: 18rpx;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: calc(108rpx + env(safe-area-inset-bottom));
 }
 
 .orbit-line,
 .core-system,
 .orbit-carrier {
   position: absolute;
-  left: 48%;
-  top: 52%;
+  left: 50%;
+  top: 51%;
 }
 
 .orbit-line {
-  border: 1rpx solid rgba(175, 190, 218, 0.11);
+  border: 1rpx solid rgba(126, 124, 181, 0.1);
   border-radius: 50%;
   transform: translate(-50%, -50%);
 }
 
 .orbit-line-inner {
-  width: 290rpx;
-  height: 290rpx;
-}
-
-.orbit-line-middle {
-  width: 430rpx;
-  height: 430rpx;
-  border-color: rgba(126, 124, 181, 0.11);
+  width: 390rpx;
+  height: 390rpx;
 }
 
 .orbit-line-outer {
-  width: 580rpx;
-  height: 580rpx;
-  border-color: rgba(126, 124, 181, 0.08);
+  width: 610rpx;
+  height: 610rpx;
+  border-color: rgba(126, 124, 181, 0.075);
 }
 
 .core-system {
-  z-index: 9;
+  z-index: 20;
   display: flex;
-  width: 130rpx;
+  width: 176rpx;
   flex-direction: column;
   align-items: center;
   transform: translate(-50%, -50%);
 }
 
-.core-glow {
-  position: absolute;
-  left: 50%;
-  top: 32rpx;
-  width: 148rpx;
-  height: 148rpx;
-  border-radius: 50%;
-  background: rgba(108, 137, 184, 0.18);
-  filter: blur(38rpx);
-  transform: translate(-50%, -50%);
-}
-
-.core-planet,
-.planet-orb {
+.orb-material {
   position: relative;
+  display: flex;
   overflow: hidden;
+  align-items: center;
+  justify-content: center;
   border-radius: 50%;
 }
 
 .core-planet {
-  width: 82rpx;
-  height: 82rpx;
-  border: 1rpx solid rgba(177, 195, 221, 0.18);
-  background:
-    radial-gradient(ellipse at 64% 30%, rgba(129, 154, 187, 0.2) 0 14%, transparent 15%),
-    radial-gradient(ellipse at 30% 66%, rgba(10, 28, 49, 0.5) 0 22%, transparent 23%),
-    linear-gradient(145deg, #58728f 0%, #2a4767 42%, #132a43 68%, #050b13 100%);
+  width: 104rpx;
+  height: 104rpx;
+  background: radial-gradient(circle at 28% 24%, rgba(231, 226, 255, 0.84) 0 4%, rgba(126, 124, 181, 0.72) 30%, rgba(18, 41, 78, 0.94) 74%);
   box-shadow:
-    0 0 38rpx rgba(67, 101, 146, 0.16),
-    inset -15rpx -18rpx 30rpx rgba(0, 0, 0, 0.4);
+    0 0 34rpx rgba(126, 124, 181, 0.24),
+    inset -12rpx -16rpx 28rpx rgba(0, 0, 0, 0.56),
+    inset 8rpx 7rpx 18rpx rgba(231, 226, 255, 0.08);
 }
 
-.core-label {
-  margin-top: 12rpx;
-  color: rgba(241, 239, 255, 0.88);
-  font-size: 23rpx;
-  font-weight: 650;
-  letter-spacing: 5rpx;
+.core-wordmark {
+  width: 132rpx;
+  height: 58rpx;
+  margin-top: 10rpx;
+  filter: drop-shadow(0 0 20rpx rgba(126, 124, 181, 0.24));
 }
 
-.planet-bands {
-  position: absolute;
-  inset: -14%;
-  border-radius: 46%;
-  background: repeating-linear-gradient(
-    178deg,
-    rgba(226, 236, 247, 0.07) 0 3rpx,
-    transparent 4rpx 10rpx,
-    rgba(2, 7, 15, 0.11) 11rpx 14rpx
-  );
-  opacity: 0.7;
-  transform: rotate(-11deg);
-}
-
-.planet-crater {
-  position: absolute;
-  border: 1rpx solid rgba(0, 0, 0, 0.18);
-  border-radius: 50%;
-  background: rgba(3, 9, 17, 0.12);
-  box-shadow: inset 2rpx 2rpx 4rpx rgba(0, 0, 0, 0.22);
-}
-
-.planet-crater-a {
-  left: 26%;
-  top: 56%;
-  width: 13rpx;
-  height: 9rpx;
-  transform: rotate(-16deg);
-}
-
-.planet-crater-b {
-  right: 18%;
-  top: 27%;
-  width: 8rpx;
-  height: 7rpx;
-}
-
-.planet-texture,
-.planet-terminator {
+.orb-shadow,
+.orb-rim {
   position: absolute;
   inset: 0;
   border-radius: 50%;
   pointer-events: none;
 }
 
-.planet-texture {
-  opacity: 0.72;
-  background:
-    radial-gradient(ellipse at 70% 31%, rgba(209, 220, 235, 0.09) 0 7%, transparent 8%),
-    radial-gradient(ellipse at 35% 63%, rgba(0, 0, 0, 0.24) 0 13%, transparent 14%),
-    repeating-linear-gradient(168deg, transparent 0 8rpx, rgba(255, 255, 255, 0.02) 9rpx 11rpx);
+.orb-shadow {
+  background: radial-gradient(circle at 76% 78%, rgba(0, 0, 1, 0.55) 0 38%, transparent 64%);
 }
 
-.planet-terminator {
-  background: linear-gradient(118deg, transparent 18%, rgba(1, 4, 10, 0.08) 47%, rgba(0, 2, 7, 0.7) 100%);
+.orb-rim {
+  inset: 1rpx;
+  border: 1rpx solid rgba(231, 226, 255, 0.18);
 }
 
-.planet-ring {
+.orb-highlight {
   position: absolute;
-  z-index: 3;
-  left: 50%;
-  top: 50%;
-  width: 92rpx;
-  height: 25rpx;
-  border: 2rpx solid rgba(211, 174, 103, 0.42);
+  left: 27%;
+  top: 22%;
+  width: 5rpx;
+  height: 5rpx;
   border-radius: 50%;
-  transform: translate(-50%, -50%) rotate(-17deg);
-  box-shadow: 0 0 12rpx rgba(201, 151, 60, 0.12);
+  background: rgba(231, 226, 255, 0.78);
+  box-shadow: 0 0 8rpx rgba(231, 226, 255, 0.36);
 }
 
 .orbit-carrier {
@@ -242,130 +144,277 @@ page {
   position: absolute;
   display: flex;
   width: 148rpx;
-  min-height: 128rpx;
-  padding: 10rpx 8rpx;
+  min-height: 132rpx;
+  padding: 8rpx 6rpx;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  border-radius: 28rpx;
+  border-radius: 50%;
   background: transparent;
   color: #f1efff;
   line-height: 1;
 }
 
-.planet-hit-active .planet-orb {
-  transform: scale(1.05);
+.planet-orb {
+  width: 88rpx;
+  height: 88rpx;
+  transition: opacity 180ms ease, transform 180ms ease;
 }
 
-.planet-orb {
-  width: 68rpx;
-  height: 68rpx;
-  border: 1rpx solid rgba(211, 220, 237, 0.11);
-  transition: transform 180ms ease;
+.planet-hit-active .planet-orb {
+  opacity: 0.96;
+  transform: scale(1.04);
 }
 
 .planet-orb-jobs {
-  width: 84rpx;
-  height: 84rpx;
-  background:
-    radial-gradient(ellipse at 64% 33%, rgba(149, 174, 207, 0.14) 0 15%, transparent 16%),
-    radial-gradient(ellipse at 30% 70%, rgba(6, 21, 38, 0.46) 0 20%, transparent 21%),
-    linear-gradient(142deg, #58769a 0%, #2e5074 40%, #172f4b 68%, #060b13 100%);
-  box-shadow: 0 0 22rpx rgba(76, 109, 151, 0.11), inset -18rpx -15rpx 25rpx rgba(0, 0, 0, 0.56);
+  width: 92rpx;
+  height: 92rpx;
+  background: radial-gradient(circle at 28% 24%, rgba(231, 226, 255, 0.84) 0 4%, rgba(126, 124, 181, 0.72) 30%, rgba(18, 41, 78, 0.94) 74%);
+  box-shadow: 0 0 18rpx rgba(126, 124, 181, 0.24), inset -10rpx -14rpx 24rpx rgba(0, 0, 0, 0.58);
+}
+
+.planet-orb-applications {
+  width: 92rpx;
+  height: 92rpx;
+  background: radial-gradient(circle at 28% 24%, rgba(231, 226, 255, 0.76) 0 4%, rgba(86, 74, 113, 0.76) 30%, rgba(18, 41, 78, 0.94) 74%);
+  box-shadow: 0 0 18rpx rgba(86, 74, 113, 0.24), inset -10rpx -14rpx 24rpx rgba(0, 0, 0, 0.58);
 }
 
 .planet-orb-bottle {
-  background:
-    radial-gradient(ellipse at 67% 30%, rgba(221, 177, 100, 0.14) 0 15%, transparent 16%),
-    linear-gradient(148deg, #9a6f35 0%, #684722 43%, #352516 71%, #090604 100%);
-  box-shadow: 0 0 19rpx rgba(156, 108, 47, 0.1), inset -17rpx -14rpx 24rpx rgba(0, 0, 0, 0.58);
+  width: 92rpx;
+  height: 92rpx;
+  background: radial-gradient(circle at 28% 24%, rgba(255, 244, 198, 0.96) 0 4%, rgba(201, 151, 60, 0.9) 30%, rgba(91, 58, 22, 0.96) 74%);
+  box-shadow: 0 0 18rpx rgba(201, 151, 60, 0.38), inset -10rpx -14rpx 24rpx rgba(0, 0, 0, 0.58);
 }
 
 .planet-orb-resume {
-  background:
-    radial-gradient(ellipse at 65% 31%, rgba(190, 153, 171, 0.12) 0 15%, transparent 16%),
-    linear-gradient(145deg, #755262 0%, #4f3546 43%, #2b2031 71%, #08050a 100%);
-  box-shadow: 0 0 18rpx rgba(116, 76, 97, 0.09), inset -17rpx -14rpx 24rpx rgba(0, 0, 0, 0.58);
+  width: 84rpx;
+  height: 84rpx;
+  background: radial-gradient(circle at 28% 24%, rgba(241, 239, 255, 0.9) 0 4%, rgba(201, 197, 228, 0.62) 30%, rgba(18, 41, 78, 0.94) 74%);
+  box-shadow: 0 0 18rpx rgba(201, 197, 228, 0.2), inset -10rpx -14rpx 24rpx rgba(0, 0, 0, 0.58);
+}
+
+.planet-orb-forum {
+  width: 78rpx;
+  height: 78rpx;
+  background: radial-gradient(circle at 28% 24%, rgba(242, 222, 233, 0.78) 0 4%, rgba(127, 85, 104, 0.7) 30%, rgba(86, 74, 113, 0.94) 74%);
+  box-shadow: 0 0 18rpx rgba(127, 85, 104, 0.22), inset -10rpx -14rpx 24rpx rgba(0, 0, 0, 0.58);
 }
 
 .planet-orb-profile {
-  background:
-    radial-gradient(ellipse at 66% 31%, rgba(174, 193, 214, 0.12) 0 15%, transparent 16%),
-    linear-gradient(145deg, #61758c 0%, #3a5067 43%, #1b3046 71%, #050a10 100%);
-  box-shadow: 0 0 18rpx rgba(89, 116, 148, 0.09), inset -17rpx -14rpx 24rpx rgba(0, 0, 0, 0.58);
+  width: 80rpx;
+  height: 80rpx;
+  background: radial-gradient(circle at 28% 24%, rgba(241, 239, 255, 0.9) 0 4%, rgba(201, 197, 228, 0.62) 30%, rgba(18, 41, 78, 0.94) 74%);
+  box-shadow: 0 0 18rpx rgba(201, 197, 228, 0.2), inset -10rpx -14rpx 24rpx rgba(0, 0, 0, 0.58);
 }
 
 .planet-label {
   display: block;
+  margin-top: 12rpx;
+  color: rgba(201, 197, 228, 0.78);
+  font-size: 22rpx;
+  font-weight: 560;
+  line-height: 1.25;
+  text-shadow: 0 0 18rpx rgba(126, 124, 181, 0.12);
   white-space: nowrap;
 }
 
-.planet-label {
-  margin-top: 10rpx;
-  color: rgba(241, 239, 255, 0.92);
-  font-size: 20rpx;
-  font-weight: 620;
-  line-height: 1.3;
+.planet-icon {
+  position: relative;
+  z-index: 4;
+  width: 34rpx;
+  height: 34rpx;
+  color: rgba(241, 239, 255, 0.82);
 }
 
-.orbit-jobs {
-  animation: orbit-jobs 84s linear infinite;
+.briefcase-body {
+  position: absolute;
+  left: 3rpx;
+  right: 3rpx;
+  top: 11rpx;
+  bottom: 4rpx;
+  border: 2rpx solid currentColor;
+  border-radius: 4rpx;
 }
 
-.planet-hit-jobs {
-  animation: counter-jobs 84s linear infinite;
+.briefcase-handle {
+  position: absolute;
+  left: 11rpx;
+  top: 5rpx;
+  width: 12rpx;
+  height: 8rpx;
+  border: 2rpx solid currentColor;
+  border-bottom: 0;
+  border-radius: 4rpx 4rpx 0 0;
 }
 
-.orbit-bottle {
-  animation: orbit-bottle 84s linear infinite;
+.icon-document,
+.icon-resume {
+  border: 2rpx solid currentColor;
+  border-radius: 3rpx;
 }
 
-.planet-hit-bottle {
-  animation: counter-bottle 84s linear infinite;
+.document-line,
+.resume-line {
+  position: absolute;
+  left: 7rpx;
+  height: 2rpx;
+  border-radius: 2rpx;
+  background: currentColor;
 }
 
-.orbit-resume {
-  animation: orbit-resume 84s linear infinite;
+.document-line-a,
+.resume-line-a {
+  right: 7rpx;
+  top: 11rpx;
 }
 
-.planet-hit-resume {
-  animation: counter-resume 84s linear infinite;
+.document-line-b,
+.resume-line-b {
+  right: 12rpx;
+  top: 20rpx;
 }
 
-.orbit-profile {
-  animation: orbit-profile 84s linear infinite;
+.resume-spine {
+  position: absolute;
+  left: 5rpx;
+  top: 4rpx;
+  bottom: 4rpx;
+  width: 2rpx;
+  border-radius: 2rpx;
+  background: currentColor;
+  opacity: 0.58;
 }
 
+.spark-line {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 4rpx;
+  background: currentColor;
+  transform: translate(-50%, -50%);
+}
+
+.spark-line-vertical {
+  width: 3rpx;
+  height: 30rpx;
+}
+
+.spark-line-horizontal {
+  width: 30rpx;
+  height: 3rpx;
+}
+
+.profile-head {
+  position: absolute;
+  left: 50%;
+  top: 3rpx;
+  width: 13rpx;
+  height: 13rpx;
+  border: 2rpx solid currentColor;
+  border-radius: 50%;
+  transform: translateX(-50%);
+}
+
+.profile-shoulders {
+  position: absolute;
+  left: 50%;
+  bottom: 2rpx;
+  width: 27rpx;
+  height: 13rpx;
+  border: 2rpx solid currentColor;
+  border-bottom: 0;
+  border-radius: 16rpx 16rpx 0 0;
+  transform: translateX(-50%);
+}
+
+.guide-page {
+  position: absolute;
+  top: 7rpx;
+  bottom: 5rpx;
+  width: 14rpx;
+  border: 2rpx solid currentColor;
+}
+
+.guide-page-left {
+  left: 3rpx;
+  border-radius: 4rpx 1rpx 1rpx 4rpx;
+  transform: skewY(7deg);
+}
+
+.guide-page-right {
+  right: 3rpx;
+  border-radius: 1rpx 4rpx 4rpx 1rpx;
+  transform: skewY(-7deg);
+}
+
+.guide-spine {
+  position: absolute;
+  left: 50%;
+  top: 6rpx;
+  bottom: 4rpx;
+  width: 2rpx;
+  border-radius: 2rpx;
+  background: currentColor;
+  transform: translateX(-50%);
+}
+
+.orbit-jobs,
+.planet-hit-jobs,
+.orbit-applications,
+.planet-hit-applications,
+.orbit-bottle,
+.planet-hit-bottle,
+.orbit-resume,
+.planet-hit-resume,
+.orbit-forum,
+.planet-hit-forum,
+.orbit-profile,
 .planet-hit-profile {
-  animation: counter-profile 84s linear infinite;
+  animation-duration: 138s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
 }
+
+.orbit-jobs { animation-name: orbit-jobs; }
+.planet-hit-jobs { animation-name: counter-jobs; }
+.orbit-applications { animation-name: orbit-applications; }
+.planet-hit-applications { animation-name: counter-applications; }
+.orbit-bottle { animation-name: orbit-bottle; }
+.planet-hit-bottle { animation-name: counter-bottle; }
+.orbit-resume { animation-name: orbit-resume; }
+.planet-hit-resume { animation-name: counter-resume; }
+.orbit-forum { animation-name: orbit-forum; }
+.planet-hit-forum { animation-name: counter-forum; }
+.orbit-profile { animation-name: orbit-profile; }
+.planet-hit-profile { animation-name: counter-profile; }
 
 .scene-paused .orbit-carrier,
 .scene-paused .planet-hit {
   animation-play-state: paused;
 }
 
-.space-haze {
+.space-wash {
   position: absolute;
   border-radius: 50%;
-  filter: blur(50rpx);
+  filter: blur(70rpx);
   pointer-events: none;
 }
 
-.space-haze-left {
-  left: -160rpx;
-  top: 36%;
-  width: 360rpx;
-  height: 360rpx;
-  background: rgba(18, 41, 78, 0.22);
+.space-wash-blue {
+  left: -190rpx;
+  top: 34%;
+  width: 390rpx;
+  height: 390rpx;
+  background: rgba(18, 41, 78, 0.2);
 }
 
-.space-haze-right {
-  right: -190rpx;
-  bottom: 10%;
-  width: 420rpx;
-  height: 420rpx;
-  background: rgba(86, 74, 113, 0.12);
+.space-wash-violet {
+  right: -210rpx;
+  bottom: 8%;
+  width: 430rpx;
+  height: 430rpx;
+  background: rgba(86, 74, 113, 0.11);
 }
 
 .starfield {
@@ -375,7 +424,7 @@ page {
 }
 
 .starfield-far {
-  opacity: 0.32;
+  opacity: 0.3;
   background:
     radial-gradient(circle at 8% 13%, #d9e5f7 0 1rpx, transparent 2rpx),
     radial-gradient(circle at 28% 36%, #9eb6d5 0 1rpx, transparent 2rpx),
@@ -388,7 +437,7 @@ page {
 }
 
 .starfield-near {
-  opacity: 0.48;
+  opacity: 0.44;
   background:
     radial-gradient(circle at 16% 45%, #f1f5fb 0 2rpx, transparent 3rpx),
     radial-gradient(circle at 57% 68%, #d9e5f7 0 2rpx, transparent 3rpx),
@@ -396,86 +445,130 @@ page {
   animation: star-breathe 7s ease-in-out infinite alternate;
 }
 
-.star {
-  position: absolute;
-  z-index: 2;
-  width: 3rpx;
-  height: 3rpx;
-  border-radius: 50%;
-  background: rgba(231, 226, 255, 0.58);
-  box-shadow: 0 0 9rpx rgba(231, 226, 255, 0.36);
-}
-
-.star-1 { left: 11%; top: 22%; }
-.star-2 { left: 78%; top: 26%; opacity: 0.54; }
-.star-3 { left: 91%; top: 45%; }
-.star-4 { left: 17%; top: 62%; opacity: 0.48; }
-.star-5 { left: 67%; top: 72%; }
-.star-6 { left: 38%; top: 81%; opacity: 0.5; }
-.star-7 { left: 7%; top: 88%; }
-.star-8 { left: 85%; top: 87%; opacity: 0.46; }
-
 @keyframes orbit-jobs {
-  from { transform: rotate(-16deg) translateX(145rpx); }
-  to { transform: rotate(344deg) translateX(145rpx); }
+  from { transform: rotate(12deg) translateX(305rpx); }
+  to { transform: rotate(372deg) translateX(305rpx); }
 }
 
 @keyframes counter-jobs {
-  from { transform: translate(-50%, -50%) rotate(16deg); }
-  to { transform: translate(-50%, -50%) rotate(-344deg); }
+  from { transform: translate(-50%, -50%) rotate(-12deg); }
+  to { transform: translate(-50%, -50%) rotate(-372deg); }
+}
+
+@keyframes orbit-applications {
+  from { transform: rotate(104deg) translateX(305rpx); }
+  to { transform: rotate(464deg) translateX(305rpx); }
+}
+
+@keyframes counter-applications {
+  from { transform: translate(-50%, -50%) rotate(-104deg); }
+  to { transform: translate(-50%, -50%) rotate(-464deg); }
 }
 
 @keyframes orbit-bottle {
-  from { transform: rotate(102deg) translateX(215rpx); }
-  to { transform: rotate(462deg) translateX(215rpx); }
+  from { transform: rotate(198deg) translateX(305rpx); }
+  to { transform: rotate(558deg) translateX(305rpx); }
 }
 
 @keyframes counter-bottle {
-  from { transform: translate(-50%, -50%) rotate(-102deg); }
-  to { transform: translate(-50%, -50%) rotate(-462deg); }
+  from { transform: translate(-50%, -50%) rotate(-198deg); }
+  to { transform: translate(-50%, -50%) rotate(-558deg); }
 }
 
 @keyframes orbit-resume {
-  from { transform: rotate(54deg) translateX(290rpx); }
-  to { transform: rotate(414deg) translateX(290rpx); }
+  from { transform: rotate(302deg) translateX(195rpx); }
+  to { transform: rotate(662deg) translateX(195rpx); }
 }
 
 @keyframes counter-resume {
-  from { transform: translate(-50%, -50%) rotate(-54deg); }
-  to { transform: translate(-50%, -50%) rotate(-414deg); }
+  from { transform: translate(-50%, -50%) rotate(-302deg); }
+  to { transform: translate(-50%, -50%) rotate(-662deg); }
+}
+
+@keyframes orbit-forum {
+  from { transform: rotate(48deg) translateX(195rpx); }
+  to { transform: rotate(408deg) translateX(195rpx); }
+}
+
+@keyframes counter-forum {
+  from { transform: translate(-50%, -50%) rotate(-48deg); }
+  to { transform: translate(-50%, -50%) rotate(-408deg); }
 }
 
 @keyframes orbit-profile {
-  from { transform: rotate(286deg) translateX(290rpx); }
-  to { transform: rotate(646deg) translateX(290rpx); }
+  from { transform: rotate(168deg) translateX(195rpx); }
+  to { transform: rotate(528deg) translateX(195rpx); }
 }
 
 @keyframes counter-profile {
-  from { transform: translate(-50%, -50%) rotate(-286deg); }
-  to { transform: translate(-50%, -50%) rotate(-646deg); }
+  from { transform: translate(-50%, -50%) rotate(-168deg); }
+  to { transform: translate(-50%, -50%) rotate(-528deg); }
 }
 
 @keyframes star-breathe {
-  from { opacity: 0.26; transform: scale(1); }
-  to { opacity: 0.54; transform: scale(1.012); }
+  from { opacity: 0.24; transform: scale(1); }
+  to { opacity: 0.5; transform: scale(1.01); }
+}
+
+@media (max-height: 700px) {
+  .orbit-line-inner {
+    width: 360rpx;
+    height: 360rpx;
+  }
+
+  .orbit-line-outer {
+    width: 560rpx;
+    height: 560rpx;
+  }
+
+  @keyframes orbit-jobs {
+    from { transform: rotate(12deg) translateX(280rpx); }
+    to { transform: rotate(372deg) translateX(280rpx); }
+  }
+
+  @keyframes orbit-applications {
+    from { transform: rotate(104deg) translateX(280rpx); }
+    to { transform: rotate(464deg) translateX(280rpx); }
+  }
+
+  @keyframes orbit-bottle {
+    from { transform: rotate(198deg) translateX(280rpx); }
+    to { transform: rotate(558deg) translateX(280rpx); }
+  }
+
+  @keyframes orbit-resume {
+    from { transform: rotate(302deg) translateX(180rpx); }
+    to { transform: rotate(662deg) translateX(180rpx); }
+  }
+
+  @keyframes orbit-forum {
+    from { transform: rotate(48deg) translateX(180rpx); }
+    to { transform: rotate(408deg) translateX(180rpx); }
+  }
+
+  @keyframes orbit-profile {
+    from { transform: rotate(168deg) translateX(180rpx); }
+    to { transform: rotate(528deg) translateX(180rpx); }
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .orbit-carrier,
-  .planet-hit {
-    animation: none;
-  }
-
-  .orbit-jobs { transform: rotate(-16deg) translateX(145rpx); }
-  .planet-hit-jobs { transform: translate(-50%, -50%) rotate(16deg); }
-  .orbit-bottle { transform: rotate(102deg) translateX(215rpx); }
-  .planet-hit-bottle { transform: translate(-50%, -50%) rotate(-102deg); }
-  .orbit-resume { transform: rotate(54deg) translateX(290rpx); }
-  .planet-hit-resume { transform: translate(-50%, -50%) rotate(-54deg); }
-  .orbit-profile { transform: rotate(286deg) translateX(290rpx); }
-  .planet-hit-profile { transform: translate(-50%, -50%) rotate(-286deg); }
-
+  .planet-hit,
   .starfield-near {
     animation: none;
   }
+
+  .orbit-jobs { transform: rotate(12deg) translateX(305rpx); }
+  .planet-hit-jobs { transform: translate(-50%, -50%) rotate(-12deg); }
+  .orbit-applications { transform: rotate(104deg) translateX(305rpx); }
+  .planet-hit-applications { transform: translate(-50%, -50%) rotate(-104deg); }
+  .orbit-bottle { transform: rotate(198deg) translateX(305rpx); }
+  .planet-hit-bottle { transform: translate(-50%, -50%) rotate(-198deg); }
+  .orbit-resume { transform: rotate(302deg) translateX(195rpx); }
+  .planet-hit-resume { transform: translate(-50%, -50%) rotate(-302deg); }
+  .orbit-forum { transform: rotate(48deg) translateX(195rpx); }
+  .planet-hit-forum { transform: translate(-50%, -50%) rotate(-48deg); }
+  .orbit-profile { transform: rotate(168deg) translateX(195rpx); }
+  .planet-hit-profile { transform: translate(-50%, -50%) rotate(-168deg); }
 }

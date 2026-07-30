@@ -2,6 +2,35 @@
   margin-top: 30rpx;
 }
 
+.category-scroll {
+  width: 100%;
+  margin-top: 24rpx;
+  white-space: nowrap;
+}
+
+.category-row {
+  display: inline-flex;
+  gap: 12rpx;
+}
+
+.category-button {
+  min-height: 60rpx;
+  padding: 0 24rpx;
+  border: 1rpx solid var(--color-line);
+  border-radius: 999rpx;
+  background: transparent;
+  color: var(--color-muted);
+  font-size: 22rpx;
+  line-height: 58rpx;
+}
+
+.category-button-active {
+  border-color: var(--color-navy);
+  background: var(--color-navy);
+  color: #fff;
+  font-weight: 650;
+}
+
 .support-loading,
 .guide-list {
   margin-top: 28rpx;
@@ -57,6 +86,78 @@
   display: block;
 }
 
+.web-tools {
+  margin-top: 54rpx;
+  padding-top: 28rpx;
+  border-top: 1rpx solid var(--color-line);
+}
+
+.web-tools-kicker,
+.web-tools-title,
+.web-tool-title,
+.web-tool-body,
+.web-tool-action {
+  display: block;
+}
+
+.web-tools-kicker {
+  color: var(--color-muted);
+  font-size: 20rpx;
+  font-weight: 650;
+  letter-spacing: 4rpx;
+}
+
+.web-tools-title {
+  margin-top: 8rpx;
+  font-size: 29rpx;
+  font-weight: 680;
+}
+
+.web-tool {
+  display: block;
+  width: 100%;
+  margin-top: 18rpx;
+  padding: 24rpx;
+  border: 1rpx solid var(--color-line);
+  border-radius: 18rpx;
+  background: #fff;
+  color: var(--color-ink);
+  text-align: left;
+}
+
+.web-tool-meta {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.web-tool-title {
+  font-size: 27rpx;
+  font-weight: 680;
+}
+
+.web-tool-platform {
+  padding: 4rpx 10rpx;
+  border-radius: 8rpx;
+  background: var(--color-accent-soft);
+  color: #57558b;
+  font-size: 19rpx;
+}
+
+.web-tool-body {
+  margin-top: 12rpx;
+  color: var(--color-ink-soft);
+  font-size: 23rpx;
+  line-height: 1.65;
+}
+
+.web-tool-action {
+  margin-top: 13rpx;
+  color: var(--color-navy);
+  font-size: 22rpx;
+  font-weight: 650;
+}
+
 .guide-title {
   margin-top: 16rpx;
   font-size: 31rpx;
@@ -86,6 +187,74 @@
   color: var(--color-navy);
   font-size: 23rpx;
   font-weight: 620;
+}
+
+.workflow-panel {
+  margin-top: 30rpx;
+  border-top: 1rpx solid var(--color-line);
+}
+
+.workflow-step {
+  border-bottom: 1rpx solid var(--color-line);
+}
+
+.workflow-step-head {
+  display: flex;
+  width: 100%;
+  min-height: 104rpx;
+  align-items: center;
+  gap: 18rpx;
+  background: transparent;
+  color: var(--color-ink);
+  text-align: left;
+}
+
+.workflow-step-index {
+  display: grid;
+  width: 42rpx;
+  height: 42rpx;
+  place-items: center;
+  border: 1rpx solid var(--color-line);
+  border-radius: 50%;
+  color: var(--color-muted);
+  font-size: 20rpx;
+  font-variant-numeric: tabular-nums;
+}
+
+.workflow-step-title {
+  min-width: 0;
+  flex: 1;
+  font-size: 29rpx;
+  font-weight: 680;
+}
+
+.workflow-step-toggle {
+  color: var(--color-muted);
+  font-size: 35rpx;
+  font-weight: 300;
+}
+
+.workflow-step-body {
+  padding: 0 0 30rpx 60rpx;
+}
+
+.workflow-step-copy {
+  display: block;
+  color: var(--color-ink-soft);
+  font-size: 24rpx;
+  line-height: 1.75;
+}
+
+.workflow-step-action {
+  min-height: 64rpx;
+  margin-top: 14rpx;
+  padding: 0;
+  background: transparent;
+  color: var(--color-navy);
+  font-size: 23rpx;
+  font-weight: 650;
+  line-height: 64rpx;
+  text-align: left;
 }
 
 .feedback-panel {

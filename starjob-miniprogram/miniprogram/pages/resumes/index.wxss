@@ -12,6 +12,13 @@
   flex: 1;
 }
 
+.header-actions {
+  display: flex;
+  flex: 0 0 auto !important;
+  gap: 10rpx;
+}
+
+.import-trigger,
 .create-trigger {
   flex: 0 0 auto;
   min-width: auto;
@@ -26,6 +33,12 @@
   white-space: nowrap;
 }
 
+.import-trigger {
+  border: 1rpx solid var(--color-line);
+  background: transparent;
+  color: var(--color-navy);
+}
+
 .create-panel {
   margin-top: 28rpx;
   padding: 28rpx;
@@ -36,6 +49,65 @@
   margin-bottom: 28rpx;
   font-size: 31rpx;
   font-weight: 680;
+}
+
+.import-helper {
+  display: block;
+  color: var(--color-muted);
+  font-size: 22rpx;
+  line-height: 1.65;
+}
+
+.import-tools {
+  display: flex;
+  gap: 12rpx;
+  margin-top: 20rpx;
+}
+
+.import-tool {
+  min-height: 60rpx;
+  padding: 0 20rpx;
+  border: 1rpx solid var(--color-line);
+  border-radius: 12rpx;
+  background: transparent;
+  color: var(--color-navy);
+  font-size: 22rpx;
+  line-height: 58rpx;
+}
+
+.import-textarea {
+  width: 100%;
+  min-height: 300rpx;
+  max-height: 620rpx;
+  margin-top: 18rpx;
+  padding: 22rpx;
+  border: 1rpx solid var(--color-line);
+  border-radius: var(--radius-control);
+  background: #fff;
+  font-size: 25rpx;
+  line-height: 1.65;
+}
+
+.import-count {
+  display: block;
+  margin-top: 8rpx;
+  color: var(--color-muted);
+  font-size: 19rpx;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.import-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12rpx;
+  margin-top: 22rpx;
+}
+
+.import-submit {
+  min-width: 0;
+  padding: 0 12rpx;
+  font-size: 22rpx;
 }
 
 .form-group {

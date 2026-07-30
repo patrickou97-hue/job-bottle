@@ -124,6 +124,20 @@ Page({
       },
     });
   },
+
+  onShareAppMessage() {
+    const job = this.data.job;
+    if (!job) {
+      return {
+        title: "拾星｜岗位坐标",
+        path: "/pages/jobs/index",
+      };
+    }
+    return {
+      title: `${job.companyName}｜${job.jobTitles}`,
+      path: `/pages/jobs/detail?id=${encodeURIComponent(job.id)}`,
+    };
+  },
 });
 
 function toDetailJob(job: Job): DetailJob {

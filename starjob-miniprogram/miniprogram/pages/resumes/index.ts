@@ -3,6 +3,7 @@ import { RELEASE_CAPABILITIES } from "../../config/env";
 import { hasActiveSession } from "../../services/session";
 import type {
   ResumeCreateResponse,
+  ResumeImportResponse,
   ResumeListResponse,
 } from "../../types/api";
 import type { ResumeSummary } from "../../types/domain";
@@ -30,10 +31,14 @@ Page({
     errorMessage: "",
     resumes: [] as ResumeRow[],
     showCreateForm: false,
+    showImportForm: false,
     creating: false,
+    importingMode: "",
     draftTitle: "",
     draftTargetRole: "",
     draftTemplateId: "compact",
+    importText: "",
+    importFileName: "粘贴导入简历",
     templateOptions: [
       { id: "compact", label: "紧凑中文" },
       { id: "classic", label: "经典商科" },
@@ -108,8 +113,120 @@ Page({
     }
     this.setData({
       showCreateForm: !this.data.showCreateForm,
+      showImportForm: false,
       errorMessage: "",
     });
+  },
+
+  onToggleImport() {
+    if (!this.data.authenticated) {
+      this.onLogin();
+      return;
+    }
+    this.setData({
+      showImportForm: !this.data.showImportForm,
+      showCreateForm: false,
+      errorMessage: "",
+    });
+  },
+
+  onImportTextInput(event: WechatMiniprogram.Input) {
+    this.setData({ importText: event.detail.value });
+  },
+
+  onPasteResumeText() {
+    wx.getClipboardData({
+      success: (result) => {
+        const value = String(result.data || "").trim();
+        if (!value) {
+          wx.showToast({ title: "剪贴板里没有文字", icon: "none" });
+          return;
+        }
+        this.setData({ importText: value.slice(0, 24_000) });
+      },
+    });
+  },
+
+  onChooseResumeTextFile() {
+    wx.chooseMessageFile({
+      count: 1,
+      type: "file",
+      extension: ["txt"],
+      success: (result) => {
+        const file = result.tempFiles[0];
+        if (!file?.path) return;
+        wx.getFileSystemManager().readFile({
+          filePath: file.path,
+          encoding: "utf8",
+          success: (readResult) => {
+            this.setData({
+              importFileName: file.name || "聊天文件简历.txt",
+              importText: String(readResult.data || "").slice(0, 24_000),
+            });
+          },
+          fail: () =>
+            wx.showToast({ title: "TXT 读取失败，请重试", icon: "none" }),
+        });
+      },
+    });
+  },
+
+  onImportResume(event: WechatMiniprogram.TouchEvent) {
+    if (this.data.importingMode) return;
+    const sourceText = this.data.importText.trim();
+    if (sourceText.length < 120) {
+      wx.showToast({ title: "请至少粘贴 120 个字", icon: "none" });
+      return;
+    }
+    const mode = event.currentTarget.dataset.mode === "program" ? "program" : "ai";
+    this.setData({ importingMode: mode, errorMessage: "" });
+    void apiRequest<ResumeImportResponse>("/resumes/import", {
+      method: "POST",
+      timeout: mode === "ai" ? 45_000 : 15_000,
+      data: {
+        sourceText,
+        fileName: this.data.importFileName,
+        mode,
+      },
+    })
+      .then((response) => {
+        const resume = response.data.resume;
+        this.setData({
+          showImportForm: false,
+          importText: "",
+          importFileName: "粘贴导入简历",
+          resumes: [
+            {
+              ...resume,
+              templateLabel:
+                TEMPLATE_LABELS[resume.templateId] || "通用版式",
+              updatedLabel: formatDate(resume.updatedAt),
+            },
+            ...this.data.resumes,
+          ],
+        });
+        const warningCopy = response.data.warnings.slice(0, 2).join("\n");
+        wx.showModal({
+          title: mode === "ai" ? "智能导入完成" : "结构识别完成",
+          content: [response.data.summary, warningCopy].filter(Boolean).join("\n\n"),
+          showCancel: false,
+          confirmText: "检查简历",
+          success: () => {
+            wx.navigateTo({
+              url: `/pages/resumes/editor?id=${encodeURIComponent(resume.id)}`,
+            });
+          },
+        });
+      })
+      .catch((error: unknown) => {
+        this.setData({
+          errorMessage:
+            error instanceof Error
+              ? error.message
+              : "简历导入失败，未创建简历。",
+        });
+      })
+      .finally(() => this.setData({ importingMode: "" }));
   },
 
   onDraftTitleInput(event: WechatMiniprogram.Input) {

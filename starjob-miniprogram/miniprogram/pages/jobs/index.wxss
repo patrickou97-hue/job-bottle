@@ -170,6 +170,37 @@ page {
   padding: 26rpx 32rpx 18rpx;
 }
 
+.discovery-scroll {
+  width: 100%;
+  padding-top: 20rpx;
+  background: var(--color-bg);
+  white-space: nowrap;
+}
+
+.discovery-row {
+  display: inline-flex;
+  gap: 12rpx;
+  padding: 0 32rpx;
+}
+
+.discovery-button {
+  min-height: 62rpx;
+  padding: 0 24rpx;
+  border: 1rpx solid var(--color-line);
+  border-radius: 999rpx;
+  background: transparent;
+  color: var(--color-muted);
+  font-size: 22rpx;
+  line-height: 60rpx;
+}
+
+.discovery-button-active {
+  border-color: var(--color-navy);
+  background: var(--color-navy);
+  color: #fff;
+  font-weight: 650;
+}
+
 .scope-switch {
   display: flex;
   gap: 4rpx;
@@ -179,7 +210,7 @@ page {
 }
 
 .scope-button {
-  min-width: 108rpx;
+  min-width: 92rpx;
   min-height: 64rpx;
   padding: 0 14rpx;
   border-radius: 10rpx;
@@ -367,6 +398,17 @@ page {
   font-weight: 700;
 }
 
+.fit-badge {
+  flex: 0 0 auto;
+  margin-left: 10rpx;
+  padding: 4rpx 9rpx;
+  border-radius: 999rpx;
+  background: rgba(18, 41, 78, 0.08);
+  color: var(--color-navy);
+  font-size: 18rpx;
+  font-weight: 650;
+}
+
 .job-title {
   display: block;
   margin-top: 8rpx;
@@ -400,6 +442,16 @@ page {
   align-items: flex-end;
   justify-content: space-between;
   margin-left: 24rpx;
+}
+
+.application-state {
+  padding: 5rpx 10rpx;
+  border-radius: 999rpx;
+  background: rgba(201, 151, 60, 0.12);
+  color: #8a5d18;
+  font-size: 18rpx;
+  font-weight: 650;
+  white-space: nowrap;
 }
 
 .open-date {

@@ -133,6 +133,130 @@
   padding: 34rpx 0 8rpx;
 }
 
+.workspace-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 28rpx;
+  border-top: 1rpx solid var(--color-line);
+  border-bottom: 1rpx solid var(--color-line);
+}
+
+.workspace-stat {
+  padding: 24rpx 10rpx;
+  text-align: center;
+}
+
+.workspace-stat + .workspace-stat {
+  border-left: 1rpx solid var(--color-line-soft);
+}
+
+.workspace-value,
+.workspace-label {
+  display: block;
+}
+
+.workspace-value {
+  color: var(--color-ink);
+  font-size: 35rpx;
+  font-weight: 690;
+  font-variant-numeric: tabular-nums;
+}
+
+.workspace-label {
+  margin-top: 7rpx;
+  color: var(--color-muted);
+  font-size: 20rpx;
+}
+
+.completion-section {
+  padding-bottom: 18rpx;
+}
+
+.completion-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.completion-title {
+  margin-bottom: 0;
+}
+
+.completion-value {
+  color: var(--color-navy);
+  font-size: 22rpx;
+  font-weight: 680;
+  font-variant-numeric: tabular-nums;
+}
+
+.completion-track {
+  height: 8rpx;
+  margin-top: 18rpx;
+  overflow: hidden;
+  border-radius: 999rpx;
+  background: rgba(18, 41, 78, 0.08);
+}
+
+.completion-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-navy);
+}
+
+.completion-copy {
+  display: block;
+  margin-top: 12rpx;
+  color: var(--color-muted);
+  font-size: 21rpx;
+  line-height: 1.55;
+}
+
+.recommendation-row {
+  display: flex;
+  width: 100%;
+  min-height: 116rpx;
+  align-items: center;
+  gap: 18rpx;
+  padding: 20rpx 4rpx;
+  border-bottom: 1rpx solid var(--color-line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-ink);
+  text-align: left;
+}
+
+.recommendation-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.recommendation-company,
+.recommendation-role,
+.recommendation-reason {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recommendation-company {
+  color: var(--color-ink-soft);
+  font-size: 22rpx;
+  font-weight: 630;
+}
+
+.recommendation-role {
+  margin-top: 6rpx;
+  font-size: 27rpx;
+  font-weight: 680;
+}
+
+.recommendation-reason {
+  margin-top: 6rpx;
+  color: var(--color-muted);
+  font-size: 20rpx;
+}
+
 .account-summary {
   padding: 20rpx 0;
   border-bottom: 1rpx solid var(--color-line-soft);

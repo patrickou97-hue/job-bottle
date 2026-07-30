@@ -83,19 +83,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const { data: existing, error: existingError } = await admin
+      .from("user_applications")
+      .select("id")
+      .eq("user_id", identity.sub)
+      .eq("job_id", body.jobId)
+      .maybeSingle();
+    if (existingError) throw existingError;
+    if (existing) {
+      return NextResponse.json(
+        { data: { id: existing.id } },
+        { headers: { "Cache-Control": "no-store" } },
+      );
+    }
+
     const { data, error } = await admin
       .from("user_applications")
-      .upsert(
-        {
-          user_id: identity.sub,
-          job_id: body.jobId,
-          status: "opened",
-          candidate_stage: candidateStage,
-          saved_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id,job_id" },
-      )
+      .insert({
+        user_id: identity.sub,
+        job_id: body.jobId,
+        status: "opened",
+        candidate_stage: candidateStage,
+        saved_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
       .select("id")
       .single();
     if (error) throw error;

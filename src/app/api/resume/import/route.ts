@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase/server";
+import { resolveResumeAiAccess } from "@/lib/resume-ai-access";
 
 export const maxDuration = 45;
 
@@ -50,6 +50,7 @@ const projectSchema = z.object({
 const skillSchema = z.object({ category: text(120), skills: z.array(text(120)).max(30) }).strict();
 const customSectionSchema = z.object({
   title: text(180),
+  role: text(180).optional().default(""),
   date: text(80).optional().default(""),
   bullets,
 }).strict();
@@ -85,9 +86,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "简历文字内容过长，请使用 8 MB 以内的精简版本" }, { status: 413 });
   }
 
-  const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
+  const access = await resolveResumeAiAccess(request);
+  if (!access) {
     return NextResponse.json({ error: "请先登录，再使用智能导入" }, { status: 401 });
   }
 
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "智能导入尚未配置，请联系管理员检查服务设置" }, { status: 503 });
   }
 
-  const { data: rateSlot, error: rateSlotError } = await supabase.rpc("take_resume_ai_rate_slot");
+  const { data: rateSlot, error: rateSlotError } = await access.takeRateSlot();
   if (rateSlotError) {
     logServerError("resume_import_rate_slot", rateSlotError);
     return NextResponse.json({ error: "AI 请求保护服务暂时不可用，请稍后重试" }, { status: 503 });

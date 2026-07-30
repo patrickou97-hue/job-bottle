@@ -5,6 +5,7 @@ import type {
   ResumeEducation,
   ResumeExperience,
   ResumeProject,
+  ResumeSectionKey,
   ResumeSkillGroup,
   ResumeTextSection,
 } from "../../types/domain";
@@ -12,15 +13,18 @@ import type {
 type EducationView = ResumeEducation & { dateLabel: string };
 type ExperienceView = ResumeExperience & { dateLabel: string };
 type ProjectView = ResumeProject & { dateLabel: string };
-type OtherSectionView = ResumeTextSection & { sectionLabel: string };
+type OtherSectionView = ResumeTextSection & { order: number; sectionLabel: string };
 type SkillView = ResumeSkillGroup & { skillsLabel: string };
+type LanguageView = ResumeTextSection & { bulletsLabel: string };
 
 type ResumePreview = ResumeDetail & {
   educationView: EducationView[];
   workView: ExperienceView[];
   projectsView: ProjectView[];
   skillsView: SkillView[];
+  languagesView: LanguageView[];
   otherSections: OtherSectionView[];
+  sectionPosition: Record<ResumeSectionKey, number>;
   contactLine: string;
 };
 
@@ -28,7 +32,6 @@ const OTHER_SECTION_GROUPS = [
   { key: "campus", label: "校园经历" },
   { key: "awards", label: "荣誉奖项" },
   { key: "certifications", label: "证书" },
-  { key: "languages", label: "语言能力" },
   { key: "customSections", label: "其他经历" },
 ] as const;
 
@@ -95,15 +98,21 @@ function toPreview(resume: ResumeDetail): ResumePreview {
   ]
     .filter(Boolean)
     .join(" · ");
+  const sectionOrder = normalizeSectionOrder(resume.content.sectionOrder);
+  const sectionPosition = Object.fromEntries(
+    sectionOrder.map((key, index) => [key, index]),
+  ) as Record<ResumeSectionKey, number>;
   const otherSections = OTHER_SECTION_GROUPS.flatMap(({ key, label }) =>
     (resume.content[key] || []).map((item) => ({
       ...item,
+      order: sectionPosition[key],
       sectionLabel: label,
     })),
   );
   return {
     ...resume,
     contactLine,
+    sectionPosition,
     educationView: (resume.content.education || []).map((item) => ({
       ...item,
       dateLabel: formatRange(item.startDate, item.endDate),
@@ -123,8 +132,33 @@ function toPreview(resume: ResumeDetail): ResumePreview {
       ...item,
       skillsLabel: item.skills.join("、"),
     })),
+    languagesView: (resume.content.languages || []).map((item) => ({
+      ...item,
+      bulletsLabel: item.bullets.join("、"),
+    })),
     otherSections,
   };
+}
+
+const DEFAULT_SECTION_ORDER: ResumeSectionKey[] = [
+  "education",
+  "work",
+  "projects",
+  "campus",
+  "awards",
+  "certifications",
+  "skills",
+  "customSections",
+];
+
+function normalizeSectionOrder(value: ResumeSectionKey[] | undefined) {
+  const requested = Array.isArray(value)
+    ? value.filter((key) => DEFAULT_SECTION_ORDER.includes(key))
+    : [];
+  return [
+    ...new Set(requested),
+    ...DEFAULT_SECTION_ORDER.filter((key) => !requested.includes(key)),
+  ];
 }
 
 function formatRange(start: string, end: string) {

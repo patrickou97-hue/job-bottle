@@ -10,10 +10,22 @@
 
   <view class="segmented support-tabs">
     <button class="segmented-button {{activeTab === 'guide' ? 'segmented-button-active' : ''}}" data-id="guide" bindtap="onTabTap">拾星指南</button>
+    <button class="segmented-button {{activeTab === 'workflow' ? 'segmented-button-active' : ''}}" data-id="workflow" bindtap="onTabTap">秋招流程</button>
     <button class="segmented-button {{activeTab === 'feedback' ? 'segmented-button-active' : ''}}" data-id="feedback" bindtap="onTabTap">问题反馈</button>
   </view>
 
   <block wx:if="{{activeTab === 'guide'}}">
+    <scroll-view class="category-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+      <view class="category-row">
+        <button
+          wx:for="{{guideCategories}}"
+          wx:key="*this"
+          class="category-button {{activeCategory === item ? 'category-button-active' : ''}}"
+          data-category="{{item}}"
+          bindtap="onCategoryTap"
+        >{{item}}</button>
+      </view>
+    </scroll-view>
     <view class="support-loading" wx:if="{{loading}}">
       <view class="support-skeleton" wx:for="{{[1,2,3]}}" wx:key="*this"><view class="skeleton-line"></view><view class="skeleton-line support-skeleton-short"></view></view>
     </view>
@@ -34,7 +46,45 @@
         <text class="guide-toggle">{{expandedId === item.id ? '收起' : '阅读全文'}}</text>
       </button>
     </view>
+    <view class="web-tools">
+      <view class="web-tools-heading">
+        <text class="web-tools-kicker">跨端能力</text>
+        <text class="web-tools-title">受平台限制，请在对应设备继续</text>
+      </view>
+      <button
+        class="web-tool"
+        wx:for="{{webOnlyTools}}"
+        wx:key="id"
+        data-id="{{item.id}}"
+        bindtap="onCopyWebTool"
+      >
+        <view class="web-tool-meta">
+          <text class="web-tool-title">{{item.title}}</text>
+          <text class="web-tool-platform">{{item.platform}}</text>
+        </view>
+        <text class="web-tool-body">{{item.body}}</text>
+        <text class="web-tool-action">复制网页地址 ›</text>
+      </button>
+    </view>
   </block>
+
+  <view class="workflow-panel" wx:elif="{{activeTab === 'workflow'}}">
+    <view
+      class="workflow-step"
+      wx:for="{{workflowSteps}}"
+      wx:key="id"
+    >
+      <button class="workflow-step-head" data-id="{{item.id}}" bindtap="onStepTap">
+        <view class="workflow-step-index">{{index + 1}}</view>
+        <text class="workflow-step-title">{{item.title}}</text>
+        <text class="workflow-step-toggle">{{expandedStep === item.id ? '−' : '+'}}</text>
+      </button>
+      <view class="workflow-step-body" wx:if="{{expandedStep === item.id}}">
+        <text class="workflow-step-copy">{{item.body}}</text>
+        <button class="workflow-step-action" data-route="{{item.route}}" data-tab="{{item.tab}}" bindtap="onWorkflowAction">{{item.action}} ›</button>
+      </view>
+    </view>
+  </view>
 
   <view class="feedback-panel" wx:else>
     <text class="section-title">问题类型</text>

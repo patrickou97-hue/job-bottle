@@ -99,6 +99,48 @@
       </view>
     </view>
 
+    <view class="workspace-summary">
+      <view class="workspace-stat">
+        <text class="workspace-value">{{applicationCount}}</text>
+        <text class="workspace-label">投递记录</text>
+      </view>
+      <view class="workspace-stat">
+        <text class="workspace-value">{{activeApplicationCount}}</text>
+        <text class="workspace-label">正在推进</text>
+      </view>
+      <view class="workspace-stat">
+        <text class="workspace-value">{{resumeCount}}</text>
+        <text class="workspace-label">简历版本</text>
+      </view>
+    </view>
+
+    <view class="profile-section completion-section">
+      <view class="completion-head">
+        <text class="section-title completion-title">资料完整度</text>
+        <text class="completion-value">{{completionPercent}}%</text>
+      </view>
+      <view class="completion-track"><view class="completion-fill" style="width: {{completionPercent}}%;"></view></view>
+      <text class="completion-copy">{{completionPercent === 100 ? '资料已完整，可用于岗位偏好匹配。' : '补全地区和目标方向，可获得更准确的岗位推荐。'}}</text>
+    </view>
+
+    <view class="profile-section" wx:if="{{recommendedJobs.length}}">
+      <text class="section-title">近期适合你的岗位</text>
+      <button
+        class="recommendation-row"
+        wx:for="{{recommendedJobs}}"
+        wx:key="id"
+        data-id="{{item.id}}"
+        bindtap="onRecommendedJobTap"
+      >
+        <view class="recommendation-copy">
+          <text class="recommendation-company">{{item.companyName}}</text>
+          <text class="recommendation-role">{{item.jobTitles}}</text>
+          <text class="recommendation-reason">{{item.reason}}</text>
+        </view>
+        <text class="menu-arrow">›</text>
+      </button>
+    </view>
+
     <view class="profile-section">
       <text class="section-title">账号与支持</text>
       <view class="account-summary" wx:if="{{accountStatus}}">

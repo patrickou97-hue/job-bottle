@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase/server";
+import { resolveResumeAiAccess } from "@/lib/resume-ai-access";
 
 const REQUEST_TIMEOUT_MS = 32_000;
 const MAX_OUTPUT_TOKENS = 7_000;
@@ -81,9 +81,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "整份简历内容过长，请精简后再翻译" }, { status: 413 });
   }
 
-  const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
+  const access = await resolveResumeAiAccess(request);
+  if (!access) {
     return NextResponse.json({ error: "请先登录，再使用翻译功能。" }, { status: 401 });
   }
 
@@ -100,7 +99,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "翻译暂时不可用，原简历未改动。" }, { status: 503 });
   }
 
-  const { data: rateSlot, error: rateSlotError } = await supabase.rpc("take_resume_ai_rate_slot");
+  const { data: rateSlot, error: rateSlotError } = await access.takeRateSlot();
   if (rateSlotError) {
     logServerError("resume_translate_rate_slot", rateSlotError);
     return NextResponse.json({ error: "AI 请求保护服务暂时不可用，请稍后重试" }, { status: 503 });

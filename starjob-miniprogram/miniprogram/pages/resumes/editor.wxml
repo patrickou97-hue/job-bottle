@@ -14,6 +14,10 @@
         <text class="editor-label">标题</text>
         <input class="editor-input" value="{{item.title}}" data-path="resume.content.{{sectionKey}}[{{index}}].title" bindinput="onFieldInput" maxlength="160" />
       </label>
+      <label class="editor-field" wx:if="{{showRole}}">
+        <text class="editor-label">职责（可选）</text>
+        <input class="editor-input" value="{{item.role}}" data-path="resume.content.{{sectionKey}}[{{index}}].role" bindinput="onFieldInput" maxlength="180" placeholder="例如：负责人、核心成员" />
+      </label>
       <label class="editor-field" wx:if="{{showDate}}">
         <text class="editor-label">时间（可选）</text>
         <input class="editor-input" value="{{item.date}}" data-path="resume.content.{{sectionKey}}[{{index}}].date" bindinput="onFieldInput" maxlength="80" placeholder="例如：2024.09—2025.06" />
@@ -22,6 +26,7 @@
         <text class="editor-label">内容</text>
         <textarea class="editor-textarea editor-textarea-large" value="{{item.bulletsText}}" data-path="resume.content.{{sectionKey}}[{{index}}].bulletsText" bindinput="onFieldInput" placeholder="每行一条内容" maxlength="6000" auto-height />
       </label>
+      <button class="polish-trigger" data-section="{{sectionKey}}" data-index="{{index}}" bindtap="onPolishItem">智能润色这段内容</button>
     </view>
     <button class="add-section-button" data-section="{{sectionKey}}" bindtap="onAddItem">＋ 添加{{sectionLabel}}</button>
   </view>
@@ -100,12 +105,44 @@
           bindtap="onTemplateTap"
         >{{item.label}}</button>
       </view>
+      <view class="section-heading section-heading-compact">
+        <text class="section-heading-title">模块排序</text>
+        <text class="section-heading-copy">会同步影响网页版、A4 预览和 PDF 的模块顺序。</text>
+      </view>
+      <view class="section-order-list">
+        <view
+          class="section-order-row"
+          wx:for="{{resume.content.sectionOrder}}"
+          wx:key="*this"
+        >
+          <text class="section-order-index">{{index + 1}}</text>
+          <text class="section-order-label">{{sectionOrderLabels[item]}}</text>
+          <view class="section-order-actions">
+            <button class="item-action" data-index="{{index}}" data-direction="-1" bindtap="onMoveSection" disabled="{{index === 0}}">上移</button>
+            <button class="item-action" data-index="{{index}}" data-direction="1" bindtap="onMoveSection" disabled="{{index === resume.content.sectionOrder.length - 1}}">下移</button>
+          </view>
+        </view>
+      </view>
     </view>
 
     <view class="editor-section" wx:elif="{{activeSection === 'basics'}}">
       <view class="section-heading">
         <text class="section-heading-title">基本信息</text>
         <text class="section-heading-copy">只填写你愿意展示在简历上的联系方式。</text>
+      </view>
+      <view class="photo-field">
+        <view class="photo-preview">
+          <image wx:if="{{resume.content.basics.photoDataUrl}}" class="photo-image" src="{{resume.content.basics.photoDataUrl}}" mode="aspectFill" />
+          <text wx:else class="photo-placeholder">证件照</text>
+        </view>
+        <view class="photo-actions">
+          <text class="editor-label">简历照片（可选）</text>
+          <text class="photo-helper">仅用于支持照片的中文模板，压缩后随简历同步。</text>
+          <view class="photo-buttons">
+            <button class="item-action photo-button" bindtap="onChoosePhoto">{{resume.content.basics.photoDataUrl ? '更换照片' : '选择照片'}}</button>
+            <button wx:if="{{resume.content.basics.photoDataUrl}}" class="item-action item-action-danger photo-button" bindtap="onRemovePhoto">移除</button>
+          </view>
+        </view>
       </view>
       <view class="editor-card">
         <label class="editor-field"><text class="editor-label">姓名</text><input class="editor-input" value="{{resume.content.basics.name}}" data-path="resume.content.basics.name" bindinput="onFieldInput" maxlength="80" /></label>
@@ -158,6 +195,7 @@
           </view>
           <checkbox-group data-index="{{index}}" bindchange="onCurrentChange"><label class="current-check"><checkbox value="current" checked="{{item.current}}" color="#12294e" />目前仍在这里</label></checkbox-group>
           <label class="editor-field"><text class="editor-label">工作内容与成果</text><textarea class="editor-textarea editor-textarea-large" value="{{item.bulletsText}}" data-path="resume.content.work[{{index}}].bulletsText" bindinput="onFieldInput" placeholder="每行一条经历描述" maxlength="6000" auto-height /></label>
+          <button class="polish-trigger" data-section="work" data-index="{{index}}" bindtap="onPolishItem">智能润色这段经历</button>
         </view>
         <button class="add-section-button" data-section="work" bindtap="onAddItem">＋ 添加工作经历</button>
       </view>
@@ -176,6 +214,7 @@
           </view>
           <label class="editor-field"><text class="editor-label">关键词</text><input class="editor-input" value="{{item.keywords}}" data-path="resume.content.projects[{{index}}].keywords" bindinput="onFieldInput" /></label>
           <label class="editor-field"><text class="editor-label">项目内容与成果</text><textarea class="editor-textarea editor-textarea-large" value="{{item.bulletsText}}" data-path="resume.content.projects[{{index}}].bulletsText" bindinput="onFieldInput" placeholder="每行一条项目描述" maxlength="6000" auto-height /></label>
+          <button class="polish-trigger" data-section="projects" data-index="{{index}}" bindtap="onPolishItem">智能润色这段项目</button>
         </view>
         <button class="add-section-button" data-section="projects" bindtap="onAddItem">＋ 添加项目经历</button>
       </view>
@@ -197,10 +236,60 @@
     <view class="editor-section" wx:elif="{{activeSection === 'awards'}}"><view class="section-heading"><text class="section-heading-title">荣誉奖项</text></view><template is="text-section-list" data="{{sectionKey: 'awards', sectionLabel: '奖项', items: resume.content.awards}}" /></view>
     <view class="editor-section" wx:elif="{{activeSection === 'certifications'}}"><view class="section-heading"><text class="section-heading-title">证书</text></view><template is="text-section-list" data="{{sectionKey: 'certifications', sectionLabel: '证书', items: resume.content.certifications}}" /></view>
     <view class="editor-section" wx:elif="{{activeSection === 'languages'}}"><view class="section-heading"><text class="section-heading-title">语言能力</text></view><template is="text-section-list" data="{{sectionKey: 'languages', sectionLabel: '语言能力', items: resume.content.languages}}" /></view>
-    <view class="editor-section" wx:elif="{{activeSection === 'customSections'}}"><view class="section-heading"><text class="section-heading-title">其他内容</text></view><template is="text-section-list" data="{{sectionKey: 'customSections', sectionLabel: '自定义内容', items: resume.content.customSections, showDate: true}}" /></view>
+    <view class="editor-section" wx:elif="{{activeSection === 'customSections'}}"><view class="section-heading"><text class="section-heading-title">其他内容</text></view><template is="text-section-list" data="{{sectionKey: 'customSections', sectionLabel: '自定义内容', items: resume.content.customSections, showDate: true, showRole: true}}" /></view>
 
     <view class="editor-bottom-save">
       <button class="primary-button" loading="{{saving}}" disabled="{{saving || !dirty}}" bindtap="onSave">{{dirty ? '保存到云端' : '已同步云端'}}</button>
     </view>
   </block>
+
+  <view class="polish-backdrop" wx:if="{{polishTarget}}" bindtap="onClosePolish"></view>
+  <view class="polish-sheet" wx:if="{{polishTarget}}">
+    <view class="polish-header">
+      <view>
+        <text class="polish-kicker">AI 辅助 · 原文不会自动修改</text>
+        <text class="polish-title">智能润色</text>
+      </view>
+      <button class="polish-close" disabled="{{polishBusy}}" bindtap="onClosePolish">关闭</button>
+    </view>
+    <scroll-view class="polish-scroll" scroll-y>
+      <view class="polish-loading" wx:if="{{polishBusy}}">
+        <text class="polish-loading-title">正在整理表达</text>
+        <text class="polish-loading-copy">会保留原文事实、责任边界和条目结构。</text>
+      </view>
+      <block wx:elif="{{polishResult}}">
+        <text class="polish-summary">{{polishResult.summary}}</text>
+        <view class="polish-column">
+          <text class="polish-column-title">原文</text>
+          <view class="polish-bullet" wx:for="{{polishTarget.originalBullets}}" wx:key="*this"><text>•</text><text>{{item}}</text></view>
+        </view>
+        <view class="polish-column polish-column-revised">
+          <text class="polish-column-title">建议稿</text>
+          <view class="polish-bullet" wx:for="{{polishResult.revised.bullets}}" wx:key="*this"><text>•</text><text>{{item}}</text></view>
+        </view>
+        <view class="polish-note" wx:if="{{polishResult.suggestions.length}}">
+          <text class="polish-note-title">还可以补充</text>
+          <text class="polish-note-item" wx:for="{{polishResult.suggestions}}" wx:key="*this">{{item}}</text>
+        </view>
+        <view class="polish-note polish-warning" wx:if="{{polishResult.warnings.length}}">
+          <text class="polish-note-title">需要留意</text>
+          <text class="polish-note-item" wx:for="{{polishResult.warnings}}" wx:key="*this">{{item}}</text>
+        </view>
+        <view class="verification-panel" wx:if="{{polishResult.verificationItems.length}}">
+          <text class="verification-title">AI 补充的细节，采用前请核实</text>
+          <view class="verification-item" wx:for="{{polishResult.verificationItems}}" wx:key="detail">
+            <text class="verification-detail">{{item.detail}}</text>
+            <text class="verification-reason">{{item.reason}}</text>
+          </view>
+          <checkbox-group bindchange="onVerificationChange">
+            <label class="verification-check"><checkbox value="confirmed" checked="{{verificationConfirmed}}" color="#12294e" />我已逐项核实，以上细节真实且可以解释</label>
+          </checkbox-group>
+        </view>
+      </block>
+    </scroll-view>
+    <view class="polish-actions" wx:if="{{polishResult}}">
+      <button class="secondary-button" bindtap="onClosePolish">保留原文</button>
+      <button class="primary-button" disabled="{{polishResult.verificationItems.length && !verificationConfirmed}}" bindtap="onApplyPolish">{{polishResult.verificationItems.length ? '核实后应用' : '应用修改'}}</button>
+    </view>
+  </view>
 </view>

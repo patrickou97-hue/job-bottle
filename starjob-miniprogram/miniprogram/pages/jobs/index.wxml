@@ -61,12 +61,35 @@
         </button>
       </view>
     </scroll-view>
+
+    <scroll-view class="chip-scroll category-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+      <view class="chip-row">
+        <button
+          wx:for="{{batchOptions}}"
+          wx:key="*this"
+          class="filter-chip filter-chip-secondary {{selectedBatch === item ? 'filter-chip-active' : ''}}"
+          data-batch="{{item}}"
+          bindtap="onBatchTap"
+        >
+          {{item === '全部' ? '全部批次' : item}}
+        </button>
+      </view>
+    </scroll-view>
   </view>
+
+  <scroll-view class="discovery-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+    <view class="discovery-row">
+      <button class="discovery-button {{scope === 'all' ? 'discovery-button-active' : ''}}" data-scope="all" bindtap="onScopeTap">全部岗位</button>
+      <button class="discovery-button {{scope === 'recent' ? 'discovery-button-active' : ''}}" data-scope="recent" bindtap="onScopeTap">近 7 天</button>
+      <button wx:if="{{preferenceAvailable}}" class="discovery-button {{scope === 'recent_preference' ? 'discovery-button-active' : ''}}" data-scope="recent_preference" bindtap="onScopeTap">近期适合我</button>
+    </view>
+  </scroll-view>
 
   <view class="result-header">
     <view class="scope-switch">
-      <button class="scope-button {{scope === 'all' ? 'scope-button-active' : ''}}" data-scope="all" bindtap="onScopeTap">全部岗位</button>
-      <button class="scope-button {{scope === 'recent' ? 'scope-button-active' : ''}}" data-scope="recent" bindtap="onScopeTap">近 7 天</button>
+      <button class="scope-button {{jobView === 'all' ? 'scope-button-active' : ''}}" data-view="all" bindtap="onJobViewTap">全部</button>
+      <button class="scope-button {{jobView === 'unapplied' ? 'scope-button-active' : ''}}" data-view="unapplied" bindtap="onJobViewTap">未收录</button>
+      <button class="scope-button {{jobView === 'applied' ? 'scope-button-active' : ''}}" data-view="applied" bindtap="onJobViewTap">已收录 {{savedCount}}</button>
     </view>
     <view class="view-switch">
       <button class="view-button {{viewMode === 'map' ? 'view-button-active' : ''}}" data-mode="map" bindtap="onViewModeTap">地图</button>
@@ -136,7 +159,7 @@
         <view class="map-job-content">
           <text class="company-name">{{item.companyName}}</text>
           <text class="job-title">{{item.jobTitles}}</text>
-          <text class="job-meta">{{item.locations}} · {{item.categoryLabel}}</text>
+          <text class="job-meta">{{item.locations}} · {{item.categoryLabel}}{{item.applicationLabel ? ' · ' + item.applicationLabel : ''}}</text>
         </view>
         <text class="row-arrow">›</text>
       </button>
@@ -156,6 +179,7 @@
         <view class="job-heading">
           <text class="company-name">{{item.companyName}}</text>
           <text class="recent-dot" wx:if="{{item.isRecent}}">新</text>
+          <text class="fit-badge" wx:if="{{item.preferenceMatched}}">匹配偏好</text>
         </view>
         <text class="job-title">{{item.jobTitles}}</text>
         <view class="job-meta">
@@ -167,6 +191,7 @@
         </view>
       </view>
       <view class="job-side">
+        <text class="application-state" wx:if="{{item.applicationLabel}}">{{item.applicationLabel}}</text>
         <text class="open-date">{{item.openDateLabel}}</text>
         <text class="row-arrow">›</text>
       </view>

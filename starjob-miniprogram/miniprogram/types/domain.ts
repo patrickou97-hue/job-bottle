@@ -70,6 +70,7 @@ export type ResumeSummary = {
 export type ResumeBasics = {
   name: string;
   englishName: string;
+  photoDataUrl: string;
   phone: string;
   email: string;
   city: string;
@@ -121,12 +122,24 @@ export type ResumeSkillGroup = {
 export type ResumeTextSection = {
   id: string;
   title: string;
+  role?: string;
   date?: string;
   bullets: string[];
 };
 
+export type ResumeSectionKey =
+  | "education"
+  | "work"
+  | "projects"
+  | "campus"
+  | "awards"
+  | "certifications"
+  | "skills"
+  | "customSections";
+
 export type ResumeContent = {
   basics: ResumeBasics;
+  sectionOrder: ResumeSectionKey[];
   education: ResumeEducation[];
   work: ResumeExperience[];
   projects: ResumeProject[];

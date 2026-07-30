@@ -106,6 +106,18 @@
   display: block;
 }
 
+.share-job-button {
+  min-height: 62rpx;
+  margin-top: 18rpx;
+  padding: 0;
+  background: transparent;
+  color: var(--color-navy);
+  font-size: 23rpx;
+  font-weight: 650;
+  line-height: 62rpx;
+  text-align: left;
+}
+
 .apply-note-title {
   color: var(--color-ink);
   font-size: 25rpx;
