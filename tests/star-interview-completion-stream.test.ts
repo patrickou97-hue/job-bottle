@@ -141,22 +141,62 @@ test("route charges once after upstream 200 and before exposing bytes", async ()
   assert.match(streamFunction, /runBeforeExposingCompletionStream/);
 });
 
-test("route maps the compatible client token field to MiMo completion tokens", async () => {
+test("route maps the compatible client token field to DeepSeek max tokens", async () => {
   const route = await readFile(
     new URL("../src/app/api/star-interview/completion/route.ts", import.meta.url),
     "utf8",
   );
 
   assert.match(route, /max_tokens:\s*z\.number/);
+  assert.match(route, /z\.enum\(\["mimo-v2\.5", "deepseek-v4-flash"\]\)/);
   assert.equal(
     (route.match(/thinking:\s*\{\s*type:\s*"disabled"\s*\}/g) ?? []).length,
     2,
   );
   assert.equal(
-    (route.match(/max_completion_tokens:\s*(?:parsed\.data|input)\.max_tokens/g) ?? []).length,
+    (route.match(/max_tokens:\s*(?:parsed\.data|input)\.max_tokens/g) ?? []).length,
     2,
   );
-  assert.doesNotMatch(route, /^\s*max_tokens:\s*(?:parsed\.data|input)\.max_tokens,/m);
+  assert.doesNotMatch(route, /max_completion_tokens/);
+  assert.equal((route.match(/model:\s*config\.model/g) ?? []).length, 2);
+});
+
+test("keeps DeepSeek completion and MiMo ASR credentials independent", async () => {
+  const server = await readFile(
+    new URL("../src/lib/star-interview-server.ts", import.meta.url),
+    "utf8",
+  );
+  const completionRoute = await readFile(
+    new URL("../src/app/api/star-interview/completion/route.ts", import.meta.url),
+    "utf8",
+  );
+  const asrRoute = await readFile(
+    new URL("../src/app/api/star-interview/asr/route.ts", import.meta.url),
+    "utf8",
+  );
+  const llmConfiguration = server.slice(
+    server.indexOf("export function getStarInterviewLLMConfiguration"),
+    server.indexOf("export function getStarInterviewASRConfiguration"),
+  );
+  const asrConfiguration = server.slice(
+    server.indexOf("export function getStarInterviewASRConfiguration"),
+    server.indexOf("export function getChatCompletionsUrl"),
+  );
+
+  assert.match(llmConfiguration, /DEEPSEEK_API_KEY/);
+  assert.match(llmConfiguration, /DEEPSEEK_BASE_URL/);
+  assert.match(llmConfiguration, /DEEPSEEK_MODEL/);
+  assert.match(llmConfiguration, /deepseek-v4-flash/);
+  assert.doesNotMatch(llmConfiguration, /MIMO_/);
+  assert.match(asrConfiguration, /MIMO_API_KEY/);
+  assert.match(asrConfiguration, /MIMO_ASR_BASE_URL/);
+  assert.match(asrConfiguration, /MIMO_ASR_MODEL/);
+  assert.match(asrConfiguration, /mimo-v2\.5-asr/);
+  assert.doesNotMatch(asrConfiguration, /DEEPSEEK_/);
+  assert.match(completionRoute, /getStarInterviewLLMConfiguration/);
+  assert.doesNotMatch(completionRoute, /getStarInterviewASRConfiguration/);
+  assert.match(asrRoute, /getStarInterviewASRConfiguration/);
+  assert.doesNotMatch(asrRoute, /getStarInterviewLLMConfiguration|DEEPSEEK_/);
 });
 
 test("streaming interview times out at 12 seconds without shrinking resume parsing", async () => {

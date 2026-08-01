@@ -58,18 +58,22 @@ export function validateStarInterviewClient(
   return null;
 }
 
-export function getMimoConfiguration() {
-  const apiKey = process.env.MIMO_API_KEY;
-  const baseUrl = process.env.MIMO_BASE_URL;
-  // StarInterview uses the low-latency base model for the combined
-  // question-boundary assessment and answer response. URL and API key remain
-  // server-controlled and unchanged.
-  const llmModel = "mimo-v2.5";
-  const asrModel = process.env.MIMO_ASR_MODEL || "mimo-v2.5-asr";
-  const asrBaseUrl = process.env.MIMO_ASR_BASE_URL
+export function getStarInterviewLLMConfiguration() {
+  const apiKey = process.env.DEEPSEEK_API_KEY?.trim();
+  const baseUrl = process.env.DEEPSEEK_BASE_URL?.trim()
+    || "https://api.deepseek.com";
+  const model = process.env.DEEPSEEK_MODEL?.trim() || "deepseek-v4-flash";
+  if (!apiKey) return null;
+  return { apiKey, baseUrl, model };
+}
+
+export function getStarInterviewASRConfiguration() {
+  const apiKey = process.env.MIMO_API_KEY?.trim();
+  const baseUrl = process.env.MIMO_ASR_BASE_URL?.trim()
     || "https://token-plan-cn.xiaomimimo.com/v1";
-  if (!apiKey || !baseUrl) return null;
-  return { apiKey, baseUrl, llmModel, asrModel, asrBaseUrl };
+  const model = process.env.MIMO_ASR_MODEL?.trim() || "mimo-v2.5-asr";
+  if (!apiKey) return null;
+  return { apiKey, baseUrl, model };
 }
 
 export function getChatCompletionsUrl(baseUrl: string) {
@@ -79,7 +83,7 @@ export function getChatCompletionsUrl(baseUrl: string) {
     : `${normalized}/chat/completions`;
 }
 
-export async function fetchMimoJSON({
+export async function fetchOpenAICompatibleJSON({
   apiKey,
   baseUrl,
   body,

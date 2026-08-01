@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import {
-  fetchMimoJSON,
+  fetchOpenAICompatibleJSON,
   getChatCompletionsUrl,
-  getMimoConfiguration,
+  getStarInterviewLLMConfiguration,
   mapStarInterviewError,
   StarInterviewUpstreamError,
   validateStarInterviewClient,
@@ -30,7 +30,9 @@ const messageSchema = z.object({
 }).strict();
 
 const requestSchema = z.object({
-  model: z.literal("mimo-v2.5"),
+  // Build 37 still sends the former model identifier. The value is only a
+  // compatibility marker: the server always selects the configured provider.
+  model: z.enum(["mimo-v2.5", "deepseek-v4-flash"]),
   messages: z.array(messageSchema).min(1).max(4),
   temperature: z.number().min(0).max(1).optional().nullable(),
   max_tokens: z.number().int().min(1).max(3_500).optional().nullable(),
@@ -58,7 +60,7 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: "诘星请求格式无效或内容过长。" }, { status: 400 });
   }
-  const config = getMimoConfiguration();
+  const config = getStarInterviewLLMConfiguration();
   if (!config) {
     return NextResponse.json({ error: "诘星云端 AI 服务尚未配置。" }, { status: 503 });
   }
@@ -71,16 +73,16 @@ export async function POST(request: NextRequest) {
         input: parsed.data,
       });
     }
-    const payload = await fetchMimoJSON({
+    const payload = await fetchOpenAICompatibleJSON({
       apiKey: config.apiKey,
       baseUrl: config.baseUrl,
       timeoutMs: 55_000,
       body: {
-        model: config.llmModel,
+        model: config.model,
         messages: parsed.data.messages,
         temperature: parsed.data.temperature,
         thinking: { type: "disabled" },
-        max_completion_tokens: parsed.data.max_tokens,
+        max_tokens: parsed.data.max_tokens,
         stream: false,
         response_format: { type: "json_object" },
       },
@@ -110,7 +112,7 @@ async function streamCompletion({
   input,
 }: {
   authorization: StarInterviewUsageAccess;
-  config: NonNullable<ReturnType<typeof getMimoConfiguration>>;
+  config: NonNullable<ReturnType<typeof getStarInterviewLLMConfiguration>>;
   input: z.infer<typeof requestSchema>;
 }) {
   let upstream: ReadableStream<Uint8Array>;
@@ -120,11 +122,11 @@ async function streamCompletion({
       apiKey: config.apiKey,
       timeoutMs: 12_000,
       body: {
-        model: config.llmModel,
+        model: config.model,
         messages: input.messages,
         temperature: input.temperature,
         thinking: { type: "disabled" },
-        max_completion_tokens: input.max_tokens,
+        max_tokens: input.max_tokens,
         stream: true,
         response_format: { type: "json_object" },
       },

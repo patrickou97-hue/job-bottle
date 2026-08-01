@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import {
-  fetchMimoJSON,
-  getMimoConfiguration,
+  fetchOpenAICompatibleJSON,
+  getStarInterviewASRConfiguration,
   mapStarInterviewError,
   StarInterviewUpstreamError,
   validateStarInterviewClient,
@@ -41,18 +41,18 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: "音频片段格式无效。" }, { status: 400 });
   }
-  const config = getMimoConfiguration();
+  const config = getStarInterviewASRConfiguration();
   if (!config) {
     return NextResponse.json({ error: "诘星云端语音识别尚未配置。" }, { status: 503 });
   }
 
   try {
-    const payload = await fetchMimoJSON({
+    const payload = await fetchOpenAICompatibleJSON({
       apiKey: config.apiKey,
-      baseUrl: config.asrBaseUrl,
+      baseUrl: config.baseUrl,
       timeoutMs: 15_000,
       body: {
-        model: config.asrModel,
+        model: config.model,
         messages: [{
           role: "user",
           content: [{
