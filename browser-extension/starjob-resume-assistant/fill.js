@@ -1,11 +1,14 @@
 (async () => {
-  const stored = await chrome.storage.local.get(["starjobResumes", "activeResumeId", "fillMode", "analysisOnly", "aiOnly", "aiFieldMappings"]);
+  const stored = await chrome.storage.local.get(["starjobResumes", "activeResumeId", "fillMode", "analysisOnly", "aiOnly", "aiFieldMappings", "aiAutofillOnly", "aiValueMappings"]);
   const resumes = Array.isArray(stored.starjobResumes) ? stored.starjobResumes : [];
   const resume = resumes.find((item) => item.id === stored.activeResumeId) || resumes[0];
+  const requestedFillMode = stored.fillMode;
   const fillMode = stored.fillMode === "overwrite" ? "overwrite" : "merge";
   const analysisOnly = stored.analysisOnly === true;
   const aiOnly = stored.aiOnly === true;
   const aiFieldMappings = stored.aiFieldMappings && typeof stored.aiFieldMappings === "object" ? stored.aiFieldMappings : {};
+  const aiAutofillOnly = stored.aiAutofillOnly === true;
+  const aiValueMappings = stored.aiValueMappings && typeof stored.aiValueMappings === "object" ? stored.aiValueMappings : {};
 
   if (!resume?.content) {
     return { scanned: 0, filled: 0, preserved: 0, manual: 0, error: "missing_resume" };
@@ -84,7 +87,8 @@
     certifications: ["证书", "认证", "certification", "license"],
     languages: ["语言", "外语", "language"],
   };
-  const sensitiveTerms = ["身份证", "身份证号", "idcard", "nationalid", "护照", "passport", "性别", "gender", "婚姻", "marital", "民族", "ethnicity", "残疾", "disability", "退伍", "veteran", "薪资", "salary", "期望薪资", "政治面貌", "宗教", "religion", "验证码", "captcha", "密码", "password"];
+  const sensitiveTerms = ["身份证", "身份证号", "idcard", "nationalid", "护照", "passport", "性别", "gender", "出生", "birthdate", "dateofbirth", "年龄", "婚姻", "marital", "民族", "ethnicity", "国籍", "nationality", "户籍", "残疾", "disability", "退伍", "veteran", "薪资", "salary", "期望薪资", "政治面貌", "宗教", "religion", "家庭成员", "验证码", "captcha", "密码", "password", "安全问题", "securityquestion"];
+  const blockedChoiceTerms = ["同意", "协议", "声明", "承诺", "consent", "privacy", "terms"];
   const autocompleteMap = {
     name: "basics.name",
     "given-name": "basics.name",
@@ -251,6 +255,51 @@
     const style = window.getComputedStyle(element);
     const rect = element.getBoundingClientRect();
     return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+  }
+
+  function getRadioGroupElements(element) {
+    if (!(element instanceof HTMLInputElement) || element.type !== "radio") return [];
+    if (!element.name) return [element];
+    return Array.from(document.querySelectorAll("input[type='radio']"))
+      .filter((radio) => radio instanceof HTMLInputElement
+        && radio.name === element.name
+        && radio.form === element.form
+        && !radio.disabled
+        && isVisible(radio));
+  }
+
+  function getChoiceOptionLabel(element) {
+    if (!(element instanceof HTMLInputElement)) return "";
+    return (element.labels?.[0]?.innerText
+      || element.getAttribute("aria-label")
+      || element.value
+      || "").replace(/\s+/g, " ").trim();
+  }
+
+  function getChoiceOptions(element) {
+    if (element instanceof HTMLSelectElement) {
+      return Array.from(element.options)
+        .filter((option) => !option.disabled && (option.value.trim() || option.textContent?.trim()))
+        .slice(0, 40)
+        .map((option) => ({
+          value: option.value.trim().slice(0, 120),
+          text: (option.textContent || "").replace(/\s+/g, " ").trim().slice(0, 120),
+        }));
+    }
+    return getRadioGroupElements(element).slice(0, 40).map((radio) => ({
+      value: radio.value.trim().slice(0, 120),
+      text: getChoiceOptionLabel(radio).slice(0, 120),
+    }));
+  }
+
+  function getChoiceQuestion(element) {
+    if (!(element instanceof HTMLInputElement) || element.type !== "radio") return "";
+    const fieldset = element.closest("fieldset");
+    const legend = fieldset?.querySelector(":scope > legend");
+    if (legend?.textContent?.trim()) return legend.textContent.replace(/\s+/g, " ").trim().slice(0, 120);
+    const group = element.closest("[role='radiogroup'], [data-field], .form-item, .ant-form-item, .el-form-item");
+    const heading = group?.querySelector("legend, [data-label], .form-label, .ant-form-item-label, .el-form-item__label");
+    return (heading?.textContent || "").replace(/\s+/g, " ").trim().slice(0, 120);
   }
 
   function isDefinitionControlCompatible(definition, element) {
@@ -528,6 +577,15 @@
     }
     if (!value) return false;
 
+    if (element instanceof HTMLInputElement && element.type === "radio") {
+      const target = normalize(value);
+      const option = getRadioGroupElements(element).find((radio) => normalize(radio.value) === target || normalize(getChoiceOptionLabel(radio)) === target);
+      if (!option) return false;
+      option.checked = true;
+      dispatchEvents(option);
+      return true;
+    }
+
     if (element instanceof HTMLSelectElement) {
       const target = normalize(value);
       const option = Array.from(element.options).find((item) => normalize(item.value) === target || normalize(item.textContent) === target)
@@ -553,15 +611,21 @@
 
   function currentValue(element) {
     if (element instanceof HTMLInputElement && element.type === "checkbox") return element.checked ? "checked" : "";
+    if (element instanceof HTMLInputElement && element.type === "radio") {
+      return getRadioGroupElements(element).find((radio) => radio.checked)?.value || "";
+    }
     if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement || element instanceof HTMLSelectElement) return element.value.trim();
     return element.textContent?.trim() || "";
   }
 
-  function markFilled(element, label) {
+  function markFilled(element, label, derived = false) {
     element.dataset.starjobFilled = "true";
-    element.style.outline = "2px solid rgba(53, 100, 71, 0.72)";
+    element.dataset.starjobAiDerived = derived ? "true" : "false";
+    element.style.outline = derived
+      ? "2px solid rgba(150, 96, 24, 0.78)"
+      : "2px solid rgba(53, 100, 71, 0.72)";
     element.style.outlineOffset = "2px";
-    element.title = `拾星已填写：${label}`;
+    element.title = derived ? `拾星 AI 派生填写：${label}` : `拾星已填写：${label}`;
   }
 
   function createFieldKey(index, element, signals, contextText) {
@@ -625,6 +689,7 @@
       inputType: field.inputType,
       deterministicKey: field.deterministicKey,
       deterministicConfidence: field.deterministicConfidence,
+      options: field.options,
     };
   }
 
@@ -633,6 +698,7 @@
       element.style.outline = "";
       element.style.outlineOffset = "";
       delete element.dataset.starjobFilled;
+      delete element.dataset.starjobAiDerived;
     });
   }
 
@@ -640,7 +706,11 @@
     .filter((element) => {
       if (!(element instanceof HTMLElement) || !isVisible(element)) return false;
       if (element instanceof HTMLInputElement) {
-        if (["hidden", "password", "submit", "button", "reset", "image", "radio"].includes(element.type)) return false;
+        if (["hidden", "password", "submit", "button", "reset", "image"].includes(element.type)) return false;
+        if (element.type === "radio") {
+          if (requestedFillMode !== "ai" && !aiAutofillOnly) return false;
+          if (getRadioGroupElements(element)[0] !== element) return false;
+        }
         if (element.readOnly && !isLikelyDateControl(element)) return false;
       }
       return !element.disabled;
@@ -651,15 +721,18 @@
 
   for (const [candidateIndex, element] of candidates.entries()) {
     const signals = getFieldSignals(element);
-    const labelText = [...signals.visible, ...signals.attributes].join(" ");
-    const contextText = getContextText(element);
+    const choiceQuestion = getChoiceQuestion(element);
+    const labelText = [choiceQuestion, ...signals.visible, ...signals.attributes].join(" ");
+    const contextText = [choiceQuestion, getContextText(element)].filter(Boolean).join(" ");
     const sectionHint = inferSectionHint(element, signals, contextText);
     const recordContainer = findRecordContainer(element, sectionHint);
     const pairedDateKey = inferPairedDateKey(element, sectionHint);
     const normalizedSignals = normalize(`${labelText} ${contextText}`);
     const fieldKey = createFieldKey(candidateIndex, element, signals, contextText);
     const inputType = element instanceof HTMLInputElement ? element.type.toLowerCase() : element.tagName.toLowerCase();
-    const sensitive = !labelText || sensitiveTerms.some((term) => normalizedSignals.includes(normalize(term)));
+    const blockedCheckbox = element instanceof HTMLInputElement && element.type === "checkbox"
+      && blockedChoiceTerms.some((term) => normalize(labelText).includes(normalize(term)));
+    const sensitive = !labelText || blockedCheckbox || sensitiveTerms.some((term) => normalizedSignals.includes(normalize(term)));
 
     let matchedDefinition = null;
     let bestScore = 0;
@@ -690,12 +763,13 @@
     if (sensitive) sensitiveCount += 1;
     extractedFields.push({
       fieldKey,
-      label: signals.visible.find(Boolean)?.replace(/\s+/g, " ").trim().slice(0, 80) || "",
+      label: choiceQuestion || signals.visible.find(Boolean)?.replace(/\s+/g, " ").trim().slice(0, 80) || "",
       attributes: signals.attributes.join(" ").slice(0, 160),
       context: [sectionHint, contextText].filter(Boolean).join(" ").replace(/\s+/g, " ").trim().slice(0, 160),
       inputType,
       deterministicKey: matchedDefinition && bestScore >= 0.74 ? matchedDefinition.key : null,
       deterministicConfidence: Number(bestScore.toFixed(2)),
+      options: getChoiceOptions(element),
       sensitive,
     });
     plans.push({
@@ -767,6 +841,7 @@
   let empty = 0;
   let matched = 0;
   let manual = aiOnly ? 0 : document.querySelectorAll("input[type='file']").length;
+  let derived = 0;
 
   function rememberUnmatched(signals) {
     const label = signals.visible.find(Boolean) || signals.attributes.find(Boolean);
@@ -783,6 +858,45 @@
       continue;
     }
 
+    if (aiAutofillOnly) {
+      const mapping = aiValueMappings[fieldKey];
+      if (!mapping || typeof mapping !== "object" || Number(mapping.confidence) < 0.82) {
+        manual += 1;
+        rememberUnmatched(signals);
+        continue;
+      }
+      matched += 1;
+      if (currentValue(element)) {
+        preserved += 1;
+        continue;
+      }
+      const value = typeof mapping.value === "string" ? mapping.value.trim() : "";
+      if (!value) {
+        empty += 1;
+        manual += 1;
+        rememberUnmatched(signals);
+        continue;
+      }
+      const isDerived = mapping.basis === "derived";
+      const isCheckbox = element instanceof HTMLInputElement && element.type === "checkbox";
+      const checkboxValue = /^(true|1|yes|y|是|至今|仍在职)$/i.test(value);
+      if (await fillElement(element, isCheckbox ? checkboxValue : value, {
+        date: isLikelyDateControl(element),
+        checkbox: isCheckbox,
+      })) {
+        filled += 1;
+        if (isDerived) derived += 1;
+        const markedElement = element instanceof HTMLInputElement && element.type === "radio"
+          ? getRadioGroupElements(element).find((radio) => radio.checked) || element
+          : element;
+        markFilled(markedElement, signals.visible.find(Boolean) || "页面字段", isDerived);
+      } else {
+        manual += 1;
+        rememberUnmatched(signals);
+      }
+      continue;
+    }
+
     if (!matchedDefinition || bestScore < 0.74) {
       manual += 1;
       rememberUnmatched(signals);
@@ -793,12 +907,12 @@
     const containerRecordIndex = recordContainerMaps.get(matchedDefinition.section)?.get(recordContainer);
     const normalizedRecordIndex = recordNumberMaps.get(matchedDefinition.section)?.get(explicitRecordNumber);
     let index;
-    if (repeatable && isUsableRecordIndex(normalizedRecordIndex, matchedDefinition)) {
-      index = normalizedRecordIndex;
+    if (repeatable && isUsableRecordIndex(containerRecordIndex, matchedDefinition)) {
+      index = containerRecordIndex;
       currentRecordBySection.set(matchedDefinition.section, index);
       nextRecordBySection.set(matchedDefinition.section, Math.max(nextRecordBySection.get(matchedDefinition.section) || 0, index + 1));
-    } else if (repeatable && isUsableRecordIndex(containerRecordIndex, matchedDefinition)) {
-      index = containerRecordIndex;
+    } else if (repeatable && isUsableRecordIndex(normalizedRecordIndex, matchedDefinition)) {
+      index = normalizedRecordIndex;
       currentRecordBySection.set(matchedDefinition.section, index);
       nextRecordBySection.set(matchedDefinition.section, Math.max(nextRecordBySection.get(matchedDefinition.section) || 0, index + 1));
     } else if (repeatable && sectionsWithAnchors.has(matchedDefinition.section)
@@ -838,5 +952,5 @@
     }
   }
 
-  return { scanned: candidates.length, matched, filled, preserved, empty, manual, unmatched: unmatchedLabels.slice(0, 12) };
+  return { scanned: candidates.length, matched, filled, preserved, empty, manual, derived, unmatched: unmatchedLabels.slice(0, 12) };
 })();

@@ -170,8 +170,8 @@ input:focus-visible {
 
 .mode-group {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 18px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
   margin: 0;
   border: 0;
   border-bottom: 1px solid var(--line);
@@ -254,6 +254,10 @@ input:focus-visible {
 
 .mode-hint[data-tone="warning"] {
   color: #86591f;
+}
+
+.mode-hint[data-tone="ai"] {
+  color: var(--navy);
 }
 
 .button {

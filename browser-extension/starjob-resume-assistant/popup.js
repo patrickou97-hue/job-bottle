@@ -1,8 +1,9 @@
 const STARJOB_HOME = "https://www.starjob.space";
 const SMART_MATCH_TIMEOUT_MS = 9_000;
 const SMART_MATCH_MAX_FIELDS = 12;
+const AI_AUTOFILL_TIMEOUT_MS = 22_000;
 const CONFIRM_WINDOW_MS = 8_000;
-const STORAGE_KEYS = ["starjobResumes", "activeResumeId", "fillMode", "lastSyncedAt", "matchToken", "matchTokenExpiresAt", "aiMatchingAvailable", "analysisOnly", "aiOnly", "aiFieldMappings"];
+const STORAGE_KEYS = ["starjobResumes", "activeResumeId", "fillMode", "lastSyncedAt", "matchToken", "matchTokenExpiresAt", "aiMatchingAvailable", "analysisOnly", "aiOnly", "aiFieldMappings", "aiAutofillOnly", "aiValueMappings"];
 
 const elements = {
   emptyState: document.querySelector("#emptyState"),
@@ -67,19 +68,24 @@ function showResult(title, text, tone = "success", unmatchedFields = []) {
 }
 
 function selectedFillMode() {
-  return document.querySelector('input[name="fillMode"]:checked')?.value === "overwrite" ? "overwrite" : "merge";
+  const value = document.querySelector('input[name="fillMode"]:checked')?.value;
+  return ["merge", "overwrite", "ai"].includes(value) ? value : "merge";
 }
 
 function resetOverwriteConfirmation() {
   overwriteConfirmationExpiresAt = 0;
   if (overwriteConfirmationTimer) window.clearTimeout(overwriteConfirmationTimer);
   overwriteConfirmationTimer = null;
-  const overwrite = selectedFillMode() === "overwrite";
-  elements.modeHint.dataset.tone = overwrite ? "warning" : "neutral";
-  elements.modeHint.textContent = overwrite
+  const mode = selectedFillMode();
+  elements.modeHint.dataset.tone = mode === "overwrite" ? "warning" : mode === "ai" ? "ai" : "neutral";
+  elements.modeHint.textContent = mode === "overwrite"
     ? "覆盖模式会替换页面已有内容，填写前需要再次确认。"
-    : "默认只填写空白项，不会改动你已经输入的内容。";
-  if (!elements.fillButton.disabled) elements.fillButton.textContent = "一键填写当前页面";
+    : mode === "ai"
+      ? "MiMo 会按页面顺序逐项填写：以所选简历为唯一依据，没有明确信息就留空；已有内容保持不变。"
+      : "默认只填写空白项，不会改动你已经输入的内容。";
+  if (!elements.fillButton.disabled) {
+    elements.fillButton.textContent = mode === "ai" ? "AI 智能填写当前页面" : "一键填写当前页面";
+  }
   if (elements.resultTitle.textContent === "请确认覆盖") elements.resultPanel.hidden = true;
 }
 
@@ -118,6 +124,9 @@ function formatSyncTime(value) {
 
 function friendlyFillError(error) {
   const message = error instanceof Error ? error.message : "";
+  if (error instanceof DOMException && error.name === "AbortError") {
+    return "MiMo 分析超过 22 秒，本次没有改动页面，请稍后重试。";
+  }
   if (/cannot access|cannot read|could not establish|context invalidated|no tab with id/i.test(message)) {
     return "扩展与当前页面的连接已失效，请刷新网申页后重试。";
   }
@@ -135,10 +144,68 @@ function summarizeFrameResults(frameResults) {
       preserved: acc.preserved + (item.preserved || 0),
       empty: acc.empty + (item.empty || 0),
       manual: acc.manual + (item.manual || 0),
+      derived: acc.derived + (item.derived || 0),
       unmatched: [...acc.unmatched, ...(Array.isArray(item.unmatched) ? item.unmatched : [])],
     }),
-    { scanned: 0, matched: 0, filled: 0, preserved: 0, empty: 0, manual: 0, unmatched: [] },
+    { scanned: 0, matched: 0, filled: 0, preserved: 0, empty: 0, manual: 0, derived: 0, unmatched: [] },
   );
+}
+
+function sanitizeResumeForAi(resume) {
+  const content = resume?.content || {};
+  const basics = content.basics || {};
+  const text = (value) => typeof value === "string" ? value : "";
+  const bullets = (value) => Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
+  const mapEntries = (value, mapper) => Array.isArray(value) ? value.map(mapper) : [];
+  const customEntry = (item = {}) => ({
+    title: text(item.title),
+    role: text(item.role),
+    date: text(item.date),
+    bullets: bullets(item.bullets),
+  });
+
+  return {
+    title: text(resume?.title),
+    targetRole: text(resume?.targetRole),
+    jobTarget: text(resume?.jobTarget),
+    templateId: text(resume?.templateId),
+    content: {
+      basics: {
+        name: text(basics.name),
+        englishName: text(basics.englishName),
+        phone: text(basics.phone),
+        email: text(basics.email),
+        city: text(basics.city),
+        linkedin: text(basics.linkedin),
+        github: text(basics.github),
+        website: text(basics.website),
+        targetRole: text(basics.targetRole),
+      },
+      education: mapEntries(content.education, (item = {}) => ({
+        school: text(item.school), degree: text(item.degree), major: text(item.major),
+        startDate: text(item.startDate), endDate: text(item.endDate), gpa: text(item.gpa),
+        courses: text(item.courses), honors: text(item.honors),
+      })),
+      work: mapEntries(content.work, (item = {}) => ({
+        company: text(item.company), title: text(item.title), location: text(item.location),
+        startDate: text(item.startDate), endDate: text(item.endDate), current: item.current === true,
+        bullets: bullets(item.bullets),
+      })),
+      projects: mapEntries(content.projects, (item = {}) => ({
+        name: text(item.name), role: text(item.role), startDate: text(item.startDate),
+        endDate: text(item.endDate), bullets: bullets(item.bullets), keywords: text(item.keywords),
+      })),
+      skills: mapEntries(content.skills, (item = {}) => ({
+        category: text(item.category),
+        skills: Array.isArray(item.skills) ? item.skills.filter((skill) => typeof skill === "string") : [],
+      })),
+      campus: mapEntries(content.campus, customEntry),
+      awards: mapEntries(content.awards, customEntry),
+      certifications: mapEntries(content.certifications, customEntry),
+      languages: mapEntries(content.languages, customEntry),
+      customSections: mapEntries(content.customSections, customEntry),
+    },
+  };
 }
 
 async function render() {
@@ -164,7 +231,7 @@ async function render() {
     elements.resumeSelect.append(option);
   }
 
-  const selectedMode = stored.fillMode === "overwrite" ? "overwrite" : "merge";
+  const selectedMode = ["merge", "overwrite", "ai"].includes(stored.fillMode) ? stored.fillMode : "merge";
   document.querySelector(`input[name="fillMode"][value="${selectedMode}"]`).checked = true;
   elements.syncMeta.textContent = formatSyncTime(stored.lastSyncedAt);
   resetOverwriteConfirmation();
@@ -183,7 +250,7 @@ async function fillCurrentPage() {
     return;
   }
   elements.fillButton.disabled = true;
-  elements.fillButton.textContent = "正在逐项分析";
+  elements.fillButton.textContent = fillMode === "ai" ? "MiMo 正在智能填写" : "正在逐项分析";
   elements.resultPanel.hidden = true;
   resetProgress();
   updateProgress("extract", "loading", "正在读取可见表单字段");
@@ -195,7 +262,15 @@ async function fillCurrentPage() {
     }
 
     const activeResumeId = elements.resumeSelect.value;
-    await chrome.storage.local.set({ activeResumeId, fillMode, analysisOnly: true, aiOnly: false, aiFieldMappings: {} });
+    await chrome.storage.local.set({
+      activeResumeId,
+      fillMode,
+      analysisOnly: true,
+      aiOnly: false,
+      aiFieldMappings: {},
+      aiAutofillOnly: false,
+      aiValueMappings: {},
+    });
 
     const analysisResults = await chrome.scripting.executeScript({
       target: { tabId: tab.id, allFrames: true },
@@ -210,9 +285,82 @@ async function fillCurrentPage() {
       .slice(0, SMART_MATCH_MAX_FIELDS);
     updateProgress("extract", "success", `共提取 ${extracted} 个可见字段`);
 
+    if (extracted === 0) {
+      updateProgress("match", "fallback", "当前页面没有可分析字段");
+      updateProgress("fill", "fallback", "当前页面没有可填写字段");
+      updateProgress("summary", "success", "请进入具体网申表单后重试");
+      showResult("没有找到可填写表单", "请进入网申填写页后重试。部分验证码或封闭组件需要手动处理。", "error");
+      return;
+    }
+
+    if (fillMode === "ai") {
+      updateProgress("match", "loading", `正在让 MiMo 从上到下处理 ${fields.length} 个安全字段`);
+      const stored = await chrome.storage.local.get(["starjobResumes", "matchToken", "matchTokenExpiresAt", "aiMatchingAvailable"]);
+      const selectedResume = (Array.isArray(stored.starjobResumes) ? stored.starjobResumes : [])
+        .find((resume) => resume.id === activeResumeId);
+      const tokenValid = stored.matchToken
+        && (!stored.matchTokenExpiresAt || new Date(stored.matchTokenExpiresAt).getTime() > Date.now());
+      if (!selectedResume?.content) throw new Error("没有找到所选简历，请重新同步后再试。");
+      if (!stored.aiMatchingAvailable || !tokenValid) throw new Error("AI 智能填写需要重新同步简历，请返回拾星同步后再试。");
+
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), AI_AUTOFILL_TIMEOUT_MS);
+      let response;
+      try {
+        response = await fetch(`${STARJOB_HOME}/api/resume/extension-autofill`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${stored.matchToken}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ resume: sanitizeResumeForAi(selectedResume), fields }),
+          cache: "no-store",
+          signal: controller.signal,
+        });
+      } finally {
+        window.clearTimeout(timeout);
+      }
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "AI 智能填写暂时不可用");
+
+      const aiValueMappings = {};
+      let acceptedMappings = 0;
+      for (const mapping of payload.mappings || []) {
+        if (mapping?.fieldKey && typeof mapping.value === "string" && mapping.value.trim()
+          && ["resume", "derived"].includes(mapping.basis) && Number(mapping.confidence) >= 0.82) {
+          aiValueMappings[mapping.fieldKey] = {
+            value: mapping.value.trim(),
+            confidence: Number(mapping.confidence),
+            basis: mapping.basis,
+          };
+          acceptedMappings += 1;
+        }
+      }
+      updateProgress("match", "success", `MiMo 找到 ${acceptedMappings} 个有简历依据的值`);
+      updateProgress("fill", "loading", "正在按页面顺序填写并选择空白项");
+      await chrome.storage.local.set({
+        analysisOnly: false,
+        aiOnly: false,
+        aiFieldMappings: {},
+        aiAutofillOnly: true,
+        aiValueMappings,
+      });
+      const aiFrameResults = await chrome.scripting.executeScript({
+        target: { tabId: tab.id, allFrames: true },
+        files: ["fill.js"],
+      });
+      const total = summarizeFrameResults(aiFrameResults);
+      updateProgress("fill", "success", `已填写 ${total.filled} 项，其中 ${total.derived} 项为 AI 派生`);
+      updateProgress("summary", "success", `保留已有内容 ${total.preserved} 项，${total.manual} 项需手动确认`);
+      showResult(
+        `AI 已填写 ${total.filled} 项`,
+        `已按简历从上到下处理；无明确依据的内容保持空白。其中 ${total.derived} 项为格式或选项等派生值，已用琥珀色边框标记。`,
+        "success",
+        total.unmatched,
+      );
+      return;
+    }
+
     updateProgress("match", "success", `本地规则已识别 ${locallyIdentified} 个`);
     updateProgress("fill", "loading", "正在按经历卡片立即填写");
-    await chrome.storage.local.set({ analysisOnly: false, aiOnly: false, aiFieldMappings: {} });
+    await chrome.storage.local.set({ analysisOnly: false, aiOnly: false, aiFieldMappings: {}, aiAutofillOnly: false, aiValueMappings: {} });
     const localFrameResults = await chrome.scripting.executeScript({
       target: { tabId: tab.id, allFrames: true },
       files: ["fill.js"],
@@ -297,7 +445,7 @@ async function fillCurrentPage() {
     updateProgress("summary", "fallback", "填写中断，请查看下方原因");
     showResult("本次填写未完成", friendlyFillError(error), "error");
   } finally {
-    await chrome.storage.local.remove(["analysisOnly", "aiOnly", "aiFieldMappings"]);
+    await chrome.storage.local.remove(["analysisOnly", "aiOnly", "aiFieldMappings", "aiAutofillOnly", "aiValueMappings"]);
     elements.fillButton.disabled = false;
     resetOverwriteConfirmation();
   }

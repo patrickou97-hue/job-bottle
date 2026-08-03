@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "拾星网申助手",
-  "version": "0.1.9",
-  "description": "使用拾星简历填写当前网申页面。数据保存在本机，填写后由你确认提交。",
+  "version": "0.2.0",
+  "description": "按所选拾星简历填写网申表单，支持 AI 智能填写；最终由你确认提交。",
   "action": {
     "default_popup": "popup.html",
     "default_title": "拾星网申助手",

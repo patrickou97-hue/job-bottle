@@ -11,8 +11,8 @@ import {
 } from "@phosphor-icons/react";
 
 const CHANNEL = "starjob-resume-assistant";
-const DOWNLOAD_URL = "https://pan.baidu.com/s/1q9gVenToSLL5x5tXZzYLig?pwd=SXZS";
-const LEGACY_COMPATIBLE_VERSION = "0.1.7";
+const DOWNLOAD_URL = "/downloads/starjob-resume-assistant-v0.2.0.zip";
+const LEGACY_COMPATIBLE_VERSIONS = new Set(["0.1.7", "0.1.8", "0.1.9"]);
 
 type SyncState = "idle" | "checking" | "syncing" | "success" | "missing" | "auth" | "empty" | "error";
 
@@ -38,8 +38,8 @@ export function ExtensionHubClient() {
         setInstalled(true);
         setExtensionVersion(detectedVersion);
         setSyncState("idle");
-        setMessage(detectedVersion === LEGACY_COMPATIBLE_VERSION
-          ? "0.1.7 可继续同步与填写；需要新版描述识别时可升级 0.1.9"
+        setMessage(detectedVersion && LEGACY_COMPATIBLE_VERSIONS.has(detectedVersion)
+          ? `${detectedVersion} 可继续同步与原有填写；AI 智能填写需要升级到 0.2.0。`
           : "网申助手已安装，可同步当前账户的云端简历。");
       }
       if (payload.type === "SYNC_COMPLETE") {
@@ -143,7 +143,7 @@ export function ExtensionHubClient() {
             把拾星简历同步到浏览器，在网申页面填写常用字段；你负责核对与提交。
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
-            <a href={DOWNLOAD_URL} target="_blank" rel="noreferrer" className="gold-button pressable inline-flex h-11 items-center gap-2 rounded-lg px-4 text-sm font-semibold">
+            <a href={DOWNLOAD_URL} download className="gold-button pressable inline-flex h-11 items-center gap-2 rounded-lg px-4 text-sm font-semibold">
               <ArrowDownIcon aria-hidden="true" className="size-4" />
               获取安装包
             </a>
@@ -152,7 +152,7 @@ export function ExtensionHubClient() {
               <ArrowRightIcon aria-hidden="true" className="size-4" />
             </Link>
           </div>
-          <p className="mt-4 text-xs leading-6 text-ink-muted">最新版本 0.1.9，适用于 Chrome、Edge 及其他 Chromium 浏览器。安装包通过百度网盘提供，提取码 SXZS。0.1.7 仍可继续同步和填写，不强制重装；遇到实习描述无法识别时建议升级。</p>
+          <p className="mt-4 text-xs leading-6 text-ink-muted">最新版本 0.2.0，适用于 Chrome、Edge 及其他 Chromium 浏览器，安装包由拾星官网直接提供。0.1.7–0.1.9 仍可继续同步和使用原有填写方式；AI 智能填写需要升级。</p>
         </div>
 
         <div className="extension-product-visual mx-auto w-full max-w-[350px]" aria-label="拾星网申助手产品图">
@@ -211,7 +211,7 @@ export function ExtensionHubClient() {
           <LockKeyIcon aria-hidden="true" className="size-7 text-[color:var(--aurora)]" />
           <h2 className="mt-4 text-xl font-semibold text-ink-primary">核对与提交，由你决定</h2>
           <p className="mt-3 text-sm leading-7 text-ink-secondary">不自动提交，不填写敏感声明、验证码或密码。页面已有内容默认保留，新填内容会清晰标记。</p>
-          <p className="mt-2 text-xs leading-6 text-ink-muted">智能匹配仅分析字段标签、占位符、字段名、控件类型与所在区块，不读取输入框现有内容，也不发送简历正文。</p>
+          <p className="mt-2 text-xs leading-6 text-ink-muted">普通模式的智能匹配仅分析去内容化的字段元数据。主动选择“AI 智能填写”后，MiMo 会以所选简历为唯一依据，从上到下填写全部可确认的安全字段；简历没有依据的内容留空，也不会读取或发送页面已有输入内容。</p>
         </div>
       </section>
     </div>

@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>拾星 AI 智能填写测试</title>
+    <style>
+      body { font-family: sans-serif; padding: 24px; }
+      label { display: block; margin: 12px 0; }
+      input, select { min-height: 32px; width: 280px; }
+    </style>
+  </head>
+  <body>
+    <form>
+      <label>姓名拼音 <input id="name-pinyin" name="namePinyin" /></label>
+      <label>最高学历
+        <select id="degree" name="highestDegree">
+          <option value="">请选择</option>
+          <option value="本科">本科</option>
+          <option value="硕士">硕士</option>
+        </select>
+      </label>
+      <label>电子邮箱 <input id="email" type="email" value="user-kept@example.com" /></label>
+      <fieldset>
+        <legend>毕业状态</legend>
+        <label><input id="student-status" type="radio" name="graduationStatus" value="在读" /> 在读</label>
+        <label><input type="radio" name="graduationStatus" value="已毕业" /> 已毕业</label>
+      </fieldset>
+      <label>身份证号 <input id="national-id" /></label>
+      <label>同意隐私协议 <input id="privacy-consent" type="checkbox" /></label>
+    </form>
+    <pre id="result">pending</pre>
+    <script>
+      const resume = {
+        id: "resume-ai",
+        title: "产品运营校招版",
+        targetRole: "产品运营",
+        content: {
+          basics: { name: "王小星", englishName: "", phone: "13800000000", email: "resume@example.com", city: "上海", linkedin: "", github: "", website: "", targetRole: "产品运营" },
+          education: [{ school: "拾星大学", degree: "本科", major: "信息管理", startDate: "2023-09", endDate: "2027-06", gpa: "3.7", courses: "", honors: "" }],
+          work: [], projects: [], skills: [], campus: [], awards: [], certifications: [], languages: [], customSections: []
+        }
+      };
+      const storage = {
+        starjobResumes: [resume],
+        activeResumeId: resume.id,
+        fillMode: "ai",
+        analysisOnly: true,
+        aiOnly: false,
+        aiFieldMappings: {},
+        aiAutofillOnly: false,
+        aiValueMappings: {},
+      };
+      window.chrome = {
+        storage: {
+          local: {
+            get: async () => ({ ...storage }),
+          },
+        },
+      };
+
+      async function runFixture() {
+        const fillSource = await fetch("../starjob-resume-assistant/fill.js").then((response) => response.text());
+        const analysis = await window.eval(fillSource);
+        const findField = (needle) => analysis.fields.find((field) => field.label.includes(needle));
+        const pinyinField = findField("姓名拼音");
+        const degreeField = findField("最高学历");
+        const emailField = findField("电子邮箱");
+        const graduationField = analysis.fields.find((field) => field.inputType === "radio" && field.context.includes("毕业状态"));
+        storage.analysisOnly = false;
+        storage.aiAutofillOnly = true;
+        storage.aiValueMappings = {
+          [pinyinField.fieldKey]: { value: "Wang Xiaoxing", confidence: 0.98, basis: "derived" },
+          [degreeField.fieldKey]: { value: "本科", confidence: 0.99, basis: "resume" },
+          [emailField.fieldKey]: { value: "resume@example.com", confidence: 0.99, basis: "resume" },
+          [graduationField.fieldKey]: { value: "在读", confidence: 0.97, basis: "derived" },
+        };
+        const summary = await window.eval(fillSource);
+        const actual = {
+          pinyin: document.querySelector("#name-pinyin").value,
+          pinyinDerived: document.querySelector("#name-pinyin").dataset.starjobAiDerived,
+          pinyinTitle: document.querySelector("#name-pinyin").title,
+          degree: document.querySelector("#degree").value,
+          email: document.querySelector("#email").value,
+          studentStatus: document.querySelector("#student-status").checked,
+          nationalId: document.querySelector("#national-id").value,
+          privacyConsent: document.querySelector("#privacy-consent").checked,
+          summary,
+        };
+        const passed = actual.pinyin === "Wang Xiaoxing"
+          && actual.pinyinDerived === "true"
+          && actual.pinyinTitle.includes("AI 派生填写")
+          && actual.degree === "本科"
+          && actual.email === "user-kept@example.com"
+          && actual.studentStatus === true
+          && actual.nationalId === ""
+          && actual.privacyConsent === false
+          && actual.summary.filled === 3
+          && actual.summary.preserved === 1
+          && actual.summary.derived === 2;
+        document.querySelector("#result").textContent = JSON.stringify({ passed, actual });
+        document.title = passed ? "STARJOB_AI_AUTOFILL_TEST_PASS" : "STARJOB_AI_AUTOFILL_TEST_FAIL";
+      }
+
+      runFixture().catch((error) => {
+        document.querySelector("#result").textContent = JSON.stringify({ passed: false, error: String(error) });
+        document.title = "STARJOB_AI_AUTOFILL_TEST_FAIL";
+      });
+    </script>
+  </body>
+</html>
