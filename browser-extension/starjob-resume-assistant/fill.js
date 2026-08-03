@@ -33,6 +33,7 @@
   const definitions = [
     { key: "basics.name", section: "basic", aliases: ["姓名", "中文姓名", "真实姓名", "name", "fullname", "legalname", "applicantname", "candidatename"], values: [basics.name] },
     { key: "basics.englishName", section: "basic", aliases: ["英文名", "英文姓名", "englishname", "preferredname"], values: [basics.englishName] },
+    { key: "basics.birthDate", section: "basic", aliases: ["出生日期", "出生年月", "生日", "birthdate", "dateofbirth", "dob"], values: [basics.birthDate], date: true },
     { key: "basics.phone", section: "basic", aliases: ["手机", "手机号", "联系电话", "电话", "mobile", "mobilephone", "phonenumber", "telephone", "tel"], values: [basics.phone], types: ["tel"] },
     { key: "basics.email", section: "basic", aliases: ["邮箱", "电子邮箱", "邮件地址", "email", "emailaddress"], values: [basics.email], types: ["email"] },
     { key: "basics.city", section: "basic", aliases: ["所在城市", "当前城市", "居住城市", "现居地", "城市", "currentcity", "city", "location"], values: [basics.city] },
@@ -87,7 +88,8 @@
     certifications: ["证书", "认证", "certification", "license"],
     languages: ["语言", "外语", "language"],
   };
-  const sensitiveTerms = ["身份证", "身份证号", "idcard", "nationalid", "护照", "passport", "性别", "gender", "出生", "birthdate", "dateofbirth", "年龄", "婚姻", "marital", "民族", "ethnicity", "国籍", "nationality", "户籍", "残疾", "disability", "退伍", "veteran", "薪资", "salary", "期望薪资", "政治面貌", "宗教", "religion", "家庭成员", "验证码", "captcha", "密码", "password", "安全问题", "securityquestion"];
+  const sensitiveTerms = ["身份证", "身份证号", "idcard", "nationalid", "护照", "passport", "性别", "gender", "出生地", "birthplace", "年龄", "婚姻", "marital", "民族", "ethnicity", "国籍", "nationality", "户籍", "残疾", "disability", "退伍", "veteran", "薪资", "salary", "期望薪资", "政治面貌", "宗教", "religion", "家庭成员", "验证码", "captcha", "密码", "password", "安全问题", "securityquestion"];
+  const birthDateTerms = ["出生日期", "出生年月", "生日", "birthdate", "dateofbirth"];
   const blockedChoiceTerms = ["同意", "协议", "声明", "承诺", "consent", "privacy", "terms"];
   const autocompleteMap = {
     name: "basics.name",
@@ -96,6 +98,7 @@
     tel: "basics.phone",
     "tel-national": "basics.phone",
     "address-level2": "basics.city",
+    bday: "basics.birthDate",
     organization: "work.company",
     "organization-title": "work.title",
   };
@@ -501,7 +504,7 @@
     let current = readVisiblePickerMonth(root);
     if (!target || !current) return null;
 
-    let yearSteps = Math.min(12, Math.abs(target.year - current.year));
+    let yearSteps = Math.min(150, Math.abs(target.year - current.year));
     while (yearSteps > 0 && target.year !== current.year) {
       const direction = target.year < current.year ? "previous" : "next";
       const control = findDatePickerNavigation(root, direction, "year");
@@ -732,7 +735,14 @@
     const inputType = element instanceof HTMLInputElement ? element.type.toLowerCase() : element.tagName.toLowerCase();
     const blockedCheckbox = element instanceof HTMLInputElement && element.type === "checkbox"
       && blockedChoiceTerms.some((term) => normalize(labelText).includes(normalize(term)));
-    const sensitive = !labelText || blockedCheckbox || sensitiveTerms.some((term) => normalizedSignals.includes(normalize(term)));
+    const birthDateField = birthDateTerms.some((term) => normalizedSignals.includes(normalize(term)))
+      || /(?:^|[^a-z])dob(?:[^a-z]|$)/i.test(`${labelText} ${contextText}`);
+    const ageField = /(?:^|[^a-z])age(?:[^a-z]|$)/i.test(`${labelText} ${contextText}`);
+    const sensitive = !labelText
+      || blockedCheckbox
+      || sensitiveTerms.some((term) => normalizedSignals.includes(normalize(term)))
+      || ageField
+      || (birthDateField && !asText(basics.birthDate));
 
     let matchedDefinition = null;
     let bestScore = 0;

@@ -11,6 +11,7 @@ import {
 export type ImportedResumeBasics = {
   name: string;
   englishName: string;
+  birthDate: string;
   phone: string;
   email: string;
   city: string;
@@ -94,6 +95,7 @@ export function parseResumeTextLocally(sourceText: string, fileName = "导入简
   const headerLines = sections.header.slice(0, 10);
   const name = findLikelyName(headerLines);
   const targetRole = findTargetRole(headerLines);
+  const birthDate = findExplicitBirthDate(normalizedText);
 
   const draft = createEmptyImportedDraft(stripFileExtension(fileName));
   draft.language = language;
@@ -101,6 +103,7 @@ export function parseResumeTextLocally(sourceText: string, fileName = "导入简
   draft.basics = {
     ...draft.basics,
     name,
+    birthDate,
     phone,
     email,
     linkedin,
@@ -120,6 +123,7 @@ export function parseResumeTextLocally(sourceText: string, fileName = "导入简
   const signals = [
     language === "en-US" ? "英文简历" : "中文简历",
     name && "姓名",
+    birthDate && "出生日期",
     email && "邮箱",
     phone && "手机号",
     draft.education.length && "教育经历",
@@ -180,6 +184,7 @@ export function createEmptyImportedDraft(title = "导入简历"): ImportedResume
     basics: {
       name: "",
       englishName: "",
+      birthDate: "",
       phone: "",
       email: "",
       city: "",
@@ -216,6 +221,14 @@ function normalizeExtractedText(value: string) {
     .replace(/\n{3,}/g, "\n\n")
     .trim()
     .slice(0, 24_000);
+}
+
+function findExplicitBirthDate(value: string) {
+  const match = value.match(/(?:出生日期|出生年月|生日|date\s*of\s*birth|birth\s*date|dob)\s*[:：]?\s*((?:19|20)\d{2})[./年-]\s*([01]?\d)(?:[./月-]\s*([0-3]?\d)日?)?/i);
+  if (!match) return "";
+  const month = String(Math.max(1, Math.min(12, Number(match[2])))).padStart(2, "0");
+  const day = String(Math.max(1, Math.min(31, Number(match[3] || 1)))).padStart(2, "0");
+  return `${match[1]}-${month}-${day}`;
 }
 
 function splitSections(lines: string[]) {

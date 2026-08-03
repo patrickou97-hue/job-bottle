@@ -346,8 +346,14 @@ const SOURCE_INVARIANTS = [
   {
     file: "src/components/resume/ResumeEditor.tsx",
     mustInclude: ["title=\"自定义模块\"", "showRole", "职责（可选）", "item.role ?? \"\"", "{ ...item, role: value }", "showDate", "时间（可选）", "item.date ?? \"\"", "{ ...item, date: value }"],
-    mustNotInclude: ["type=\"date\""],
+    mustNotInclude: ["label=\"时间（可选）\"\n                type=\"date\""],
     label: "自定义模块提供自由文本时间字段且不限制用户的时间表达",
+  },
+  {
+    file: "src/components/resume/ResumeEditor.tsx",
+    mustInclude: ["出生日期（可选，仅用于网申助手）", "type=\"date\"", "patchBasics(\"birthDate\""],
+    mustNotInclude: ["patchBasics(\"birthDate\", resume.content.basics.birthDate"],
+    label: "出生日期由用户显式保存且不影响其他自由文本时间字段",
   },
   {
     file: "src/components/resume/ResumeEditor.tsx",
@@ -1024,13 +1030,13 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "browser-extension/starjob-resume-assistant/manifest.json",
-    mustInclude: ["\"manifest_version\": 3", "\"version\": \"0.2.1\"", "\"activeTab\"", "\"scripting\"", "\"storage\"", "https://www.starjob.space/extension*", "https://www.starjob.space/*"],
+    mustInclude: ["\"manifest_version\": 3", "\"version\": \"0.2.2\"", "\"activeTab\"", "\"scripting\"", "\"storage\"", "https://www.starjob.space/extension*", "https://www.starjob.space/*"],
     mustNotInclude: ["\"cookies\"", "\"tabs\"", "<all_urls>", "localhost", "nowcoder", "牛客"],
     label: "拾星网申助手使用 Manifest V3 和用户触发的最小权限",
   },
   {
     file: "browser-extension/starjob-resume-assistant/fill.js",
-    mustInclude: ["fillMode === \"overwrite\"", "analysisOnly", "aiFieldMappings", "createFieldKey", "toAnalysisField", "getExplicitRecordNumber", "getRepeatableOccurrenceKey", "takeNextOccurrenceIndex", "isUsableRecordIndex(normalizedRecordIndex, matchedDefinition)", "isUsableRecordIndex(containerRecordIndex, matchedDefinition)", "\"工作职责\"", "\"职责描述\"", "\"主要工作\"", "\"工作业绩\"", "\"工作成果\"", "\"项目职责\"", "\"项目成果\"", "\"项目经历描述\"", "\"个人贡献\"", "/项目经历|项目名称|项目角色|项目链接|项目描述|项目内容|projectexperience|projectname|projectrole|projectdescription/", "[\"描述\", \"description\"].includes(normalizedAlias)", "definition.section !== sectionHint", "recordNumberMaps", "recordContainerMaps", "inferSectionHint", "hasMultipleRecordHeadings", "inferPairedDateKey", "tryExactDatePickerSelection", "findActiveDatePickerPanel", "awards.title", "awards.description", "duplicateAdjacentAnchor", "anchorKeys", "deterministicConfidence", "sensitiveTerms", "input[type='file']", "dispatchEvents", "data-starjob-filled", "manual += 1", "education.description", "certifications.title"],
+    mustInclude: ["fillMode === \"overwrite\"", "analysisOnly", "aiFieldMappings", "createFieldKey", "toAnalysisField", "getExplicitRecordNumber", "getRepeatableOccurrenceKey", "takeNextOccurrenceIndex", "isUsableRecordIndex(normalizedRecordIndex, matchedDefinition)", "isUsableRecordIndex(containerRecordIndex, matchedDefinition)", "\"工作职责\"", "\"职责描述\"", "\"主要工作\"", "\"工作业绩\"", "\"工作成果\"", "\"项目职责\"", "\"项目成果\"", "\"项目经历描述\"", "\"个人贡献\"", "/项目经历|项目名称|项目角色|项目链接|项目描述|项目内容|projectexperience|projectname|projectrole|projectdescription/", "[\"描述\", \"description\"].includes(normalizedAlias)", "definition.section !== sectionHint", "recordNumberMaps", "recordContainerMaps", "inferSectionHint", "hasMultipleRecordHeadings", "inferPairedDateKey", "tryExactDatePickerSelection", "findActiveDatePickerPanel", "yearSteps = Math.min(150", "basics.birthDate", "birthDateField", "awards.title", "awards.description", "duplicateAdjacentAnchor", "anchorKeys", "deterministicConfidence", "sensitiveTerms", "input[type='file']", "dispatchEvents", "data-starjob-filled", "manual += 1", "education.description", "certifications.title"],
     mustNotInclude: [".submit()", ".click()", "SUPABASE_SERVICE_ROLE_KEY", "document.cookie", "chrome.cookies"],
     label: "网申填写只处理可核对字段且不读取 Cookie 或自动提交",
   },
@@ -1054,7 +1060,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/resume/extension-autofill/route.ts",
-    mustInclude: ["export const maxDuration = 60", "REQUEST_TIMEOUT_MS = 50_000", "verifyExtensionMatchToken", "MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL", "REQUEST_TIMEOUT_MS", "RATE_LIMIT", "MIN_CONFIDENCE", "response_format", "json_object", "resumeSchema", "fieldSchema", "resultSchema", "basis", "derived", "normalizeChoice", "field.options.some", "returnedByKey", "fields.map((field)", "value: null, confidence: 0, basis: null", "collectResumeFacts", "hasResumeBasis", "isAllowedDerivedValue", "deriveGraduationValue", "parseYearMonth", "不可信文本", "唯一事实来源", "从上到下逐字段处理", "中文姓名的无声调汉语拼音", "不得推断或填写身份证", "不得代答开放性申请题", "options 中已有", "mappings 必须与页面字段数量相同", "Wang Xiaoxing", "Cache-Control", "no-store"],
+    mustInclude: ["export const maxDuration = 60", "REQUEST_TIMEOUT_MS = 50_000", "verifyExtensionMatchToken", "MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL", "REQUEST_TIMEOUT_MS", "RATE_LIMIT", "MIN_CONFIDENCE", "response_format", "json_object", "resumeSchema", "fieldSchema", "resultSchema", "basis", "derived", "normalizeChoice", "field.options.some", "returnedByKey", "fieldKey: `f${index}`", "originalFields", "value: null, confidence: 0, basis: null", "collectResumeFacts", "collectResumeSummaryFacts", "hasResumeBasis", "isAllowedDerivedValue", "isSafeResumeSummary", "basics.birthDate", "自我描述", "deriveGraduationValue", "parseYearMonth", "不可信文本", "唯一事实来源", "从上到下逐字段处理", "中文姓名的无声调汉语拼音", "不得推断或填写身份证", "不得代答开放性申请题", "options 中已有", "mappings 必须与页面字段数量相同", "Wang Xiaoxing", "Cache-Control", "no-store"],
     mustNotInclude: ["createAdminClient", "SUPABASE_SERVICE_ROLE_KEY", "document.cookie", "console.log"],
     label: "AI 智能填写使用受限令牌、结构化简历白名单和全表单保守规则调用 MiMo",
   },
@@ -1066,7 +1072,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "browser-extension/starjob-resume-assistant/popup.js",
-    mustInclude: ["正在读取可见表单字段", "analysisOnly", "aiOnly", "extension-match", "extension-autofill", "matchToken", "智能复核", "AI 智能填写", "AI_AUTOFILL_TIMEOUT_MS = 60_000", "AI_AUTOFILL_BATCH_SIZE = 50", "MiMo 单批分析超过 60 秒", "batches.push(fields.slice", "所有批次成功后", "sanitizeResumeForAi", "aiValueMappings", "SMART_MATCH_TIMEOUT_MS", "SMART_MATCH_MAX_FIELDS = 12", "deterministicConfidence", "AbortController", "立即填写", "后台复核", "aiFieldMappings", "CONFIRM_WINDOW_MS", "再次点击，确认覆盖并填写", "再次点击确认清除", "unmatchedFields", "friendlyFillError", "扩展与当前页面的连接已失效"],
+    mustInclude: ["正在读取可见表单字段", "analysisOnly", "aiOnly", "extension-match", "extension-autofill", "matchToken", "智能复核", "AI 智能填写", "AI_AUTOFILL_TIMEOUT_MS = 60_000", "AI_AUTOFILL_BATCH_SIZE = 50", "MiMo 单批分析超过 60 秒", "batches.push(fields.slice", "所有批次成功后", "sanitizeResumeForAi", "includeBirthDate", "basics.birthDate", "aiValueMappings", "SMART_MATCH_TIMEOUT_MS", "SMART_MATCH_MAX_FIELDS = 12", "deterministicConfidence", "AbortController", "立即填写", "后台复核", "aiFieldMappings", "CONFIRM_WINDOW_MS", "再次点击，确认覆盖并填写", "再次点击确认清除", "unmatchedFields", "friendlyFillError", "扩展与当前页面的连接已失效"],
     mustNotInclude: ["MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL", "SUPABASE_SERVICE_ROLE_KEY", "document.cookie"],
     label: "扩展按字段提取、智能匹配、逐项填写和未填整理四阶段执行",
   },
@@ -1084,21 +1090,21 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "browser-extension/tests/ai-autofill-fixture.html",
-    mustInclude: ["STARJOB_AI_AUTOFILL_TEST_PASS", "Wang Xiaoxing", "basis: \"derived\"", "user-kept@example.com", "毕业状态", "studentStatus === true", "身份证号", "同意隐私协议", "actual.summary.derived === 2"],
+    mustInclude: ["STARJOB_AI_AUTOFILL_TEST_PASS", "Wang Xiaoxing", "basis: \"derived\"", "user-kept@example.com", "毕业状态", "studentStatus === true", "自我描述", "birth-date", "2000-02-03", "ant-picker-header-super-prev-btn", "身份证号", "同意隐私协议", "actual.summary.derived === 3"],
     mustNotInclude: ["MIMO_API_KEY", "SUPABASE_SERVICE_ROLE_KEY", ".submit()"],
     label: "AI 智能填写浏览器夹具覆盖拼音派生、下拉选择、已有值保留和敏感字段排除",
   },
   {
     file: "src/components/extension/ExtensionHubClient.tsx",
-    mustInclude: ["<span className=\"block\">一份简历，</span>", "<span className=\"block\">抵达更多坐标</span>", "把拾星简历同步到浏览器，在网申页面填写常用字段；你负责核对与提交。", "starjob-resume-assistant-iphone17pm.png", "iPhone 17 Pro Max", "获取安装包", "安装后重新检测", "window.location.reload()", "LEGACY_COMPATIBLE_VERSIONS", "SHORT_TIMEOUT_AI_VERSIONS", "new Set([\"0.1.7\", \"0.1.8\", \"0.1.9\"])", "new Set([\"0.2.0\"])", "AI 智能填写需要升级到 0.2.1", "最新版本 0.2.1", "/downloads/starjob-resume-assistant-v0.2.1.zip"],
+    mustInclude: ["<span className=\"block\">一份简历，</span>", "<span className=\"block\">抵达更多坐标</span>", "把拾星简历同步到浏览器，在网申页面填写常用字段；你负责核对与提交。", "starjob-resume-assistant-iphone17pm.png", "iPhone 17 Pro Max", "获取安装包", "安装后重新检测", "window.location.reload()", "LEGACY_COMPATIBLE_VERSIONS", "SHORT_TIMEOUT_AI_VERSIONS", "PREVIOUS_AI_VERSIONS", "new Set([\"0.1.7\", \"0.1.8\", \"0.1.9\"])", "new Set([\"0.2.0\"])", "new Set([\"0.2.1\"])", "AI 智能填写需要升级到 0.2.2", "最新版本 0.2.2", "/downloads/starjob-resume-assistant-v0.2.2.zip"],
     mustNotInclude: ["一份简历，投向更多可能", "常见网申字段按页面顺序填入", "你只需检查，再决定提交", "简历写一次，网申少重复", "请升级到 0.1.8", "extensionVersion !==", "starjob-resume-assistant-popup.png", "https://pan.baidu.com/s/1q9gVenToSLL5x5tXZzYLig?pwd=SXZS", "https://pan.baidu.com/s/13sk2UUdep9S1zoJdEk_sSA?pwd=SXZS", "https://pan.baidu.com/s/1jl_OHVc_HxXbUrI1-IS56g?pwd=SXZS"],
     label: "网申助手首屏使用更克制的价值表达与带灵动岛的设备实机展示",
   },
   {
     file: "src/components/extension/ExtensionGuide.tsx",
-    mustInclude: ["/downloads/starjob-resume-assistant-v0.2.1.zip", "安装包由拾星官网直接提供", "最新版本 0.2.1", "0.1.7–0.1.9 仍可继续同步", "0.2.0 的 AI 填写仍可用", "返回拾星并同步简历", "安装后刷新检测", "步骤 {String(index + 1).padStart(2, \"0\")}"],
+    mustInclude: ["/downloads/starjob-resume-assistant-v0.2.2.zip", "安装包由拾星官网直接提供", "最新版本 0.2.2", "旧版继续兼容", "基于简历事实生成自我描述", "明确保存的出生日期", "返回拾星并同步简历", "安装后刷新检测", "步骤 {String(index + 1).padStart(2, \"0\")}"],
     mustNotInclude: ["pan.baidu.com", "百度网盘提取码", "最新版本 0.1.9"],
-    label: "网申助手下载页与安装教程共用 0.2.1 官网安装包",
+    label: "网申助手下载页与安装教程共用 0.2.2 官网安装包",
   },
   {
     file: "scripts/build_resume_extension.mjs",
@@ -1182,6 +1188,7 @@ const REQUIRED_FILES = [
   "public/downloads/starjob-resume-assistant-v0.1.9.zip",
   "public/downloads/starjob-resume-assistant-v0.2.0.zip",
   "public/downloads/starjob-resume-assistant-v0.2.1.zip",
+  "public/downloads/starjob-resume-assistant-v0.2.2.zip",
   "browser-extension/starjob-resume-assistant/assets/icon16.png",
   "browser-extension/starjob-resume-assistant/assets/icon48.png",
   "browser-extension/starjob-resume-assistant/assets/icon128.png",

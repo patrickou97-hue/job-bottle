@@ -83,6 +83,7 @@ export async function POST(request: NextRequest) {
         name: profile?.display_name ?? "",
         englishName: "",
         photoDataUrl: "",
+        birthDate: "",
         phone: "",
         email: "",
         city: profile?.city ?? "",

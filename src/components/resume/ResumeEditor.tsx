@@ -115,6 +115,12 @@ export function ResumeEditor({
             <TextField label="简历名称" value={resume.title} onChange={(value) => patchResume({ title: value })} />
             <TextField label="姓名" value={resume.content.basics.name} onChange={(value) => patchBasics("name", value)} />
             <TextField label="英文名" value={resume.content.basics.englishName} onChange={(value) => patchBasics("englishName", value)} />
+            <TextField
+              label="出生日期（可选，仅用于网申助手）"
+              type="date"
+              value={resume.content.basics.birthDate}
+              onChange={(value) => patchBasics("birthDate", value)}
+            />
             <TextField label="手机号" value={resume.content.basics.phone} onChange={(value) => patchBasics("phone", value)} />
             <TextField label="邮箱" value={resume.content.basics.email} onChange={(value) => patchBasics("email", value)} />
             <TextField label="所在城市" value={resume.content.basics.city} onChange={(value) => patchBasics("city", value)} />
@@ -458,11 +464,21 @@ function FieldGrid({ children }: { children: React.ReactNode }) {
   return <div className="grid gap-4 sm:grid-cols-2">{children}</div>;
 }
 
-function TextField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+function TextField({
+  label,
+  value,
+  onChange,
+  type = "text",
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  type?: React.HTMLInputTypeAttribute;
+}) {
   return (
     <label className="block">
       <span className="text-xs font-medium text-ink-muted">{label}</span>
-      <Input value={value} onChange={(event) => onChange(event.target.value)} />
+      <Input type={type} value={value} onChange={(event) => onChange(event.target.value)} />
     </label>
   );
 }

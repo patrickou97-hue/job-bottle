@@ -16,6 +16,7 @@ const basicsSchema = z.object({
   name: text(80),
   englishName: text(120),
   photoDataUrl: z.string().max(2_500_000),
+  birthDate: text(40).optional().default(""),
   phone: text(40),
   email: text(160),
   city: text(80),

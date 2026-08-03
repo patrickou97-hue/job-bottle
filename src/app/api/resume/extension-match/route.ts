@@ -7,7 +7,7 @@ const RATE_WINDOW_MS = 10 * 60 * 1_000;
 const RATE_LIMIT = 8;
 
 const CANONICAL_KEYS = [
-  "basics.name", "basics.englishName", "basics.phone", "basics.email", "basics.city", "basics.linkedin", "basics.github", "basics.website", "basics.targetRole",
+  "basics.name", "basics.englishName", "basics.birthDate", "basics.phone", "basics.email", "basics.city", "basics.linkedin", "basics.github", "basics.website", "basics.targetRole",
   "education.school", "education.degree", "education.major", "education.startDate", "education.endDate", "education.gpa", "education.courses", "education.honors", "education.description",
   "work.company", "work.title", "work.location", "work.startDate", "work.endDate", "work.current", "work.description",
   "project.name", "project.role", "project.startDate", "project.endDate", "project.description", "project.keywords",
@@ -159,6 +159,6 @@ const SYSTEM_PROMPT = `你是网申表单字段分类器。你的唯一任务是
 3. companyName 映射 work.company，schoolName 映射 education.school，通用 name 只有在个人信息区才能映射 basics.name。
 4. 区块是硬边界：获奖区只能映射 awards.*，项目区只能映射 project.*，工作区只能映射 work.*，校园区只能映射 campus.*，不得跨区块猜测。
 5. 获奖名称映射 awards.title，获奖描述映射 awards.description；获奖时间因简历模型没有对应值必须返回 null。
-6. 不确定、敏感、简历模型没有对应数据的字段返回 null。证书发证日期、证件号、验证码、附件、密码必须返回 null。
+6. 出生日期、生日、birth date 或 DOB 只分类为 basics.birthDate；是否实际填写由客户端检查简历中是否有用户明确保存的日期。年龄、出生地、证书发证日期、证件号、验证码、附件、密码必须返回 null。
 7. deterministicKey 只是本地规则提示，必须结合区块和标签复核，不得盲从。
 8. 不得输出字段值、建议填写内容、Markdown 或额外解释，只返回严格 JSON。`;

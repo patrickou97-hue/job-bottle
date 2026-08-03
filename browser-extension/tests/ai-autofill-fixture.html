@@ -6,7 +6,9 @@
     <style>
       body { font-family: sans-serif; padding: 24px; }
       label { display: block; margin: 12px 0; }
-      input, select { min-height: 32px; width: 280px; }
+      input, select, textarea { min-height: 32px; width: 280px; }
+      .ant-picker-dropdown { background: white; border: 1px solid #ccc; padding: 8px; width: 280px; }
+      .ant-picker-cell { display: block; height: 32px; width: 120px; }
     </style>
   </head>
   <body>
@@ -20,6 +22,16 @@
         </select>
       </label>
       <label>电子邮箱 <input id="email" type="email" value="user-kept@example.com" /></label>
+      <label>自我描述 <textarea id="self-description"></textarea></label>
+      <label>出生日期
+        <span class="ant-picker"><input id="birth-date" name="birthDate" placeholder="请选择出生日期" readonly /></span>
+      </label>
+      <div id="birth-picker" class="ant-picker-dropdown ant-picker-dropdown-hidden" style="display: none">
+        <button type="button" class="ant-picker-header-super-prev-btn" title="Previous year">上一年</button>
+        <button type="button" class="ant-picker-year-btn">2026年</button>
+        <button type="button" class="ant-picker-month-btn">2月</button>
+        <button type="button" class="ant-picker-cell" data-date="2026-02-03">3日</button>
+      </div>
       <fieldset>
         <legend>毕业状态</legend>
         <label><input id="student-status" type="radio" name="graduationStatus" value="在读" /> 在读</label>
@@ -35,7 +47,7 @@
         title: "产品运营校招版",
         targetRole: "产品运营",
         content: {
-          basics: { name: "王小星", englishName: "", phone: "13800000000", email: "resume@example.com", city: "上海", linkedin: "", github: "", website: "", targetRole: "产品运营" },
+          basics: { name: "王小星", englishName: "", birthDate: "2000-02-03", phone: "13800000000", email: "resume@example.com", city: "上海", linkedin: "", github: "", website: "", targetRole: "产品运营" },
           education: [{ school: "拾星大学", degree: "本科", major: "信息管理", startDate: "2023-09", endDate: "2027-06", gpa: "3.7", courses: "", honors: "" }],
           work: [], projects: [], skills: [], campus: [], awards: [], certifications: [], languages: [], customSections: []
         }
@@ -57,6 +69,23 @@
           },
         },
       };
+      let pickerYear = 2026;
+      const picker = document.querySelector("#birth-picker");
+      const pickerCell = picker.querySelector(".ant-picker-cell");
+      document.querySelector("#birth-date").addEventListener("click", () => {
+        picker.style.display = "block";
+        picker.classList.remove("ant-picker-dropdown-hidden");
+      });
+      picker.querySelector(".ant-picker-header-super-prev-btn").addEventListener("click", () => {
+        pickerYear -= 1;
+        picker.querySelector(".ant-picker-year-btn").textContent = `${pickerYear}年`;
+        pickerCell.dataset.date = `${pickerYear}-02-03`;
+      });
+      pickerCell.addEventListener("click", () => {
+        document.querySelector("#birth-date").value = pickerCell.dataset.date;
+        picker.style.display = "none";
+        picker.classList.add("ant-picker-dropdown-hidden");
+      });
 
       async function runFixture() {
         const fillSource = await fetch("../starjob-resume-assistant/fill.js").then((response) => response.text());
@@ -65,6 +94,8 @@
         const pinyinField = findField("姓名拼音");
         const degreeField = findField("最高学历");
         const emailField = findField("电子邮箱");
+        const selfDescriptionField = findField("自我描述");
+        const birthDateField = findField("出生日期");
         const graduationField = analysis.fields.find((field) => field.inputType === "radio" && field.context.includes("毕业状态"));
         storage.analysisOnly = false;
         storage.aiAutofillOnly = true;
@@ -72,6 +103,8 @@
           [pinyinField.fieldKey]: { value: "Wang Xiaoxing", confidence: 0.98, basis: "derived" },
           [degreeField.fieldKey]: { value: "本科", confidence: 0.99, basis: "resume" },
           [emailField.fieldKey]: { value: "resume@example.com", confidence: 0.99, basis: "resume" },
+          [selfDescriptionField.fieldKey]: { value: "本科就读于拾星大学信息管理专业，目标方向为产品运营。", confidence: 0.96, basis: "derived" },
+          [birthDateField.fieldKey]: { value: "2000-02-03", confidence: 0.99, basis: "resume" },
           [graduationField.fieldKey]: { value: "在读", confidence: 0.97, basis: "derived" },
         };
         const summary = await window.eval(fillSource);
@@ -81,6 +114,8 @@
           pinyinTitle: document.querySelector("#name-pinyin").title,
           degree: document.querySelector("#degree").value,
           email: document.querySelector("#email").value,
+          selfDescription: document.querySelector("#self-description").value,
+          birthDate: document.querySelector("#birth-date").value,
           studentStatus: document.querySelector("#student-status").checked,
           nationalId: document.querySelector("#national-id").value,
           privacyConsent: document.querySelector("#privacy-consent").checked,
@@ -91,12 +126,14 @@
           && actual.pinyinTitle.includes("AI 派生填写")
           && actual.degree === "本科"
           && actual.email === "user-kept@example.com"
+          && actual.selfDescription.includes("拾星大学信息管理专业")
+          && actual.birthDate === "2000-02-03"
           && actual.studentStatus === true
           && actual.nationalId === ""
           && actual.privacyConsent === false
-          && actual.summary.filled === 3
+          && actual.summary.filled === 5
           && actual.summary.preserved === 1
-          && actual.summary.derived === 2;
+          && actual.summary.derived === 3;
         document.querySelector("#result").textContent = JSON.stringify({ passed, actual });
         document.title = passed ? "STARJOB_AI_AUTOFILL_TEST_PASS" : "STARJOB_AI_AUTOFILL_TEST_FAIL";
       }

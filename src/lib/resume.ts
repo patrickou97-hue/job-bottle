@@ -14,6 +14,7 @@ export type ResumeBasics = {
   name: string;
   englishName: string;
   photoDataUrl: string;
+  birthDate: string;
   phone: string;
   email: string;
   city: string;
@@ -227,6 +228,7 @@ export function createEmptyResume(language: ResumeLanguage = "zh-CN"): ResumeDoc
         name: "",
         englishName: "",
         photoDataUrl: "",
+        birthDate: "",
         phone: "",
         email: "",
         city: "",
@@ -265,6 +267,7 @@ export function createSampleResume(): ResumeDocument {
         name: "王小星",
         englishName: "Stella Wang",
         photoDataUrl: "",
+        birthDate: "",
         phone: "138 0000 0000",
         email: "stella@example.com",
         city: "上海",

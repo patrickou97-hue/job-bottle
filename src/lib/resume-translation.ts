@@ -145,6 +145,7 @@ export function createResumeFromTranslation(
         ...translated.basics,
         phone: source.content.basics.phone,
         email: source.content.basics.email,
+        birthDate: source.content.basics.birthDate,
         linkedin: source.content.basics.linkedin,
         github: source.content.basics.github,
         website: source.content.basics.website,

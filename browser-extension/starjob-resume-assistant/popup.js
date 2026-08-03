@@ -82,7 +82,7 @@ function resetOverwriteConfirmation() {
   elements.modeHint.textContent = mode === "overwrite"
     ? "覆盖模式会替换页面已有内容，填写前需要再次确认。"
     : mode === "ai"
-      ? "MiMo 会按页面顺序逐项填写：以所选简历为唯一依据，没有明确信息就留空；大表单会分批处理，已有内容保持不变。"
+      ? "MiMo 会按页面顺序逐项填写：自我描述只整理简历事实，出生日期仅使用你明确保存的日期；没有依据就留空。"
       : "默认只填写空白项，不会改动你已经输入的内容。";
   if (!elements.fillButton.disabled) {
     elements.fillButton.textContent = mode === "ai" ? "AI 智能填写当前页面" : "一键填写当前页面";
@@ -152,7 +152,7 @@ function summarizeFrameResults(frameResults) {
   );
 }
 
-function sanitizeResumeForAi(resume) {
+function sanitizeResumeForAi(resume, fields) {
   const content = resume?.content || {};
   const basics = content.basics || {};
   const text = (value) => typeof value === "string" ? value : "";
@@ -164,6 +164,13 @@ function sanitizeResumeForAi(resume) {
     date: text(item.date),
     bullets: bullets(item.bullets),
   });
+  const normalizeDescriptor = (value) => String(value ?? "").normalize("NFKC").toLowerCase().replace(/[\s\-_./\\:：,，()（）\[\]【】{}<>《》?？*]+/g, "");
+  const includeBirthDate = Array.isArray(fields) && fields.some((field) => {
+    const descriptor = normalizeDescriptor(`${field?.label || ""} ${field?.attributes || ""} ${field?.context || ""}`);
+    const rawDescriptor = `${field?.label || ""} ${field?.attributes || ""} ${field?.context || ""}`;
+    return ["出生日期", "出生年月", "生日", "birthdate", "dateofbirth"].some((term) => descriptor.includes(normalizeDescriptor(term)))
+      || /(?:^|[^a-z])dob(?:[^a-z]|$)/i.test(rawDescriptor);
+  });
 
   return {
     title: text(resume?.title),
@@ -174,6 +181,7 @@ function sanitizeResumeForAi(resume) {
       basics: {
         name: text(basics.name),
         englishName: text(basics.englishName),
+        birthDate: includeBirthDate ? text(basics.birthDate) : "",
         phone: text(basics.phone),
         email: text(basics.email),
         city: text(basics.city),
@@ -306,7 +314,7 @@ async function fillCurrentPage() {
 
       const aiValueMappings = {};
       let acceptedMappings = 0;
-      const sanitizedResume = sanitizeResumeForAi(selectedResume);
+      const sanitizedResume = sanitizeResumeForAi(selectedResume, fields);
       const batches = [];
       for (let index = 0; index < fields.length; index += AI_AUTOFILL_BATCH_SIZE) {
         batches.push(fields.slice(index, index + AI_AUTOFILL_BATCH_SIZE));
@@ -362,7 +370,7 @@ async function fillCurrentPage() {
       updateProgress("summary", "success", `保留已有内容 ${total.preserved} 项，${total.manual} 项需手动确认`);
       showResult(
         `AI 已填写 ${total.filled} 项`,
-        `已按简历从上到下处理；无明确依据的内容保持空白。其中 ${total.derived} 项为格式或选项等派生值，已用琥珀色边框标记。`,
+        `已按简历从上到下处理；无明确依据的内容保持空白。其中 ${total.derived} 项为格式、选项或自我描述等派生值，已用琥珀色边框标记。`,
         "success",
         total.unmatched,
       );
