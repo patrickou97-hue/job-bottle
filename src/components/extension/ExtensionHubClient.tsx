@@ -43,7 +43,7 @@ export function ExtensionHubClient() {
         setMessage(detectedVersion && LEGACY_COMPATIBLE_VERSIONS.has(detectedVersion)
           ? `${detectedVersion} 可继续同步与原有填写；AI 智能填写需要升级到 0.2.2。`
           : detectedVersion && SHORT_TIMEOUT_AI_VERSIONS.has(detectedVersion)
-            ? `${detectedVersion} 的 AI 填写仍可使用；建议升级到 0.2.2，将 MiMo 单批分析时间延长至 60 秒。`
+            ? `${detectedVersion} 的 AI 填写仍可使用；建议升级到 0.2.2，将单批分析时间延长至 60 秒。`
             : detectedVersion && PREVIOUS_AI_VERSIONS.has(detectedVersion)
               ? `${detectedVersion} 仍可继续使用；升级到 0.2.2 后可填写明确保存的出生日期，并优化大表单与自我描述。`
               : "网申助手已安装，可同步当前账户的云端简历。");
@@ -217,7 +217,7 @@ export function ExtensionHubClient() {
           <LockKeyIcon aria-hidden="true" className="size-7 text-[color:var(--aurora)]" />
           <h2 className="mt-4 text-xl font-semibold text-ink-primary">核对与提交，由你决定</h2>
           <p className="mt-3 text-sm leading-7 text-ink-secondary">不自动提交，不填写敏感声明、验证码或密码。页面已有内容默认保留，新填内容会清晰标记。</p>
-          <p className="mt-2 text-xs leading-6 text-ink-muted">普通模式的智能匹配仅分析去内容化的字段元数据。主动选择“AI 智能填写”后，MiMo 会以所选简历为唯一依据，从上到下填写全部可确认的安全字段；自我描述只整理简历事实，出生日期只使用你明确保存的日期，页面已有输入内容不会被读取或发送。</p>
+          <p className="mt-2 text-xs leading-6 text-ink-muted">普通模式的智能匹配仅分析去内容化的字段元数据。主动选择“AI 智能填写”后，系统会以所选简历为唯一依据，从上到下填写全部可确认的安全字段；自我描述只整理简历事实，出生日期只使用你明确保存的日期，页面已有输入内容不会被读取或发送。</p>
         </div>
       </section>
     </div>

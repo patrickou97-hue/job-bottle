@@ -1072,7 +1072,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "browser-extension/starjob-resume-assistant/popup.js",
-    mustInclude: ["正在读取可见表单字段", "analysisOnly", "aiOnly", "extension-match", "extension-autofill", "matchToken", "智能复核", "AI 智能填写", "AI_AUTOFILL_TIMEOUT_MS = 60_000", "AI_AUTOFILL_BATCH_SIZE = 50", "MiMo 单批分析超过 60 秒", "batches.push(fields.slice", "所有批次成功后", "sanitizeResumeForAi", "includeBirthDate", "basics.birthDate", "aiValueMappings", "SMART_MATCH_TIMEOUT_MS", "SMART_MATCH_MAX_FIELDS = 12", "deterministicConfidence", "AbortController", "立即填写", "后台复核", "aiFieldMappings", "CONFIRM_WINDOW_MS", "再次点击，确认覆盖并填写", "再次点击确认清除", "unmatchedFields", "friendlyFillError", "扩展与当前页面的连接已失效"],
+    mustInclude: ["正在读取可见表单字段", "analysisOnly", "aiOnly", "extension-match", "extension-autofill", "matchToken", "智能复核", "AI 智能填写", "AI_AUTOFILL_TIMEOUT_MS = 60_000", "AI_AUTOFILL_BATCH_SIZE = 50", "AI 单批分析超过 60 秒", "batches.push(fields.slice", "所有批次成功后", "sanitizeResumeForAi", "includeBirthDate", "basics.birthDate", "aiValueMappings", "SMART_MATCH_TIMEOUT_MS", "SMART_MATCH_MAX_FIELDS = 12", "deterministicConfidence", "AbortController", "立即填写", "后台复核", "aiFieldMappings", "CONFIRM_WINDOW_MS", "再次点击，确认覆盖并填写", "再次点击确认清除", "unmatchedFields", "friendlyFillError", "扩展与当前页面的连接已失效"],
     mustNotInclude: ["MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL", "SUPABASE_SERVICE_ROLE_KEY", "document.cookie"],
     label: "扩展按字段提取、智能匹配、逐项填写和未填整理四阶段执行",
   },

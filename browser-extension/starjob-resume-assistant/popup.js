@@ -82,7 +82,7 @@ function resetOverwriteConfirmation() {
   elements.modeHint.textContent = mode === "overwrite"
     ? "覆盖模式会替换页面已有内容，填写前需要再次确认。"
     : mode === "ai"
-      ? "MiMo 会按页面顺序逐项填写：自我描述只整理简历事实，出生日期仅使用你明确保存的日期；没有依据就留空。"
+      ? "AI 会按页面顺序逐项填写：自我描述只整理简历事实，出生日期仅使用你明确保存的日期；没有依据就留空。"
       : "默认只填写空白项，不会改动你已经输入的内容。";
   if (!elements.fillButton.disabled) {
     elements.fillButton.textContent = mode === "ai" ? "AI 智能填写当前页面" : "一键填写当前页面";
@@ -126,7 +126,7 @@ function formatSyncTime(value) {
 function friendlyFillError(error) {
   const message = error instanceof Error ? error.message : "";
   if (error instanceof DOMException && error.name === "AbortError") {
-    return "MiMo 单批分析超过 60 秒，本次没有改动页面，请稍后重试。";
+    return "AI 单批分析超过 60 秒，本次没有改动页面，请稍后重试。";
   }
   if (/cannot access|cannot read|could not establish|context invalidated|no tab with id/i.test(message)) {
     return "扩展与当前页面的连接已失效，请刷新网申页后重试。";
@@ -259,7 +259,7 @@ async function fillCurrentPage() {
     return;
   }
   elements.fillButton.disabled = true;
-  elements.fillButton.textContent = fillMode === "ai" ? "MiMo 正在智能填写" : "正在逐项分析";
+  elements.fillButton.textContent = fillMode === "ai" ? "AI 正在智能填写" : "正在逐项分析";
   elements.resultPanel.hidden = true;
   resetProgress();
   updateProgress("extract", "loading", "正在读取可见表单字段");
@@ -303,7 +303,7 @@ async function fillCurrentPage() {
     }
 
     if (fillMode === "ai") {
-      updateProgress("match", "loading", `正在让 MiMo 从上到下处理 ${fields.length} 个安全字段`);
+      updateProgress("match", "loading", `正在让 AI 从上到下处理 ${fields.length} 个安全字段`);
       const stored = await chrome.storage.local.get(["starjobResumes", "matchToken", "matchTokenExpiresAt", "aiMatchingAvailable"]);
       const selectedResume = (Array.isArray(stored.starjobResumes) ? stored.starjobResumes : [])
         .find((resume) => resume.id === activeResumeId);
@@ -322,7 +322,7 @@ async function fillCurrentPage() {
       for (let batchIndex = 0; batchIndex < batches.length; batchIndex += 1) {
         const batch = batches[batchIndex];
         if (batches.length > 1) {
-          updateProgress("match", "loading", `MiMo 正在处理第 ${batchIndex + 1}/${batches.length} 批（${batch.length} 个字段）`);
+          updateProgress("match", "loading", `AI 正在处理第 ${batchIndex + 1}/${batches.length} 批（${batch.length} 个字段）`);
         }
         const controller = new AbortController();
         const timeout = window.setTimeout(() => controller.abort(), AI_AUTOFILL_TIMEOUT_MS);
@@ -352,7 +352,7 @@ async function fillCurrentPage() {
           }
         }
       }
-      updateProgress("match", "success", `所有批次成功后，MiMo 找到 ${acceptedMappings} 个有简历依据的值`);
+      updateProgress("match", "success", `所有批次成功后，AI 找到 ${acceptedMappings} 个有简历依据的值`);
       updateProgress("fill", "loading", "正在按页面顺序填写并选择空白项");
       await chrome.storage.local.set({
         analysisOnly: false,
