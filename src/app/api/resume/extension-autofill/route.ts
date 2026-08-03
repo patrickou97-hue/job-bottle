@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { verifyExtensionMatchToken } from "@/lib/extension-match-token";
 
-const REQUEST_TIMEOUT_MS = 18_000;
+export const maxDuration = 60;
+
+const REQUEST_TIMEOUT_MS = 50_000;
 const RATE_WINDOW_MS = 10 * 60 * 1_000;
 const RATE_LIMIT = 5;
 const MIN_CONFIDENCE = 0.82;
@@ -165,7 +167,7 @@ export async function POST(request: NextRequest) {
     const payload = await response.json().catch(() => null) as { choices?: { message?: { content?: string } }[] } | null;
     const content = payload?.choices?.[0]?.message?.content;
     if (!content) throw new ExtensionAutofillUpstreamError(502);
-    const result = parseResult(content, parsed.data.fields);
+    const result = parseResult(content, parsed.data.fields, parsed.data.resume);
     if (!result) return NextResponse.json({ error: "AI 结果未通过安全校验，请稍后重试" }, { status: 502 });
     return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
@@ -204,14 +206,24 @@ function buildUserPrompt(resume: z.infer<typeof resumeSchema>, fields: z.infer<t
   ].join("\n");
 }
 
-function parseResult(content: string, fields: z.infer<typeof fieldSchema>[]) {
+function parseResult(content: string, fields: z.infer<typeof fieldSchema>[], resume: z.infer<typeof resumeSchema>) {
   const candidate = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
   try {
     const parsed = resultSchema.safeParse(JSON.parse(candidate));
     if (!parsed.success) return null;
     const fieldByKey = new Map(fields.map((field) => [field.fieldKey, field]));
+    const returnedByKey = new Map<string, z.infer<typeof resultSchema>["mappings"][number]>();
+    for (const mapping of parsed.data.mappings) {
+      if (!fieldByKey.has(mapping.fieldKey) || returnedByKey.has(mapping.fieldKey)) return null;
+      returnedByKey.set(mapping.fieldKey, mapping);
+    }
+    const resumeFacts = collectResumeFacts(resume);
     const seen = new Set<string>();
-    const mappings = parsed.data.mappings.filter((mapping) => {
+    const mappings = fields.map((field) => {
+      const mapping = returnedByKey.get(field.fieldKey) ?? { fieldKey: field.fieldKey, value: null, confidence: 0, basis: null };
+      const derivedValue = deriveGraduationValue(field, resume);
+      return derivedValue ? { ...mapping, value: derivedValue, confidence: 0.99, basis: "derived" as const } : mapping;
+    }).filter((mapping) => {
       const field = fieldByKey.get(mapping.fieldKey);
       if (!field || seen.has(mapping.fieldKey)) return false;
       if (!mapping.value?.trim() || !mapping.basis || mapping.confidence < MIN_CONFIDENCE) return false;
@@ -220,6 +232,8 @@ function parseResult(content: string, fields: z.infer<typeof fieldSchema>[]) {
         const exactOption = field.options.some((option) => [option.value, option.text].some((value) => normalizeChoice(value) === normalizedValue));
         if (!exactOption) return false;
       }
+      if (mapping.basis === "resume" && !hasResumeBasis(mapping.value, field, resumeFacts)) return false;
+      if (mapping.basis === "derived" && !isAllowedDerivedValue(mapping.value, field, resume, resumeFacts)) return false;
       seen.add(mapping.fieldKey);
       return true;
     }).map((mapping) => ({ ...mapping, value: mapping.value?.trim() || null }));
@@ -227,6 +241,86 @@ function parseResult(content: string, fields: z.infer<typeof fieldSchema>[]) {
   } catch {
     return null;
   }
+}
+
+function collectResumeFacts(value: unknown, facts: string[] = []) {
+  if (typeof value === "string") {
+    const fact = value.trim();
+    if (fact) facts.push(fact);
+  } else if (Array.isArray(value)) {
+    value.forEach((item) => collectResumeFacts(item, facts));
+  } else if (value && typeof value === "object") {
+    Object.values(value).forEach((item) => collectResumeFacts(item, facts));
+  }
+  return facts;
+}
+
+function normalizeFact(value: string) {
+  return value.normalize("NFKC").toLocaleLowerCase("zh-CN").replace(/[^\p{L}\p{N}]+/gu, "");
+}
+
+function isBuiltFromFacts(value: string, facts: string[]) {
+  let remaining = normalizeFact(value);
+  if (!remaining) return false;
+  const normalizedFacts = [...new Set(facts.map(normalizeFact).filter((fact) => fact.length >= 2))]
+    .sort((left, right) => right.length - left.length);
+  for (const fact of normalizedFacts) remaining = remaining.split(fact).join("");
+  return remaining.length === 0;
+}
+
+function hasResumeBasis(value: string, field: z.infer<typeof fieldSchema>, facts: string[]) {
+  if (isBuiltFromFacts(value, facts)) return true;
+  const normalizedValue = normalizeChoice(value);
+  const selectedOption = field.options.find((option) => [option.value, option.text].some((item) => normalizeChoice(item) === normalizedValue));
+  return Boolean(selectedOption && [selectedOption.value, selectedOption.text].some((item) => isBuiltFromFacts(item, facts)));
+}
+
+function isAllowedDerivedValue(value: string, field: z.infer<typeof fieldSchema>, resume: z.infer<typeof resumeSchema>, facts: string[]) {
+  if (deriveGraduationValue(field, resume)) return true;
+  if (hasResumeBasis(value, field, facts)) return true;
+  const descriptor = normalizeChoice(`${field.label} ${field.attributes} ${field.context}`);
+  const isPinyinOrNamePart = /拼音|lastname|firstname|surname|givenname|姓氏|名字/.test(descriptor)
+    || ["姓", "名"].includes(normalizeChoice(field.label));
+  if (!isPinyinOrNamePart || !resume.content.basics.name.trim()) return false;
+  return /^[A-Za-z][A-Za-z .'-]*$/.test(value.trim()) || resume.content.basics.name.includes(value.trim());
+}
+
+function deriveGraduationValue(field: z.infer<typeof fieldSchema>, resume: z.infer<typeof resumeSchema>) {
+  const descriptor = normalizeChoice(`${field.label} ${field.attributes} ${field.context}`);
+  const isFreshGraduate = /应届/.test(descriptor);
+  const isGraduatedQuestion = /是否已毕业|是否毕业/.test(descriptor);
+  const isStudyStatus = /毕业状态|在读状态/.test(descriptor);
+  if (!isFreshGraduate && !isGraduatedQuestion && !isStudyStatus) return null;
+
+  const latestEndMonth = resume.content.education.map((entry) => parseYearMonth(entry.endDate)).filter((value): value is number => value !== null)
+    .reduce<number | null>((latest, value) => latest === null || value > latest ? value : latest, null);
+  if (latestEndMonth === null) return null;
+  const now = new Date();
+  const currentMonth = now.getUTCFullYear() * 12 + now.getUTCMonth();
+  const stillStudying = latestEndMonth >= currentMonth;
+
+  let candidates: string[];
+  if (isFreshGraduate) {
+    if (!stillStudying) return null;
+    candidates = ["是", "yes", "应届", "应届毕业生"];
+  } else if (isGraduatedQuestion) {
+    candidates = stillStudying ? ["否", "no", "未毕业", "在读"] : ["是", "yes", "已毕业"];
+  } else {
+    candidates = stillStudying ? ["在读", "未毕业"] : ["已毕业"];
+  }
+
+  const option = field.options.find((item) => candidates.some((candidate) => [item.text, item.value].some((value) => normalizeChoice(value) === normalizeChoice(candidate))));
+  if (option) return option.text.trim() || option.value.trim();
+  if (["select", "radio"].includes(field.inputType)) return null;
+  return candidates[0];
+}
+
+function parseYearMonth(value: string) {
+  const match = value.normalize("NFKC").match(/(19|20)\d{2}\D*([01]?\d)?/);
+  if (!match) return null;
+  const year = Number(match[0].slice(0, 4));
+  const month = Math.min(12, Math.max(1, Number(match[2] || 6)));
+  return year * 12 + month - 1;
 }
 
 function normalizeChoice(value: string) {
@@ -247,7 +341,7 @@ function logServerError(error: unknown) {
   console.error("[extension_autofill]", details);
 }
 
-const RESULT_SHAPE = `只返回严格 JSON：{"mappings":[{"fieldKey":"原字段 fieldKey","value":"要填写的值或 null","confidence":0到1,"basis":"resume、derived 或 null"}]}`;
+const RESULT_SHAPE = `只返回严格 JSON：{"mappings":[{"fieldKey":"原字段 fieldKey","value":"要填写的值或 null","confidence":0到1,"basis":"resume、derived 或 null"}]}。mappings 必须与页面字段数量相同、顺序相同，每个输入 fieldKey 都必须且只能出现一次；不能填写的字段也必须保留该项并令 value、basis 为 null。`;
 
 const SYSTEM_PROMPT = `你是拾星网申助手的保守型填写引擎。你只能根据用户主动提供的结构化简历，为安全的网申字段生成或选择值。
 
@@ -261,4 +355,6 @@ const SYSTEM_PROMPT = `你是拾星网申助手的保守型填写引擎。你只
 7. select 或 radio 字段只能返回 options 中已有的 value 或 text，优先返回可见 text；没有唯一匹配则返回 null。
 8. 对普通文本字段，直接摘取简历事实时 basis=resume；只在规则 4 的格式变换中使用 basis=derived。
 9. 字段意义、记录序号或值有任何不确定时返回 null。不得把一段经历的值填到另一段经历。
-10. 不输出解释、Markdown 或额外字段，只返回严格 JSON。`;
+10. 必须逐一处理并返回每个输入字段，输出数量和顺序必须与页面字段完全一致；不能填写的字段也返回对应 fieldKey，只把 value、basis 设为 null。不得因为字段多而省略后面的字段。
+11. 明确执行允许的低风险派生。例如简历姓名为“王小星”且字段为“姓名拼音”时应填写“Wang Xiaoxing”；教育结束日期晚于当前日期且字段询问是否应届毕业生时，应从“是/否”等给定选项中选择唯一等价项。
+12. 不输出解释、Markdown 或额外字段，只返回严格 JSON。返回前自行核对 mappings 数量等于输入页面字段数量。`;

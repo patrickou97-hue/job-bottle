@@ -1,7 +1,8 @@
 const STARJOB_HOME = "https://www.starjob.space";
 const SMART_MATCH_TIMEOUT_MS = 9_000;
 const SMART_MATCH_MAX_FIELDS = 12;
-const AI_AUTOFILL_TIMEOUT_MS = 22_000;
+const AI_AUTOFILL_TIMEOUT_MS = 60_000;
+const AI_AUTOFILL_BATCH_SIZE = 50;
 const CONFIRM_WINDOW_MS = 8_000;
 const STORAGE_KEYS = ["starjobResumes", "activeResumeId", "fillMode", "lastSyncedAt", "matchToken", "matchTokenExpiresAt", "aiMatchingAvailable", "analysisOnly", "aiOnly", "aiFieldMappings", "aiAutofillOnly", "aiValueMappings"];
 
@@ -81,7 +82,7 @@ function resetOverwriteConfirmation() {
   elements.modeHint.textContent = mode === "overwrite"
     ? "覆盖模式会替换页面已有内容，填写前需要再次确认。"
     : mode === "ai"
-      ? "MiMo 会按页面顺序逐项填写：以所选简历为唯一依据，没有明确信息就留空；已有内容保持不变。"
+      ? "MiMo 会按页面顺序逐项填写：以所选简历为唯一依据，没有明确信息就留空；大表单会分批处理，已有内容保持不变。"
       : "默认只填写空白项，不会改动你已经输入的内容。";
   if (!elements.fillButton.disabled) {
     elements.fillButton.textContent = mode === "ai" ? "AI 智能填写当前页面" : "一键填写当前页面";
@@ -125,7 +126,7 @@ function formatSyncTime(value) {
 function friendlyFillError(error) {
   const message = error instanceof Error ? error.message : "";
   if (error instanceof DOMException && error.name === "AbortError") {
-    return "MiMo 分析超过 22 秒，本次没有改动页面，请稍后重试。";
+    return "MiMo 单批分析超过 60 秒，本次没有改动页面，请稍后重试。";
   }
   if (/cannot access|cannot read|could not establish|context invalidated|no tab with id/i.test(message)) {
     return "扩展与当前页面的连接已失效，请刷新网申页后重试。";
@@ -303,37 +304,47 @@ async function fillCurrentPage() {
       if (!selectedResume?.content) throw new Error("没有找到所选简历，请重新同步后再试。");
       if (!stored.aiMatchingAvailable || !tokenValid) throw new Error("AI 智能填写需要重新同步简历，请返回拾星同步后再试。");
 
-      const controller = new AbortController();
-      const timeout = window.setTimeout(() => controller.abort(), AI_AUTOFILL_TIMEOUT_MS);
-      let response;
-      try {
-        response = await fetch(`${STARJOB_HOME}/api/resume/extension-autofill`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${stored.matchToken}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ resume: sanitizeResumeForAi(selectedResume), fields }),
-          cache: "no-store",
-          signal: controller.signal,
-        });
-      } finally {
-        window.clearTimeout(timeout);
-      }
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error || "AI 智能填写暂时不可用");
-
       const aiValueMappings = {};
       let acceptedMappings = 0;
-      for (const mapping of payload.mappings || []) {
-        if (mapping?.fieldKey && typeof mapping.value === "string" && mapping.value.trim()
-          && ["resume", "derived"].includes(mapping.basis) && Number(mapping.confidence) >= 0.82) {
-          aiValueMappings[mapping.fieldKey] = {
-            value: mapping.value.trim(),
-            confidence: Number(mapping.confidence),
-            basis: mapping.basis,
-          };
-          acceptedMappings += 1;
+      const sanitizedResume = sanitizeResumeForAi(selectedResume);
+      const batches = [];
+      for (let index = 0; index < fields.length; index += AI_AUTOFILL_BATCH_SIZE) {
+        batches.push(fields.slice(index, index + AI_AUTOFILL_BATCH_SIZE));
+      }
+      for (let batchIndex = 0; batchIndex < batches.length; batchIndex += 1) {
+        const batch = batches[batchIndex];
+        if (batches.length > 1) {
+          updateProgress("match", "loading", `MiMo 正在处理第 ${batchIndex + 1}/${batches.length} 批（${batch.length} 个字段）`);
+        }
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), AI_AUTOFILL_TIMEOUT_MS);
+        let response;
+        try {
+          response = await fetch(`${STARJOB_HOME}/api/resume/extension-autofill`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${stored.matchToken}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ resume: sanitizedResume, fields: batch }),
+            cache: "no-store",
+            signal: controller.signal,
+          });
+        } finally {
+          window.clearTimeout(timeout);
+        }
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || "AI 智能填写暂时不可用");
+        for (const mapping of payload.mappings || []) {
+          if (mapping?.fieldKey && typeof mapping.value === "string" && mapping.value.trim()
+            && ["resume", "derived"].includes(mapping.basis) && Number(mapping.confidence) >= 0.82) {
+            aiValueMappings[mapping.fieldKey] = {
+              value: mapping.value.trim(),
+              confidence: Number(mapping.confidence),
+              basis: mapping.basis,
+            };
+            acceptedMappings += 1;
+          }
         }
       }
-      updateProgress("match", "success", `MiMo 找到 ${acceptedMappings} 个有简历依据的值`);
+      updateProgress("match", "success", `所有批次成功后，MiMo 找到 ${acceptedMappings} 个有简历依据的值`);
       updateProgress("fill", "loading", "正在按页面顺序填写并选择空白项");
       await chrome.storage.local.set({
         analysisOnly: false,

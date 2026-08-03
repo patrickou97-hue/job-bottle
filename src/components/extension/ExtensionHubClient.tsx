@@ -11,8 +11,9 @@ import {
 } from "@phosphor-icons/react";
 
 const CHANNEL = "starjob-resume-assistant";
-const DOWNLOAD_URL = "/downloads/starjob-resume-assistant-v0.2.0.zip";
+const DOWNLOAD_URL = "/downloads/starjob-resume-assistant-v0.2.1.zip";
 const LEGACY_COMPATIBLE_VERSIONS = new Set(["0.1.7", "0.1.8", "0.1.9"]);
+const SHORT_TIMEOUT_AI_VERSIONS = new Set(["0.2.0"]);
 
 type SyncState = "idle" | "checking" | "syncing" | "success" | "missing" | "auth" | "empty" | "error";
 
@@ -39,8 +40,10 @@ export function ExtensionHubClient() {
         setExtensionVersion(detectedVersion);
         setSyncState("idle");
         setMessage(detectedVersion && LEGACY_COMPATIBLE_VERSIONS.has(detectedVersion)
-          ? `${detectedVersion} 可继续同步与原有填写；AI 智能填写需要升级到 0.2.0。`
-          : "网申助手已安装，可同步当前账户的云端简历。");
+          ? `${detectedVersion} 可继续同步与原有填写；AI 智能填写需要升级到 0.2.1。`
+          : detectedVersion && SHORT_TIMEOUT_AI_VERSIONS.has(detectedVersion)
+            ? `${detectedVersion} 的 AI 填写仍可使用；建议升级到 0.2.1，将 MiMo 分析时间延长至 60 秒。`
+            : "网申助手已安装，可同步当前账户的云端简历。");
       }
       if (payload.type === "SYNC_COMPLETE") {
         if (syncTimerRef.current) window.clearTimeout(syncTimerRef.current);
@@ -152,7 +155,7 @@ export function ExtensionHubClient() {
               <ArrowRightIcon aria-hidden="true" className="size-4" />
             </Link>
           </div>
-          <p className="mt-4 text-xs leading-6 text-ink-muted">最新版本 0.2.0，适用于 Chrome、Edge 及其他 Chromium 浏览器，安装包由拾星官网直接提供。0.1.7–0.1.9 仍可继续同步和使用原有填写方式；AI 智能填写需要升级。</p>
+          <p className="mt-4 text-xs leading-6 text-ink-muted">最新版本 0.2.1，适用于 Chrome、Edge 及其他 Chromium 浏览器，安装包由拾星官网直接提供。0.1.7–0.1.9 仍可继续同步和使用原有填写方式；0.2.0 的 AI 填写仍可用，升级后大表单会分批处理，每批最多等待 60 秒。</p>
         </div>
 
         <div className="extension-product-visual mx-auto w-full max-w-[350px]" aria-label="拾星网申助手产品图">
