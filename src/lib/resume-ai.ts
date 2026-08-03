@@ -32,6 +32,7 @@ export type ResumePolishRequest = {
   jobDescription: string;
   language: ResumePolishLanguage;
   instruction: ResumePolishInstruction;
+  customInstruction?: string;
 };
 
 export type ResumePolishChange = {

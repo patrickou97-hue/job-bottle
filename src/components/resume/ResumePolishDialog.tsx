@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { CommunityHelpLink } from "@/components/ui/CommunityHelpLink";
 import { MotionDialog } from "@/components/ui/MotionDialog";
 import { Select } from "@/components/ui/Select";
+import { Textarea } from "@/components/ui/Textarea";
 import {
   requestResumePolish,
   type ResumePolishContent,
@@ -46,6 +47,7 @@ export function ResumePolishDialog({
   onClose: () => void;
 }) {
   const [instruction, setInstruction] = useState<ResumePolishInstruction>(language === "en-US" ? "english" : "professional");
+  const [customInstruction, setCustomInstruction] = useState("");
   const [scope, setScope] = useState("all");
   const [result, setResult] = useState<ResumePolishResult | null>(null);
   const [error, setError] = useState("");
@@ -93,6 +95,7 @@ export function ResumePolishDialog({
         jobDescription,
         language,
         instruction,
+        customInstruction: customInstruction.trim(),
       }, controller.signal);
       if (!mountedRef.current) return;
       setResult(next);
@@ -141,6 +144,28 @@ export function ResumePolishDialog({
             <Select value={instruction} onChange={(event) => { setInstruction(event.target.value as ResumePolishInstruction); setResult(null); setVerificationConfirmed(false); }}>
               {instructionOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
             </Select>
+          </label>
+          <label className="block sm:col-span-2">
+            <span className="mb-2 flex items-center justify-between gap-3 text-xs font-medium text-ink-muted">
+              <span>自定义修改要求（可选）</span>
+              <span aria-hidden="true" className="font-normal">{customInstruction.length}/600</span>
+            </span>
+            <Textarea
+              value={customInstruction}
+              maxLength={600}
+              rows={3}
+              className="min-h-24"
+              aria-describedby="resume-polish-custom-hint"
+              placeholder="例如：语气更适合咨询岗位；保留技术细节；不要改动项目名称。"
+              onChange={(event) => {
+                setCustomInstruction(event.target.value);
+                setResult(null);
+                setVerificationConfirmed(false);
+              }}
+            />
+            <span id="resume-polish-custom-hint" className="mt-2 block text-xs leading-5 text-ink-muted">
+              最多 600 字，将与上方预设目标一起使用；不填写则只按预设方向润色。
+            </span>
           </label>
         </div>
 

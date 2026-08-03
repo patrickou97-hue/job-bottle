@@ -817,13 +817,13 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/resume/ai-polish/route.ts",
-    mustInclude: ["MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL", "resolveResumeAiAccess", "access.takeRateSlot", "REQUEST_TIMEOUT_MS", "MAX_OUTPUT_TOKENS", "response_format", "json_object", "createPolishCacheKey", "X-StarJob-AI-Cache", "logServerError", "不得虚构", "不把“协助/参与/支持”升级", "不强补结果", "verificationItems", "待确认信息", "只用于用户核实", "warnings", "严格 JSON", "resultSchema", "parseResult", "normalizeResultCandidate", "typeof change === \"string\"", "title: source.title", "subtitle: source.subtitle", "原文未改变"],
+    mustInclude: ["MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL", "resolveResumeAiAccess", "access.takeRateSlot", "REQUEST_TIMEOUT_MS", "MAX_OUTPUT_TOKENS", "chat_template_kwargs", "enable_thinking: false", "response_format", "json_object", "createPolishCacheKey", "X-StarJob-AI-Cache", "logServerError", "kind: \"kind\" in error", "不得虚构", "不把“协助/参与/支持”升级", "不强补结果", "verificationItems", "待确认信息", "只用于用户核实", "warnings", "严格 JSON", "resultSchema", "parseResult", "normalizeResultCandidate", "typeof change === \"string\"", "title: source.title", "subtitle: source.subtitle", "customInstruction: z.string().trim().max(600).optional().default(\"\")", "用户补充要求", "不得覆盖以上事实约束", "原文未改变"],
     mustNotInclude: ["NEXT_PUBLIC_MIMO", "console.log", "SUPABASE_SERVICE_ROLE_KEY"],
     label: "简历分段润色仅在服务端调用 MiMo 并限制幻觉、输入、超时和频率",
   },
   {
     file: "src/components/resume/ResumePolishDialog.tsx",
-    mustInclude: ["当前经历的全部描述", "仅处理当前段落", "原文", "建议稿", "调整说明", "建议补充", "风险提示", "应用修改", "AI 补充的细节，采用前请核实", "我已逐项核实", "核实后应用", "verificationConfirmed", "保留原文", "重新生成", "CommunityHelpLink"],
+    mustInclude: ["当前经历的全部描述", "仅处理当前段落", "原文", "建议稿", "调整说明", "建议补充", "风险提示", "应用修改", "AI 补充的细节，采用前请核实", "我已逐项核实", "核实后应用", "verificationConfirmed", "保留原文", "重新生成", "CommunityHelpLink", "自定义修改要求（可选）", "customInstruction.trim()", "maxLength={600}", "不填写则只按预设方向润色"],
     mustNotInclude: ["MiMo", "第三方", "MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL"],
     label: "AI 结果先对比确认且客户端不暴露供应商或服务端配置",
   },
