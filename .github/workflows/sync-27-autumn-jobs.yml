@@ -24,7 +24,10 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # Current Supabase Realtime client initializes a native WebSocket
+          # transport even though this job only uses PostgREST. Node 24 provides
+          # the native implementation; Node 20 fails before the first query.
+          node-version: 24
           cache: npm
 
       - name: Install dependencies
