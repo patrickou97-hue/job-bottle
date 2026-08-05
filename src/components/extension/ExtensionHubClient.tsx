@@ -11,10 +11,10 @@ import {
 } from "@phosphor-icons/react";
 
 const CHANNEL = "starjob-resume-assistant";
-const DOWNLOAD_URL = "/downloads/starjob-resume-assistant-v0.2.2.zip";
+const DOWNLOAD_URL = "/downloads/starjob-resume-assistant-v0.2.3.zip";
 const LEGACY_COMPATIBLE_VERSIONS = new Set(["0.1.7", "0.1.8", "0.1.9"]);
 const SHORT_TIMEOUT_AI_VERSIONS = new Set(["0.2.0"]);
-const PREVIOUS_AI_VERSIONS = new Set(["0.2.1"]);
+const PREVIOUS_AI_VERSIONS = new Set(["0.2.1", "0.2.2"]);
 
 type SyncState = "idle" | "checking" | "syncing" | "success" | "missing" | "auth" | "empty" | "error";
 
@@ -41,11 +41,11 @@ export function ExtensionHubClient() {
         setExtensionVersion(detectedVersion);
         setSyncState("idle");
         setMessage(detectedVersion && LEGACY_COMPATIBLE_VERSIONS.has(detectedVersion)
-          ? `${detectedVersion} 可继续同步与原有填写；AI 智能填写需要升级到 0.2.2。`
+          ? `${detectedVersion} 可继续同步与原有填写；AI 智能填写需要升级到 0.2.3。`
           : detectedVersion && SHORT_TIMEOUT_AI_VERSIONS.has(detectedVersion)
-            ? `${detectedVersion} 的 AI 填写仍可使用；建议升级到 0.2.2，将单批分析时间延长至 60 秒。`
+            ? `${detectedVersion} 的 AI 填写仍可使用；建议升级到 0.2.3，获得更完整的长表单与日期填写能力。`
             : detectedVersion && PREVIOUS_AI_VERSIONS.has(detectedVersion)
-              ? `${detectedVersion} 仍可继续使用；升级到 0.2.2 后可填写明确保存的出生日期，并优化大表单与自我描述。`
+              ? `${detectedVersion} 仍可继续使用；升级到 0.2.3 后可按字段语义填写自我描述与经历描述，并减少经历日期错填和漏填。`
               : "网申助手已安装，可同步当前账户的云端简历。");
       }
       if (payload.type === "SYNC_COMPLETE") {
@@ -158,7 +158,7 @@ export function ExtensionHubClient() {
               <ArrowRightIcon aria-hidden="true" className="size-4" />
             </Link>
           </div>
-          <p className="mt-4 text-xs leading-6 text-ink-muted">最新版本 0.2.2，适用于 Chrome、Edge 及其他 Chromium 浏览器，安装包由拾星官网直接提供。旧版继续兼容；升级后可基于简历事实生成自我描述，并填写你在简历中明确保存的出生日期。</p>
+          <p className="mt-4 text-xs leading-6 text-ink-muted">最新版本 0.2.3，适用于 Chrome、Edge 及其他 Chromium 浏览器，安装包由拾星官网直接提供。升级后会按字段语义填写自我描述与经历描述，并加强多段经历的日期对应和顺序校验。</p>
         </div>
 
         <div className="extension-product-visual mx-auto w-full max-w-[350px]" aria-label="拾星网申助手产品图">
@@ -217,7 +217,7 @@ export function ExtensionHubClient() {
           <LockKeyIcon aria-hidden="true" className="size-7 text-[color:var(--aurora)]" />
           <h2 className="mt-4 text-xl font-semibold text-ink-primary">核对与提交，由你决定</h2>
           <p className="mt-3 text-sm leading-7 text-ink-secondary">不自动提交，不填写敏感声明、验证码或密码。页面已有内容默认保留，新填内容会清晰标记。</p>
-          <p className="mt-2 text-xs leading-6 text-ink-muted">普通模式的智能匹配仅分析去内容化的字段元数据。主动选择“AI 智能填写”后，系统会以所选简历为唯一依据，从上到下填写全部可确认的安全字段；自我描述只整理简历事实，出生日期只使用你明确保存的日期，页面已有输入内容不会被读取或发送。</p>
+          <p className="mt-2 text-xs leading-6 text-ink-muted">普通模式的智能匹配仅分析去内容化的字段元数据。主动选择“AI 智能填写”后，系统会以所选简历为唯一依据，从上到下填写全部可确认的安全字段；自我描述会以第一人称归纳有依据的责任心、沟通与专业优势，经历描述只使用对应记录，页面已有输入内容不会被读取或发送。</p>
         </div>
       </section>
     </div>

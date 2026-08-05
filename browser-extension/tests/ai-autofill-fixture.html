@@ -23,6 +23,21 @@
       </label>
       <label>电子邮箱 <input id="email" type="email" value="user-kept@example.com" /></label>
       <label>自我描述 <textarea id="self-description"></textarea></label>
+      <section>
+        <h2>工作经历</h2>
+        <div class="experience-record" data-section="work">
+          <label>公司 <input id="work-1-company" /></label>
+          <label>职位 <input id="work-1-title" /></label>
+          <label>开始日期 <input id="work-1-start" type="date" /></label>
+          <label>结束日期 <input id="work-1-end" type="date" /></label>
+        </div>
+        <div class="experience-record" data-section="work">
+          <label>公司 <input id="work-2-company" /></label>
+          <label>职位 <input id="work-2-title" /></label>
+          <label>开始日期 <input id="work-2-start" type="date" /></label>
+          <label>结束日期 <input id="work-2-end" type="date" /></label>
+        </div>
+      </section>
       <label>出生日期
         <span class="ant-picker"><input id="birth-date" name="birthDate" placeholder="请选择出生日期" readonly /></span>
       </label>
@@ -49,7 +64,11 @@
         content: {
           basics: { name: "王小星", englishName: "", birthDate: "2000-02-03", phone: "13800000000", email: "resume@example.com", city: "上海", linkedin: "", github: "", website: "", targetRole: "产品运营" },
           education: [{ school: "拾星大学", degree: "本科", major: "信息管理", startDate: "2023-09", endDate: "2027-06", gpa: "3.7", courses: "", honors: "" }],
-          work: [], projects: [], skills: [], campus: [], awards: [], certifications: [], languages: [], customSections: []
+          work: [
+            { company: "拾星科技", title: "产品运营实习生", location: "上海", startDate: "2026-03", endDate: "2026-05", current: false, bullets: ["使用 SQL 分析用户转化"] },
+            { company: "星河咨询", title: "商业分析实习生", location: "深圳", startDate: "2025-10", endDate: "2026-01", current: false, bullets: ["整理经营指标并支持复盘"] },
+          ],
+          projects: [], skills: [{ category: "数据分析", skills: ["SQL", "Excel"] }], campus: [], awards: [], certifications: [], languages: [], customSections: []
         }
       };
       const storage = {
@@ -95,6 +114,11 @@
         const degreeField = findField("最高学历");
         const emailField = findField("电子邮箱");
         const selfDescriptionField = findField("自我描述");
+        const findByAttribute = (id) => analysis.fields.find((field) => field.attributes.includes(id));
+        const work1StartField = findByAttribute("work-1-start");
+        const work1EndField = findByAttribute("work-1-end");
+        const work2StartField = findByAttribute("work-2-start");
+        const work2EndField = findByAttribute("work-2-end");
         const birthDateField = findField("出生日期");
         const graduationField = analysis.fields.find((field) => field.inputType === "radio" && field.context.includes("毕业状态"));
         storage.analysisOnly = false;
@@ -103,7 +127,11 @@
           [pinyinField.fieldKey]: { value: "Wang Xiaoxing", confidence: 0.98, basis: "derived" },
           [degreeField.fieldKey]: { value: "本科", confidence: 0.99, basis: "resume" },
           [emailField.fieldKey]: { value: "resume@example.com", confidence: 0.99, basis: "resume" },
-          [selfDescriptionField.fieldKey]: { value: "本科就读于拾星大学信息管理专业，目标方向为产品运营。", confidence: 0.96, basis: "derived" },
+          [selfDescriptionField.fieldKey]: { value: "我擅长使用 SQL 和 Excel 从数据中提炼重点，做事注重结构与细节，并能够围绕产品运营目标持续学习和推进任务。", confidence: 0.96, basis: "derived" },
+          [work1StartField.fieldKey]: { value: "2026-05", confidence: 0.99, basis: "resume" },
+          [work1EndField.fieldKey]: { value: "2026-03", confidence: 0.99, basis: "resume" },
+          [work2StartField.fieldKey]: { value: "2025-10", confidence: 0.99, basis: "resume" },
+          [work2EndField.fieldKey]: { value: "2026-01", confidence: 0.99, basis: "resume" },
           [birthDateField.fieldKey]: { value: "2000-02-03", confidence: 0.99, basis: "resume" },
           [graduationField.fieldKey]: { value: "在读", confidence: 0.97, basis: "derived" },
         };
@@ -115,6 +143,11 @@
           degree: document.querySelector("#degree").value,
           email: document.querySelector("#email").value,
           selfDescription: document.querySelector("#self-description").value,
+          workDateRecordIndices: [work1StartField.recordIndex, work1EndField.recordIndex, work2StartField.recordIndex, work2EndField.recordIndex],
+          work1Start: document.querySelector("#work-1-start").value,
+          work1End: document.querySelector("#work-1-end").value,
+          work2Start: document.querySelector("#work-2-start").value,
+          work2End: document.querySelector("#work-2-end").value,
           birthDate: document.querySelector("#birth-date").value,
           studentStatus: document.querySelector("#student-status").checked,
           nationalId: document.querySelector("#national-id").value,
@@ -126,14 +159,20 @@
           && actual.pinyinTitle.includes("AI 派生填写")
           && actual.degree === "本科"
           && actual.email === "user-kept@example.com"
-          && actual.selfDescription.includes("拾星大学信息管理专业")
+          && actual.selfDescription.startsWith("我擅长")
+          && actual.workDateRecordIndices.join(",") === "0,0,1,1"
+          && actual.work1Start === ""
+          && actual.work1End === ""
+          && actual.work2Start === "2025-10-01"
+          && actual.work2End === "2026-01-01"
           && actual.birthDate === "2000-02-03"
           && actual.studentStatus === true
           && actual.nationalId === ""
           && actual.privacyConsent === false
-          && actual.summary.filled === 5
+          && actual.summary.filled === 7
           && actual.summary.preserved === 1
-          && actual.summary.derived === 3;
+          && actual.summary.derived === 3
+          && actual.summary.invalidDatesCleared === 2;
         document.querySelector("#result").textContent = JSON.stringify({ passed, actual });
         document.title = passed ? "STARJOB_AI_AUTOFILL_TEST_PASS" : "STARJOB_AI_AUTOFILL_TEST_FAIL";
       }

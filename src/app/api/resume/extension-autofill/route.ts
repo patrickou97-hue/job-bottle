@@ -88,6 +88,7 @@ const fieldSchema = z.object({
   inputType: z.string().max(32),
   deterministicKey: z.string().max(80).nullable(),
   deterministicConfidence: z.number().min(0).max(1),
+  recordIndex: z.number().int().min(0).max(50).nullable().optional().default(null),
   options: z.array(optionSchema).max(40).optional().default([]),
 }).strip();
 
@@ -234,7 +235,11 @@ function parseResult(
       const field = originalFields[index];
       const returned = returnedByKey.get(modelField.fieldKey) ?? { fieldKey: modelField.fieldKey, value: null, confidence: 0, basis: null };
       const mapping = { ...returned, fieldKey: field.fieldKey, confidence: returned.confidence ?? 0 };
+      const recordDateValue = deriveRecordDateValue(field, resume);
       const derivedValue = deriveGraduationValue(field, resume);
+      if (recordDateValue) {
+        return { field, mapping: { ...mapping, value: recordDateValue, confidence: 0.99, basis: "resume" as const } };
+      }
       return { field, mapping: derivedValue ? { ...mapping, value: derivedValue, confidence: 0.99, basis: "derived" as const } : mapping };
     }).filter(({ field, mapping }) => {
       if (!field || seen.has(mapping.fieldKey)) return false;
@@ -244,7 +249,7 @@ function parseResult(
         const exactOption = field.options.some((option) => [option.value, option.text].some((value) => normalizeChoice(value) === normalizedValue));
         if (!exactOption) return false;
       }
-      if (mapping.basis === "resume" && !hasResumeBasis(mapping.value, field, resumeFacts)) return false;
+      if (mapping.basis === "resume" && !hasFieldSpecificResumeBasis(mapping.value, field, resume, resumeFacts)) return false;
       if (mapping.basis === "derived" && !isAllowedDerivedValue(mapping.value, field, resume, resumeFacts, summaryFacts)) return false;
       seen.add(mapping.fieldKey);
       return true;
@@ -304,6 +309,54 @@ function hasResumeBasis(value: string, field: z.infer<typeof fieldSchema>, facts
   return Boolean(selectedOption && [selectedOption.value, selectedOption.text].some((item) => isBuiltFromFacts(item, facts)));
 }
 
+function getSectionEntries(resume: z.infer<typeof resumeSchema>, section: string): unknown[] {
+  if (section === "education") return resume.content.education;
+  if (section === "work") return resume.content.work;
+  if (section === "project") return resume.content.projects;
+  if (section === "campus") return resume.content.campus;
+  if (section === "awards") return resume.content.awards;
+  if (section === "certifications") return resume.content.certifications;
+  if (section === "languages") return resume.content.languages;
+  return [];
+}
+
+function getScopedFieldFacts(field: z.infer<typeof fieldSchema>, resume: z.infer<typeof resumeSchema>) {
+  const [section, property] = (field.deterministicKey || "").split(".");
+  const entries = getSectionEntries(resume, section);
+  if (!entries.length) return null;
+  const selected = field.recordIndex === null
+    ? entries
+    : entries[field.recordIndex] === undefined ? [] : [entries[field.recordIndex]];
+  if (!selected.length) return [];
+
+  if (["startDate", "endDate"].includes(property)) {
+    return collectResumeFacts(selected.map((entry) => (entry as Record<string, unknown>)[property]));
+  }
+  if (field.deterministicKey === "education.description") {
+    return collectResumeFacts(selected.map((entry) => {
+      const education = entry as Record<string, unknown>;
+      return { major: education.major, courses: education.courses, honors: education.honors };
+    }));
+  }
+  if (["work.description", "project.description", "campus.description", "awards.description"].includes(field.deterministicKey || "")) {
+    return collectResumeFacts(selected.map((entry) => {
+      const record = entry as Record<string, unknown>;
+      return { bullets: record.bullets, keywords: record.keywords };
+    }));
+  }
+  return null;
+}
+
+function hasFieldSpecificResumeBasis(
+  value: string,
+  field: z.infer<typeof fieldSchema>,
+  resume: z.infer<typeof resumeSchema>,
+  allFacts: string[],
+) {
+  const scopedFacts = getScopedFieldFacts(field, resume);
+  return hasResumeBasis(value, field, scopedFacts ?? allFacts);
+}
+
 function isAllowedDerivedValue(
   value: string,
   field: z.infer<typeof fieldSchema>,
@@ -311,9 +364,10 @@ function isAllowedDerivedValue(
   facts: string[],
   summaryFacts: string[],
 ) {
-  if (deriveGraduationValue(field, resume)) return true;
-  if (hasResumeBasis(value, field, facts)) return true;
   if (isSelfSummaryField(field)) return isSafeResumeSummary(value, summaryFacts, resume);
+  if (isEducationDescriptionField(field)) return hasFieldSpecificResumeBasis(value, field, resume, facts);
+  if (deriveGraduationValue(field, resume)) return true;
+  if (hasFieldSpecificResumeBasis(value, field, resume, facts)) return true;
   const descriptor = normalizeChoice(`${field.label} ${field.attributes} ${field.context}`);
   const isPinyinOrNamePart = /拼音|lastname|firstname|surname|givenname|姓氏|名字/.test(descriptor)
     || ["姓", "名"].includes(normalizeChoice(field.label));
@@ -327,12 +381,31 @@ function isSelfSummaryField(field: z.infer<typeof fieldSchema>) {
     || /(?:^|[^a-z])profile(?:[^a-z]|$)/.test(`${field.label} ${field.attributes} ${field.context}`.toLowerCase());
 }
 
+function isEducationDescriptionField(field: z.infer<typeof fieldSchema>) {
+  if (field.deterministicKey === "education.description") return true;
+  const descriptor = normalizeChoice(`${field.label} ${field.attributes} ${field.context}`);
+  return /教育经历描述|教育背景描述|教育描述|academicdescription|educationdescription/.test(descriptor)
+    || (/教育|学校|院校|academic|education/.test(descriptor) && /经历描述|description/.test(descriptor));
+}
+
+function factAppearsInSummary(summary: string, fact: string) {
+  const normalizedSummary = normalizeFact(summary);
+  const normalizedFact = normalizeFact(fact);
+  if (normalizedFact.length >= 2 && normalizedSummary.includes(normalizedFact)) return true;
+  const fragments = fact.split(/[\n；;，,。！!？?:：、|]/)
+    .map(normalizeFact)
+    .filter((fragment) => fragment.length >= 4);
+  return fragments.some((fragment) => normalizedSummary.includes(fragment));
+}
+
 function isSafeResumeSummary(value: string, facts: string[], resume: z.infer<typeof resumeSchema>) {
   const summary = value.trim();
   if (summary.length < 12 || summary.length > 1_200 || facts.length === 0) return false;
+  if (!/^(我|本人)/.test(summary)) return false;
+  if (!/擅长|善于|优势|注重|习惯|能够|能力|执行|协作|沟通|严谨|细致|主动|责任|耐心|学习|推动|结构化|逻辑/.test(summary)) return false;
   const normalizedSummary = normalizeFact(summary);
   const normalizedFacts = [...new Set(facts.map(normalizeFact).filter((fact) => fact.length >= 2))];
-  const matchedFacts = normalizedFacts.filter((fact) => normalizedSummary.includes(fact));
+  const matchedFacts = facts.filter((fact) => factAppearsInSummary(summary, fact));
   if (matchedFacts.length < Math.min(2, normalizedFacts.length)) return false;
 
   const availableNumbers = normalizeFact(facts.join(" "));
@@ -341,12 +414,20 @@ function isSafeResumeSummary(value: string, facts: string[], resume: z.infer<typ
   if (introducedNumber) return false;
 
   const unsupportedClaims = [
-    "性格开朗", "责任心强", "抗压能力强", "沟通能力强", "学习能力强", "团队精神", "积极主动",
-    "扎实", "丰富经验", "出色", "优秀", "擅长", "热爱", "致力于", "希望", "期待", "充满热情",
-    "passionate", "dedicated", "eager", "excellent", "outstanding",
+    "性格开朗", "抗压能力强", "外向", "乐观", "完美主义", "天生",
+    "扎实", "丰富经验", "出色", "优秀", "卓越", "顶尖", "极强", "热爱", "致力于", "希望", "期待", "充满热情",
+    "passionate", "dedicated", "eager", "excellent", "outstanding", "exceptional",
   ];
-  if (unsupportedClaims.some((claim) => normalizedSummary.includes(normalizeFact(claim))
-    && !normalizedFacts.some((fact) => fact.includes(normalizeFact(claim))))) return false;
+  if (unsupportedClaims.some((claim) => normalizedSummary.includes(normalizeFact(claim)))) return false;
+
+  const evidence = normalizeFact(facts.join(" "));
+  const supportedClaims = [
+    { claim: /分析能力|逻辑思维|结构化思考|数据敏感|严谨|细致/, evidence: /分析|研究|估值|建模|数据|指标|python|sql|stata|excel|回归/ },
+    { claim: /组织协调|执行力|推动落地|责任心|责任感/, evidence: /主席|负责人|负责|主导|组织|策划|执行|管理|推动/ },
+    { claim: /沟通能力|沟通协作|团队协作|团队合作|表达能力|团队精神/, evidence: /沟通|协作|团队|汇报|拜访|客户|社团|主席/ },
+    { claim: /学习能力|学习力|自驱|积极主动/, evidence: /竞赛|获奖|课程|证书|雅思|cet|技能|python|sql|java|stata|主导|组织|策划/ },
+  ];
+  if (supportedClaims.some((rule) => rule.claim.test(summary) && !rule.evidence.test(evidence))) return false;
 
   const today = new Date();
   const currentMonth = today.getUTCFullYear() * 12 + today.getUTCMonth();
@@ -355,6 +436,15 @@ function isSafeResumeSummary(value: string, facts: string[], resume: z.infer<typ
     return endMonth !== null && endMonth >= currentMonth;
   });
   return !(hasOngoingEducation && /毕业于|毕业自|graduated\s+from/i.test(summary));
+}
+
+function deriveRecordDateValue(field: z.infer<typeof fieldSchema>, resume: z.infer<typeof resumeSchema>) {
+  const [section, property] = (field.deterministicKey || "").split(".");
+  if (!["startDate", "endDate"].includes(property) || field.recordIndex === null) return null;
+  const entry = getSectionEntries(resume, section)[field.recordIndex];
+  if (!entry || typeof entry !== "object") return null;
+  const value = (entry as Record<string, unknown>)[property];
+  return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
 function deriveGraduationValue(field: z.infer<typeof fieldSchema>, resume: z.infer<typeof resumeSchema>) {
@@ -423,12 +513,14 @@ const SYSTEM_PROMPT = `你是拾星网申助手的保守型填写引擎。你只
 3. 只填写简历明确存在的事实，或可从明确事实唯一确定的低风险格式变换。简历没有明确依据时必须返回 null，禁止补全、想象或编造。
 4. 允许的派生包括：中文姓名的无声调汉语拼音、姓与名的拼音拆分、大小写/空格格式、电话或日期格式、根据明确教育结束日期判断毕业状态、从给定选项中选择与简历事实等价的一项。
 5. 只有当 basics.birthDate 明确非空时，才可为出生日期/生日字段填写该日期或做等价日期格式转换；绝不能根据年龄、教育时间、证件号等推断出生日期，也不得填写年龄。
-6. “自我描述、自我评价、个人总结、个人优势、个人简介、profile summary”字段是唯一允许生成的开放文本：可用教育、工作、项目、技能、荣誉及目标岗位中的原有事实写成简洁连贯的概述，中文通常 100–300 字。只做平实的事实概述，不写“扎实、丰富、优秀、擅长、热爱、致力于、希望、期待”等评价或愿望，除非这些词就是简历原文；不得新增数字、学校、公司、技能、成果或性格特质；教育结束日期晚于当前日期时必须写“就读于/在读”，不得写“毕业于”；字段没有至少一项简历事实支撑时返回 null。此例外不适用于求职动机、Why company/role、职业规划、可入职时间或其他主观申请题。
-7. 不得推断或填写身份证/护照等证件信息、性别、婚姻、民族、国籍/户籍、政治面貌、宗教、健康/残疾、退伍信息、薪资、家庭成员、验证码、密码、账号、安全问题、法律声明、隐私同意或提交确认。
-8. 除规则 6 的简历事实概述外，不得代答开放性申请题、性格题、测评题、求职动机、期望、可入职时间、是否接受调剂或任何需要用户主观决定的问题。
-9. select 或 radio 字段只能返回 options 中已有的 value 或 text，优先返回可见 text；没有唯一匹配则返回 null。
-10. 对普通文本字段，直接摘取简历事实时 basis=resume；规则 4、5、6 的转换或概述使用 basis=derived。
-11. 字段意义、记录序号或值有任何不确定时返回 null。不得把一段经历的值填到另一段经历。
-12. 必须逐一处理并返回每个输入字段，输出数量和顺序必须与页面字段完全一致；不能填写的字段也返回对应 fieldKey，只把 value、basis 设为 null。不得因为字段多而省略后面的字段。
-13. 明确执行允许的低风险派生。例如简历姓名为“王小星”且字段为“姓名拼音”时应填写“Wang Xiaoxing”；教育结束日期晚于当前日期且字段询问是否应届毕业生时，应从“是/否”等给定选项中选择唯一等价项。
-14. 不输出解释、Markdown 或额外字段，只返回严格 JSON。返回前自行核对 mappings 数量等于输入页面字段数量。`;
+6. 只有字段明确是“自我描述、自我评价、个人总结、个人优势、个人简介、profile summary”时，才允许生成开放文本。“经历描述”本身绝不等同于自我描述。自我描述必须以第一人称“我”开头，中文通常 100–220 字，重点写 2–3 项有经历证据支撑的优势、工作方式或性格倾向，而不是按时间复述学校、公司、岗位和奖项清单。可以使用“我擅长、我注重、我习惯、我能够”等个人口吻，但每项判断都必须能由简历中的技能、职责、项目或校园活动合理支持。如果简历包含主席、负责人、组织策划、持续推进或独立负责的经历，应优先明确归纳“责任心强、执行力强”；如果包含团队协作、汇报展示、客户拜访、跨部门配合或社团组织经历，应优先明确归纳“沟通能力强、善于协作”。不得凭空写性格开朗、抗压、外向、乐观等标签。尽量少列机构名称和日期，只用必要事实说明优势；在读教育不得写“毕业于”。此例外不适用于求职动机、Why company/role、职业规划、可入职时间或其他主观申请题。
+7. 当 deterministicKey=education.description，或字段明确位于教育背景且名称为“经历描述/教育描述”时，只能填写同一条教育记录中的专业、课程、学术训练和校内荣誉；不得写工作、实习、项目经历，也不得使用第一人称自我评价口吻。
+8. 当 deterministicKey 以 .startDate 或 .endDate 结尾时，只能使用同一 recordIndex 对应记录的同名日期；严禁交换开始和结束日期，也不得跨经历取值。
+9. 不得推断或填写身份证/护照等证件信息、性别、婚姻、民族、国籍/户籍、政治面貌、宗教、健康/残疾、退伍信息、薪资、家庭成员、验证码、密码、账号、安全问题、法律声明、隐私同意或提交确认。
+10. 除规则 6 的简历事实概述外，不得代答开放性申请题、性格题、测评题、求职动机、期望、可入职时间、是否接受调剂或任何需要用户主观决定的问题。
+11. select 或 radio 字段只能返回 options 中已有的 value 或 text，优先返回可见 text；没有唯一匹配则返回 null。
+12. 对普通文本字段，直接摘取简历事实时 basis=resume；规则 4、5、6 的转换或概述使用 basis=derived。
+13. 字段意义、记录序号或值有任何不确定时返回 null。不得把一段经历的值填到另一段经历。
+14. 必须逐一处理并返回每个输入字段，输出数量和顺序必须与页面字段完全一致；不能填写的字段也返回对应 fieldKey，只把 value、basis 设为 null。不得因为字段多而省略后面的字段。
+15. 明确执行允许的低风险派生。例如简历姓名为“王小星”且字段为“姓名拼音”时应填写“Wang Xiaoxing”；教育结束日期晚于当前日期且字段询问是否应届毕业生时，应从“是/否”等给定选项中选择唯一等价项。
+16. 不输出解释、Markdown 或额外字段，只返回严格 JSON。返回前自行核对 mappings 数量等于输入页面字段数量。`;

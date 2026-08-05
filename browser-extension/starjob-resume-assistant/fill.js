@@ -171,6 +171,9 @@
   }
 
   function inferSectionHint(element, signals, contextText) {
+    const ownSignals = normalize(`${signals.visible.join(" ")} ${signals.attributes.join(" ")}`);
+    if (/出生日期|出生年月|生日|birthdate|dateofbirth|dob|中文姓名|真实姓名|fullname|邮箱|emailaddress|手机号码|联系电话|phonenumber/.test(ownSignals)) return "basic";
+    if (/自我描述|自我评价|个人总结|个人优势|个人简介|个人概述|selfdescription|selfsummary|personalsummary|profilesummary/.test(ownSignals)) return null;
     const directHint = detectSectionFromText(`${signals.visible.join(" ")} ${contextText}`);
     if (directHint) return directHint;
 
@@ -422,6 +425,16 @@
     };
   }
 
+  function dateValuesEquivalent(expectedValue, actualValue) {
+    const expectedText = asText(expectedValue);
+    const actualText = asText(actualValue);
+    const expected = parseDateParts(expectedText);
+    const actual = parseDateParts(actualText);
+    if (!expected || !actual || expected.year !== actual.year || expected.month !== actual.month) return false;
+    const expectedHasDay = /(?:19|20)\d{2}[^0-9]+[01]?\d[^0-9]+[0-3]?\d/.test(expectedText);
+    return !expectedHasDay || expected.day === actual.day;
+  }
+
   function findActiveDatePickerPanel() {
     const panels = Array.from(document.querySelectorAll([
       ".ant-picker-dropdown:not(.ant-picker-dropdown-hidden)",
@@ -567,7 +580,7 @@
 
     dispatchActivation(option);
     await wait(40);
-    return Boolean(currentValue(element));
+    return dateValuesEquivalent(rawValue, currentValue(element));
   }
 
   async function fillElement(element, rawValue, definition) {
@@ -602,6 +615,14 @@
       if (definition.date && await tryExactDatePickerSelection(element, rawValue)) return true;
       setNativeValue(element, value);
       dispatchEvents(element);
+      if (definition.date) {
+        await wait(24);
+        if (!dateValuesEquivalent(rawValue, currentValue(element))) {
+          setNativeValue(element, "");
+          dispatchEvents(element);
+          return false;
+        }
+      }
       return true;
     }
     if (element instanceof HTMLElement && element.isContentEditable) {
@@ -683,6 +704,48 @@
     return Number.isInteger(index) && index >= 0 && index < definition.values.length;
   }
 
+  function assignRecordIndices(plans, fields) {
+    const sections = ["education", "work", "project", "campus", "awards", "certifications", "languages"];
+    const anchorKeys = {
+      education: "education.school",
+      work: "work.company",
+      project: "project.name",
+      campus: "campus.title",
+      awards: "awards.title",
+      certifications: "certifications.title",
+      languages: "languages.title",
+    };
+    for (const section of sections) {
+      const sectionPlans = plans.filter((plan) => plan.matchedDefinition?.section === section);
+      const containers = [];
+      for (const plan of sectionPlans) {
+        const hasAnchor = plan.recordContainer && sectionPlans.some((candidate) => candidate.recordContainer === plan.recordContainer
+          && candidate.matchedDefinition?.key === anchorKeys[section]);
+        if (hasAnchor && !containers.includes(plan.recordContainer)) containers.push(plan.recordContainer);
+      }
+      const containerMap = new Map(containers.map((container, index) => [container, index]));
+      const explicitNumbers = [...new Set(sectionPlans
+        .map((plan) => plan.explicitRecordNumber)
+        .filter((value) => Number.isInteger(value)))]
+        .sort((left, right) => left - right);
+      const explicitMap = new Map(explicitNumbers.map((number, index) => [number, index]));
+      const fallbackOccurrences = new Map();
+
+      for (const plan of sectionPlans) {
+        let recordIndex = containerMap.get(plan.recordContainer);
+        if (!Number.isInteger(recordIndex)) recordIndex = explicitMap.get(plan.explicitRecordNumber);
+        if (!Number.isInteger(recordIndex)) {
+          const occurrenceKey = plan.matchedDefinition.key;
+          recordIndex = fallbackOccurrences.get(occurrenceKey) || 0;
+          fallbackOccurrences.set(occurrenceKey, recordIndex + 1);
+        }
+        plan.recordIndex = recordIndex;
+        const field = fields.find((item) => item.fieldKey === plan.fieldKey);
+        if (field) field.recordIndex = recordIndex;
+      }
+    }
+  }
+
   function toAnalysisField(field) {
     return {
       fieldKey: field.fieldKey,
@@ -692,6 +755,7 @@
       inputType: field.inputType,
       deterministicKey: field.deterministicKey,
       deterministicConfidence: field.deterministicConfidence,
+      recordIndex: Number.isInteger(field.recordIndex) ? field.recordIndex : null,
       options: field.options,
     };
   }
@@ -779,6 +843,7 @@
       inputType,
       deterministicKey: matchedDefinition && bestScore >= 0.74 ? matchedDefinition.key : null,
       deterministicConfidence: Number(bestScore.toFixed(2)),
+      recordIndex: null,
       options: getChoiceOptions(element),
       sensitive,
     });
@@ -795,6 +860,8 @@
       explicitRecordNumber: getExplicitRecordNumber(element, signals, contextText),
     });
   }
+
+  assignRecordIndices(plans, extractedFields);
 
   if (analysisOnly) {
     return {
@@ -857,6 +924,46 @@
     const label = signals.visible.find(Boolean) || signals.attributes.find(Boolean);
     const cleanLabel = String(label || "").replace(/\s+/g, " ").trim().slice(0, 48);
     if (cleanLabel && !unmatchedLabels.includes(cleanLabel)) unmatchedLabels.push(cleanLabel);
+  }
+
+  function clearFilledValue(element) {
+    if (!(element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement)) return false;
+    setNativeValue(element, "");
+    dispatchEvents(element);
+    element.style.outline = "";
+    element.style.outlineOffset = "";
+    delete element.dataset.starjobFilled;
+    delete element.dataset.starjobAiDerived;
+    element.title = "";
+    return true;
+  }
+
+  function clearInvalidFilledDateRanges() {
+    const ranges = new Map();
+    for (const plan of plans) {
+      const match = plan.matchedDefinition?.key.match(/^(education|work|project)\.(startDate|endDate)$/);
+      if (!match || !Number.isInteger(plan.recordIndex)) continue;
+      const rangeKey = `${match[1]}:${plan.recordIndex}`;
+      const range = ranges.get(rangeKey) || {};
+      range[match[2] === "startDate" ? "start" : "end"] = plan;
+      ranges.set(rangeKey, range);
+    }
+
+    let cleared = 0;
+    const labels = [];
+    for (const range of ranges.values()) {
+      if (!range.start || !range.end) continue;
+      const start = parseDateParts(currentValue(range.start.element));
+      const end = parseDateParts(currentValue(range.end.element));
+      if (!start || !end || start.year * 12 + start.month <= end.year * 12 + end.month) continue;
+      for (const plan of [range.start, range.end]) {
+        if (plan.element.dataset.starjobFilled === "true" && clearFilledValue(plan.element)) {
+          cleared += 1;
+          labels.push(plan.signals.visible.find(Boolean) || "经历日期");
+        }
+      }
+    }
+    return { cleared, labels };
   }
 
   for (const plan of plans) {
@@ -962,5 +1069,20 @@
     }
   }
 
-  return { scanned: candidates.length, matched, filled, preserved, empty, manual, derived, unmatched: unmatchedLabels.slice(0, 12) };
+  const invalidDateRanges = clearInvalidFilledDateRanges();
+  filled = Math.max(0, filled - invalidDateRanges.cleared);
+  manual += invalidDateRanges.cleared;
+  invalidDateRanges.labels.forEach((label) => rememberUnmatched({ visible: [label], attributes: [] }));
+
+  return {
+    scanned: candidates.length,
+    matched,
+    filled,
+    preserved,
+    empty,
+    manual,
+    derived,
+    invalidDatesCleared: invalidDateRanges.cleared,
+    unmatched: unmatchedLabels.slice(0, 12),
+  };
 })();

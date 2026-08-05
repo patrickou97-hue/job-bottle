@@ -47,12 +47,12 @@ export function ExtensionGuide() {
           <h1 className="page-title">安装拾星网申助手</h1>
           <p className="page-subtitle mt-4">完成一次安装和简历同步，之后在网申页打开扩展即可填写。</p>
         </div>
-        <a href="/downloads/starjob-resume-assistant-v0.2.2.zip" download className="gold-button pressable inline-flex h-11 w-fit items-center gap-2 rounded-lg px-4 text-sm font-semibold">
+        <a href="/downloads/starjob-resume-assistant-v0.2.3.zip" download className="gold-button pressable inline-flex h-11 w-fit items-center gap-2 rounded-lg px-4 text-sm font-semibold">
           <ArrowDownIcon aria-hidden="true" className="size-4" />
           获取安装包
         </a>
         <p className="mt-3 text-xs leading-6 text-ink-muted">安装包由拾星官网直接提供，下载后请完整解压。</p>
-        <p className="mt-1 text-xs leading-6 text-ink-muted">最新版本 0.2.2。旧版继续兼容；升级后可基于简历事实生成自我描述，并填写你在简历中明确保存的出生日期。</p>
+        <p className="mt-1 text-xs leading-6 text-ink-muted">最新版本 0.2.3。升级后会按字段语义填写自我描述与经历描述，并加强多段经历的日期对应和顺序校验。</p>
       </section>
 
       <section className="grid gap-x-10 gap-y-8 md:grid-cols-2">
@@ -99,7 +99,7 @@ export function ExtensionGuide() {
           ))}
         </div>
         <p className="mt-6 text-sm leading-7 text-ink-muted">部分网申系统使用封闭组件或频繁变化的页面结构，未识别字段会保持原样。请不要在未检查的情况下提交。</p>
-        <p className="mt-2 text-xs leading-6 text-ink-muted">普通智能匹配只接收页面字段元数据；主动选择 AI 智能填写时才会发送去照片的所选简历。自我描述仅整理简历事实，出生日期仅使用你明确保存的日期，输入框已有值始终不会发送。</p>
+        <p className="mt-2 text-xs leading-6 text-ink-muted">普通智能匹配只接收页面字段元数据；主动选择 AI 智能填写时才会发送去照片的所选简历。自我描述会以第一人称归纳有依据的责任心、沟通与专业优势，经历描述只使用对应记录，输入框已有值始终不会发送。</p>
       </section>
     </div>
   );
