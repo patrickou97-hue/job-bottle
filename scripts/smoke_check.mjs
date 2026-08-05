@@ -1060,9 +1060,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/resume/extension-autofill/route.ts",
-    mustInclude: ["export const maxDuration = 60", "REQUEST_TIMEOUT_MS = 50_000", "verifyExtensionMatchToken", "MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL", "REQUEST_TIMEOUT_MS", "RATE_LIMIT", "MIN_CONFIDENCE", "response_format", "json_object", "resumeSchema", "fieldSchema", "resultSchema", "basis", "derived", "normalizeChoice", "field.options.some", "returnedByKey", "fieldKey: `f${index}`", "originalFields", "value: null, confidence: 0, basis: null", "collectResumeFacts", "collectResumeSummaryFacts", "hasResumeBasis", "isAllowedDerivedValue", "isSafeResumeSummary", "basics.birthDate", "自我描述", "deriveGraduationValue", "parseYearMonth", "不可信文本", "唯一事实来源", "从上到下逐字段处理", "中文姓名的无声调汉语拼音", "不得推断或填写身份证", "不得代答开放性申请题", "options 中已有", "mappings 必须与页面字段数量相同", "Wang Xiaoxing", "Cache-Control", "no-store"],
-    mustNotInclude: ["createAdminClient", "SUPABASE_SERVICE_ROLE_KEY", "document.cookie", "console.log"],
-    label: "AI 智能填写使用受限令牌、结构化简历白名单和全表单保守规则调用 MiMo",
+    mustInclude: ["export const maxDuration = 60", "preferredRegion = \"hkg1\"", "REQUEST_TIMEOUT_MS = 50_000", "verifyExtensionMatchToken", "DEEPSEEK_API_KEY", "DEEPSEEK_BASE_URL", "DEEPSEEK_MODEL", "https://api.deepseek.com", "deepseek-v4-flash", "thinking: { type: \"disabled\" }", "REQUEST_TIMEOUT_MS", "RATE_LIMIT", "MIN_CONFIDENCE", "response_format", "json_object", "resumeSchema", "fieldSchema", "resultSchema", "basis", "derived", "normalizeChoice", "field.options.some", "returnedByKey", "fieldKey: `f${index}`", "originalFields", "value: null, confidence: 0, basis: null", "collectResumeFacts", "collectResumeSummaryFacts", "hasResumeBasis", "isAllowedDerivedValue", "isSafeResumeSummary", "basics.birthDate", "自我描述", "deriveGraduationValue", "parseYearMonth", "不可信文本", "唯一事实来源", "从上到下逐字段处理", "中文姓名的无声调汉语拼音", "不得推断或填写身份证", "不得代答开放性申请题", "options 中已有", "mappings 必须与页面字段数量相同", "Wang Xiaoxing", "Cache-Control", "no-store"],
+    mustNotInclude: ["MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL", "createAdminClient", "SUPABASE_SERVICE_ROLE_KEY", "document.cookie", "console.log"],
+    label: "AI 智能填写使用受限令牌、结构化简历白名单和全表单保守规则调用 DeepSeek V4 Flash",
   },
   {
     file: "src/lib/extension-match-token.ts",

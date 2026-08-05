@@ -3,6 +3,7 @@ import { z } from "zod";
 import { verifyExtensionMatchToken } from "@/lib/extension-match-token";
 
 export const maxDuration = 60;
+export const preferredRegion = "hkg1";
 
 const REQUEST_TIMEOUT_MS = 50_000;
 const RATE_WINDOW_MS = 10 * 60 * 1_000;
@@ -133,10 +134,10 @@ export async function POST(request: NextRequest) {
   })());
   if (!parsed.success) return NextResponse.json({ error: "简历或页面字段格式无法识别" }, { status: 400 });
 
-  const apiKey = process.env.MIMO_API_KEY;
-  const baseUrl = process.env.MIMO_BASE_URL;
-  const model = process.env.MIMO_MODEL;
-  if (!apiKey || !baseUrl || !model) return NextResponse.json({ error: "AI 智能填写服务尚未配置" }, { status: 503 });
+  const apiKey = process.env.DEEPSEEK_API_KEY?.trim();
+  const baseUrl = process.env.DEEPSEEK_BASE_URL?.trim() || "https://api.deepseek.com";
+  const model = process.env.DEEPSEEK_MODEL?.trim() || "deepseek-v4-flash";
+  if (!apiKey) return NextResponse.json({ error: "AI 智能填写服务尚未配置" }, { status: 503 });
 
   try {
     const modelFields = parsed.data.fields.map((field, index) => ({ ...field, fieldKey: `f${index}` }));
@@ -151,6 +152,7 @@ export async function POST(request: NextRequest) {
           model,
           temperature: 0,
           stream: false,
+          thinking: { type: "disabled" },
           max_tokens: 4_500,
           response_format: { type: "json_object" },
           messages: [
