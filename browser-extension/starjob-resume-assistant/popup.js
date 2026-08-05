@@ -82,7 +82,7 @@ function resetOverwriteConfirmation() {
   elements.modeHint.textContent = mode === "overwrite"
     ? "覆盖模式会替换页面已有内容，填写前需要再次确认。"
     : mode === "ai"
-      ? "AI 会按字段语义逐项填写：自我描述以第一人称归纳有依据的责任心、沟通与专业优势，经历描述只使用对应记录。"
+      ? "AI 会从页面顶部开始，按每条记录和字段顺序逐项填写；经历描述与日期只使用对应记录。"
       : "默认只填写空白项，不会改动你已经输入的内容。";
   if (!elements.fillButton.disabled) {
     elements.fillButton.textContent = mode === "ai" ? "AI 智能填写当前页面" : "一键填写当前页面";

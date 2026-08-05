@@ -236,9 +236,13 @@ function parseResult(
       const returned = returnedByKey.get(modelField.fieldKey) ?? { fieldKey: modelField.fieldKey, value: null, confidence: 0, basis: null };
       const mapping = { ...returned, fieldKey: field.fieldKey, confidence: returned.confidence ?? 0 };
       const recordDateValue = deriveRecordDateValue(field, resume);
+      const recordDescriptionValue = deriveRecordDescriptionValue(field, resume);
       const derivedValue = deriveGraduationValue(field, resume);
       if (recordDateValue) {
         return { field, mapping: { ...mapping, value: recordDateValue, confidence: 0.99, basis: "resume" as const } };
+      }
+      if (recordDescriptionValue) {
+        return { field, mapping: { ...mapping, value: recordDescriptionValue, confidence: 0.99, basis: "resume" as const } };
       }
       return { field, mapping: derivedValue ? { ...mapping, value: derivedValue, confidence: 0.99, basis: "derived" as const } : mapping };
     }).filter(({ field, mapping }) => {
@@ -447,6 +451,26 @@ function deriveRecordDateValue(field: z.infer<typeof fieldSchema>, resume: z.inf
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
+function deriveRecordDescriptionValue(field: z.infer<typeof fieldSchema>, resume: z.infer<typeof resumeSchema>) {
+  if (!field.deterministicKey?.endsWith(".description") || field.recordIndex === null) return null;
+  const [section] = field.deterministicKey.split(".");
+  const entry = getSectionEntries(resume, section)[field.recordIndex];
+  if (!entry || typeof entry !== "object") return null;
+  const record = entry as Record<string, unknown>;
+
+  if (section === "education") {
+    return [record.courses, record.honors]
+      .filter((value): value is string => typeof value === "string" && Boolean(value.trim()))
+      .map((value) => value.trim())
+      .join("\n") || null;
+  }
+
+  const bullets = Array.isArray(record.bullets)
+    ? record.bullets.filter((value): value is string => typeof value === "string" && Boolean(value.trim())).map((value) => value.trim())
+    : [];
+  return bullets.join("\n") || null;
+}
+
 function deriveGraduationValue(field: z.infer<typeof fieldSchema>, resume: z.infer<typeof resumeSchema>) {
   const descriptor = normalizeChoice(`${field.label} ${field.attributes} ${field.context}`);
   const isFreshGraduate = /应届/.test(descriptor);
@@ -514,7 +538,7 @@ const SYSTEM_PROMPT = `你是拾星网申助手的保守型填写引擎。你只
 4. 允许的派生包括：中文姓名的无声调汉语拼音、姓与名的拼音拆分、大小写/空格格式、电话或日期格式、根据明确教育结束日期判断毕业状态、从给定选项中选择与简历事实等价的一项。
 5. 只有当 basics.birthDate 明确非空时，才可为出生日期/生日字段填写该日期或做等价日期格式转换；绝不能根据年龄、教育时间、证件号等推断出生日期，也不得填写年龄。
 6. 只有字段明确是“自我描述、自我评价、个人总结、个人优势、个人简介、profile summary”时，才允许生成开放文本。“经历描述”本身绝不等同于自我描述。自我描述必须以第一人称“我”开头，中文通常 100–220 字，重点写 2–3 项有经历证据支撑的优势、工作方式或性格倾向，而不是按时间复述学校、公司、岗位和奖项清单。可以使用“我擅长、我注重、我习惯、我能够”等个人口吻，但每项判断都必须能由简历中的技能、职责、项目或校园活动合理支持。如果简历包含主席、负责人、组织策划、持续推进或独立负责的经历，应优先明确归纳“责任心强、执行力强”；如果包含团队协作、汇报展示、客户拜访、跨部门配合或社团组织经历，应优先明确归纳“沟通能力强、善于协作”。不得凭空写性格开朗、抗压、外向、乐观等标签。尽量少列机构名称和日期，只用必要事实说明优势；在读教育不得写“毕业于”。此例外不适用于求职动机、Why company/role、职业规划、可入职时间或其他主观申请题。
-7. 当 deterministicKey=education.description，或字段明确位于教育背景且名称为“经历描述/教育描述”时，只能填写同一条教育记录中的专业、课程、学术训练和校内荣誉；不得写工作、实习、项目经历，也不得使用第一人称自我评价口吻。
+7. 当 deterministicKey=education.description，或字段明确位于教育背景且名称为“经历描述/教育描述”时，只能填写同一条教育记录中的课程、学术训练和校内荣誉；不得写工作、实习、项目经历，也不得使用第一人称自我评价口吻。对应记录只要存在课程、荣誉或职责内容就必须填写经历描述，不得因为它不是自我描述而返回 null。
 8. 当 deterministicKey 以 .startDate 或 .endDate 结尾时，只能使用同一 recordIndex 对应记录的同名日期；严禁交换开始和结束日期，也不得跨经历取值。
 9. 不得推断或填写身份证/护照等证件信息、性别、婚姻、民族、国籍/户籍、政治面貌、宗教、健康/残疾、退伍信息、薪资、家庭成员、验证码、密码、账号、安全问题、法律声明、隐私同意或提交确认。
 10. 除规则 6 的简历事实概述外，不得代答开放性申请题、性格题、测评题、求职动机、期望、可入职时间、是否接受调剂或任何需要用户主观决定的问题。

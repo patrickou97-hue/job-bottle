@@ -47,12 +47,12 @@ export function ExtensionGuide() {
           <h1 className="page-title">安装拾星网申助手</h1>
           <p className="page-subtitle mt-4">完成一次安装和简历同步，之后在网申页打开扩展即可填写。</p>
         </div>
-        <a href="/downloads/starjob-resume-assistant-v0.2.3.zip" download className="gold-button pressable inline-flex h-11 w-fit items-center gap-2 rounded-lg px-4 text-sm font-semibold">
+        <a href="/downloads/starjob-resume-assistant-v0.2.4.zip" download className="gold-button pressable inline-flex h-11 w-fit items-center gap-2 rounded-lg px-4 text-sm font-semibold">
           <ArrowDownIcon aria-hidden="true" className="size-4" />
           获取安装包
         </a>
         <p className="mt-3 text-xs leading-6 text-ink-muted">安装包由拾星官网直接提供，下载后请完整解压。</p>
-        <p className="mt-1 text-xs leading-6 text-ink-muted">最新版本 0.2.3。升级后会按字段语义填写自我描述与经历描述，并加强多段经历的日期对应和顺序校验。</p>
+        <p className="mt-1 text-xs leading-6 text-ink-muted">最新版本 0.2.4。升级后会从页面顶部开始逐条绑定经历描述和日期，并在本地纠正模型漏答或错序。</p>
       </section>
 
       <section className="grid gap-x-10 gap-y-8 md:grid-cols-2">

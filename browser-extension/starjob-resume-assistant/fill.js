@@ -103,6 +103,75 @@
     "organization-title": "work.title",
   };
 
+  const structuredListSections = {
+    recruiteducationlist: "education",
+    educationlist: "education",
+    educations: "education",
+    recruitworkinglist: "work",
+    workinglist: "work",
+    worklist: "work",
+    workexperiencelist: "work",
+    employmentlist: "work",
+    recruitprojectlist: "project",
+    projectlist: "project",
+    projects: "project",
+    recruitcampuslist: "campus",
+    campuslist: "campus",
+    recruitawardlist: "awards",
+    awardlist: "awards",
+    recruitcertificatelist: "certifications",
+    certificatelist: "certifications",
+    recruitlanguagelist: "languages",
+    languagelist: "languages",
+  };
+  const structuredProperties = {
+    education: {
+      school: "school", schoolname: "school", collegename: "school", universityname: "school",
+      degree: "degree", highestdegree: "degree", educationlevel: "degree",
+      major: "major", majorname: "major", fieldofstudy: "major",
+      startdate: "startDate", enddate: "endDate", graduationdate: "endDate",
+      gpa: "gpa", courses: "courses", coursework: "courses", honors: "honors",
+      description: "description",
+    },
+    work: {
+      company: "company", companyname: "company", employer: "company", employername: "company",
+      title: "title", jobtitle: "title", position: "title", positionname: "title",
+      location: "location", worklocation: "location",
+      startdate: "startDate", enddate: "endDate", current: "current", iscurrent: "current",
+      description: "description", jobdescription: "description", responsibilities: "description",
+    },
+    project: {
+      name: "name", projectname: "name", title: "name", projecttitle: "name",
+      role: "role", projectrole: "role", startdate: "startDate", enddate: "endDate",
+      description: "description", projectdescription: "description", keywords: "keywords",
+    },
+    campus: { title: "title", role: "role", date: "date", description: "description" },
+    awards: { title: "title", role: "role", date: "date", description: "description" },
+    certifications: { title: "title", role: "role", date: "date", details: "details", score: "details" },
+    languages: { title: "title", role: "details", details: "details", level: "details" },
+  };
+
+  function inferStructuredFieldContract(element) {
+    const identifiers = [
+      element.id,
+      element.getAttribute("name") || "",
+      element.getAttribute("data-testid") || "",
+      element.getAttribute("data-field") || "",
+    ].filter(Boolean);
+    for (const identifier of identifiers) {
+      const normalizedIdentifier = String(identifier).replace(/[\[\].:\-/]+/g, "_");
+      const match = normalizedIdentifier.match(/(?:^|_)(recruiteducationlist|educationlist|educations|recruitworkinglist|workinglist|worklist|workexperiencelist|employmentlist|recruitprojectlist|projectlist|projects|recruitcampuslist|campuslist|recruitawardlist|awardlist|recruitcertificatelist|certificatelist|recruitlanguagelist|languagelist)_(\d+)_([a-z0-9]+)(?:_|$)/i);
+      if (!match) continue;
+      const section = structuredListSections[match[1].toLowerCase()];
+      const property = structuredProperties[section]?.[match[3].toLowerCase()];
+      const recordIndex = Number(match[2]);
+      if (section && property && Number.isInteger(recordIndex)) {
+        return { section, property, key: `${section}.${property}`, recordIndex };
+      }
+    }
+    return null;
+  }
+
   function getFieldSignals(element) {
     const visible = [];
     const attributes = [];
@@ -239,6 +308,7 @@
   }
 
   function isLikelyDateControl(element) {
+    if (!(element instanceof HTMLInputElement)) return false;
     const ownText = normalize([
       element.getAttribute("name") || "",
       element.id || "",
@@ -643,6 +713,7 @@
   }
 
   function markFilled(element, label, derived = false) {
+    delete element.dataset.starjobPreviouslyFilled;
     element.dataset.starjobFilled = "true";
     element.dataset.starjobAiDerived = derived ? "true" : "false";
     element.style.outline = derived
@@ -732,7 +803,8 @@
       const fallbackOccurrences = new Map();
 
       for (const plan of sectionPlans) {
-        let recordIndex = containerMap.get(plan.recordContainer);
+        let recordIndex = plan.structuredContract?.recordIndex;
+        if (!Number.isInteger(recordIndex)) recordIndex = containerMap.get(plan.recordContainer);
         if (!Number.isInteger(recordIndex)) recordIndex = explicitMap.get(plan.explicitRecordNumber);
         if (!Number.isInteger(recordIndex)) {
           const occurrenceKey = plan.matchedDefinition.key;
@@ -760,8 +832,18 @@
     };
   }
 
+  function getExactStructuredValue(plan) {
+    if (!plan.structuredContract || !plan.matchedDefinition || plan.bestScore < 1) return undefined;
+    if (!/\.(?:startDate|endDate|description)$/.test(plan.matchedDefinition.key)) return undefined;
+    if (!isUsableRecordIndex(plan.recordIndex, plan.matchedDefinition)) return undefined;
+    const value = plan.matchedDefinition.values[plan.recordIndex];
+    if (value === undefined || value === null || value === "" || (Array.isArray(value) && value.length === 0)) return undefined;
+    return value;
+  }
+
   if (!aiOnly) {
     document.querySelectorAll("[data-starjob-filled='true']").forEach((element) => {
+      element.dataset.starjobPreviouslyFilled = "true";
       element.style.outline = "";
       element.style.outlineOffset = "";
       delete element.dataset.starjobFilled;
@@ -791,7 +873,8 @@
     const choiceQuestion = getChoiceQuestion(element);
     const labelText = [choiceQuestion, ...signals.visible, ...signals.attributes].join(" ");
     const contextText = [choiceQuestion, getContextText(element)].filter(Boolean).join(" ");
-    const sectionHint = inferSectionHint(element, signals, contextText);
+    const structuredContract = inferStructuredFieldContract(element);
+    const sectionHint = structuredContract?.section || inferSectionHint(element, signals, contextText);
     const recordContainer = findRecordContainer(element, sectionHint);
     const pairedDateKey = inferPairedDateKey(element, sectionHint);
     const normalizedSignals = normalize(`${labelText} ${contextText}`);
@@ -816,6 +899,7 @@
     if (!sensitive) {
       for (const definition of definitions) {
         let score = scoreDefinition(definition, element, signals, contextText, sectionHint);
+        if (structuredContract?.key === definition.key && isDefinitionControlCompatible(definition, element)) score = 1;
         if (pairedDateKey === definition.key && isDefinitionControlCompatible(definition, element)) score = 1;
         if (autocompleteKey === definition.key && (!sectionHint || definition.section === sectionHint)) score = 1;
         if (score > bestScore) {
@@ -843,7 +927,7 @@
       inputType,
       deterministicKey: matchedDefinition && bestScore >= 0.74 ? matchedDefinition.key : null,
       deterministicConfidence: Number(bestScore.toFixed(2)),
-      recordIndex: null,
+      recordIndex: structuredContract?.recordIndex ?? null,
       options: getChoiceOptions(element),
       sensitive,
     });
@@ -855,6 +939,7 @@
       bestScore,
       sensitive,
       sectionHint,
+      structuredContract,
       recordContainer,
       pairedDateKey,
       explicitRecordNumber: getExplicitRecordNumber(element, signals, contextText),
@@ -919,6 +1004,7 @@
   let matched = 0;
   let manual = aiOnly ? 0 : document.querySelectorAll("input[type='file']").length;
   let derived = 0;
+  let structured = 0;
 
   function rememberUnmatched(signals) {
     const label = signals.visible.find(Boolean) || signals.attributes.find(Boolean);
@@ -926,19 +1012,7 @@
     if (cleanLabel && !unmatchedLabels.includes(cleanLabel)) unmatchedLabels.push(cleanLabel);
   }
 
-  function clearFilledValue(element) {
-    if (!(element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement)) return false;
-    setNativeValue(element, "");
-    dispatchEvents(element);
-    element.style.outline = "";
-    element.style.outlineOffset = "";
-    delete element.dataset.starjobFilled;
-    delete element.dataset.starjobAiDerived;
-    element.title = "";
-    return true;
-  }
-
-  function clearInvalidFilledDateRanges() {
+  async function repairInvalidFilledDateRanges() {
     const ranges = new Map();
     for (const plan of plans) {
       const match = plan.matchedDefinition?.key.match(/^(education|work|project)\.(startDate|endDate)$/);
@@ -949,21 +1023,40 @@
       ranges.set(rangeKey, range);
     }
 
-    let cleared = 0;
+    let repaired = 0;
+    let unresolved = 0;
     const labels = [];
     for (const range of ranges.values()) {
       if (!range.start || !range.end) continue;
       const start = parseDateParts(currentValue(range.start.element));
       const end = parseDateParts(currentValue(range.end.element));
       if (!start || !end || start.year * 12 + start.month <= end.year * 12 + end.month) continue;
-      for (const plan of [range.start, range.end]) {
-        if (plan.element.dataset.starjobFilled === "true" && clearFilledValue(plan.element)) {
-          cleared += 1;
-          labels.push(plan.signals.visible.find(Boolean) || "经历日期");
+      const plansToRepair = [range.start, range.end].filter((plan) => plan.element.dataset.starjobFilled === "true");
+      if (!plansToRepair.length) continue;
+
+      for (const plan of plansToRepair) {
+        if (plan.expectedDateValue && await fillElement(plan.element, plan.expectedDateValue, { date: true })) {
+          markFilled(plan.element, plan.signals.visible.find(Boolean) || "经历日期");
         }
       }
+
+      const repairedStart = parseDateParts(currentValue(range.start.element));
+      const repairedEnd = parseDateParts(currentValue(range.end.element));
+      if (repairedStart && repairedEnd && repairedStart.year * 12 + repairedStart.month <= repairedEnd.year * 12 + repairedEnd.month) {
+        repaired += plansToRepair.length;
+        continue;
+      }
+
+      for (const plan of plansToRepair) {
+        plan.element.style.outline = "2px solid rgba(180, 56, 56, 0.82)";
+        plan.element.style.outlineOffset = "2px";
+        plan.element.title = "拾星日期顺序校验未通过，请手动确认";
+        delete plan.element.dataset.starjobFilled;
+        unresolved += 1;
+        labels.push(plan.signals.visible.find(Boolean) || "经历日期");
+      }
     }
-    return { cleared, labels };
+    return { repaired, unresolved, labels };
   }
 
   for (const plan of plans) {
@@ -977,28 +1070,38 @@
 
     if (aiAutofillOnly) {
       const mapping = aiValueMappings[fieldKey];
-      if (!mapping || typeof mapping !== "object" || Number(mapping.confidence) < 0.82) {
+      const exactStructuredValue = getExactStructuredValue(plan);
+      const hasAcceptedMapping = mapping && typeof mapping === "object" && Number(mapping.confidence) >= 0.82;
+      if (exactStructuredValue === undefined && !hasAcceptedMapping) {
         manual += 1;
         rememberUnmatched(signals);
         continue;
       }
       matched += 1;
-      if (currentValue(element)) {
+      const replacePreviousExactDate = exactStructuredValue !== undefined
+        && Boolean(matchedDefinition?.date)
+        && element.dataset.starjobPreviouslyFilled === "true"
+        && !dateValuesEquivalent(exactStructuredValue, currentValue(element));
+      if (currentValue(element) && !replacePreviousExactDate) {
         preserved += 1;
         continue;
       }
-      const value = typeof mapping.value === "string" ? mapping.value.trim() : "";
+      const value = exactStructuredValue === undefined
+        ? typeof mapping.value === "string" ? mapping.value.trim() : ""
+        : exactStructuredValue;
       if (!value) {
         empty += 1;
         manual += 1;
         rememberUnmatched(signals);
         continue;
       }
-      const isDerived = mapping.basis === "derived";
+      const isDerived = exactStructuredValue === undefined && mapping.basis === "derived";
+      if (exactStructuredValue !== undefined) structured += 1;
       const isCheckbox = element instanceof HTMLInputElement && element.type === "checkbox";
-      const checkboxValue = /^(true|1|yes|y|是|至今|仍在职)$/i.test(value);
+      const checkboxValue = /^(true|1|yes|y|是|至今|仍在职)$/i.test(String(value));
+      if (matchedDefinition?.date) plan.expectedDateValue = value;
       if (await fillElement(element, isCheckbox ? checkboxValue : value, {
-        date: isLikelyDateControl(element),
+        date: Boolean(matchedDefinition?.date) || isLikelyDateControl(element),
         checkbox: isCheckbox,
       })) {
         filled += 1;
@@ -1021,10 +1124,15 @@
     }
 
     const repeatable = repeatableSections.has(matchedDefinition.section);
+    const plannedRecordIndex = plan.recordIndex;
     const containerRecordIndex = recordContainerMaps.get(matchedDefinition.section)?.get(recordContainer);
     const normalizedRecordIndex = recordNumberMaps.get(matchedDefinition.section)?.get(explicitRecordNumber);
     let index;
-    if (repeatable && isUsableRecordIndex(containerRecordIndex, matchedDefinition)) {
+    if (repeatable && isUsableRecordIndex(plannedRecordIndex, matchedDefinition)) {
+      index = plannedRecordIndex;
+      currentRecordBySection.set(matchedDefinition.section, index);
+      nextRecordBySection.set(matchedDefinition.section, Math.max(nextRecordBySection.get(matchedDefinition.section) || 0, index + 1));
+    } else if (repeatable && isUsableRecordIndex(containerRecordIndex, matchedDefinition)) {
       index = containerRecordIndex;
       currentRecordBySection.set(matchedDefinition.section, index);
       nextRecordBySection.set(matchedDefinition.section, Math.max(nextRecordBySection.get(matchedDefinition.section) || 0, index + 1));
@@ -1060,6 +1168,7 @@
       rememberUnmatched(signals);
       continue;
     }
+    if (matchedDefinition.date) plan.expectedDateValue = value;
     if (await fillElement(element, value, matchedDefinition)) {
       filled += 1;
       markFilled(element, matchedDefinition.aliases[0]);
@@ -1069,9 +1178,9 @@
     }
   }
 
-  const invalidDateRanges = clearInvalidFilledDateRanges();
-  filled = Math.max(0, filled - invalidDateRanges.cleared);
-  manual += invalidDateRanges.cleared;
+  const invalidDateRanges = await repairInvalidFilledDateRanges();
+  filled = Math.max(0, filled - invalidDateRanges.unresolved);
+  manual += invalidDateRanges.unresolved;
   invalidDateRanges.labels.forEach((label) => rememberUnmatched({ visible: [label], attributes: [] }));
 
   return {
@@ -1082,7 +1191,9 @@
     empty,
     manual,
     derived,
-    invalidDatesCleared: invalidDateRanges.cleared,
+    structured,
+    invalidDatesRepaired: invalidDateRanges.repaired,
+    invalidDatesUnresolved: invalidDateRanges.unresolved,
     unmatched: unmatchedLabels.slice(0, 12),
   };
 })();
