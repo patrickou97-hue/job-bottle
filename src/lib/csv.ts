@@ -13,6 +13,10 @@ type NumberedRawRow = {
   row: RawImportRow;
 };
 
+const TARGET_27_AUTUMN_SHEET = "27秋招正式批+提前批";
+const HEADER_SCAN_LIMIT = 10;
+const REQUIRED_IMPORT_HEADERS = ["公司名称", "类型", "投递链接"];
+
 const headerAliases = {
   company_name: ["公司名称"],
   start_date: ["开启时间"],
@@ -62,18 +66,28 @@ export function parseJobsCsv(file: File) {
 }
 
 async function parseJobsExcel(file: File) {
-  const rows: Row[] = await readSheet(file);
+  // Fail closed: the downloaded workbook also contains 26-autumn sheets, so the
+  // import must never depend on whichever sheet happens to be first.
+  const rows: Row[] = await readSheet(file, TARGET_27_AUTUMN_SHEET);
   if (rows.length <= 1) return [];
 
-  const headers = rows[0].map((cell) => stringifyCell(cell).trim());
-  const numberedRows: NumberedRawRow[] = rows.slice(1).map((cells, index) => {
+  const headerRowIndex = rows.slice(0, HEADER_SCAN_LIMIT).findIndex((cells) => {
+    const headers = cells.map((cell) => stringifyCell(cell).trim());
+    return REQUIRED_IMPORT_HEADERS.every((header) => headers.includes(header));
+  });
+  if (headerRowIndex < 0) {
+    throw new Error(`工作表“${TARGET_27_AUTUMN_SHEET}”缺少必要表头`);
+  }
+
+  const headers = rows[headerRowIndex].map((cell) => stringifyCell(cell).trim());
+  const numberedRows: NumberedRawRow[] = rows.slice(headerRowIndex + 1).map((cells, index) => {
     const row: RawImportRow = {};
     headers.forEach((header, cellIndex) => {
       if (!header) return;
       row[header] = stringifyCell(cells[cellIndex]);
     });
     return {
-      rowNumber: index + 2,
+      rowNumber: headerRowIndex + index + 2,
       row,
     };
   });
@@ -117,6 +131,11 @@ function normalizeImportRows(rows: NumberedRawRow[]) {
 
     if (!preview.company_name) preview.errors.push("缺少公司名称");
     if (!preview.apply_url) preview.errors.push("缺少投递链接");
+    if (!preview.batch_type) {
+      preview.errors.push("缺少批次类型");
+    } else if (!is27AutumnBatch(preview.batch_type)) {
+      preview.errors.push("仅允许导入27秋招岗位");
+    }
     if (preview.apply_url && !isValidHttpUrl(preview.apply_url)) {
       preview.errors.push("投递链接格式不正确");
     }
@@ -187,4 +206,8 @@ function stringifyCell(cell: unknown) {
   if (cell === null || cell === undefined) return "";
   if (cell instanceof Date) return cell.toISOString().slice(0, 10);
   return String(cell);
+}
+
+function is27AutumnBatch(value: string) {
+  return /^27秋招(?:\s|$|提前批|正式批)/.test(value.trim());
 }

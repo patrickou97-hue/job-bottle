@@ -1,0 +1,40 @@
+name: Sync 27 Autumn Jobs
+
+on:
+  schedule:
+    # GitHub Actions uses UTC. These are 09:00/12:00/15:00/18:00/21:00 Asia/Shanghai.
+    - cron: "0 1,4,7,10,13 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-27-autumn-jobs
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate parser and deduplication guards
+        run: node --test scripts/tests/sync_27_autumn_jobs.test.mjs
+
+      - name: Import new 27-autumn jobs
+        run: node scripts/sync_27_autumn_jobs.mjs --apply
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

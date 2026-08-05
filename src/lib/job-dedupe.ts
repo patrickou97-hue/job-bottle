@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { sanitizeApplicationUrl } from "@/lib/application-url";
 import type { Database, Job } from "@/lib/types";
 
 export type DuplicateJobGroup = {
@@ -23,13 +24,12 @@ type JobFingerprintInput = {
 
 export function getJobMergeFingerprint(row: JobFingerprintInput) {
   return [
-    row.company_name,
+    normalizeFingerprintValue(row.company_name),
     normalizeUrl(row.apply_url),
-    row.job_titles,
-    row.locations,
-    row.batch_type,
+    normalizeDelimitedValue(row.job_titles, false),
+    normalizeDelimitedValue(row.locations, true),
+    normalizeFingerprintValue(row.batch_type),
   ]
-    .map((value) => normalizeFingerprintValue(value))
     .join("||");
 }
 
@@ -67,7 +67,13 @@ export async function mergeDuplicateJobs(supabase: SupabaseClient<Database>) {
 }
 
 function normalizeUrl(value: string) {
-  return value.trim().replace(/\/+$/, "");
+  try {
+    const url = new URL(sanitizeApplicationUrl(value));
+    url.searchParams.sort();
+    return url.toString().replace(/\/+$/, "").toLowerCase();
+  } catch {
+    return sanitizeApplicationUrl(value).trim().replace(/\/+$/, "").toLowerCase();
+  }
 }
 
 function normalizeFingerprintValue(value: unknown) {
@@ -75,4 +81,14 @@ function normalizeFingerprintValue(value: unknown) {
     .trim()
     .replace(/\s+/g, " ")
     .toLowerCase();
+}
+
+function normalizeDelimitedValue(value: string | null, splitWhitespace: boolean) {
+  const separator = splitWhitespace ? /[,，、/|｜\s]+/g : /[,，、/|｜]+/g;
+  return String(value ?? "")
+    .split(separator)
+    .map((item) => normalizeFingerprintValue(item))
+    .filter(Boolean)
+    .sort()
+    .join(",");
 }
