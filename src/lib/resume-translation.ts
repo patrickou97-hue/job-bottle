@@ -198,6 +198,13 @@ export function createResumeFromTranslation(
   const fallbackTitle = targetLanguage === "en-US"
     ? `${source.title} · English`
     : `${source.title} · 中文`;
+  const translatedBasics = targetLanguage === "en-US" && translated.basics.englishName.trim()
+    ? {
+        ...translated.basics,
+        name: translated.basics.englishName.trim(),
+        englishName: translated.basics.englishName.trim(),
+      }
+    : translated.basics;
   return {
     ...base,
     title: translated.title.trim() || fallbackTitle,
@@ -210,7 +217,7 @@ export function createResumeFromTranslation(
     content: {
       basics: {
         ...base.content.basics,
-        ...translated.basics,
+        ...translatedBasics,
         phone: source.content.basics.phone,
         email: source.content.basics.email,
         birthDate: source.content.basics.birthDate,

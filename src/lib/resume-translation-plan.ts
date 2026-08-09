@@ -19,6 +19,7 @@ export type TranslationChunk = {
 
 export type TranslationPlan = {
   source: ResumeTranslationDraft;
+  targetLanguage: "zh-CN" | "en-US";
   chunks: TranslationChunk[];
   leafCount: number;
 };
@@ -30,7 +31,10 @@ type TranslationGroup = {
 
 type CustomSectionKey = "campus" | "awards" | "certifications" | "languages" | "customSections";
 
-export function createTranslationPlan(source: ResumeTranslationDraft): TranslationPlan {
+export function createTranslationPlan(
+  source: ResumeTranslationDraft,
+  targetLanguage: "zh-CN" | "en-US",
+): TranslationPlan {
   const groups: TranslationGroup[] = [];
   let keyIndex = 0;
 
@@ -57,6 +61,13 @@ export function createTranslationPlan(source: ResumeTranslationDraft): Translati
   };
 
   addGroup("基本信息", (entries) => {
+    if (
+      targetLanguage === "en-US"
+      && !source.basics.englishName.trim()
+      && containsCjk(source.basics.name)
+    ) {
+      addEntry(entries, ["basics", "name"], "person_name_pinyin", source.basics.name, 120);
+    }
     addEntry(entries, ["title"], "resume_title", source.title, 180);
     addEntry(entries, ["targetRole"], "target_role", source.targetRole, 180);
     addEntry(entries, ["jobTarget"], "job_target", source.jobTarget, 500);
@@ -157,6 +168,7 @@ export function createTranslationPlan(source: ResumeTranslationDraft): Translati
 
   return {
     source,
+    targetLanguage,
     chunks,
     leafCount: keyIndex,
   };
@@ -184,7 +196,20 @@ export function applyTranslationValues(
   if (knownKeys.size !== values.size || Array.from(values.keys()).some((key) => !knownKeys.has(key))) {
     throw new Error("translation values contain unknown keys");
   }
+  if (plan.targetLanguage === "en-US") {
+    const preferredEnglishName = plan.source.basics.englishName.trim();
+    const translatedName = translated.basics.name.trim();
+    const displayName = preferredEnglishName || translatedName;
+    if (displayName) {
+      translated.basics.name = displayName;
+      translated.basics.englishName = displayName;
+    }
+  }
   return translated;
+}
+
+function containsCjk(value: string) {
+  return /[\u3400-\u9fff]/u.test(value);
 }
 
 function setPathValue(target: ResumeTranslationDraft, path: Array<string | number>, value: string) {

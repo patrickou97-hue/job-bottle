@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "翻译请求较频繁，请十分钟后再试。" }, { status: 429, headers: { "Retry-After": "600" } });
   }
 
-  const plan = createTranslationPlan(parsed.data.resume);
+  const plan = createTranslationPlan(parsed.data.resume, parsed.data.targetLanguage);
   const options = {
     apiKey,
     baseUrl,
@@ -463,6 +463,7 @@ function parseChunkResult(content: string, chunk: TranslationChunk): ChunkResult
     for (const item of parsed.data.translations) {
       const expected = expectedByKey.get(item.key);
       if (!expected || values.has(item.key) || !item.value || item.value.length > expected.maxLength) return null;
+      if (expected.kind === "person_name_pinyin" && !isSafeLatinName(item.value)) return null;
       values.set(item.key, item.value);
     }
     if (values.size !== expectedByKey.size) return null;
@@ -470,6 +471,10 @@ function parseChunkResult(content: string, chunk: TranslationChunk): ChunkResult
   } catch {
     return null;
   }
+}
+
+function isSafeLatinName(value: string) {
+  return /^[A-Za-z][A-Za-z .'-]*$/u.test(value);
 }
 
 function hasMatchingStructure(source: TranslationPlan["source"], translated: ResumeDraft) {
@@ -557,4 +562,5 @@ const CHUNK_SYSTEM_PROMPT = `你是严谨的双语简历翻译器。用户会提
 3. 保留所有事实、数字、组织、岗位层级、技术名词和责任边界；不得润色、夸大、补写、合并或拆分内容。
 4. 公司、学校、专业、证书等有明确通行译名时使用通行译名；无法确认时保留原文并写入 warnings。
 5. 中文转英文使用简洁职业表达，英文转中文使用自然克制的简历语言；空值不会出现在输入中。
-6. 始终返回严格 JSON，不输出 Markdown、代码块或额外解释。`;
+6. kind 为 person_name_pinyin 时，只把中文姓名转为汉语拼音，姓在前、名在后，首字母大写；例如“王小星”返回“Wang Xiaoxing”。不得创造英文名，也不得保留汉字。
+7. 始终返回严格 JSON，不输出 Markdown、代码块或额外解释。`;

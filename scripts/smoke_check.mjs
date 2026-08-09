@@ -531,19 +531,19 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/lib/resume-translation.ts",
-    mustInclude: ["createResumeTranslationSource", "requestResumeTranslation", "createResumeFromTranslation", "getEquivalentTemplateForLanguage", "linkedJobId: null", "photoDataUrl", "原简历未改动", "TRANSLATION_TIMEOUT_MS = 165_000", "ResumeTranslationProgress", "progressMode", "application/x-ndjson", "readTranslationProgressStream"],
+    mustInclude: ["createResumeTranslationSource", "requestResumeTranslation", "createResumeFromTranslation", "getEquivalentTemplateForLanguage", "linkedJobId: null", "photoDataUrl", "translatedBasics", "translated.basics.englishName.trim()", "原简历未改动", "TRANSLATION_TIMEOUT_MS = 165_000", "ResumeTranslationProgress", "progressMode", "application/x-ndjson", "readTranslationProgressStream"],
     mustNotInclude: ["MIMO_API_KEY", "SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_"],
     label: "整份简历翻译只发送可翻译结构并生成保留精确联系方式的独立副本",
   },
   {
     file: "src/app/api/resume/translate/route.ts",
-    mustInclude: ["resolveResumeAiAccess", "access.takeRateSlot", "MIMO_API_KEY", "response_format", "json_object", "hasMatchingStructure", "createTranslationPlan", "applyTranslationValues", "TRANSLATION_CONCURRENCY = 2", "CHUNK_TIMEOUT_MS = 60_000", "progressMode", "application/x-ndjson", "translations", "structuredClone", "不得润色", "Cache-Control", "no-store", "maxDuration = 180", "REQUEST_TIMEOUT_MS = 150_000", "chat_template_kwargs", "enable_thinking: false", "invalid_json", "invalid_result", "isAbortError", "elapsedMs", "finishReason", "reasoningLength"],
+    mustInclude: ["resolveResumeAiAccess", "access.takeRateSlot", "MIMO_API_KEY", "response_format", "json_object", "hasMatchingStructure", "createTranslationPlan", "applyTranslationValues", "TRANSLATION_CONCURRENCY = 2", "CHUNK_TIMEOUT_MS = 60_000", "progressMode", "application/x-ndjson", "translations", "structuredClone", "person_name_pinyin", "isSafeLatinName", "不得创造英文名", "不得润色", "Cache-Control", "no-store", "maxDuration = 180", "REQUEST_TIMEOUT_MS = 150_000", "chat_template_kwargs", "enable_thinking: false", "invalid_json", "invalid_result", "isAbortError", "elapsedMs", "finishReason", "reasoningLength"],
     mustNotInclude: ["createAdminClient", "SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_", "console.log", "const payload = await response.json().catch", "待翻译简历 JSON"],
     label: "整份简历 AI 翻译在一次鉴权和限流内用短键分块并原子合并",
   },
   {
     file: "src/lib/resume-translation-plan.ts",
-    mustInclude: ["MAX_TRANSLATION_CHUNK_SOURCE_CHARS = 1_800", "MAX_TRANSLATION_CHUNK_ENTRIES = 24", "createTranslationPlan", "applyTranslationValues", "key: `t${keyIndex++}`", "structuredClone", "education", "work", "projects", "skills", "campus", "awards", "certifications", "languages", "customSections"],
+    mustInclude: ["MAX_TRANSLATION_CHUNK_SOURCE_CHARS = 1_800", "MAX_TRANSLATION_CHUNK_ENTRIES = 24", "createTranslationPlan", "applyTranslationValues", "key: `t${keyIndex++}`", "targetLanguage", "person_name_pinyin", "preferredEnglishName", "containsCjk", "structuredClone", "education", "work", "projects", "skills", "campus", "awards", "certifications", "languages", "customSections"],
     mustNotInclude: ["MIMO_API_KEY", "SUPABASE_SERVICE_ROLE_KEY", "fetch("],
     label: "翻译计划只暴露短键文字叶子并在本地恢复原结构",
   },
@@ -1906,12 +1906,13 @@ Product: User Research, Figma, SQL`;
 
   document.content.basics.photoDataUrl = "data:image/png;base64,private-photo";
   document.content.basics.linkedin = "linkedin.com/in/private-profile";
+  document.content.basics.englishName = "Stella Wang";
   const translatable = translator.createResumeTranslationSource(document);
   const serializedSource = JSON.stringify(translatable);
   if (serializedSource.includes("private-photo") || serializedSource.includes("private-profile") || serializedSource.includes("stella@example.com") || serializedSource.includes("13800000000")) {
     throw new Error("简历翻译探针失败：联系方式、照片或链接进入 AI 翻译载荷");
   }
-  const translationPlan = translationPlanner.createTranslationPlan(translatable);
+  const translationPlan = translationPlanner.createTranslationPlan(translatable, "en-US");
   const plannedEntries = translationPlan.chunks.flatMap((chunk) => chunk.entries);
   if (
     plannedEntries.length !== translationPlan.leafCount
@@ -1936,10 +1937,27 @@ Product: User Research, Figma, SQL`;
   if (
     atomicallyTranslated.education[0]?.startDate !== translatable.education[0]?.startDate
     || atomicallyTranslated.education[0]?.gpa !== translatable.education[0]?.gpa
-    || atomicallyTranslated.basics.name !== translatable.basics.name
+    || atomicallyTranslated.basics.name !== translatable.basics.englishName
+    || atomicallyTranslated.basics.englishName !== translatable.basics.englishName
     || atomicallyTranslated.work[0]?.title !== `EN:${translatable.work[0]?.title}`
   ) {
     throw new Error("简历翻译探针失败：原子合并改动了确定性字段或漏写译文");
+  }
+  const noEnglishNameSource = structuredClone(translatable);
+  noEnglishNameSource.basics.englishName = "";
+  const pinyinPlan = translationPlanner.createTranslationPlan(noEnglishNameSource, "en-US");
+  const pinyinEntries = pinyinPlan.chunks.flatMap((chunk) => chunk.entries);
+  const pinyinNameEntry = pinyinEntries.find((entry) => entry.kind === "person_name_pinyin");
+  if (!pinyinNameEntry || pinyinNameEntry.path.join(".") !== "basics.name") {
+    throw new Error("简历翻译探针失败：缺少英文名时未生成受限姓名拼音项");
+  }
+  const pinyinValues = new Map(pinyinEntries.map((entry) => [
+    entry.key,
+    entry.kind === "person_name_pinyin" ? "Wang Xiaoxing" : `EN:${entry.value}`,
+  ]));
+  const pinyinTranslated = translationPlanner.applyTranslationValues(pinyinPlan, pinyinValues);
+  if (pinyinTranslated.basics.name !== "Wang Xiaoxing" || pinyinTranslated.basics.englishName !== "Wang Xiaoxing") {
+    throw new Error("简历翻译探针失败：AI 姓名拼音未同时写入英文译本姓名字段");
   }
   const largeTranslationSource = structuredClone(translatable);
   largeTranslationSource.work = Array.from({ length: 4 }, (_, workIndex) => ({
@@ -1947,7 +1965,7 @@ Product: User Research, Figma, SQL`;
     company: `公司 ${workIndex + 1}`,
     bullets: Array.from({ length: 12 }, (_, bulletIndex) => `${workIndex}-${bulletIndex} ${"工作内容".repeat(34)}`),
   }));
-  const largePlan = translationPlanner.createTranslationPlan(largeTranslationSource);
+  const largePlan = translationPlanner.createTranslationPlan(largeTranslationSource, "en-US");
   if (
     largePlan.chunks.length < 2
     || largePlan.chunks.some((chunk) => chunk.entries.length > translationPlanner.MAX_TRANSLATION_CHUNK_ENTRIES)
@@ -1968,7 +1986,10 @@ Product: User Research, Figma, SQL`;
   if (translatedDocument.content.basics.phone !== document.content.basics.phone || translatedDocument.content.basics.photoDataUrl !== document.content.basics.photoDataUrl) {
     throw new Error("简历翻译探针失败：精确联系方式或照片未在本地副本中保留");
   }
-  console.log("✓ 简历导入与翻译探针通过：语言识别、短键分块、确定性字段、原子合并和独立译本正常");
+  if (translatedDocument.content.basics.name !== "Stella Wang") {
+    throw new Error("简历翻译探针失败：用户填写的英文名没有成为英文译本姓名");
+  }
+  console.log("✓ 简历导入与翻译探针通过：语言识别、英文名/姓名拼音、短键分块、原子合并和独立译本正常");
 }
 
 async function checkApplicationUrlProbe() {
