@@ -11,10 +11,10 @@ import {
 } from "@phosphor-icons/react";
 
 const CHANNEL = "starjob-resume-assistant";
-const DOWNLOAD_URL = "/downloads/starjob-resume-assistant-v0.2.4.zip";
+const DOWNLOAD_URL = "/downloads/starjob-resume-assistant-v0.2.5.zip";
 const LEGACY_COMPATIBLE_VERSIONS = new Set(["0.1.7", "0.1.8", "0.1.9"]);
 const SHORT_TIMEOUT_AI_VERSIONS = new Set(["0.2.0"]);
-const PREVIOUS_AI_VERSIONS = new Set(["0.2.1", "0.2.2", "0.2.3"]);
+const PREVIOUS_AI_VERSIONS = new Set(["0.2.1", "0.2.2", "0.2.3", "0.2.4"]);
 
 type SyncState = "idle" | "checking" | "syncing" | "success" | "missing" | "auth" | "empty" | "error";
 
@@ -41,11 +41,11 @@ export function ExtensionHubClient() {
         setExtensionVersion(detectedVersion);
         setSyncState("idle");
         setMessage(detectedVersion && LEGACY_COMPATIBLE_VERSIONS.has(detectedVersion)
-          ? `${detectedVersion} 可继续同步与原有填写；AI 智能填写需要升级到 0.2.4。`
+          ? `${detectedVersion} 可继续同步与原有填写；AI 智能填写需要升级到 0.2.5。`
           : detectedVersion && SHORT_TIMEOUT_AI_VERSIONS.has(detectedVersion)
-            ? `${detectedVersion} 的 AI 填写仍可使用；建议升级到 0.2.4，获得逐条记录绑定与日期纠错。`
+            ? `${detectedVersion} 的 AI 填写仍可使用；建议升级到 0.2.5，获得真实进度、取消操作与并行分析。`
             : detectedVersion && PREVIOUS_AI_VERSIONS.has(detectedVersion)
-              ? `${detectedVersion} 仍可继续使用；升级到 0.2.4 后会从上到下逐条绑定经历描述和日期，不再交给模型猜记录。`
+              ? `${detectedVersion} 仍可继续使用；升级到 0.2.5 后会显示真实进度与已用时，并在全部批次成功后再填写页面。`
               : "网申助手已安装，可同步当前账户的云端简历。");
       }
       if (payload.type === "SYNC_COMPLETE") {
@@ -158,7 +158,7 @@ export function ExtensionHubClient() {
               <ArrowRightIcon aria-hidden="true" className="size-4" />
             </Link>
           </div>
-          <p className="mt-4 text-xs leading-6 text-ink-muted">最新版本 0.2.4，适用于 Chrome、Edge 及其他 Chromium 浏览器，安装包由拾星官网直接提供。升级后会从页面顶部开始逐条绑定经历描述和日期，并在本地纠正模型漏答或错序。</p>
+          <p className="mt-4 text-xs leading-6 text-ink-muted">最新版本 0.2.5，适用于 Chrome、Edge 及其他 Chromium 浏览器，安装包由拾星官网直接提供。AI 智能填写现在会展示真实批次进度与已用时，可随时取消；全部批次成功后才会改动页面。</p>
         </div>
 
         <div className="extension-product-visual mx-auto w-full max-w-[350px]" aria-label="拾星网申助手产品图">

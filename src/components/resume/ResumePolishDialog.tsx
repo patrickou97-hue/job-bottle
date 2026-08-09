@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, LoaderCircle, RefreshCw, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { AiTaskProgress } from "@/components/ui/AiTaskProgress";
 import { CommunityHelpLink } from "@/components/ui/CommunityHelpLink";
 import { MotionDialog } from "@/components/ui/MotionDialog";
 import { Select } from "@/components/ui/Select";
@@ -171,8 +172,18 @@ export function ResumePolishDialog({
 
         <div className="grid gap-6 py-6 lg:grid-cols-2">
           <PolishColumn title="原文" bullets={sourceBullets} />
-          <PolishColumn title="建议稿" bullets={result?.revised.bullets ?? []} placeholder={busy ? "正在润色" : "生成后可在此对照查看，原文不会自动改动。"} />
+          <PolishColumn title="建议稿" bullets={result?.revised.bullets ?? []} placeholder={busy ? "生成完成后会在这里显示建议稿。" : "生成后可在此对照查看，原文不会自动改动。"} />
         </div>
+
+        {busy ? (
+          <AiTaskProgress
+            title="正在生成润色建议"
+            label={`正在处理${bulletIndex === null ? "当前经历的全部描述" : `第 ${bulletIndex + 1} 条描述`}，完成后先展示对照稿`}
+            protection="原文不会自动改动；只有点击应用后才会替换"
+            onCancel={() => requestAbortRef.current?.abort()}
+            className="mb-5"
+          />
+        ) : null}
 
         {result ? (
           <div className="space-y-4 border-t border-[color:var(--line-ghost)] pt-5 text-sm leading-6">

@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { verifyExtensionMatchToken } from "@/lib/extension-match-token";
 
-export const maxDuration = 60;
+export const maxDuration = 90;
 export const preferredRegion = "hkg1";
 
-const REQUEST_TIMEOUT_MS = 50_000;
+const REQUEST_TIMEOUT_MS = 75_000;
 const RATE_WINDOW_MS = 10 * 60 * 1_000;
 const RATE_LIMIT = 5;
 const MIN_CONFIDENCE = 0.82;
@@ -224,9 +224,21 @@ function parseResult(
     if (modelFields.length !== originalFields.length) return null;
     const modelFieldByKey = new Map(modelFields.map((field) => [field.fieldKey, field]));
     const returnedByKey = new Map<string, z.infer<typeof resultSchema>["mappings"][number]>();
+    let discardedUnknown = 0;
+    let discardedDuplicate = 0;
     for (const mapping of parsed.data.mappings) {
-      if (!modelFieldByKey.has(mapping.fieldKey) || returnedByKey.has(mapping.fieldKey)) return null;
+      if (!modelFieldByKey.has(mapping.fieldKey)) {
+        discardedUnknown += 1;
+        continue;
+      }
+      if (returnedByKey.has(mapping.fieldKey)) {
+        discardedDuplicate += 1;
+        continue;
+      }
       returnedByKey.set(mapping.fieldKey, mapping);
+    }
+    if (discardedUnknown || discardedDuplicate) {
+      console.warn("[extension_autofill_discarded_mappings]", { discardedUnknown, discardedDuplicate });
     }
     const resumeFacts = collectResumeFacts(resume);
     const summaryFacts = collectResumeSummaryFacts(resume);

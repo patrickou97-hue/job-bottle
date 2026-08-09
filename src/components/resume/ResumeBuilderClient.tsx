@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { Copy, FileText, FileUp, Languages, LoaderCircle, Plus, Puzzle, Trash2 } from "lucide-react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence } from "motion/react";
 import { ResumeCreateDialog } from "@/components/resume/ResumeCreateDialog";
 import { ResumeEditor, type EditorSection } from "@/components/resume/ResumeEditor";
 import { ResumeImportDialog, type ResumeImportMode } from "@/components/resume/ResumeImportDialog";
@@ -12,6 +12,7 @@ import { ResumePdfExportButton } from "@/components/resume/ResumePdfExportButton
 import { ResumePreview } from "@/components/resume/ResumePreview";
 import { ResumeTemplatePicker } from "@/components/resume/ResumeTemplatePicker";
 import { Button } from "@/components/ui/Button";
+import { AiTaskProgress } from "@/components/ui/AiTaskProgress";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { fetchMyApplications } from "@/lib/applications";
 import {
@@ -82,7 +83,6 @@ export function ResumeBuilderClient({
   const [translating, setTranslating] = useState(false);
   const [translationProgress, setTranslationProgress] = useState<ResumeTranslationProgress | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
-  const prefersReducedMotion = useReducedMotion();
   const cloudFingerprintsRef = useRef(new Map<string, string>());
   const pendingCloudSavesRef = useRef(new Map<string, PendingCloudSave>());
   const deletedResumeIdsRef = useRef(new Set<string>());
@@ -601,9 +601,6 @@ export function ResumeBuilderClient({
     );
   }
 
-  const translationPercent = translationProgress?.total
-    ? Math.round((translationProgress.completed / translationProgress.total) * 100)
-    : 0;
   const translationTarget = getResumeLanguage(selectedResume.templateId) === "en-US" ? "中文" : "英文";
 
   return (
@@ -650,45 +647,16 @@ export function ResumeBuilderClient({
 
       <AnimatePresence initial={false}>
         {translating && translationProgress ? (
-          <motion.aside
+          <AiTaskProgress
             key="resume-translation-progress"
-            aria-live="polite"
-            className="fixed bottom-4 z-40 w-[min(calc(100%-2rem),520px)] border border-[color:var(--line-strong)] bg-[color:var(--surface-read-bg-strong)] px-4 py-3 shadow-[0_18px_48px_rgba(0,0,0,0.28)] sm:bottom-6 sm:px-5 sm:py-4"
-            style={{ left: "50%", x: "-50%" }}
-            initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: prefersReducedMotion ? 0 : 6 }}
-            transition={{ duration: prefersReducedMotion ? 0 : 0.2, ease: "easeOut" }}
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-ink-primary">正在生成{translationTarget}译本</p>
-                <p className="mt-1 truncate text-xs text-ink-muted">{translationProgress.label}</p>
-              </div>
-              <span className="shrink-0 text-sm font-semibold tabular-nums text-[color:var(--aurora)]">
-                {translationPercent}%
-              </span>
-            </div>
-            <div
-              role="progressbar"
-              aria-label="简历翻译进度"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={translationPercent}
-              aria-valuetext={`已完成 ${translationProgress.completed} / ${translationProgress.total} 个翻译区块`}
-              className="mt-3 h-1.5 overflow-hidden rounded-full bg-[color:var(--surface-hover-bg)]"
-            >
-              <motion.div
-                className="h-full w-full origin-left rounded-full bg-[color:var(--aurora)]"
-                initial={false}
-                animate={{ scaleX: translationPercent / 100 }}
-                transition={{ duration: prefersReducedMotion ? 0 : 0.25, ease: "easeOut" }}
-              />
-            </div>
-            <p className="mt-2 text-[11px] leading-4 text-ink-muted">
-              已完成 {translationProgress.completed} / {translationProgress.total} 个翻译区块 · 原简历不会改动
-            </p>
-          </motion.aside>
+            floating
+            title={`正在生成${translationTarget}译本`}
+            label={translationProgress.label}
+            completed={translationProgress.completed}
+            total={translationProgress.total}
+            protection="原简历不会改动；全部区块完成后才创建译本"
+            onCancel={() => translationAbortRef.current?.abort()}
+          />
         ) : null}
       </AnimatePresence>
 

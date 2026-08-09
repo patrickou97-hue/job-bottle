@@ -1,7 +1,7 @@
 const STARJOB_HOME = "https://www.starjob.space";
 const SMART_MATCH_TIMEOUT_MS = 9_000;
 const SMART_MATCH_MAX_FIELDS = 12;
-const AI_AUTOFILL_TIMEOUT_MS = 60_000;
+const AI_AUTOFILL_TIMEOUT_MS = 85_000;
 const AI_AUTOFILL_BATCH_SIZE = 50;
 const CONFIRM_WINDOW_MS = 8_000;
 const STORAGE_KEYS = ["starjobResumes", "activeResumeId", "fillMode", "lastSyncedAt", "matchToken", "matchTokenExpiresAt", "aiMatchingAvailable", "analysisOnly", "aiOnly", "aiFieldMappings", "aiAutofillOnly", "aiValueMappings"];
@@ -19,6 +19,11 @@ const elements = {
   unmatchedDetails: document.querySelector("#unmatchedDetails"),
   unmatchedList: document.querySelector("#unmatchedList"),
   progressPanel: document.querySelector("#progressPanel"),
+  progressElapsed: document.querySelector("#progressElapsed"),
+  progressLabel: document.querySelector("#progressLabel"),
+  progressValue: document.querySelector("#progressValue"),
+  progressMeter: document.querySelector("#progressMeter"),
+  progressMeterFill: document.querySelector("#progressMeterFill"),
   openSync: document.querySelector("#openSync"),
   openSyncFromEmpty: document.querySelector("#openSyncFromEmpty"),
   openGuide: document.querySelector("#openGuide"),
@@ -29,6 +34,9 @@ let overwriteConfirmationExpiresAt = 0;
 let overwriteConfirmationTimer = null;
 let clearConfirmationExpiresAt = 0;
 let clearConfirmationTimer = null;
+let activeFillAbortController = null;
+let progressStartedAt = 0;
+let progressClockTimer = null;
 
 const progressDefaults = {
   extract: "等待开始",
@@ -40,6 +48,8 @@ const progressDefaults = {
 function resetProgress() {
   elements.progressPanel.hidden = false;
   for (const [step, text] of Object.entries(progressDefaults)) updateProgress(step, "pending", text);
+  startProgressClock();
+  updateTaskProgress(0, 0, "准备读取页面");
 }
 
 function updateProgress(step, status, text) {
@@ -47,6 +57,44 @@ function updateProgress(step, status, text) {
   if (!row) return;
   row.dataset.status = status;
   row.querySelector("p").textContent = text;
+}
+
+function startProgressClock() {
+  stopProgressClock();
+  progressStartedAt = Date.now();
+  elements.progressElapsed.textContent = "已用时 0 秒";
+  progressClockTimer = window.setInterval(() => {
+    const elapsedSeconds = Math.floor((Date.now() - progressStartedAt) / 1_000);
+    elements.progressElapsed.textContent = elapsedSeconds < 60
+      ? `已用时 ${elapsedSeconds} 秒`
+      : `已用时 ${Math.floor(elapsedSeconds / 60)} 分 ${String(elapsedSeconds % 60).padStart(2, "0")} 秒`;
+  }, 1_000);
+}
+
+function stopProgressClock() {
+  if (progressClockTimer) window.clearInterval(progressClockTimer);
+  progressClockTimer = null;
+}
+
+function updateTaskProgress(completed, total, label) {
+  const determinate = Number.isFinite(total) && total > 0;
+  const safeCompleted = determinate ? Math.min(total, Math.max(0, completed)) : 0;
+  const percent = determinate ? Math.round((safeCompleted / total) * 100) : null;
+  elements.progressLabel.textContent = label;
+  elements.progressValue.textContent = percent === null ? "处理中" : `${percent}%`;
+  elements.progressMeter.dataset.mode = determinate ? "determinate" : "indeterminate";
+  elements.progressMeter.setAttribute("aria-valuetext", determinate ? `已完成 ${safeCompleted} / ${total} 个处理单元` : label);
+  if (determinate) {
+    elements.progressMeter.setAttribute("aria-valuemin", "0");
+    elements.progressMeter.setAttribute("aria-valuemax", "100");
+    elements.progressMeter.setAttribute("aria-valuenow", String(percent));
+    elements.progressMeterFill.style.transform = `scaleX(${safeCompleted / total})`;
+  } else {
+    elements.progressMeter.removeAttribute("aria-valuemin");
+    elements.progressMeter.removeAttribute("aria-valuemax");
+    elements.progressMeter.removeAttribute("aria-valuenow");
+    elements.progressMeterFill.style.removeProperty("transform");
+  }
 }
 
 function openPage(path) {
@@ -123,10 +171,12 @@ function formatSyncTime(value) {
   return `上次同步 ${date.toLocaleString("zh-CN", { hour12: false })}`;
 }
 
-function friendlyFillError(error) {
+function friendlyFillError(error, abortReason) {
   const message = error instanceof Error ? error.message : "";
   if (error instanceof DOMException && error.name === "AbortError") {
-    return "AI 单批分析超过 60 秒，本次没有改动页面，请稍后重试。";
+    return abortReason === "cancelled"
+      ? "本次填写已取消，页面原有内容没有改动。"
+      : "AI 单批分析超过 85 秒，本次没有改动页面，请稍后重试。";
   }
   if (/cannot access|cannot read|could not establish|context invalidated|no tab with id/i.test(message)) {
     return "扩展与当前页面的连接已失效，请刷新网申页后重试。";
@@ -134,6 +184,32 @@ function friendlyFillError(error) {
   return /[\u3400-\u9fff]/.test(message)
     ? message
     : "当前页面暂时无法填写，请刷新网申页后重试。";
+}
+
+function throwIfAborted(signal) {
+  if (signal.aborted) throw new DOMException("Aborted", "AbortError");
+}
+
+async function requestAiAutofillBatch({ batch, resume, token, taskSignal }) {
+  const controller = new AbortController();
+  const cancelFromTask = () => controller.abort(taskSignal.reason || "cancelled");
+  taskSignal.addEventListener("abort", cancelFromTask, { once: true });
+  const timeout = window.setTimeout(() => controller.abort("timeout"), AI_AUTOFILL_TIMEOUT_MS);
+  try {
+    const response = await fetch(`${STARJOB_HOME}/api/resume/extension-autofill`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ resume, fields: batch }),
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || "AI 智能填写暂时不可用");
+    return payload;
+  } finally {
+    window.clearTimeout(timeout);
+    taskSignal.removeEventListener("abort", cancelFromTask);
+  }
 }
 
 function summarizeFrameResults(frameResults) {
@@ -258,8 +334,10 @@ async function fillCurrentPage() {
     showResult("请从浏览器工具栏打开扩展", "当前是界面预览，实际填写需要在 Chrome 或 Edge 的扩展菜单中打开拾星网申助手。", "warning");
     return;
   }
-  elements.fillButton.disabled = true;
-  elements.fillButton.textContent = fillMode === "ai" ? "AI 正在智能填写" : "正在逐项分析";
+  const taskController = new AbortController();
+  activeFillAbortController = taskController;
+  elements.fillButton.disabled = fillMode !== "ai";
+  elements.fillButton.textContent = fillMode === "ai" ? "停止本次智能填写" : "正在逐项分析";
   elements.resultPanel.hidden = true;
   resetProgress();
   updateProgress("extract", "loading", "正在读取可见表单字段");
@@ -285,6 +363,7 @@ async function fillCurrentPage() {
       target: { tabId: tab.id, allFrames: true },
       files: ["fill.js"],
     });
+    throwIfAborted(taskController.signal);
     const analyses = analysisResults.map((entry) => entry.result).filter(Boolean);
     const fields = analyses.flatMap((item) => Array.isArray(item.fields) ? item.fields : []).slice(0, 100);
     const extracted = analyses.reduce((sum, item) => sum + (item.scanned || 0), 0);
@@ -293,6 +372,7 @@ async function fillCurrentPage() {
       .filter((field) => !field.deterministicKey || Number(field.deterministicConfidence) < 0.74)
       .slice(0, SMART_MATCH_MAX_FIELDS);
     updateProgress("extract", "success", `共提取 ${extracted} 个可见字段`);
+    updateTaskProgress(1, 4, `已读取 ${extracted} 个可见字段`);
 
     if (extracted === 0) {
       updateProgress("match", "fallback", "当前页面没有可分析字段");
@@ -319,27 +399,27 @@ async function fillCurrentPage() {
       for (let index = 0; index < fields.length; index += AI_AUTOFILL_BATCH_SIZE) {
         batches.push(fields.slice(index, index + AI_AUTOFILL_BATCH_SIZE));
       }
-      for (let batchIndex = 0; batchIndex < batches.length; batchIndex += 1) {
-        const batch = batches[batchIndex];
-        if (batches.length > 1) {
-          updateProgress("match", "loading", `AI 正在处理第 ${batchIndex + 1}/${batches.length} 批（${batch.length} 个字段）`);
-        }
-        const controller = new AbortController();
-        const timeout = window.setTimeout(() => controller.abort(), AI_AUTOFILL_TIMEOUT_MS);
-        let response;
+      const totalTaskUnits = batches.length + 3;
+      updateTaskProgress(1, totalTaskUnits, `已拆分为 ${batches.length} 批，正在并行分析`);
+      let completedBatches = 0;
+      const payloads = await Promise.all(batches.map(async (batch) => {
         try {
-          response = await fetch(`${STARJOB_HOME}/api/resume/extension-autofill`, {
-            method: "POST",
-            headers: { Authorization: `Bearer ${stored.matchToken}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ resume: sanitizedResume, fields: batch }),
-            cache: "no-store",
-            signal: controller.signal,
+          const payload = await requestAiAutofillBatch({
+            batch,
+            resume: sanitizedResume,
+            token: stored.matchToken,
+            taskSignal: taskController.signal,
           });
-        } finally {
-          window.clearTimeout(timeout);
+          completedBatches += 1;
+          updateProgress("match", "loading", `已完成 ${completedBatches}/${batches.length} 批，全部成功后再填写页面`);
+          updateTaskProgress(1 + completedBatches, totalTaskUnits, `已完成 ${completedBatches}/${batches.length} 批字段分析`);
+          return payload;
+        } catch (error) {
+          if (!taskController.signal.aborted) taskController.abort("batch_failed");
+          throw error;
         }
-        const payload = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(payload.error || "AI 智能填写暂时不可用");
+      }));
+      for (const payload of payloads) {
         for (const mapping of payload.mappings || []) {
           if (mapping?.fieldKey && typeof mapping.value === "string" && mapping.value.trim()
             && ["resume", "derived"].includes(mapping.basis) && Number(mapping.confidence) >= 0.82) {
@@ -354,6 +434,11 @@ async function fillCurrentPage() {
       }
       updateProgress("match", "success", `所有批次成功后，AI 找到 ${acceptedMappings} 个有简历依据的值`);
       updateProgress("fill", "loading", "正在按页面顺序填写并选择空白项");
+      updateTaskProgress(2 + batches.length, totalTaskUnits, `已确认 ${acceptedMappings} 个有简历依据的值，正在填写`);
+      throwIfAborted(taskController.signal);
+      activeFillAbortController = null;
+      elements.fillButton.disabled = true;
+      elements.fillButton.textContent = "正在安全写入页面";
       await chrome.storage.local.set({
         analysisOnly: false,
         aiOnly: false,
@@ -365,9 +450,11 @@ async function fillCurrentPage() {
         target: { tabId: tab.id, allFrames: true },
         files: ["fill.js"],
       });
+      throwIfAborted(taskController.signal);
       const total = summarizeFrameResults(aiFrameResults);
       updateProgress("fill", "success", `已填写 ${total.filled} 项，其中 ${total.derived} 项为 AI 派生`);
       updateProgress("summary", "success", `保留已有内容 ${total.preserved} 项，${total.manual} 项需手动确认`);
+      updateTaskProgress(totalTaskUnits, totalTaskUnits, `已填写 ${total.filled} 项，${total.manual} 项需手动确认`);
       showResult(
         `AI 已填写 ${total.filled} 项`,
         `已按简历从上到下处理；无明确依据的内容保持空白。其中 ${total.derived} 项为格式、选项或自我描述等派生值，已用琥珀色边框标记。`,
@@ -384,8 +471,10 @@ async function fillCurrentPage() {
       target: { tabId: tab.id, allFrames: true },
       files: ["fill.js"],
     });
+    throwIfAborted(taskController.signal);
     const total = summarizeFrameResults(localFrameResults);
     updateProgress("fill", "success", `本地填写完成 ${total.filled}/${total.matched || total.scanned}`);
+    updateTaskProgress(2, 4, `本地规则已填写 ${total.filled} 项`);
 
     if (total.scanned === 0) {
       updateProgress("fill", "fallback", "当前页面没有可填写字段");
@@ -439,21 +528,25 @@ async function fillCurrentPage() {
           total.unmatched.push(...aiTotal.unmatched);
         }
         updateProgress("match", "success", `本地识别 ${locallyIdentified} 个，智能复核 ${aiMatched} 个`);
+        updateTaskProgress(3, 4, `本地识别 ${locallyIdentified} 个，后台复核 ${aiMatched} 个`);
       } catch (error) {
         const message = error instanceof DOMException && error.name === "AbortError"
           ? "智能复核超过 9 秒"
           : error instanceof Error ? error.message : "智能分析不可用";
         updateProgress("match", "fallback", `${message}，立即使用本地规则`);
+        updateTaskProgress(3, 4, `${message}，已回退到本地规则`);
       }
     } else {
       const reason = !smartMatchFields.length
         ? "低置信字段为 0，本次无需智能复核"
         : !tokenValid ? "请重新同步简历以启用智能分析" : "本次使用本地规则匹配";
       updateProgress("match", "fallback", `${reason}，已识别 ${locallyIdentified} 个`);
+      updateTaskProgress(3, 4, `${reason}，继续整理待确认项`);
     }
 
     updateProgress("fill", "success", `填写完成 ${total.filled}/${total.matched || total.scanned}`);
     updateProgress("summary", "success", `共 ${total.manual} 个需手动确认，其中 ${total.empty || 0} 个在简历中没有对应值`);
+    updateTaskProgress(4, 4, `已填写 ${total.filled} 项，${total.manual} 项需手动确认`);
     showResult(
       `已填写 ${total.filled} 项`,
       `保留已有内容 ${total.preserved} 项，仍有 ${total.manual} 项需要你确认。提交前请逐项检查。`,
@@ -462,9 +555,11 @@ async function fillCurrentPage() {
     );
   } catch (error) {
     updateProgress("summary", "fallback", "填写中断，请查看下方原因");
-    showResult("本次填写未完成", friendlyFillError(error), "error");
+    showResult(taskController.signal.reason === "cancelled" ? "本次填写已取消" : "本次填写未完成", friendlyFillError(error, taskController.signal.reason), taskController.signal.reason === "cancelled" ? "warning" : "error");
   } finally {
     await chrome.storage.local.remove(["analysisOnly", "aiOnly", "aiFieldMappings", "aiAutofillOnly", "aiValueMappings"]);
+    stopProgressClock();
+    if (activeFillAbortController === taskController) activeFillAbortController = null;
     elements.fillButton.disabled = false;
     resetOverwriteConfirmation();
   }
@@ -484,7 +579,15 @@ document.querySelectorAll('input[name="fillMode"]').forEach((input) => {
   });
 });
 
-elements.fillButton.addEventListener("click", () => void fillCurrentPage());
+elements.fillButton.addEventListener("click", () => {
+  if (activeFillAbortController) {
+    activeFillAbortController.abort("cancelled");
+    elements.fillButton.disabled = true;
+    elements.fillButton.textContent = "正在停止，不会改动页面";
+    return;
+  }
+  void fillCurrentPage();
+});
 elements.openSync.addEventListener("click", () => openPage("/extension#sync"));
 elements.openSyncFromEmpty.addEventListener("click", () => openPage("/extension#sync"));
 elements.openGuide.addEventListener("click", () => openPage("/extension/guide"));
@@ -513,6 +616,8 @@ function renderPreview() {
   updateProgress("match", "success", "本地识别 28 个，后台复核 3 个");
   updateProgress("fill", "success", "本地内容已先填写，补充完成 18/35");
   updateProgress("summary", "success", "17 个需手动确认，其中 12 个在简历中没有对应值");
+  updateTaskProgress(4, 4, "预览：已填写 18 项，17 项需手动确认");
+  stopProgressClock();
   showResult("已填写 18 项", "请检查页面中标记的字段，并手动提交网申。", "success", ["最高学历", "毕业时间", "附件简历", "身份证明"]);
 }
 

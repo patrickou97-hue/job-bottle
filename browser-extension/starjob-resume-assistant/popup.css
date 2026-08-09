@@ -429,6 +429,53 @@ input:focus-visible {
   font-size: 10px;
 }
 
+.progress-meter-copy {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 2px 0 7px;
+  color: #676a71;
+  font-size: 10px;
+}
+
+.progress-meter-copy strong {
+  flex: 0 0 auto;
+  color: var(--navy);
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.progress-meter {
+  position: relative;
+  height: 5px;
+  margin-bottom: 8px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: #e5e6e3;
+}
+
+.progress-meter-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 100%;
+  border-radius: inherit;
+  background: var(--navy);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 240ms ease;
+}
+
+.progress-meter[data-mode="indeterminate"] .progress-meter-fill {
+  width: 34%;
+  animation: progress-scan 1.35s ease-in-out infinite;
+  transform: translateX(-110%);
+}
+
+@keyframes progress-scan {
+  to { transform: translateX(400%); }
+}
+
 .progress-row {
   position: relative;
   display: grid;
@@ -536,5 +583,12 @@ input:focus-visible {
   *::after {
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .progress-meter[data-mode="indeterminate"] .progress-meter-fill {
+    width: 100%;
+    animation: none;
+    opacity: 0.45;
+    transform: none;
   }
 }

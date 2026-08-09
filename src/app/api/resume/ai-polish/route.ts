@@ -4,7 +4,9 @@ import { createHash } from "node:crypto";
 import { RESUME_POLISH_INSTRUCTIONS, RESUME_POLISH_SECTION_TYPES } from "@/lib/resume-ai";
 import { resolveResumeAiAccess } from "@/lib/resume-ai-access";
 
-const REQUEST_TIMEOUT_MS = 18_000;
+export const maxDuration = 60;
+
+const REQUEST_TIMEOUT_MS = 45_000;
 const RESPONSE_CACHE_TTL_MS = 10 * 60 * 1_000;
 const MAX_OUTPUT_TOKENS = 2_200;
 

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>拾星网申助手</title>
-    <link rel="stylesheet" href="popup.css?v=021-ai-timeout" />
+    <link rel="stylesheet" href="popup.css?v=025-ai-progress" />
   </head>
   <body>
     <main class="shell">
@@ -62,7 +62,11 @@
       </section>
 
       <section id="progressPanel" class="progress-panel" aria-live="polite" hidden>
-        <div class="progress-heading"><strong>处理进度</strong><span>按页面顺序执行</span></div>
+        <div class="progress-heading"><strong>处理进度</strong><span id="progressElapsed">已用时 0 秒</span></div>
+        <div class="progress-meter-copy"><span id="progressLabel">准备读取页面</span><strong id="progressValue">处理中</strong></div>
+        <div id="progressMeter" class="progress-meter" role="progressbar" aria-label="网申填写进度" aria-valuetext="准备读取页面">
+          <span id="progressMeterFill" class="progress-meter-fill"></span>
+        </div>
         <div class="progress-row" data-step="extract"><span class="progress-dot"></span><div><strong>读取页面字段</strong><p>等待开始</p></div></div>
         <div class="progress-row" data-step="match"><span class="progress-dot"></span><div><strong>匹配简历内容</strong><p>等待字段清单</p></div></div>
         <div class="progress-row" data-step="fill"><span class="progress-dot"></span><div><strong>填写可确认字段</strong><p>等待匹配结果</p></div></div>
@@ -78,6 +82,6 @@
         <button id="clearData" class="text-button text-button-danger" type="button">清除本地数据</button>
       </footer>
     </main>
-    <script src="popup.js?v=021-ai-timeout"></script>
+    <script src="popup.js?v=025-ai-progress"></script>
   </body>
 </html>

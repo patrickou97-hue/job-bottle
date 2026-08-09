@@ -58,7 +58,7 @@ export async function requestResumePolish(input: ResumePolishRequest, externalSi
   const controller = new AbortController();
   const cancelFromOutside = () => controller.abort("cancelled");
   externalSignal?.addEventListener("abort", cancelFromOutside, { once: true });
-  const timeout = window.setTimeout(() => controller.abort(), 22_000);
+  const timeout = window.setTimeout(() => controller.abort("timeout"), 55_000);
   try {
     const response = await fetch("/api/resume/ai-polish", {
       method: "POST",
