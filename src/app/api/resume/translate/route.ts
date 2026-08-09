@@ -3,7 +3,6 @@ import { z } from "zod";
 import { resolveResumeAiAccess } from "@/lib/resume-ai-access";
 
 export const maxDuration = 180;
-export const preferredRegion = "hkg1";
 
 const REQUEST_TIMEOUT_MS = 150_000;
 const MAX_OUTPUT_TOKENS = 7_000;

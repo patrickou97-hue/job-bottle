@@ -537,19 +537,19 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/resume/translate/route.ts",
-    mustInclude: ["resolveResumeAiAccess", "access.takeRateSlot", "MIMO_API_KEY", "response_format", "json_object", "hasMatchingStructure", "preserveDeterministicStructure", "不得润色", "Cache-Control", "no-store", "maxDuration = 180", "preferredRegion = \"hkg1\"", "REQUEST_TIMEOUT_MS = 150_000", "chat_template_kwargs", "enable_thinking: false", "invalid_json", "isAbortError", "elapsedMs", "finishReason", "reasoningLength"],
+    mustInclude: ["resolveResumeAiAccess", "access.takeRateSlot", "MIMO_API_KEY", "response_format", "json_object", "hasMatchingStructure", "preserveDeterministicStructure", "不得润色", "Cache-Control", "no-store", "maxDuration = 180", "REQUEST_TIMEOUT_MS = 150_000", "chat_template_kwargs", "enable_thinking: false", "invalid_json", "isAbortError", "elapsedMs", "finishReason", "reasoningLength"],
     mustNotInclude: ["createAdminClient", "SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_", "console.log", "const payload = await response.json().catch"],
     label: "整份简历 AI 翻译在服务端校验登录、频率、结构和确定性日期字段",
   },
   {
     file: "src/app/api/miniprogram/resume/translate/route.ts",
-    mustInclude: ["maxDuration = 180", "preferredRegion = \"hkg1\"", "@/app/api/resume/translate/route"],
+    mustInclude: ["maxDuration = 180", "@/app/api/resume/translate/route"],
     mustNotInclude: ["MIMO_API_KEY", "SUPABASE_SERVICE_ROLE_KEY"],
     label: "小程序兼容翻译入口复用网页翻译实现并保留长任务运行窗口",
   },
   {
     file: "src/app/api/miniprogram/resumes/[id]/translate/route.ts",
-    mustInclude: ["maxDuration = 180", "preferredRegion = \"hkg1\"", "translateResume", "createResumeFromTranslation", "原简历未改动"],
+    mustInclude: ["maxDuration = 180", "translateResume", "createResumeFromTranslation", "原简历未改动"],
     mustNotInclude: ["MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL"],
     label: "小程序旧版简历翻译接口保留原数据契约并复用长任务翻译链路",
   },

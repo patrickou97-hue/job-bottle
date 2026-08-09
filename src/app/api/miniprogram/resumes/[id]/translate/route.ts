@@ -17,7 +17,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 180;
-export const preferredRegion = "hkg1";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
