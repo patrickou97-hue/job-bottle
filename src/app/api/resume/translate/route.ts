@@ -1,11 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { resolveResumeAiAccess } from "@/lib/resume-ai-access";
+import {
+  applyTranslationValues,
+  createTranslationPlan,
+  type TranslationChunk,
+  type TranslationPlan,
+} from "@/lib/resume-translation-plan";
 
 export const maxDuration = 180;
 
 const REQUEST_TIMEOUT_MS = 150_000;
-const MAX_OUTPUT_TOKENS = 7_000;
+const CHUNK_TIMEOUT_MS = 60_000;
+const MAX_CHUNK_OUTPUT_TOKENS = 2_200;
+const TRANSLATION_CONCURRENCY = 2;
 
 const text = (max: number) => z.string().trim().max(max);
 const bullets = z.array(text(1_000)).max(12);
@@ -68,6 +76,7 @@ const inputSchema = z.object({
   sourceLanguage: z.enum(["zh-CN", "en-US"]),
   targetLanguage: z.enum(["zh-CN", "en-US"]),
   resume: resumeSchema,
+  progressMode: z.literal("ndjson").optional(),
 }).strict().refine((value) => value.sourceLanguage !== value.targetLanguage, {
   message: "source and target languages must differ",
 });
@@ -76,6 +85,28 @@ const resultSchema = z.object({
   translated: resumeSchema,
   warnings: z.array(text(500)).max(20),
 }).strict();
+const chunkResultSchema = z.object({
+  translations: z.array(z.object({
+    key: z.string().regex(/^t\d+$/),
+    value: text(1_000),
+  }).strict()).max(24),
+  warnings: z.array(text(500)).max(10),
+}).strict();
+
+type ResumeDraft = z.infer<typeof resumeSchema>;
+type TranslationResult = z.infer<typeof resultSchema>;
+type ChatMessage = { role: "system" | "user"; content: string };
+type ChunkResult = { values: Map<string, string>; warnings: string[] };
+type TranslationProgress = { completed: number; total: number; label: string };
+type ChatCompletionPayload = {
+  choices?: Array<{
+    finish_reason?: string | null;
+    message?: {
+      content?: string | null;
+      reasoning_content?: string | null;
+    };
+  }>;
+};
 
 export async function POST(request: NextRequest) {
   const contentLength = Number(request.headers.get("content-length") ?? 0);
@@ -104,23 +135,28 @@ export async function POST(request: NextRequest) {
   const { data: rateSlot, error: rateSlotError } = await access.takeRateSlot();
   if (rateSlotError) {
     logServerError("resume_translate_rate_slot", rateSlotError);
-    return NextResponse.json({ error: "AI 请求保护服务暂时不可用，请稍后重试" }, { status: 503 });
+    return NextResponse.json({ error: "翻译请求保护服务暂时不可用，请稍后重试。" }, { status: 503 });
   }
   if (!rateSlot) {
     return NextResponse.json({ error: "翻译请求较频繁，请十分钟后再试。" }, { status: 429, headers: { "Retry-After": "600" } });
   }
 
+  const plan = createTranslationPlan(parsed.data.resume);
+  const options = {
+    apiKey,
+    baseUrl,
+    model,
+    sourceLanguage: parsed.data.sourceLanguage,
+    targetLanguage: parsed.data.targetLanguage,
+    plan,
+  };
+
+  if (parsed.data.progressMode === "ndjson") {
+    return createProgressResponse(options, request.signal);
+  }
+
   try {
-    const content = await callMimo({
-      apiKey,
-      baseUrl,
-      model,
-      messages: buildMessages(parsed.data),
-    });
-    const result = parseResult(content, parsed.data.resume);
-    if (!result) {
-      return NextResponse.json({ error: "AI 返回的译文结构无法识别，原简历未改变，请重试" }, { status: 502 });
-    }
+    const result = await executeTranslationPlan(options);
     return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     logServerError("resume_translate_upstream", error);
@@ -128,30 +164,229 @@ export async function POST(request: NextRequest) {
   }
 }
 
-type ChatMessage = { role: "system" | "user"; content: string };
-type ChatCompletionPayload = {
-  choices?: Array<{
-    finish_reason?: string | null;
-    message?: {
-      content?: string | null;
-      reasoning_content?: string | null;
-    };
-  }>;
+function createProgressResponse(
+  options: TranslationExecutionOptions,
+  requestSignal: AbortSignal,
+) {
+  const encoder = new TextEncoder();
+  let abortTranslation = () => {};
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      const translationController = new AbortController();
+      let closed = false;
+      abortTranslation = () => translationController.abort();
+      const abortFromRequest = () => translationController.abort();
+      requestSignal.addEventListener("abort", abortFromRequest, { once: true });
+      const send = (event: unknown) => {
+        if (closed) return;
+        try {
+          controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
+        } catch {
+          closed = true;
+          translationController.abort();
+        }
+      };
+
+      send({
+        type: "start",
+        completed: 0,
+        total: options.plan.chunks.length,
+        label: "正在准备翻译区块",
+      });
+
+      void executeTranslationPlan({
+        ...options,
+        signal: translationController.signal,
+        onProgress: (progress) => send({ type: "progress", ...progress }),
+      }).then((result) => {
+        send({ type: "result", result });
+      }).catch((error) => {
+        logServerError("resume_translate_stream", error);
+        send({ type: "error", error: getUpstreamErrorInfo(error).message });
+      }).finally(() => {
+        requestSignal.removeEventListener("abort", abortFromRequest);
+        if (!closed) {
+          closed = true;
+          controller.close();
+        }
+      });
+    },
+    cancel() {
+      abortTranslation();
+    },
+  });
+
+  return new Response(stream, {
+    status: 200,
+    headers: {
+      "Cache-Control": "no-store, no-transform",
+      "Content-Type": "application/x-ndjson; charset=utf-8",
+      "X-Accel-Buffering": "no",
+    },
+  });
+}
+
+type TranslationExecutionOptions = {
+  apiKey: string;
+  baseUrl: string;
+  model: string;
+  sourceLanguage: "zh-CN" | "en-US";
+  targetLanguage: "zh-CN" | "en-US";
+  plan: TranslationPlan;
+  signal?: AbortSignal;
+  onProgress?: (progress: TranslationProgress) => void;
 };
+
+async function executeTranslationPlan({
+  apiKey,
+  baseUrl,
+  model,
+  sourceLanguage,
+  targetLanguage,
+  plan,
+  signal,
+  onProgress,
+}: TranslationExecutionOptions): Promise<TranslationResult> {
+  if (plan.chunks.length === 0) {
+    return resultSchema.parse({
+      summary: "没有发现需要翻译的文字，已保留原简历内容。",
+      translated: structuredClone(plan.source),
+      warnings: ["没有发现需要翻译的文字。"],
+    });
+  }
+
+  const batchController = new AbortController();
+  const abortFromOutside = () => batchController.abort();
+  signal?.addEventListener("abort", abortFromOutside, { once: true });
+  if (signal?.aborted) batchController.abort();
+  const overallTimeout = setTimeout(() => batchController.abort(), REQUEST_TIMEOUT_MS);
+  const chunkResults: Array<ChunkResult | undefined> = new Array(plan.chunks.length);
+  let nextChunkIndex = 0;
+  let completedChunks = 0;
+
+  const worker = async () => {
+    while (!batchController.signal.aborted) {
+      const chunkIndex = nextChunkIndex++;
+      if (chunkIndex >= plan.chunks.length) return;
+      const chunk = plan.chunks[chunkIndex];
+      const result = await translateChunk({
+        apiKey,
+        baseUrl,
+        model,
+        sourceLanguage,
+        targetLanguage,
+        chunk,
+        signal: batchController.signal,
+      });
+      chunkResults[chunkIndex] = result;
+      completedChunks += 1;
+      onProgress?.({
+        completed: completedChunks,
+        total: plan.chunks.length,
+        label: chunk.label,
+      });
+    }
+  };
+
+  try {
+    await Promise.all(
+      Array.from(
+        { length: Math.min(TRANSLATION_CONCURRENCY, plan.chunks.length) },
+        () => worker(),
+      ),
+    );
+  } catch (error) {
+    batchController.abort();
+    throw error;
+  } finally {
+    clearTimeout(overallTimeout);
+    signal?.removeEventListener("abort", abortFromOutside);
+  }
+
+  if (batchController.signal.aborted && completedChunks < plan.chunks.length) {
+    throw createAbortError();
+  }
+  if (chunkResults.some((result) => !result)) {
+    throw new UpstreamError(502, "invalid_result");
+  }
+
+  const values = new Map<string, string>();
+  const warnings = new Set<string>();
+  chunkResults.forEach((result) => {
+    result?.values.forEach((value, key) => values.set(key, value));
+    result?.warnings.forEach((warning) => warnings.add(warning));
+  });
+
+  let translated;
+  try {
+    translated = applyTranslationValues(plan, values);
+  } catch {
+    throw new UpstreamError(502, "invalid_result");
+  }
+
+  const candidate = {
+    summary: `已按 ${plan.chunks.length} 个区块完成整份简历翻译，共处理 ${plan.leafCount} 项文字。`,
+    translated,
+    warnings: Array.from(warnings).slice(0, 20),
+  };
+  const parsed = resultSchema.safeParse(candidate);
+  if (!parsed.success || !hasMatchingStructure(plan.source, parsed.data.translated)) {
+    throw new UpstreamError(502, "invalid_result");
+  }
+  return parsed.data;
+}
+
+async function translateChunk({
+  apiKey,
+  baseUrl,
+  model,
+  sourceLanguage,
+  targetLanguage,
+  chunk,
+  signal,
+}: {
+  apiKey: string;
+  baseUrl: string;
+  model: string;
+  sourceLanguage: "zh-CN" | "en-US";
+  targetLanguage: "zh-CN" | "en-US";
+  chunk: TranslationChunk;
+  signal: AbortSignal;
+}): Promise<ChunkResult> {
+  const messages = buildChunkMessages(sourceLanguage, targetLanguage, chunk);
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const content = await callMimo({ apiKey, baseUrl, model, messages, signal });
+      const result = parseChunkResult(content, chunk);
+      if (result) return result;
+      if (attempt === 1) throw new UpstreamError(502, "invalid_result");
+    } catch (error) {
+      const retryable = error instanceof UpstreamError
+        && (error.kind === "empty" || error.kind === "invalid_json" || error.kind === "invalid_result");
+      if (!retryable || attempt === 1) throw error;
+    }
+  }
+  throw new UpstreamError(502, "invalid_result");
+}
 
 async function callMimo({
   apiKey,
   baseUrl,
   model,
   messages,
+  signal,
 }: {
   apiKey: string;
   baseUrl: string;
   model: string;
   messages: ChatMessage[];
+  signal: AbortSignal;
 }) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const abortFromBatch = () => controller.abort();
+  signal.addEventListener("abort", abortFromBatch, { once: true });
+  if (signal.aborted) controller.abort();
+  const timeout = setTimeout(() => controller.abort(), CHUNK_TIMEOUT_MS);
   const startedAt = Date.now();
   try {
     const response = await fetch(getChatCompletionsUrl(baseUrl), {
@@ -162,7 +397,7 @@ async function callMimo({
         messages,
         temperature: 0,
         stream: false,
-        max_tokens: MAX_OUTPUT_TOKENS,
+        max_tokens: MAX_CHUNK_OUTPUT_TOKENS,
         chat_template_kwargs: { enable_thinking: false },
         response_format: { type: "json_object" },
       }),
@@ -193,40 +428,51 @@ async function callMimo({
     return content;
   } finally {
     clearTimeout(timeout);
+    signal.removeEventListener("abort", abortFromBatch);
   }
 }
 
-function buildMessages(input: z.infer<typeof inputSchema>): ChatMessage[] {
+function buildChunkMessages(
+  sourceLanguage: "zh-CN" | "en-US",
+  targetLanguage: "zh-CN" | "en-US",
+  chunk: TranslationChunk,
+): ChatMessage[] {
+  const entries = chunk.entries.map(({ key, kind, value }) => ({ key, kind, value }));
   return [
-    { role: "system", content: SYSTEM_PROMPT },
+    { role: "system", content: CHUNK_SYSTEM_PROMPT },
     {
       role: "user",
       content: [
-        `源语言：${input.sourceLanguage}`,
-        `目标语言：${input.targetLanguage}`,
-        "待翻译简历 JSON：",
-        JSON.stringify(input.resume),
-        RESULT_SHAPE,
+        `源语言：${sourceLanguage}`,
+        `目标语言：${targetLanguage}`,
+        `区块：${chunk.label}`,
+        `entries：${JSON.stringify(entries)}`,
+        CHUNK_RESULT_SHAPE,
       ].join("\n"),
     },
   ];
 }
 
-function parseResult(content: string, source: z.infer<typeof resumeSchema>) {
+function parseChunkResult(content: string, chunk: TranslationChunk): ChunkResult | null {
   const candidate = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
   try {
-    const parsed = resultSchema.safeParse(JSON.parse(candidate));
-    if (!parsed.success || !hasMatchingStructure(source, parsed.data.translated)) return null;
-    return {
-      ...parsed.data,
-      translated: preserveDeterministicStructure(source, parsed.data.translated),
-    };
+    const parsed = chunkResultSchema.safeParse(JSON.parse(candidate));
+    if (!parsed.success || parsed.data.translations.length !== chunk.entries.length) return null;
+    const expectedByKey = new Map(chunk.entries.map((entry) => [entry.key, entry]));
+    const values = new Map<string, string>();
+    for (const item of parsed.data.translations) {
+      const expected = expectedByKey.get(item.key);
+      if (!expected || values.has(item.key) || !item.value || item.value.length > expected.maxLength) return null;
+      values.set(item.key, item.value);
+    }
+    if (values.size !== expectedByKey.size) return null;
+    return { values, warnings: parsed.data.warnings };
   } catch {
     return null;
   }
 }
 
-function hasMatchingStructure(source: z.infer<typeof resumeSchema>, translated: z.infer<typeof resumeSchema>) {
+function hasMatchingStructure(source: TranslationPlan["source"], translated: ResumeDraft) {
   const sameBulletShape = (left: { bullets: string[] }[], right: { bullets: string[] }[]) =>
     left.length === right.length && left.every((item, index) => item.bullets.length === right[index]?.bullets.length);
   return source.education.length === translated.education.length
@@ -239,36 +485,6 @@ function hasMatchingStructure(source: z.infer<typeof resumeSchema>, translated: 
     && sameBulletShape(source.certifications, translated.certifications)
     && sameBulletShape(source.languages, translated.languages)
     && sameBulletShape(source.customSections, translated.customSections);
-}
-
-function preserveDeterministicStructure(
-  source: z.infer<typeof resumeSchema>,
-  translated: z.infer<typeof resumeSchema>,
-) {
-  return {
-    ...translated,
-    education: translated.education.map((item, index) => ({
-      ...item,
-      startDate: source.education[index]?.startDate ?? "",
-      endDate: source.education[index]?.endDate ?? "",
-      gpa: source.education[index]?.gpa ?? "",
-    })),
-    work: translated.work.map((item, index) => ({
-      ...item,
-      startDate: source.work[index]?.startDate ?? "",
-      endDate: source.work[index]?.endDate ?? "",
-      current: source.work[index]?.current ?? false,
-    })),
-    projects: translated.projects.map((item, index) => ({
-      ...item,
-      startDate: source.projects[index]?.startDate ?? "",
-      endDate: source.projects[index]?.endDate ?? "",
-    })),
-    customSections: translated.customSections.map((item, index) => ({
-      ...item,
-      date: source.customSections[index]?.date ?? "",
-    })),
-  };
 }
 
 function getChatCompletionsUrl(baseUrl: string) {
@@ -284,8 +500,12 @@ class UpstreamError extends Error {
     public finishReason?: string,
     public reasoningLength?: number,
   ) {
-    super(`MiMo upstream ${status}`);
+    super(`translation upstream ${status}`);
   }
+}
+
+function createAbortError() {
+  return new DOMException("Translation aborted", "AbortError");
 }
 
 function isAbortError(error: unknown) {
@@ -308,28 +528,33 @@ function logServerError(scope: string, error: unknown) {
   console.error(`[${scope}]`, details);
 }
 
-function mapUpstreamError(error: unknown) {
+function getUpstreamErrorInfo(error: unknown) {
   if (isAbortError(error)) {
-    return NextResponse.json({ error: "翻译请求超时，原简历未改动，请重试。" }, { status: 504 });
+    return { status: 504, message: "翻译请求超时，原简历未改动，请重试。" };
   }
   if (error instanceof UpstreamError) {
-    if (error.status === 401 || error.status === 403) return NextResponse.json({ error: "翻译服务鉴权失败，请联系管理员检查配置。" }, { status: 502 });
-    if (error.status === 429) return NextResponse.json({ error: "翻译服务繁忙，请稍后重试。" }, { status: 429 });
-    if (error.kind === "invalid_json") return NextResponse.json({ error: "翻译服务返回异常，原简历未改动，请重试。" }, { status: 502 });
-    if (error.kind === "empty") return NextResponse.json({ error: "译文生成未完成，原简历未改动，请重试。" }, { status: 502 });
+    if (error.status === 401 || error.status === 403) return { status: 502, message: "翻译服务鉴权失败，请联系管理员检查配置。" };
+    if (error.status === 429) return { status: 429, message: "翻译服务繁忙，请稍后重试。" };
+    if (error.kind === "invalid_json") return { status: 502, message: "翻译服务返回异常，原简历未改动，请重试。" };
+    if (error.kind === "invalid_result") return { status: 502, message: "译文未通过结构校验，原简历未改动，请重试。" };
+    if (error.kind === "empty") return { status: 502, message: "译文生成未完成，原简历未改动，请重试。" };
   }
-  return NextResponse.json({ error: "翻译暂时不可用，原简历未改动。" }, { status: 502 });
+  return { status: 502, message: "翻译暂时不可用，原简历未改动。" };
 }
 
-const RESULT_SHAPE = `只返回以下严格 JSON，不要 Markdown：
-{"summary":"string","translated":{"title":"string","targetRole":"string","jobTarget":"string","basics":{"name":"string","englishName":"string","city":"string","targetRole":"string"},"education":[{"school":"string","degree":"string","major":"string","startDate":"string","endDate":"string","gpa":"string","courses":"string","honors":"string"}],"work":[{"company":"string","title":"string","location":"string","startDate":"string","endDate":"string","current":false,"bullets":["string"]}],"projects":[{"name":"string","role":"string","startDate":"string","endDate":"string","bullets":["string"],"keywords":"string"}],"skills":[{"category":"string","skills":["string"]}],"campus":[{"title":"string","bullets":["string"]}],"awards":[{"title":"string","bullets":["string"]}],"certifications":[{"title":"string","bullets":["string"]}],"languages":[{"title":"string","bullets":["string"]}],"customSections":[{"title":"string","role":"string","date":"string","bullets":["string"]}]},"warnings":["string"]}`;
+function mapUpstreamError(error: unknown) {
+  const info = getUpstreamErrorInfo(error);
+  return NextResponse.json({ error: info.message }, { status: info.status });
+}
 
-const SYSTEM_PROMPT = `你是严谨的双语简历翻译器。把用户提供的整份结构化简历翻译成目标语言并返回严格 JSON。
+const CHUNK_RESULT_SHAPE = `只返回以下严格 JSON，不要 Markdown：
+{"translations":[{"key":"t0","value":"译文"}],"warnings":["无法确认的专有名词"]}`;
+
+const CHUNK_SYSTEM_PROMPT = `你是严谨的双语简历翻译器。用户会提供一个简历文字区块 entries。
 规则：
-1. 只翻译现有文字，不新增、删除、合并、拆分或重排任何经历、项目、技能、bullet 或模块。
-2. 保留所有事实、数字、日期、GPA、组织、岗位层级、技术名词和责任边界；不得润色、夸大或补写成果。
-3. 公司、学校、专业、证书等专有名词有明确通行译名时使用通行译名；无法确认时保留原文并写入 warnings。
-4. 中文转英文时使用简洁职业表达；英文转中文时使用自然、克制的简历语言。不要逐字硬译，也不要改变事实。
-5. name 与 englishName 均保留：有明确英文名时用于 englishName；无法确认姓名译法时保留原文，不自行创造英文名。
-6. startDate、endDate、date、current 和 GPA 原样返回。空字符串保持为空。
-7. 始终返回完整 JSON，不输出 Markdown、代码块或额外解释。`;
+1. 逐项翻译每个 value，只返回同样数量的 translations；key 必须原样返回且不得新增、遗漏、重复或改序。
+2. kind 只用于说明文字类型，不需要翻译或返回。
+3. 保留所有事实、数字、组织、岗位层级、技术名词和责任边界；不得润色、夸大、补写、合并或拆分内容。
+4. 公司、学校、专业、证书等有明确通行译名时使用通行译名；无法确认时保留原文并写入 warnings。
+5. 中文转英文使用简洁职业表达，英文转中文使用自然克制的简历语言；空值不会出现在输入中。
+6. 始终返回严格 JSON，不输出 Markdown、代码块或额外解释。`;

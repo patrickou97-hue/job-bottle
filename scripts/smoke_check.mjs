@@ -513,7 +513,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/resume/ResumeBuilderClient.tsx",
-    mustInclude: ["ResumeCreateDialog", "ResumeImportDialog", "createResumeFromImport", "createResumeFromTranslation", "requestResumeTranslation", "resume_import_created", "resume_translation_created", "review_mode", "本地识别结果", "复核结果", "导入简历", "新建简历", "转为英文", "转为中文", "原简历未改动", "showImportDialog", "showCreateDialog", "deletedResumeIdsRef", "await cloudSaveWorkerRef.current", "再次点击“删除”以确认", "取消翻译"],
+    mustInclude: ["ResumeCreateDialog", "ResumeImportDialog", "createResumeFromImport", "createResumeFromTranslation", "requestResumeTranslation", "resume_import_created", "resume_translation_created", "review_mode", "本地识别结果", "复核结果", "导入简历", "新建简历", "转为英文", "转为中文", "原简历未改动", "showImportDialog", "showCreateDialog", "deletedResumeIdsRef", "await cloudSaveWorkerRef.current", "再次点击“删除”以确认", "取消翻译", "translationProgress", "role=\"progressbar\"", "aria-valuenow", "已完成", "原简历不会改动", "useReducedMotion"],
     mustNotInclude: ["router.refresh()", "window.location.reload()"],
     label: "简历制作器接入语言新建、自动分配导入模板和不覆盖原文的 AI 双语译本",
   },
@@ -531,15 +531,21 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/lib/resume-translation.ts",
-    mustInclude: ["createResumeTranslationSource", "requestResumeTranslation", "createResumeFromTranslation", "getEquivalentTemplateForLanguage", "linkedJobId: null", "photoDataUrl", "原简历未改动", "TRANSLATION_TIMEOUT_MS = 165_000"],
+    mustInclude: ["createResumeTranslationSource", "requestResumeTranslation", "createResumeFromTranslation", "getEquivalentTemplateForLanguage", "linkedJobId: null", "photoDataUrl", "原简历未改动", "TRANSLATION_TIMEOUT_MS = 165_000", "ResumeTranslationProgress", "progressMode", "application/x-ndjson", "readTranslationProgressStream"],
     mustNotInclude: ["MIMO_API_KEY", "SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_"],
     label: "整份简历翻译只发送可翻译结构并生成保留精确联系方式的独立副本",
   },
   {
     file: "src/app/api/resume/translate/route.ts",
-    mustInclude: ["resolveResumeAiAccess", "access.takeRateSlot", "MIMO_API_KEY", "response_format", "json_object", "hasMatchingStructure", "preserveDeterministicStructure", "不得润色", "Cache-Control", "no-store", "maxDuration = 180", "REQUEST_TIMEOUT_MS = 150_000", "chat_template_kwargs", "enable_thinking: false", "invalid_json", "isAbortError", "elapsedMs", "finishReason", "reasoningLength"],
-    mustNotInclude: ["createAdminClient", "SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_", "console.log", "const payload = await response.json().catch"],
-    label: "整份简历 AI 翻译在服务端校验登录、频率、结构和确定性日期字段",
+    mustInclude: ["resolveResumeAiAccess", "access.takeRateSlot", "MIMO_API_KEY", "response_format", "json_object", "hasMatchingStructure", "createTranslationPlan", "applyTranslationValues", "TRANSLATION_CONCURRENCY = 2", "CHUNK_TIMEOUT_MS = 60_000", "progressMode", "application/x-ndjson", "translations", "structuredClone", "不得润色", "Cache-Control", "no-store", "maxDuration = 180", "REQUEST_TIMEOUT_MS = 150_000", "chat_template_kwargs", "enable_thinking: false", "invalid_json", "invalid_result", "isAbortError", "elapsedMs", "finishReason", "reasoningLength"],
+    mustNotInclude: ["createAdminClient", "SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_", "console.log", "const payload = await response.json().catch", "待翻译简历 JSON"],
+    label: "整份简历 AI 翻译在一次鉴权和限流内用短键分块并原子合并",
+  },
+  {
+    file: "src/lib/resume-translation-plan.ts",
+    mustInclude: ["MAX_TRANSLATION_CHUNK_SOURCE_CHARS = 1_800", "MAX_TRANSLATION_CHUNK_ENTRIES = 24", "createTranslationPlan", "applyTranslationValues", "key: `t${keyIndex++}`", "structuredClone", "education", "work", "projects", "skills", "campus", "awards", "certifications", "languages", "customSections"],
+    mustNotInclude: ["MIMO_API_KEY", "SUPABASE_SERVICE_ROLE_KEY", "fetch("],
+    label: "翻译计划只暴露短键文字叶子并在本地恢复原结构",
   },
   {
     file: "src/app/api/miniprogram/resume/translate/route.ts",
@@ -1835,6 +1841,9 @@ async function checkResumeImportProbe() {
     .replace("@/lib/resume", resumeUrl);
   const translationModule = typescript.transpileModule(translationSource, { compilerOptions }).outputText;
   const translator = await import(`data:text/javascript;base64,${Buffer.from(translationModule).toString("base64")}`);
+  const translationPlanSource = readFileSync(new URL("src/lib/resume-translation-plan.ts", ROOT), "utf8");
+  const translationPlanModule = typescript.transpileModule(translationPlanSource, { compilerOptions }).outputText;
+  const translationPlanner = await import(`data:text/javascript;base64,${Buffer.from(translationPlanModule).toString("base64")}`);
   const sourceText = `王小星
 求职意向：产品经理实习生
 13800000000 stella@example.com https://github.com/stella
@@ -1902,6 +1911,50 @@ Product: User Research, Figma, SQL`;
   if (serializedSource.includes("private-photo") || serializedSource.includes("private-profile") || serializedSource.includes("stella@example.com") || serializedSource.includes("13800000000")) {
     throw new Error("简历翻译探针失败：联系方式、照片或链接进入 AI 翻译载荷");
   }
+  const translationPlan = translationPlanner.createTranslationPlan(translatable);
+  const plannedEntries = translationPlan.chunks.flatMap((chunk) => chunk.entries);
+  if (
+    plannedEntries.length !== translationPlan.leafCount
+    || plannedEntries.some((entry, index) => entry.key !== `t${index}`)
+  ) {
+    throw new Error("简历翻译探针失败：短键计划不连续或文字叶子数量不一致");
+  }
+  if (plannedEntries.some((entry) => {
+    const path = entry.path.join(".");
+    return path === "basics.name"
+      || path === "basics.englishName"
+      || path.endsWith(".startDate")
+      || path.endsWith(".endDate")
+      || path.endsWith(".date")
+      || path.endsWith(".gpa")
+      || path.endsWith(".current");
+  })) {
+    throw new Error("简历翻译探针失败：姓名、日期或 GPA 进入模型翻译区块");
+  }
+  const translatedValues = new Map(plannedEntries.map((entry) => [entry.key, `EN:${entry.value}`]));
+  const atomicallyTranslated = translationPlanner.applyTranslationValues(translationPlan, translatedValues);
+  if (
+    atomicallyTranslated.education[0]?.startDate !== translatable.education[0]?.startDate
+    || atomicallyTranslated.education[0]?.gpa !== translatable.education[0]?.gpa
+    || atomicallyTranslated.basics.name !== translatable.basics.name
+    || atomicallyTranslated.work[0]?.title !== `EN:${translatable.work[0]?.title}`
+  ) {
+    throw new Error("简历翻译探针失败：原子合并改动了确定性字段或漏写译文");
+  }
+  const largeTranslationSource = structuredClone(translatable);
+  largeTranslationSource.work = Array.from({ length: 4 }, (_, workIndex) => ({
+    ...structuredClone(translatable.work[0]),
+    company: `公司 ${workIndex + 1}`,
+    bullets: Array.from({ length: 12 }, (_, bulletIndex) => `${workIndex}-${bulletIndex} ${"工作内容".repeat(34)}`),
+  }));
+  const largePlan = translationPlanner.createTranslationPlan(largeTranslationSource);
+  if (
+    largePlan.chunks.length < 2
+    || largePlan.chunks.some((chunk) => chunk.entries.length > translationPlanner.MAX_TRANSLATION_CHUNK_ENTRIES)
+    || largePlan.chunks.some((chunk) => chunk.entries.length > 1 && chunk.entries.reduce((sum, entry) => sum + entry.value.length, 0) > translationPlanner.MAX_TRANSLATION_CHUNK_SOURCE_CHARS)
+  ) {
+    throw new Error("简历翻译探针失败：长简历没有按条目和字符上限分块");
+  }
   const translatedDraft = structuredClone(translatable);
   translatedDraft.title = "Stella Wang · Product Resume";
   translatedDraft.targetRole = "Product Manager Intern";
@@ -1915,7 +1968,7 @@ Product: User Research, Figma, SQL`;
   if (translatedDocument.content.basics.phone !== document.content.basics.phone || translatedDocument.content.basics.photoDataUrl !== document.content.basics.photoDataUrl) {
     throw new Error("简历翻译探针失败：精确联系方式或照片未在本地副本中保留");
   }
-  console.log("✓ 简历导入与翻译探针通过：语言识别、模板分配、隐私载荷和独立译本转换正常");
+  console.log("✓ 简历导入与翻译探针通过：语言识别、短键分块、确定性字段、原子合并和独立译本正常");
 }
 
 async function checkApplicationUrlProbe() {

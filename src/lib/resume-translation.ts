@@ -46,10 +46,10 @@ export type ResumeTranslationDraft = {
     keywords: string;
   }>;
   skills: Array<{ category: string; skills: string[] }>;
-  campus: Array<{ title: string; bullets: string[] }>;
-  awards: Array<{ title: string; bullets: string[] }>;
-  certifications: Array<{ title: string; bullets: string[] }>;
-  languages: Array<{ title: string; bullets: string[] }>;
+  campus: Array<{ title: string; role?: string; date?: string; bullets: string[] }>;
+  awards: Array<{ title: string; role?: string; date?: string; bullets: string[] }>;
+  certifications: Array<{ title: string; role?: string; date?: string; bullets: string[] }>;
+  languages: Array<{ title: string; role?: string; date?: string; bullets: string[] }>;
   customSections: Array<{ title: string; role?: string; date?: string; bullets: string[] }>;
 };
 
@@ -57,6 +57,12 @@ export type ResumeTranslationResult = {
   summary: string;
   translated: ResumeTranslationDraft;
   warnings: string[];
+};
+
+export type ResumeTranslationProgress = {
+  completed: number;
+  total: number;
+  label: string;
 };
 
 export function createResumeTranslationSource(resume: ResumeDocument): ResumeTranslationDraft {
@@ -86,6 +92,7 @@ export async function requestResumeTranslation(
   resume: ResumeDocument,
   targetLanguage: ResumeLanguage,
   externalSignal?: AbortSignal,
+  onProgress?: (progress: ResumeTranslationProgress) => void,
 ) {
   const controller = new AbortController();
   const cancelFromOutside = () => controller.abort("cancelled");
@@ -99,9 +106,13 @@ export async function requestResumeTranslation(
         sourceLanguage: targetLanguage === "en-US" ? "zh-CN" : "en-US",
         targetLanguage,
         resume: createResumeTranslationSource(resume),
+        progressMode: onProgress ? "ndjson" : undefined,
       }),
       signal: controller.signal,
     });
+    if (response.ok && response.headers.get("content-type")?.includes("application/x-ndjson")) {
+      return await readTranslationProgressStream(response, onProgress);
+    }
     const payload = await response.json().catch(() => null) as ResumeTranslationResult | { error?: string } | null;
     if (!response.ok) {
       throw new Error(payload && "error" in payload && payload.error ? payload.error : "翻译暂时不可用，原简历未改动。");
@@ -120,6 +131,61 @@ export async function requestResumeTranslation(
     window.clearTimeout(timeout);
     externalSignal?.removeEventListener("abort", cancelFromOutside);
   }
+}
+
+async function readTranslationProgressStream(
+  response: Response,
+  onProgress?: (progress: ResumeTranslationProgress) => void,
+) {
+  if (!response.body) throw new Error("翻译进度连接未建立，原简历未改动，请重试。");
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let result: ResumeTranslationResult | null = null;
+
+  const consumeLine = (line: string) => {
+    if (!line.trim()) return;
+    let event: unknown;
+    try {
+      event = JSON.parse(line);
+    } catch {
+      throw new Error("翻译进度格式异常，原简历未改动，请重试。");
+    }
+    if (!event || typeof event !== "object" || !("type" in event)) return;
+    const payload = event as Record<string, unknown>;
+    if (payload.type === "start" || payload.type === "progress") {
+      if (
+        typeof payload.completed === "number"
+        && typeof payload.total === "number"
+        && typeof payload.label === "string"
+      ) {
+        onProgress?.({
+          completed: payload.completed,
+          total: payload.total,
+          label: payload.label,
+        });
+      }
+      return;
+    }
+    if (payload.type === "error" && typeof payload.error === "string") {
+      throw new Error(payload.error);
+    }
+    if (payload.type === "result" && isResumeTranslationResult(payload.result)) {
+      result = payload.result;
+    }
+  };
+
+  while (true) {
+    const { value, done } = await reader.read();
+    buffer += decoder.decode(value, { stream: !done });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    lines.forEach(consumeLine);
+    if (done) break;
+  }
+  consumeLine(buffer);
+  if (!result) throw new Error("译文生成未完成，原简历未改动，请重试。");
+  return result;
 }
 
 export function createResumeFromTranslation(
