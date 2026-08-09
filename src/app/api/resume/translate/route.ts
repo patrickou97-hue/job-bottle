@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { resolveResumeAiAccess } from "@/lib/resume-ai-access";
 
-const REQUEST_TIMEOUT_MS = 32_000;
+export const maxDuration = 180;
+export const preferredRegion = "hkg1";
+
+const REQUEST_TIMEOUT_MS = 150_000;
 const MAX_OUTPUT_TOKENS = 7_000;
 
 const text = (max: number) => z.string().trim().max(max);
@@ -127,6 +130,15 @@ export async function POST(request: NextRequest) {
 }
 
 type ChatMessage = { role: "system" | "user"; content: string };
+type ChatCompletionPayload = {
+  choices?: Array<{
+    finish_reason?: string | null;
+    message?: {
+      content?: string | null;
+      reasoning_content?: string | null;
+    };
+  }>;
+};
 
 async function callMimo({
   apiKey,
@@ -141,6 +153,7 @@ async function callMimo({
 }) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const startedAt = Date.now();
   try {
     const response = await fetch(getChatCompletionsUrl(baseUrl), {
       method: "POST",
@@ -151,15 +164,33 @@ async function callMimo({
         temperature: 0,
         stream: false,
         max_tokens: MAX_OUTPUT_TOKENS,
+        chat_template_kwargs: { enable_thinking: false },
         response_format: { type: "json_object" },
       }),
       signal: controller.signal,
       cache: "no-store",
     });
-    if (!response.ok) throw new UpstreamError(response.status);
-    const payload = await response.json().catch(() => null) as { choices?: { message?: { content?: string } }[] } | null;
-    const content = payload?.choices?.[0]?.message?.content;
-    if (!content?.trim()) throw new UpstreamError(502, "empty");
+    if (!response.ok) throw new UpstreamError(response.status, "http", Date.now() - startedAt);
+
+    let payload: ChatCompletionPayload;
+    try {
+      payload = await response.json() as ChatCompletionPayload;
+    } catch (error) {
+      if (isAbortError(error)) throw error;
+      throw new UpstreamError(502, "invalid_json", Date.now() - startedAt);
+    }
+
+    const choice = payload.choices?.[0];
+    const content = choice?.message?.content;
+    if (!content?.trim()) {
+      throw new UpstreamError(
+        502,
+        "empty",
+        Date.now() - startedAt,
+        choice?.finish_reason ?? undefined,
+        choice?.message?.reasoning_content?.length ?? 0,
+      );
+    }
     return content;
   } finally {
     clearTimeout(timeout);
@@ -247,30 +278,46 @@ function getChatCompletionsUrl(baseUrl: string) {
 }
 
 class UpstreamError extends Error {
-  constructor(public status: number, public kind = "http") {
+  constructor(
+    public status: number,
+    public kind = "http",
+    public elapsedMs?: number,
+    public finishReason?: string,
+    public reasoningLength?: number,
+  ) {
     super(`MiMo upstream ${status}`);
   }
 }
 
+function isAbortError(error: unknown) {
+  return error instanceof Error && error.name === "AbortError";
+}
+
 function logServerError(scope: string, error: unknown) {
+  const upstreamError = error instanceof UpstreamError ? error : null;
   const details = error && typeof error === "object"
     ? {
         code: "code" in error ? String(error.code) : undefined,
         name: "name" in error ? String(error.name) : undefined,
         status: "status" in error ? Number(error.status) : undefined,
+        kind: upstreamError?.kind,
+        elapsedMs: upstreamError?.elapsedMs,
+        finishReason: upstreamError?.finishReason,
+        reasoningLength: upstreamError?.reasoningLength,
       }
     : {};
   console.error(`[${scope}]`, details);
 }
 
 function mapUpstreamError(error: unknown) {
-  if (error instanceof DOMException && error.name === "AbortError") {
+  if (isAbortError(error)) {
     return NextResponse.json({ error: "翻译请求超时，原简历未改动，请重试。" }, { status: 504 });
   }
   if (error instanceof UpstreamError) {
-    if (error.status === 401 || error.status === 403) return NextResponse.json({ error: "AI 服务鉴权失败，请联系管理员检查配置" }, { status: 502 });
-    if (error.status === 429) return NextResponse.json({ error: "AI 服务繁忙，请稍后重试" }, { status: 429 });
-    if (error.kind === "empty") return NextResponse.json({ error: "AI 未返回译文，原简历未改变，请重试" }, { status: 502 });
+    if (error.status === 401 || error.status === 403) return NextResponse.json({ error: "翻译服务鉴权失败，请联系管理员检查配置。" }, { status: 502 });
+    if (error.status === 429) return NextResponse.json({ error: "翻译服务繁忙，请稍后重试。" }, { status: 429 });
+    if (error.kind === "invalid_json") return NextResponse.json({ error: "翻译服务返回异常，原简历未改动，请重试。" }, { status: 502 });
+    if (error.kind === "empty") return NextResponse.json({ error: "译文生成未完成，原简历未改动，请重试。" }, { status: 502 });
   }
   return NextResponse.json({ error: "翻译暂时不可用，原简历未改动。" }, { status: 502 });
 }

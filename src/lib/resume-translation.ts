@@ -6,6 +6,8 @@ import {
   type ResumeLanguage,
 } from "@/lib/resume";
 
+const TRANSLATION_TIMEOUT_MS = 165_000;
+
 export type ResumeTranslationDraft = {
   title: string;
   targetRole: string;
@@ -88,7 +90,7 @@ export async function requestResumeTranslation(
   const controller = new AbortController();
   const cancelFromOutside = () => controller.abort("cancelled");
   externalSignal?.addEventListener("abort", cancelFromOutside, { once: true });
-  const timeout = window.setTimeout(() => controller.abort(), 38_000);
+  const timeout = window.setTimeout(() => controller.abort(), TRANSLATION_TIMEOUT_MS);
   try {
     const response = await fetch("/api/resume/translate", {
       method: "POST",
