@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>拾星 AI 批次失败零写入测试</title>
+  </head>
+  <body>
+    <main>
+      <section id="emptyState" hidden></section>
+      <section id="readyState" hidden>
+        <select id="resumeSelect"></select>
+        <label><input type="radio" name="fillMode" value="merge" />只填空白项</label>
+        <label><input type="radio" name="fillMode" value="overwrite" />覆盖已有内容</label>
+        <label><input type="radio" name="fillMode" value="ai" checked />AI 智能填写</label>
+        <p id="modeHint"></p>
+        <button id="fillButton" type="button">AI 智能填写当前页面</button>
+        <p id="syncMeta"></p>
+      </section>
+      <section id="resultPanel" hidden>
+        <strong id="resultTitle"></strong>
+        <p id="resultText"></p>
+        <details id="unmatchedDetails" hidden><ul id="unmatchedList"></ul></details>
+      </section>
+      <section id="progressPanel" hidden>
+        <p id="progressAnnouncement"></p>
+        <span id="progressElapsed"></span>
+        <span id="progressLabel"></span>
+        <strong id="progressValue"></strong>
+        <div id="progressMeter"><span id="progressMeterFill"></span></div>
+        <div data-step="extract"><p></p></div>
+        <div data-step="match"><p></p></div>
+        <div data-step="fill"><p></p></div>
+        <div data-step="summary"><p></p></div>
+      </section>
+      <button id="openSync" type="button"></button>
+      <button id="openSyncFromEmpty" type="button"></button>
+      <button id="openGuide" type="button"></button>
+      <button id="clearData" type="button"></button>
+    </main>
+    <pre id="result">pending</pre>
+    <script>
+      const resume = {
+        id: "resume-batch-failure",
+        title: "批次失败测试简历",
+        targetRole: "产品运营",
+        content: { basics: { name: "王小星" }, education: [], work: [], projects: [], skills: [] },
+      };
+      const storage = {
+        starjobResumes: [resume],
+        activeResumeId: resume.id,
+        fillMode: "ai",
+        matchToken: "fixture-token",
+        matchTokenExpiresAt: "2099-01-01T00:00:00.000Z",
+        aiMatchingAvailable: true,
+      };
+      let modelCalls = 0;
+      let pageWriteCalls = 0;
+
+      const fields = Array.from({ length: 130 }, (_, index) => ({
+        fieldKey: `field-${index}`,
+        label: `补充问题 ${index}`,
+        attributes: `field-${index}`,
+        context: "补充信息",
+        inputType: "text",
+        deterministicKey: null,
+        deterministicConfidence: 0,
+        recordIndex: null,
+        options: [],
+      }));
+
+      window.chrome = {
+        storage: {
+          local: {
+            get: async () => ({ ...storage }),
+            set: async (values) => Object.assign(storage, values),
+            remove: async (keys) => {
+              for (const key of Array.isArray(keys) ? keys : [keys]) delete storage[key];
+            },
+          },
+        },
+        tabs: {
+          query: async () => [{ id: 9, url: "https://ats.example/apply" }],
+          create: async () => ({}),
+        },
+        scripting: {
+          executeScript: async ({ target }) => {
+            if (!target.allFrames) {
+              pageWriteCalls += 1;
+              return [];
+            }
+            return [{ frameId: 41, result: { scanned: fields.length, identified: 0, fields, sensitive: 0 } }];
+          },
+        },
+      };
+
+      function waitFor(predicate, timeoutMs = 5000) {
+        const startedAt = Date.now();
+        return new Promise((resolve, reject) => {
+          const check = () => {
+            if (predicate()) {
+              resolve();
+              return;
+            }
+            if (Date.now() - startedAt >= timeoutMs) {
+              reject(new Error("fixture wait timeout"));
+              return;
+            }
+            setTimeout(check, 10);
+          };
+          check();
+        });
+      }
+
+      async function runFixture() {
+        const popupSource = await fetch("../starjob-resume-assistant/popup.js").then((response) => response.text());
+        window.fetch = async (_url, options) => {
+          const requestIndex = modelCalls;
+          modelCalls += 1;
+          const body = JSON.parse(options.body);
+          if (requestIndex === 1) {
+            return { ok: false, json: async () => ({ error: "模拟批次失败" }) };
+          }
+          return {
+            ok: true,
+            json: async () => ({
+              mappings: body.fields.map((field) => ({
+                fieldKey: field.fieldKey,
+                value: "来自简历的测试值",
+                confidence: 0.99,
+                basis: "resume",
+              })),
+            }),
+          };
+        };
+
+        window.eval(popupSource);
+        await waitFor(() => document.querySelector("#resumeSelect").value === resume.id);
+        document.querySelector('input[name="fillMode"][value="ai"]').click();
+        document.querySelector("#fillButton").click();
+        await waitFor(() => document.querySelector("#resultTitle").textContent === "本次填写未完成");
+
+        const actual = {
+          modelCalls,
+          pageWriteCalls,
+          title: document.querySelector("#resultTitle").textContent,
+          text: document.querySelector("#resultText").textContent,
+          summaryText: document.querySelector('[data-step="summary"] p').textContent,
+        };
+        const passed = actual.modelCalls === 3
+          && actual.pageWriteCalls === 0
+          && actual.title === "本次填写未完成"
+          && actual.text === "模拟批次失败"
+          && actual.summaryText.includes("填写中断");
+        document.querySelector("#result").textContent = JSON.stringify({ passed, actual });
+        document.title = passed
+          ? "STARJOB_AI_AUTOFILL_BATCH_FAILURE_TEST_PASS"
+          : "STARJOB_AI_AUTOFILL_BATCH_FAILURE_TEST_FAIL";
+      }
+
+      runFixture().catch((error) => {
+        document.querySelector("#result").textContent = JSON.stringify({ passed: false, error: String(error), stack: error?.stack });
+        document.title = "STARJOB_AI_AUTOFILL_BATCH_FAILURE_TEST_FAIL";
+      });
+    </script>
+  </body>
+</html>

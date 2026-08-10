@@ -45,21 +45,23 @@ export function AiTaskProgress({
 
   return (
     <motion.div
-      aria-live="polite"
-      className={`${floating ? "fixed bottom-4 z-40 w-[min(calc(100%-2rem),540px)] sm:bottom-6" : "w-full"} border border-[color:var(--line-strong)] bg-[color:var(--surface-read-bg-strong)] px-4 py-3 shadow-[0_18px_48px_rgba(0,0,0,0.22)] sm:px-5 sm:py-4 ${className}`}
+      className={`${floating ? "fixed bottom-[var(--app-safe-bottom)] z-40 w-[min(calc(100%-2rem),540px)] sm:bottom-6" : "w-full"} border border-[color:var(--line-strong)] bg-[color:var(--surface-read-bg-strong)] px-4 py-3 shadow-[0_18px_48px_rgba(0,0,0,0.22)] sm:px-5 sm:py-4 ${className}`}
       style={floating ? { left: "50%", x: "-50%" } : undefined}
       initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: prefersReducedMotion ? 0 : 6 }}
       transition={{ duration: prefersReducedMotion ? 0 : 0.2, ease: "easeOut" }}
     >
+      <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {isDeterminate ? `${label}，已完成 ${safeCompleted} / ${safeTotal} 个处理区块` : label}
+      </p>
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-ink-primary">{title}</p>
           <p className="mt-1 text-xs leading-5 text-ink-muted">{label}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <span className="text-xs font-semibold tabular-nums text-[color:var(--aurora)]">
+          <span className="text-xs font-semibold tabular-nums text-[color:var(--aurora)]" aria-hidden="true">
             {percent === null ? `已用时 ${elapsedLabel}` : `${percent}%`}
           </span>
           {onCancel ? (
@@ -82,7 +84,7 @@ export function AiTaskProgress({
         aria-valuenow={percent ?? undefined}
         aria-valuetext={isDeterminate
           ? `已完成 ${safeCompleted} / ${safeTotal} 个处理区块`
-          : `${label}，已用时 ${elapsedLabel}`}
+          : label}
         className="mt-3 h-1.5 overflow-hidden rounded-full bg-[color:var(--surface-hover-bg)]"
       >
         {isDeterminate ? (

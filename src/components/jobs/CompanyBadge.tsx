@@ -25,7 +25,7 @@ export function CompanyBadge({
     >
       {logoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={logoUrl} alt={`${companyName} 标识`} className="size-full object-cover" />
+        <img src={logoUrl} alt={`${companyName} 标识`} width={sizePx} height={sizePx} className="size-full object-cover" />
       ) : (
         <span
           className="flex min-w-0 items-center justify-center overflow-hidden text-center"

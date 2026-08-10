@@ -1,6 +1,9 @@
 "use client";
 
+import { normalizeResumeImportText } from "@/lib/resume-import-text";
+
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
+const MAX_PDF_TEXT_LENGTH = 60_000;
 const SUPPORTED_EXTENSIONS = ["pdf", "docx", "txt"] as const;
 
 export async function extractResumeFileText(file: File) {
@@ -28,19 +31,42 @@ async function extractPdfText(arrayBuffer: ArrayBuffer) {
     "pdfjs-dist/legacy/build/pdf.worker.min.mjs",
     import.meta.url,
   ).toString();
-  const document = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
-  const pages: string[] = [];
-  for (let pageNumber = 1; pageNumber <= Math.min(document.numPages, 12); pageNumber += 1) {
-    const page = await document.getPage(pageNumber);
-    const content = await page.getTextContent();
-    pages.push(content.items.map((item) => {
-      if (!("str" in item)) return "";
-      return `${item.str}${"hasEOL" in item && item.hasEOL ? "\n" : " "}`;
-    }).join(""));
+  const loadingTask = pdfjs.getDocument({
+    data: new Uint8Array(arrayBuffer),
+    // Resume PDFs are untrusted uploads. This code only calls getTextContent
+    // and never creates PDF.js annotation/scripting layers; strict parsing also
+    // avoids recovering malformed content after a parser error.
+    stopAtErrors: true,
+  });
+  try {
+    const document = await loadingTask.promise;
+    const pages: string[] = [];
+    let extractedLength = 0;
+    for (let pageNumber = 1; pageNumber <= Math.min(document.numPages, 12); pageNumber += 1) {
+      const page = await document.getPage(pageNumber);
+      const content = await page.getTextContent();
+      const pageParts: string[] = [];
+      for (const item of content.items) {
+        if (!("str" in item)) continue;
+        const separator = "hasEOL" in item && item.hasEOL ? "\n" : " ";
+        const remaining = MAX_PDF_TEXT_LENGTH - extractedLength;
+        if (remaining <= 0) break;
+        const part = `${item.str}${separator}`.slice(0, remaining);
+        pageParts.push(part);
+        extractedLength += part.length;
+      }
+      pages.push(pageParts.join(""));
+      page.cleanup();
+      if (extractedLength >= MAX_PDF_TEXT_LENGTH) break;
+    }
+    return normalizeText(pages.join("\n"));
+  } catch {
+    throw new Error("PDF 文字读取失败，请另存为标准 PDF，或改用 DOCX / TXT 后重试");
+  } finally {
+    await loadingTask.destroy().catch(() => undefined);
   }
-  return normalizeText(pages.join("\n"));
 }
 
 function normalizeText(value: string) {
-  return value.replace(/\u0000/g, "").replace(/\r\n?/g, "\n").replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+  return normalizeResumeImportText(value, MAX_PDF_TEXT_LENGTH);
 }

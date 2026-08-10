@@ -11,7 +11,7 @@ import { resumeContentForStorage } from "@/lib/miniprogram-resume";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 45;
+export const maxDuration = 90;
 
 export async function POST(request: NextRequest) {
   const identity = authenticateMiniProgramRequest(request);
@@ -40,6 +40,7 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   }
+  if (request.signal.aborted) return cancelledResponse();
 
   try {
     const local = parseResumeTextLocally(sourceText, fileName);
@@ -61,6 +62,7 @@ export async function POST(request: NextRequest) {
             sourceText: local.normalizedText,
             localDraft: local.draft,
           }),
+          signal: request.signal,
         },
       );
       const reviewResponse = await reviewResumeImport(reviewRequest);
@@ -80,12 +82,14 @@ export async function POST(request: NextRequest) {
           { status: reviewResponse.status || 502 },
         );
       }
+      if (request.signal.aborted) return cancelledResponse();
       draft = reviewPayload.draft;
       summary = reviewPayload.summary ?? summary;
       warnings = reviewPayload.warnings ?? warnings;
     }
 
     const resume = createResumeFromImport(draft);
+    if (request.signal.aborted) return cancelledResponse();
     const admin = createAdminClient();
     const { data, error } = await admin
       .from("resumes")
@@ -105,6 +109,7 @@ export async function POST(request: NextRequest) {
         updated_at: resume.updatedAt,
       })
       .select("*")
+      .abortSignal(request.signal)
       .single();
     if (error) throw error;
 
@@ -120,6 +125,7 @@ export async function POST(request: NextRequest) {
       { status: 201, headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {
+    if (request.signal.aborted) return cancelledResponse();
     console.error("[miniprogram_resume_import]", {
       code:
         error && typeof error === "object" && "code" in error
@@ -131,4 +137,11 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
+}
+
+function cancelledResponse() {
+  return NextResponse.json(
+    { error: "本次导入已取消，未创建简历。" },
+    { status: 499, headers: { "Cache-Control": "no-store" } },
+  );
 }

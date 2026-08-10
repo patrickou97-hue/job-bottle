@@ -49,13 +49,24 @@
     <view class="editor-toolbar">
       <view class="editor-title-copy">
         <text class="editor-title">{{resume.title || '未命名简历'}}</text>
-        <text class="editor-status {{dirty ? 'editor-status-dirty' : ''}}">{{saving ? '正在保存…' : dirty ? '有未保存修改' : '已同步云端'}}</text>
+        <text class="editor-status {{dirty ? 'editor-status-dirty' : ''}}">{{aiTaskKind === 'translate' ? '正在生成译本…' : saving ? '正在保存…' : dirty ? '有未保存修改' : '已同步云端'}}</text>
       </view>
       <view class="toolbar-actions">
-        <button class="toolbar-button" bindtap="onPreview">预览</button>
-        <button class="toolbar-button toolbar-more" bindtap="onMoreActions">•••</button>
-        <button class="toolbar-save" loading="{{saving}}" disabled="{{saving || !dirty}}" bindtap="onSave">保存</button>
+        <button class="toolbar-button" disabled="{{!!aiTaskKind}}" bindtap="onPreview">预览</button>
+        <button class="toolbar-button toolbar-more" disabled="{{!!aiTaskKind}}" bindtap="onMoreActions">•••</button>
+        <button class="toolbar-save" loading="{{saving}}" disabled="{{saving || !!aiTaskKind || !dirty}}" bindtap="onSave">保存</button>
       </view>
+    </view>
+
+    <view class="ai-task-panel" wx:if="{{aiTaskKind === 'translate'}}" aria-role="progressbar" aria-label="{{aiTaskStage}}，已用 {{aiTaskElapsedSeconds}} 秒">
+      <view class="ai-task-copy">
+        <view>
+          <text class="ai-task-title">{{aiTaskStage}}</text>
+          <text class="ai-task-helper">已用 {{aiTaskElapsedSeconds}} 秒，完成后会新建译本</text>
+        </view>
+      </view>
+      <view class="ai-task-track"><view class="ai-task-fill"></view></view>
+      <button class="ai-task-cancel" bindtap="onCancelAiTask">取消本次翻译</button>
     </view>
 
     <scroll-view class="section-scroll" scroll-x show-scrollbar="{{false}}">
@@ -239,7 +250,7 @@
     <view class="editor-section" wx:elif="{{activeSection === 'customSections'}}"><view class="section-heading"><text class="section-heading-title">其他内容</text></view><template is="text-section-list" data="{{sectionKey: 'customSections', sectionLabel: '自定义内容', items: resume.content.customSections, showDate: true, showRole: true}}" /></view>
 
     <view class="editor-bottom-save">
-      <button class="primary-button" loading="{{saving}}" disabled="{{saving || !dirty}}" bindtap="onSave">{{dirty ? '保存到云端' : '已同步云端'}}</button>
+      <button class="primary-button" loading="{{saving}}" disabled="{{saving || !!aiTaskKind || !dirty}}" bindtap="onSave">{{dirty ? '保存到云端' : '已同步云端'}}</button>
     </view>
   </block>
 
@@ -250,12 +261,18 @@
         <text class="polish-kicker">AI 辅助 · 原文不会自动修改</text>
         <text class="polish-title">智能润色</text>
       </view>
-      <button class="polish-close" disabled="{{polishBusy}}" bindtap="onClosePolish">关闭</button>
+      <button class="polish-close" wx:if="{{polishBusy}}" bindtap="onCancelAiTask">取消</button>
+      <button class="polish-close" wx:else bindtap="onClosePolish">关闭</button>
     </view>
     <scroll-view class="polish-scroll" scroll-y>
-      <view class="polish-loading" wx:if="{{polishBusy}}">
-        <text class="polish-loading-title">正在整理表达</text>
-        <text class="polish-loading-copy">会保留原文事实、责任边界和条目结构。</text>
+      <view class="polish-loading" wx:if="{{polishBusy}}" aria-role="progressbar" aria-label="{{aiTaskStage}}，已用 {{aiTaskElapsedSeconds}} 秒">
+        <view class="ai-task-copy">
+          <view>
+            <text class="polish-loading-title">{{aiTaskStage}}</text>
+            <text class="polish-loading-copy">已用 {{aiTaskElapsedSeconds}} 秒，会保留原文事实与责任边界。</text>
+          </view>
+        </view>
+        <view class="ai-task-track"><view class="ai-task-fill"></view></view>
       </view>
       <block wx:elif="{{polishResult}}">
         <text class="polish-summary">{{polishResult.summary}}</text>

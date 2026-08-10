@@ -59,7 +59,7 @@ export function OpportunityStar({
       <button
         type="button"
         className={cn(
-          "pressable relative flex items-center justify-center rounded-full outline-none transition",
+          "pressable relative flex items-center justify-center rounded-full outline-none transition focus-visible:ring-2 focus-visible:ring-nebula-silver/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
           dimmed ? "" : "hover:scale-[1.08]",
           captured ? "ring-1 ring-nebula-silver/24" : "ring-1 ring-white/[0.08]",
           selected ? "ring-2 ring-nebula-silver/35" : "",

@@ -103,6 +103,73 @@ page {
   background: #b2b6bd;
 }
 
+.ai-task-panel {
+  margin: 8rpx 0 18rpx;
+  padding: 20rpx;
+  border: 1rpx solid #d9dce3;
+  border-radius: 14rpx;
+  background: #f7f8fb;
+}
+
+.ai-task-copy {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18rpx;
+  text-align: left;
+}
+
+.ai-task-title,
+.ai-task-helper {
+  display: block;
+}
+
+.ai-task-title {
+  color: var(--color-navy);
+  font-size: 24rpx;
+  font-weight: 660;
+}
+
+.ai-task-helper {
+  color: var(--color-muted);
+  font-size: 20rpx;
+}
+
+.ai-task-helper {
+  margin-top: 6rpx;
+}
+
+.ai-task-track {
+  height: 8rpx;
+  margin-top: 16rpx;
+  overflow: hidden;
+  border-radius: 999rpx;
+  background: #e2e5eb;
+}
+
+.ai-task-fill {
+  width: 38%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-navy);
+  animation: ai-task-indeterminate 1.25s ease-in-out infinite;
+}
+
+.ai-task-cancel {
+  min-height: 72rpx;
+  margin-top: 14rpx;
+  padding: 0;
+  background: transparent;
+  color: var(--color-ink-soft);
+  font-size: 21rpx;
+  line-height: 72rpx;
+}
+
+@keyframes ai-task-indeterminate {
+  from { transform: translateX(-115%); }
+  to { transform: translateX(280%); }
+}
+
 .section-scroll {
   width: calc(100% + 56rpx);
   margin-left: -28rpx;
@@ -460,6 +527,10 @@ page {
   text-align: center;
 }
 
+.polish-loading .ai-task-copy {
+  text-align: left;
+}
+
 .polish-loading-title,
 .polish-loading-copy,
 .polish-summary,
@@ -618,5 +689,11 @@ page {
   .toolbar-save,
   .add-section-button {
     transition: none;
+  }
+
+  .ai-task-fill {
+    width: 100%;
+    opacity: 0.5;
+    animation: none;
   }
 }

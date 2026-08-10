@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Check, LockKeyhole, Megaphone, Sparkles, X } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence } from "motion/react";
 import { Button } from "@/components/ui/Button";
 import { CommunityHelpLink } from "@/components/ui/CommunityHelpLink";
@@ -33,8 +33,6 @@ export function WelcomeNotice() {
   const [notice, setNotice] = useState<NoticeKind | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState<AnnouncementSummary | null>(null);
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const dialogRef = useRef<HTMLElement>(null);
 
   const dismiss = useCallback(async () => {
     if (!notice) return;
@@ -128,39 +126,6 @@ export function WelcomeNotice() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!notice) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    closeButtonRef.current?.focus();
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") void dismiss();
-      if (event.key !== "Tab" || !dialogRef.current) return;
-      const focusable = Array.from(
-        dialogRef.current.querySelectorAll<HTMLElement>(
-          "a[href], button:not([disabled]), [tabindex]:not([tabindex='-1'])",
-        ),
-      );
-      if (!focusable.length) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    }
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [dismiss, notice]);
-
   const isUserWelcome = notice === "user";
   const isAnnouncement = notice === "announcement";
 
@@ -169,16 +134,16 @@ export function WelcomeNotice() {
       {notice ? (
         <MotionDialog
           key={`${notice}-${announcement?.id ?? "welcome"}`}
-          ref={dialogRef}
           labelledBy="welcome-notice-title"
           describedBy="welcome-notice-description"
           overlayClassName="z-[100]"
-          className="relative px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 sm:max-w-2xl sm:px-8 sm:pb-8 sm:pt-6"
+          className="relative px-5 pb-[var(--app-safe-content-bottom)] pt-3 sm:max-w-2xl sm:px-8 sm:pb-8 sm:pt-6"
           onBackdropClick={() => void dismiss()}
+          onEscapeKeyDown={() => void dismiss()}
         >
         <div className="mb-3 flex justify-center sm:hidden"><span className="apple-sheet-handle" /></div>
         <button
-          ref={closeButtonRef}
+          data-dialog-initial-focus
           type="button"
           className="muted-button pressable absolute right-4 top-4 inline-flex size-9 items-center justify-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--aurora)] sm:right-6 sm:top-6"
           aria-label={isAnnouncement ? "关闭公告" : "关闭介绍"}

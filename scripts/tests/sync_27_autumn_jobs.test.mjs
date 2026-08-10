@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  assertNoJobIdentityConflicts,
   build27AutumnJobCandidates,
   deterministicSourceUuid,
   getJobMergeFingerprint,
@@ -122,6 +123,45 @@ test("同一来源记录不重复写入，内容变化时更新", () => {
   const changedExisting = { ...candidate.payload, notes: "旧备注" };
   const updatePlan = planJobChanges([candidate], [changedExisting]);
   assert.equal(updatePlan.updates.length, 1);
+  assert.equal(updatePlan.identityConflicts.length, 0);
+});
+
+test("同一来源记录的公司、链接或批次变化时停止且不生成更新", () => {
+  const candidate = build27AutumnJobCandidates({
+    schema,
+    records: new Map([["r27", record("b27")]]),
+  }).candidates[0];
+  const changes = [
+    { company_name: "另一家公司", expectedField: "公司名称" },
+    { apply_url: "https://example.com/another-application", expectedField: "投递链接" },
+    { batch_type: "27秋招提前批", expectedField: "批次类型" },
+  ];
+
+  for (const { expectedField, ...change } of changes) {
+    const plan = planJobChanges([candidate], [{ ...candidate.payload, ...change }]);
+    assert.equal(plan.updates.length, 0);
+    assert.equal(plan.identityConflicts.length, 1);
+    assert.deepEqual(plan.identityConflicts[0].changedFields, [expectedField]);
+    assert.throws(() => assertNoJobIdentityConflicts(plan), /本次零写入/);
+  }
+});
+
+test("核心身份的等价格式变化不会误报", () => {
+  const candidate = build27AutumnJobCandidates({
+    schema,
+    records: new Map([["r27", record("b27")]]),
+  }).candidates[0];
+  const existing = {
+    ...candidate.payload,
+    company_name: " 星辰科技 ",
+    apply_url: "https://example.com/apply/?cid=tracking",
+    batch_type: " 27秋招正式批 ",
+    notes: "旧备注",
+  };
+  const plan = planJobChanges([candidate], [existing]);
+  assert.equal(plan.identityConflicts.length, 0);
+  assert.equal(plan.updates.length, 1);
+  assert.doesNotThrow(() => assertNoJobIdentityConflicts(plan));
 });
 
 test("业务指纹和链接清洗保持稳定", () => {

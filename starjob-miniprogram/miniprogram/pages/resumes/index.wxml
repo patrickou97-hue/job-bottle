@@ -76,9 +76,22 @@
       auto-height
     />
     <text class="import-count">{{importText.length}} / 24000</text>
+    <text class="import-error" wx:if="{{importErrorMessage}}">{{importErrorMessage}}</text>
     <view class="import-actions">
       <button class="secondary-button import-submit" loading="{{importingMode === 'program'}}" disabled="{{!!importingMode}}" data-mode="program" bindtap="onImportResume">直接结构识别</button>
       <button class="primary-button import-submit" loading="{{importingMode === 'ai'}}" disabled="{{!!importingMode}}" data-mode="ai" bindtap="onImportResume">智能复核并导入</button>
+    </view>
+    <view class="import-progress" wx:if="{{importingMode}}" aria-role="progressbar" aria-label="{{importStage}}，已用 {{importElapsedSeconds}} 秒">
+      <view class="import-progress-copy">
+        <view>
+          <text class="import-progress-title">{{importStage}}</text>
+          <text class="import-progress-helper">已用 {{importElapsedSeconds}} 秒，请保持当前页面开启</text>
+        </view>
+      </view>
+      <view class="import-progress-track">
+        <view class="import-progress-fill"></view>
+      </view>
+      <button class="import-cancel" bindtap="onCancelImport">取消本次导入</button>
     </view>
   </view>
 

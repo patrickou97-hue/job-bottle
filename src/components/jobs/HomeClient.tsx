@@ -66,7 +66,9 @@ export function HomeClient() {
   }));
   const [jobView, setJobView] = useState<JobViewMode>("all");
   const [discoveryScope, setDiscoveryScope] = useState<JobDiscoveryScope>("all");
+  const [filterResetVersion, setFilterResetVersion] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [message, setMessage] = useState("");
   const [selectedApplication, setSelectedApplication] =
     useState<ApplicationWithJob | null>(null);
@@ -87,13 +89,14 @@ export function HomeClient() {
     const requestId = loadRequestRef.current + 1;
     loadRequestRef.current = requestId;
     setLoading(true);
+    setLoadError("");
     setMessage("");
     try {
       if (!isSupabaseConfigured()) {
         setJobs([]);
         setApplications([]);
         console.error("Supabase environment variables are not configured.");
-        setMessage("岗位暂时无法读取，请稍后重试。");
+        setLoadError("岗位暂时无法读取，请稍后重试。");
         return;
       }
       const supabase = createClient();
@@ -126,7 +129,7 @@ export function HomeClient() {
       }
     } catch {
       if (requestId !== loadRequestRef.current) return;
-      setMessage(typeof navigator !== "undefined" && !navigator.onLine
+      setLoadError(typeof navigator !== "undefined" && !navigator.onLine
         ? "当前网络不可用，筛选条件已保留。联网后可重新加载岗位。"
         : "岗位暂时无法读取，请检查网络后重试。");
     } finally {
@@ -213,6 +216,10 @@ export function HomeClient() {
     return mapMatchingJobs;
   }, [applicationByJobId, jobView, mapMatchingJobs]);
   const filteredJobs = baseVisibleJobs;
+  // Hundreds of layout-animated rows make filtering feel slower than the
+  // underlying data work. Keep the transition for focused result sets and use
+  // stable plain rows for the full catalogue.
+  const animateJobList = filteredJobs.length <= 80;
   const activeFilterChips = useMemo(
     () => getActiveFilterChips(filters, jobView, discoveryScope),
     [discoveryScope, filters, jobView],
@@ -349,6 +356,15 @@ export function HomeClient() {
     updateCategoryUrl(nextFilters.categories);
   }
 
+  function clearAllFilters() {
+    setFilters(EMPTY_JOB_FILTERS);
+    setDiscoveryScope("all");
+    setJobView("all");
+    setFocusedJobId(null);
+    setFilterResetVersion((current) => current + 1);
+    updateCategoryUrl([]);
+  }
+
   function updateCategoryUrl(categories: string[]) {
     if (typeof window === "undefined") return;
 
@@ -403,7 +419,7 @@ export function HomeClient() {
       });
       setPendingApplyConfirmation(null);
       setShowApplyConfirmation(false);
-      setMessage(status === "applied" ? "投递已记录，这颗星已进入你的投递星图。" : "已结束这次考虑。");
+      setMessage(status === "applied" ? "投递已记录，这颗星已进入你的投递星图。" : "已标记为不投了。");
       if (status === "applied") {
         void track("application_recorded", {
           job_id: pendingApplyConfirmation.jobId,
@@ -459,9 +475,16 @@ export function HomeClient() {
   }
 
   return (
-    <div className="observatory-page space-y-8">
-      {message ? (
-        <div className="info-banner text-sm">
+    <div className="observatory-page space-y-6 lg:space-y-8">
+      {loadError && jobs.length > 0 ? (
+        <div className="info-banner flex flex-wrap items-center justify-between gap-3 text-sm" role="alert">
+          <span>{loadError}</span>
+          <Button variant="secondary" className="min-h-9 px-3 text-xs" onClick={loadData}>
+            重试
+          </Button>
+        </div>
+      ) : message ? (
+        <div className="info-banner text-sm" role="status" aria-live="polite">
           {message}
         </div>
       ) : null}
@@ -486,15 +509,10 @@ export function HomeClient() {
           setJobView(nextView);
         }}
         activeFilterChips={activeFilterChips}
-        onClear={() => {
-          setFilters(EMPTY_JOB_FILTERS);
-          setDiscoveryScope("all");
-          setJobView("all");
-          setFocusedJobId(null);
-        }}
+        onClear={clearAllFilters}
       />
 
-      <section id="job-map" className="border-t border-[color:var(--line-ghost)] pt-6">
+      <section id="job-map" className="border-t border-[color:var(--line-ghost)] pt-4 lg:pt-6">
         <div className="section-heading items-end">
           <div>
             <h2 className="section-title">岗位分布</h2>
@@ -507,8 +525,15 @@ export function HomeClient() {
           ) : null}
         </div>
         {loading ? (
-          <div className="grid min-h-[390px] place-items-center border-y border-[color:var(--line-ghost)] text-sm text-ink-muted">
+          <div className="grid min-h-[320px] place-items-center border-y border-[color:var(--line-ghost)] text-sm text-ink-muted md:min-h-[360px] lg:min-h-[390px]">
             <span className="loading-line">正在绘制岗位地图</span>
+          </div>
+        ) : loadError && jobs.length === 0 ? (
+          <div className="grid min-h-[320px] place-items-center border-y border-[color:var(--line-ghost)] px-5 text-center md:min-h-[360px] lg:min-h-[390px]" role="alert">
+            <div>
+              <p className="text-sm text-ink-secondary">{loadError}</p>
+              <Button variant="secondary" className="mt-4" onClick={loadData}>重试</Button>
+            </div>
           </div>
         ) : (
           <ChinaJobMap
@@ -535,6 +560,7 @@ export function HomeClient() {
           recentPreferenceCount={recentPreferenceJobs.length}
           hasPreferences={preferenceAvailable}
           isAuthenticated={Boolean(currentUserId)}
+          resetVersion={filterResetVersion}
         />
 
         <section id="job-list" className="min-w-0">
@@ -556,6 +582,12 @@ export function HomeClient() {
             <div className="empty-state">
               <span className="loading-line">正在整理岗位</span>
             </div>
+          ) : loadError && jobs.length === 0 ? (
+            <EmptyState
+              title="岗位暂时无法读取"
+              body={loadError}
+              action={<Button onClick={loadData}>重试</Button>}
+            />
           ) : jobs.length === 0 ? (
             <EmptyState
               title="暂时没有开放岗位"
@@ -567,32 +599,52 @@ export function HomeClient() {
               title="没有找到合适的岗位"
               body="试着减少筛选条件，或换一个关键词。"
               action={
-                <Button variant="secondary" onClick={() => handleFiltersChange(EMPTY_JOB_FILTERS)}>
+                <Button variant="secondary" onClick={clearAllFilters}>
                   清空筛选
                 </Button>
               }
             />
           ) : (
             <div className="list-surface">
+              {animateJobList ? (
               <AnimatePresence initial={false}>
-              {filteredJobs.map((job, index) => (
-                <motion.div key={job.id} layout="position" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
-                <JobCard
-                  job={job}
-                  index={index}
-                  application={applicationByJobId.get(job.id) ?? null}
-                  deadline={getDeadlineInfo(job)}
-                  fitLabel={getFitLabel(job, profile)}
-                  material={getMaterialReadiness(job.id, resumes)}
-                  highlighted={hoveredJobId === job.id || focusedJobId === job.id}
-                  onApply={handleApply}
-                  onOpenProgress={openProgressByJob}
-                  onHover={(target) => setHoveredJobId(target?.id ?? null)}
-                  onFocusJob={(target) => setFocusedJobId(target.id)}
-                />
-                </motion.div>
-              ))}
+                {filteredJobs.map((job, index) => (
+                  <motion.div key={job.id} layout="position" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
+                    <JobCard
+                      job={job}
+                      index={index}
+                      application={applicationByJobId.get(job.id) ?? null}
+                      deadline={getDeadlineInfo(job)}
+                      fitLabel={getFitLabel(job, profile)}
+                      material={getMaterialReadiness(job.id, resumes)}
+                      highlighted={hoveredJobId === job.id || focusedJobId === job.id}
+                      onApply={handleApply}
+                      onOpenProgress={openProgressByJob}
+                      onHover={(target) => setHoveredJobId(target?.id ?? null)}
+                      onFocusJob={(target) => setFocusedJobId(target.id)}
+                    />
+                  </motion.div>
+                ))}
               </AnimatePresence>
+              ) : (
+                filteredJobs.map((job, index) => (
+                  <div key={job.id}>
+                    <JobCard
+                      job={job}
+                      index={index}
+                      application={applicationByJobId.get(job.id) ?? null}
+                      deadline={getDeadlineInfo(job)}
+                      fitLabel={getFitLabel(job, profile)}
+                      material={getMaterialReadiness(job.id, resumes)}
+                      highlighted={hoveredJobId === job.id || focusedJobId === job.id}
+                      onApply={handleApply}
+                      onOpenProgress={openProgressByJob}
+                      onHover={(target) => setHoveredJobId(target?.id ?? null)}
+                      onFocusJob={(target) => setFocusedJobId(target.id)}
+                    />
+                  </div>
+                ))
+              )}
             </div>
           )}
         </section>
@@ -686,7 +738,7 @@ function JobRadarHeader({
       </div>
 
       <div className="progress-summary px-4 py-2 md:px-5 md:py-3">
-        <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3 lg:grid-cols-4">
           <StatNumber value={stats.visibleJobs} label="开放岗位" />
           <StatNumber value={stats.companyCount} label="覆盖公司" />
           <StatNumber value={stats.savedJobs} label="已收入星瓶" />
@@ -719,7 +771,7 @@ function JobRadarHeader({
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="inline-grid grid-cols-3 rounded-lg bg-[color:var(--apple-control-bg)] p-1">
+          <div className="inline-grid grid-cols-3 rounded-lg bg-[color:var(--apple-control-bg)] p-1" role="group" aria-label="岗位视图">
             {modes.map((mode) => (
               <button
                 key={mode.value}
@@ -730,6 +782,7 @@ function JobRadarHeader({
                     ? "bg-[#e8edf4] text-[#12294e]"
                     : "text-ink-muted hover:text-ink-secondary",
                 )}
+                aria-pressed={jobView === mode.value}
                 onClick={() => onJobViewChange(mode.value)}
               >
                 {mode.label}

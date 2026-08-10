@@ -1,5 +1,6 @@
 import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
+import { scanClientSourceForSecrets } from "./validate-project-lib.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
 const miniprogramRoot = path.join(root, "miniprogram");
@@ -19,30 +20,11 @@ for (const page of appConfig.pages ?? []) {
   }
 }
 
-const sourceFiles = [
-  "miniprogram/app.ts",
-  "miniprogram/config/env.ts",
-  "miniprogram/services/auth.ts",
-  "miniprogram/services/request.ts",
-  "miniprogram/services/session.ts",
-  "miniprogram/pages/login/index.ts",
-];
-
-const secretPatterns = [
-  /SUPABASE_SERVICE_ROLE_KEY/u,
-  /WECHAT_APP_SECRET/u,
-  /OPENAI_API_KEY/u,
-  /MIMO_API_KEY/u,
-  /-----BEGIN (?:RSA |EC )?PRIVATE KEY-----/u,
-];
-
-for (const relativePath of sourceFiles) {
-  const content = await readFile(path.join(root, relativePath), "utf8");
-  for (const pattern of secretPatterns) {
-    if (pattern.test(content)) {
-      failures.push(`客户端文件包含服务端密钥标识：${relativePath}`);
-    }
-  }
+const secretScan = await scanClientSourceForSecrets(miniprogramRoot);
+for (const finding of secretScan.findings) {
+  failures.push(
+    `客户端文件包含服务端密钥标识 ${finding.marker}：${path.relative(root, finding.file)}`,
+  );
 }
 
 const requestSource = await readFile(
@@ -70,6 +52,6 @@ if (failures.length) {
   process.exitCode = 1;
 } else {
   console.log(
-    `项目结构验证通过：${appConfig.pages.length} 个页面，未发现客户端密钥标识。`,
+    `项目结构验证通过：${appConfig.pages.length} 个页面，递归扫描 ${secretScan.files.length} 个客户端源码文件，未发现服务端密钥标识。`,
   );
 }

@@ -15,7 +15,7 @@ export default function LoginPage() {
         <section className="hidden border-r border-[color:var(--line-ghost)] bg-[#eef1f5] px-10 py-16 lg:flex lg:flex-col lg:justify-between">
           <div>
             <p className="text-sm font-semibold text-[#12294e]">拾星 · StarJob</p>
-            <h1 className="mt-8 max-w-md text-4xl font-semibold leading-tight text-[#1d1d1f]">把明日的坐标，收进星瓶。</h1>
+            <p className="mt-8 max-w-md text-4xl font-semibold leading-tight text-[#1d1d1f]">把明日的坐标，收进星瓶。</p>
           </div>
           <p className="max-w-sm text-sm leading-7 text-[#6e6e73]">让岗位、简历与每一步进展，都有迹可循。</p>
         </section>

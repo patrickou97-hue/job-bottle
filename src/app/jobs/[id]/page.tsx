@@ -66,7 +66,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jobPosting).replace(/</g, "\\u003c") }}
         />
       ) : null}
-      <main className="observatory-page mx-auto max-w-5xl space-y-8">
+      <div className="observatory-page mx-auto max-w-5xl space-y-8">
         <Link
           href="/explore"
           className="inline-flex items-center gap-2 text-sm text-ink-muted transition hover:text-[color:var(--aurora)]"
@@ -120,7 +120,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
           <RelatedJobs title="同公司其他岗位" jobs={related.sameCompany} />
           <RelatedJobs title="相近方向岗位" jobs={related.sameIndustry} />
         </section>
-      </main>
+      </div>
     </PageShell>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import {
   Activity,
   Ban,
@@ -23,11 +23,14 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import {
   confirmAdminUserEmail,
+  fetchAdminUserMutationGuards,
   fetchAdminUsers,
+  recoverAdminUserMutation,
   updateAdminUser,
   updateStarInterviewAccess,
   type AdminUserActivityFilter,
   type AdminUserMetrics,
+  type AdminUserMutationGuardSummary,
   type AdminUserRoleFilter,
   type AdminUserSort,
   type AdminUserStarInterviewFilter,
@@ -74,7 +77,55 @@ export function AdminUsersClient() {
   const [confirmAccessId, setConfirmAccessId] = useState("");
   const [expandedId, setExpandedId] = useState("");
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
+  const [mutationGuards, setMutationGuards] = useState<AdminUserMutationGuardSummary[]>([]);
+  const [recoveryState, setRecoveryState] = useState<"loading" | "hidden" | "ready" | "error">("loading");
+  const [recoveryRefreshing, setRecoveryRefreshing] = useState(false);
+  const [recoveryReasons, setRecoveryReasons] = useState<Record<string, string>>({});
+  const [recoveryFieldErrors, setRecoveryFieldErrors] = useState<Record<string, string>>({});
+  const [recoveryMessage, setRecoveryMessage] = useState("");
+  const [recoveringToken, setRecoveringToken] = useState("");
+  const [recoveryNow, setRecoveryNow] = useState(() => Date.now());
   const hasLoadedRef = useRef(false);
+  const recoveryLoadIdRef = useRef(0);
+
+  const loadMutationGuards = useCallback(async (showLoading = false) => {
+    const loadId = recoveryLoadIdRef.current + 1;
+    recoveryLoadIdRef.current = loadId;
+    if (showLoading) setRecoveryState("loading");
+    else setRecoveryRefreshing(true);
+    try {
+      const result = await fetchAdminUserMutationGuards();
+      if (loadId !== recoveryLoadIdRef.current) return;
+      if (!result) {
+        setMutationGuards([]);
+        setRecoveryState("hidden");
+        setRecoveryMessage("");
+        return;
+      }
+      setMutationGuards(result.guards);
+      setRecoveryReasons((current) => Object.fromEntries(result.guards.map((guard) => [
+        guard.reservationToken,
+        guard.recoveryReason ?? current[guard.reservationToken] ?? "",
+      ])));
+      setRecoveryState("ready");
+    } catch (error) {
+      if (loadId !== recoveryLoadIdRef.current) return;
+      setRecoveryState((current) => current === "ready" ? "ready" : "error");
+      setRecoveryMessage(
+        error instanceof Error ? error.message : "待恢复安全操作暂时无法读取，请稍后重试。",
+      );
+    } finally {
+      if (loadId === recoveryLoadIdRef.current) setRecoveryRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => void loadMutationGuards(true), 0);
+    return () => {
+      window.clearTimeout(timer);
+      recoveryLoadIdRef.current += 1;
+    };
+  }, [loadMutationGuards]);
 
   useEffect(() => {
     let cancelled = false;
@@ -114,6 +165,17 @@ export function AdminUsersClient() {
       window.clearTimeout(timer);
     };
   }, [activity, page, pageSize, query, revision, role, sort, starInterviewAccess, status]);
+
+  const hasActiveRecoveryCountdown = mutationGuards.some((guard) => (
+    guard.recoveryRequestedAt
+    && getRecoveryRemainingSeconds(guard.recoveryRequestedAt, recoveryNow) > 0
+  ));
+
+  useEffect(() => {
+    if (!hasActiveRecoveryCountdown) return;
+    const timer = window.setInterval(() => setRecoveryNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [hasActiveRecoveryCountdown]);
 
   function updateDraft(id: string, values: Partial<Draft>) {
     setConfirmRoleId("");
@@ -273,6 +335,38 @@ export function AdminUsersClient() {
     setPage(1);
   }
 
+  async function requestMutationRecovery(guard: AdminUserMutationGuardSummary) {
+    const reason = (guard.recoveryReason ?? recoveryReasons[guard.reservationToken] ?? "").trim();
+    if (reason.length < 2 || reason.length > 200) {
+      setRecoveryFieldErrors((current) => ({
+        ...current,
+        [guard.reservationToken]: "请填写 2–200 个字符的恢复原因。",
+      }));
+      return;
+    }
+
+    setRecoveryFieldErrors((current) => ({ ...current, [guard.reservationToken]: "" }));
+    setRecoveringToken(guard.reservationToken);
+    setRecoveryMessage("");
+    try {
+      const result = await recoverAdminUserMutation(guard, reason);
+      if (result.action === "quiescing") {
+        setRecoveryMessage(`${formatGuardIdentity(guard)}：${result.message}`);
+        await loadMutationGuards();
+        setRecoveryNow(Date.now());
+        return;
+      }
+      setRecoveryMessage(`${formatGuardIdentity(guard)} 的账户安全状态已恢复。`);
+      await loadMutationGuards();
+      setRevision((value) => value + 1);
+    } catch (error) {
+      setRecoveryMessage(error instanceof Error ? error.message : "账户安全恢复失败，请重新核对后再试。");
+      await loadMutationGuards();
+    } finally {
+      setRecoveringToken("");
+    }
+  }
+
   const hasFilters = Boolean(
     query
     || activity !== "all"
@@ -282,15 +376,152 @@ export function AdminUsersClient() {
     || sort !== "activity_desc",
   );
 
+  const recoveryPanel = recoveryState === "hidden" || recoveryState === "loading" ? null : (
+    <section
+      aria-labelledby="admin-account-recovery-title"
+      className="overflow-hidden rounded-xl border border-[#a66f81]/30 bg-[#a66f81]/[0.045]"
+    >
+      <div className="flex flex-col gap-3 border-b border-[#a66f81]/20 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <div className="min-w-0">
+          <h2 id="admin-account-recovery-title" className="flex items-center gap-2 text-sm font-semibold text-ink-primary">
+            <ShieldCheck aria-hidden="true" className="size-4 text-[#d8a8b7]" />
+            账户安全恢复
+          </h2>
+          <p className="mt-1 text-xs leading-5 text-ink-muted">
+            仅主管理员可见。恢复前需等待 5 分钟静默期，避免旧请求覆盖新状态。
+          </p>
+        </div>
+        <button
+          type="button"
+          className="text-action h-9 shrink-0 px-2.5 text-sm"
+          onClick={() => void loadMutationGuards()}
+          disabled={recoveryRefreshing || Boolean(recoveringToken)}
+          aria-label="刷新账户安全恢复列表"
+        >
+          <RefreshCw aria-hidden="true" className={cn("size-4", recoveryRefreshing && "animate-spin")} />
+          刷新
+        </button>
+      </div>
+
+      {recoveryState === "error" ? (
+        <div className="px-4 py-4 sm:px-5">
+          <p className="text-sm leading-6 text-[color:var(--text-danger)]" role="alert">
+            {recoveryMessage || "待恢复安全操作暂时无法读取，请稍后重试。"}
+          </p>
+          <Button variant="secondary" className="mt-3" onClick={() => void loadMutationGuards(true)}>
+            重试
+          </Button>
+        </div>
+      ) : mutationGuards.length === 0 ? (
+        <div className="px-4 py-4 sm:px-5">
+          <p className="text-sm text-ink-secondary">当前没有待恢复的账户安全操作。</p>
+        </div>
+      ) : (
+        <div className="divide-y divide-[#a66f81]/20">
+          {mutationGuards.map((guard) => {
+            const reason = guard.recoveryReason ?? recoveryReasons[guard.reservationToken] ?? "";
+            const remainingSeconds = guard.recoveryRequestedAt
+              ? getRecoveryRemainingSeconds(guard.recoveryRequestedAt, recoveryNow)
+              : null;
+            const recovering = recoveringToken === guard.reservationToken;
+            const reasonError = recoveryFieldErrors[guard.reservationToken];
+            const fieldId = `recovery-reason-${guard.targetUserId}`;
+            const helpId = `${fieldId}-help`;
+            return (
+              <article key={guard.reservationToken} className="grid gap-4 px-4 py-4 sm:px-5 xl:grid-cols-[minmax(220px,0.75fr)_minmax(280px,1fr)_auto] xl:items-end">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-ink-primary">{formatGuardIdentity(guard)}</p>
+                  {guard.email && guard.displayName ? (
+                    <p className="mt-1 truncate text-xs text-ink-secondary">{guard.displayName}</p>
+                  ) : null}
+                  <dl className="mt-2 space-y-1 text-xs leading-5 text-ink-muted">
+                    <div className="flex gap-2"><dt className="shrink-0">操作</dt><dd>{formatGuardMutationKind(guard.mutationKind)}</dd></div>
+                    <div className="flex gap-2"><dt className="shrink-0">挂起于</dt><dd>{formatDateTime(guard.reservedAt)}</dd></div>
+                  </dl>
+                </div>
+
+                <label htmlFor={fieldId} className="min-w-0">
+                  <span className="mb-1.5 flex items-center justify-between gap-3 text-xs font-medium text-ink-muted">
+                    <span>恢复原因</span>
+                    <span className="tabular-nums">{reason.length}/200</span>
+                  </span>
+                  <Input
+                    id={fieldId}
+                    value={reason}
+                    maxLength={200}
+                    disabled={Boolean(guard.recoveryRequestedAt) || recovering}
+                    aria-invalid={Boolean(reasonError)}
+                    aria-describedby={helpId}
+                    placeholder="例如：认证状态未能确认，需恢复到操作前状态"
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setRecoveryReasons((current) => ({ ...current, [guard.reservationToken]: value }));
+                      if (recoveryFieldErrors[guard.reservationToken]) {
+                        setRecoveryFieldErrors((current) => ({ ...current, [guard.reservationToken]: "" }));
+                      }
+                    }}
+                  />
+                  <span id={helpId} className={cn("mt-1.5 block text-xs leading-5", reasonError ? "text-[color:var(--text-danger)]" : "text-ink-muted")}>
+                    {reasonError || (guard.recoveryRequestedAt ? "原因已记录，静默期内不可修改。" : "需填写 2–200 个字符；提交后将记录到恢复审计。")}
+                  </span>
+                </label>
+
+                <div className="xl:min-w-[190px] xl:text-right">
+                  {guard.recoveryRequestedAt ? (
+                    <p className="mb-2 text-xs leading-5 text-ink-muted">
+                      {remainingSeconds && remainingSeconds > 0
+                        ? `静默期剩余 ${formatRecoveryCountdown(remainingSeconds)}`
+                        : "静默期已结束，可完成恢复"}
+                    </p>
+                  ) : null}
+                  <Button
+                    variant={guard.recoveryRequestedAt && remainingSeconds === 0 ? "danger" : "secondary"}
+                    className="w-full xl:w-auto"
+                    disabled={recovering || Boolean(recoveringToken && !recovering) || Boolean(remainingSeconds && remainingSeconds > 0)}
+                    aria-label={`${guard.recoveryRequestedAt ? "完成" : "开始"} ${formatGuardIdentity(guard)} 的账户安全恢复`}
+                    onClick={() => void requestMutationRecovery(guard)}
+                  >
+                    {recovering ? <RefreshCw aria-hidden="true" className="size-4 animate-spin" /> : <RotateCcw aria-hidden="true" className="size-4" />}
+                    {recovering
+                      ? "正在处理"
+                      : guard.recoveryRequestedAt
+                        ? remainingSeconds && remainingSeconds > 0
+                          ? `等待 ${formatRecoveryCountdown(remainingSeconds)}`
+                          : "完成安全恢复"
+                        : "开始 5 分钟静默期"}
+                  </Button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
+
+      {recoveryMessage && recoveryState !== "error" ? (
+        <p className="border-t border-[#a66f81]/20 px-4 py-3 text-sm leading-6 text-ink-secondary sm:px-5" role="status" aria-live="polite">
+          {recoveryMessage}
+        </p>
+      ) : null}
+    </section>
+  );
+
   if (state === "loading") {
-    return <div className="empty-state"><span className="loading-line">正在汇总全部用户账户</span></div>;
+    return (
+      <div className="space-y-5">
+        {recoveryPanel}
+        <div className="empty-state"><span className="loading-line">正在汇总全部用户账户</span></div>
+      </div>
+    );
   }
 
   if (state === "error") {
     return (
-      <div className="empty-state">
-        <p>{message}</p>
-        <Button className="mt-4" onClick={() => setRevision((value) => value + 1)}>重试</Button>
+      <div className="space-y-5">
+        {recoveryPanel}
+        <div className="empty-state">
+          <p>{message}</p>
+          <Button className="mt-4" onClick={() => setRevision((value) => value + 1)}>重试用户列表</Button>
+        </div>
       </div>
     );
   }
@@ -304,6 +535,8 @@ export function AdminUsersClient() {
 
   return (
     <div className="space-y-5">
+      {recoveryPanel}
+
       <section aria-label="用户概览" className="grid gap-px overflow-hidden rounded-xl border border-[color:var(--line-ghost)] bg-[color:var(--line-ghost)] sm:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))_minmax(210px,1.2fr)]">
         {metricItems.map((item) => {
           const Icon = item.icon;
@@ -548,6 +781,25 @@ function formatAccountType(value: AdminUserSummary["accountType"]) {
   if (value === "wechat") return "仅微信登录";
   if (value === "linked") return "邮箱与微信已绑定";
   return "仅邮箱登录";
+}
+
+function formatGuardIdentity(guard: AdminUserMutationGuardSummary) {
+  return guard.email || guard.displayName || `用户 ${guard.targetUserId.slice(0, 8)}`;
+}
+
+function formatGuardMutationKind(value: AdminUserMutationGuardSummary["mutationKind"]) {
+  return value === "profile_auth" ? "账户资料与登录状态" : "StarInterview 访问权限";
+}
+
+function getRecoveryRemainingSeconds(recoveryRequestedAt: string, now: number) {
+  const requestedAt = Date.parse(recoveryRequestedAt);
+  if (!Number.isFinite(requestedAt)) return 300;
+  return Math.max(0, Math.ceil((requestedAt + 300_000 - now) / 1000));
+}
+
+function formatRecoveryCountdown(seconds: number) {
+  const minutes = Math.floor(seconds / 60);
+  return `${String(minutes).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
 function StatusTag({

@@ -3,6 +3,7 @@ const SMART_MATCH_TIMEOUT_MS = 9_000;
 const SMART_MATCH_MAX_FIELDS = 12;
 const AI_AUTOFILL_TIMEOUT_MS = 85_000;
 const AI_AUTOFILL_BATCH_SIZE = 50;
+const AI_AUTOFILL_MAX_FIELDS = 750;
 const CONFIRM_WINDOW_MS = 8_000;
 const STORAGE_KEYS = ["starjobResumes", "activeResumeId", "fillMode", "lastSyncedAt", "matchToken", "matchTokenExpiresAt", "aiMatchingAvailable", "analysisOnly", "aiOnly", "aiFieldMappings", "aiAutofillOnly", "aiValueMappings"];
 
@@ -19,6 +20,7 @@ const elements = {
   unmatchedDetails: document.querySelector("#unmatchedDetails"),
   unmatchedList: document.querySelector("#unmatchedList"),
   progressPanel: document.querySelector("#progressPanel"),
+  progressAnnouncement: document.querySelector("#progressAnnouncement"),
   progressElapsed: document.querySelector("#progressElapsed"),
   progressLabel: document.querySelector("#progressLabel"),
   progressValue: document.querySelector("#progressValue"),
@@ -37,6 +39,7 @@ let clearConfirmationTimer = null;
 let activeFillAbortController = null;
 let progressStartedAt = 0;
 let progressClockTimer = null;
+let lastProgressAnnouncement = "";
 
 const progressDefaults = {
   extract: "等待开始",
@@ -47,6 +50,8 @@ const progressDefaults = {
 
 function resetProgress() {
   elements.progressPanel.hidden = false;
+  lastProgressAnnouncement = "";
+  elements.progressAnnouncement.textContent = "";
   for (const [step, text] of Object.entries(progressDefaults)) updateProgress(step, "pending", text);
   startProgressClock();
   updateTaskProgress(0, 0, "准备读取页面");
@@ -84,6 +89,13 @@ function updateTaskProgress(completed, total, label) {
   elements.progressValue.textContent = percent === null ? "处理中" : `${percent}%`;
   elements.progressMeter.dataset.mode = determinate ? "determinate" : "indeterminate";
   elements.progressMeter.setAttribute("aria-valuetext", determinate ? `已完成 ${safeCompleted} / ${total} 个处理单元` : label);
+  const announcement = determinate
+    ? `${label}，已完成 ${safeCompleted} / ${total} 个处理单元`
+    : label;
+  if (announcement !== lastProgressAnnouncement) {
+    lastProgressAnnouncement = announcement;
+    elements.progressAnnouncement.textContent = announcement;
+  }
   if (determinate) {
     elements.progressMeter.setAttribute("aria-valuemin", "0");
     elements.progressMeter.setAttribute("aria-valuemax", "100");
@@ -190,7 +202,16 @@ function throwIfAborted(signal) {
   if (signal.aborted) throw new DOMException("Aborted", "AbortError");
 }
 
-async function requestAiAutofillBatch({ batch, resume, token, taskSignal }) {
+function createOperationId() {
+  if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = [...bytes].map((value) => value.toString(16).padStart(2, "0"));
+  return `${hex.slice(0, 4).join("")}-${hex.slice(4, 6).join("")}-${hex.slice(6, 8).join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10).join("")}`;
+}
+
+async function requestAiAutofillBatch({ batch, resume, token, operationId, taskSignal }) {
   const controller = new AbortController();
   const cancelFromTask = () => controller.abort(taskSignal.reason || "cancelled");
   taskSignal.addEventListener("abort", cancelFromTask, { once: true });
@@ -199,7 +220,7 @@ async function requestAiAutofillBatch({ batch, resume, token, taskSignal }) {
     const response = await fetch(`${STARJOB_HOME}/api/resume/extension-autofill`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ resume, fields: batch }),
+      body: JSON.stringify({ resume, fields: batch, operationId }),
       cache: "no-store",
       signal: controller.signal,
     });
@@ -222,10 +243,60 @@ function summarizeFrameResults(frameResults) {
       empty: acc.empty + (item.empty || 0),
       manual: acc.manual + (item.manual || 0),
       derived: acc.derived + (item.derived || 0),
+      failed: acc.failed + (item.failed || 0),
       unmatched: [...acc.unmatched, ...(Array.isArray(item.unmatched) ? item.unmatched : [])],
     }),
-    { scanned: 0, matched: 0, filled: 0, preserved: 0, empty: 0, manual: 0, derived: 0, unmatched: [] },
+    { scanned: 0, matched: 0, filled: 0, preserved: 0, empty: 0, manual: 0, derived: 0, failed: 0, unmatched: [] },
   );
+}
+
+function qualifyFrameFieldKey(frameId, fieldIndex, fieldKey) {
+  // Put the two uniqueness dimensions before any truncation. Long ATS paths
+  // can exceed the server key limit; truncating only the tail must never erase
+  // the candidate index and collapse two controls into one mapping.
+  const prefix = `${frameId}::${fieldIndex}::`;
+  return `${prefix}${String(fieldKey).slice(0, 520 - prefix.length)}`;
+}
+
+async function executeMappedFillByFrame({
+  tabId,
+  frameIds,
+  mappings,
+  fieldAddressByQualifiedKey,
+  storageState,
+  mappingStorageKey,
+}) {
+  const mappingsByFrame = new Map(frameIds.map((frameId) => [frameId, {}]));
+  for (const [qualifiedKey, mapping] of Object.entries(mappings)) {
+    const address = fieldAddressByQualifiedKey.get(qualifiedKey);
+    if (!address) continue;
+    mappingsByFrame.get(address.frameId)[address.rawFieldKey] = mapping;
+  }
+
+  const results = [];
+  let failedFrames = 0;
+  let failedFields = 0;
+  for (const frameId of frameIds) {
+    const frameMappings = mappingsByFrame.get(frameId) || {};
+    await chrome.storage.local.set({
+      ...storageState,
+      [mappingStorageKey]: frameMappings,
+    });
+    try {
+      results.push(...await chrome.scripting.executeScript({
+        target: { tabId, frameIds: [frameId] },
+        files: ["fill.js"],
+      }));
+    } catch (error) {
+      failedFrames += 1;
+      failedFields += Object.keys(frameMappings).length;
+      console.warn("[starjob_fill_frame_failed]", {
+        frameId,
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+  return { results, failedFrames, failedFields };
 }
 
 function sanitizeResumeForAi(resume, fields) {
@@ -364,10 +435,26 @@ async function fillCurrentPage() {
       files: ["fill.js"],
     });
     throwIfAborted(taskController.signal);
-    const analyses = analysisResults.map((entry) => entry.result).filter(Boolean);
-    const fields = analyses.flatMap((item) => Array.isArray(item.fields) ? item.fields : []).slice(0, 100);
-    const extracted = analyses.reduce((sum, item) => sum + (item.scanned || 0), 0);
-    const locallyIdentified = analyses.reduce((sum, item) => sum + (item.identified || 0), 0);
+    const analyses = analysisResults
+      .filter((entry) => entry.result)
+      .map((entry) => ({ frameId: entry.frameId, result: entry.result }));
+    const fields = analyses.flatMap(({ frameId, result }) => (
+      Array.isArray(result.fields)
+        ? result.fields.map((field, fieldIndex) => ({
+            ...field,
+            fieldKey: qualifyFrameFieldKey(frameId, fieldIndex, field.fieldKey),
+            sourceFieldKey: field.fieldKey,
+            sourceFrameId: frameId,
+          }))
+        : []
+    ));
+    const fieldAddressByQualifiedKey = new Map(fields.map((field) => [field.fieldKey, {
+      frameId: field.sourceFrameId,
+      rawFieldKey: field.sourceFieldKey,
+    }]));
+    const frameIds = [...new Set(analyses.map((entry) => entry.frameId))];
+    const extracted = analyses.reduce((sum, entry) => sum + (entry.result.scanned || 0), 0);
+    const locallyIdentified = analyses.reduce((sum, entry) => sum + (entry.result.identified || 0), 0);
     const smartMatchFields = fields
       .filter((field) => !field.deterministicKey || Number(field.deterministicConfidence) < 0.74)
       .slice(0, SMART_MATCH_MAX_FIELDS);
@@ -379,6 +466,20 @@ async function fillCurrentPage() {
       updateProgress("fill", "fallback", "当前页面没有可填写字段");
       updateProgress("summary", "success", "请进入具体网申表单后重试");
       showResult("没有找到可填写表单", "请进入网申填写页后重试。部分验证码或封闭组件需要手动处理。", "error");
+      return;
+    }
+
+    if (fillMode === "ai" && fields.length > AI_AUTOFILL_MAX_FIELDS) {
+      const limitMessage = `检测到 ${fields.length} 个安全字段，单页上限为 ${AI_AUTOFILL_MAX_FIELDS} 个`;
+      updateProgress("match", "fallback", `${limitMessage}，未调用 AI`);
+      updateProgress("fill", "fallback", "本次没有写入页面");
+      updateProgress("summary", "fallback", "请分步骤填写或收起部分表单区块后重试");
+      updateTaskProgress(1, 4, `${limitMessage}，本次已停止`);
+      showResult(
+        "表单字段过多，未开始填写",
+        `${limitMessage}。本次未调用 AI，也没有改动页面。请分步骤填写或收起部分表单区块后重试。`,
+        "error",
+      );
       return;
     }
 
@@ -400,6 +501,7 @@ async function fillCurrentPage() {
         batches.push(fields.slice(index, index + AI_AUTOFILL_BATCH_SIZE));
       }
       const totalTaskUnits = batches.length + 3;
+      const operationId = createOperationId();
       updateTaskProgress(1, totalTaskUnits, `已拆分为 ${batches.length} 批，正在并行分析`);
       let completedBatches = 0;
       const payloads = await Promise.all(batches.map(async (batch) => {
@@ -408,6 +510,7 @@ async function fillCurrentPage() {
             batch,
             resume: sanitizedResume,
             token: stored.matchToken,
+            operationId,
             taskSignal: taskController.signal,
           });
           completedBatches += 1;
@@ -439,26 +542,31 @@ async function fillCurrentPage() {
       activeFillAbortController = null;
       elements.fillButton.disabled = true;
       elements.fillButton.textContent = "正在安全写入页面";
-      await chrome.storage.local.set({
-        analysisOnly: false,
-        aiOnly: false,
-        aiFieldMappings: {},
-        aiAutofillOnly: true,
-        aiValueMappings,
-      });
-      const aiFrameResults = await chrome.scripting.executeScript({
-        target: { tabId: tab.id, allFrames: true },
-        files: ["fill.js"],
+      const aiFill = await executeMappedFillByFrame({
+        tabId: tab.id,
+        frameIds,
+        mappings: aiValueMappings,
+        fieldAddressByQualifiedKey,
+        mappingStorageKey: "aiValueMappings",
+        storageState: {
+          analysisOnly: false,
+          aiOnly: false,
+          aiFieldMappings: {},
+          aiAutofillOnly: true,
+        },
       });
       throwIfAborted(taskController.signal);
-      const total = summarizeFrameResults(aiFrameResults);
-      updateProgress("fill", "success", `已填写 ${total.filled} 项，其中 ${total.derived} 项为 AI 派生`);
-      updateProgress("summary", "success", `保留已有内容 ${total.preserved} 项，${total.manual} 项需手动确认`);
-      updateTaskProgress(totalTaskUnits, totalTaskUnits, `已填写 ${total.filled} 项，${total.manual} 项需手动确认`);
+      const total = summarizeFrameResults(aiFill.results);
+      total.failed += aiFill.failedFields;
+      total.manual += aiFill.failedFields;
+      const frameFailureCopy = aiFill.failedFrames > 0 ? `（涉及 ${aiFill.failedFrames} 个页面区域）` : "";
+      updateProgress("fill", total.failed > 0 ? "fallback" : "success", `已填写 ${total.filled} 项，其中 ${total.derived} 项为 AI 派生${total.failed > 0 ? `，${total.failed} 项写入失败${frameFailureCopy}` : ""}`);
+      updateProgress("summary", total.failed > 0 ? "fallback" : "success", `保留已有内容 ${total.preserved} 项，${total.manual} 项需手动确认${total.failed > 0 ? `，其中 ${total.failed} 项写入失败` : ""}`);
+      updateTaskProgress(totalTaskUnits, totalTaskUnits, `已填写 ${total.filled} 项，${total.manual} 项需手动确认${total.failed > 0 ? `，${total.failed} 项写入失败` : ""}`);
       showResult(
-        `AI 已填写 ${total.filled} 项`,
-        `已按简历从上到下处理；无明确依据的内容保持空白。其中 ${total.derived} 项为格式、选项或自我描述等派生值，已用琥珀色边框标记。`,
-        "success",
+        total.failed > 0 ? `AI 已填写 ${total.filled} 项，部分未完成` : `AI 已填写 ${total.filled} 项`,
+        `已按简历从上到下处理；无明确依据的内容保持空白。其中 ${total.derived} 项为格式、选项或自我描述等派生值，已用琥珀色边框标记。${total.failed > 0 ? `需手动确认的内容中，有 ${total.failed} 项因页面控件或页面区域异常写入失败${frameFailureCopy}。` : ""}`,
+        total.failed > 0 ? "warning" : "success",
         total.unmatched,
       );
       return;
@@ -515,15 +623,25 @@ async function fillCurrentPage() {
           }
         }
         if (aiMatched > 0) {
-          await chrome.storage.local.set({ analysisOnly: false, aiOnly: true, aiFieldMappings: aiMappings });
-          const aiFrameResults = await chrome.scripting.executeScript({
-            target: { tabId: tab.id, allFrames: true },
-            files: ["fill.js"],
+          const aiFill = await executeMappedFillByFrame({
+            tabId: tab.id,
+            frameIds,
+            mappings: aiMappings,
+            fieldAddressByQualifiedKey,
+            mappingStorageKey: "aiFieldMappings",
+            storageState: {
+              analysisOnly: false,
+              aiOnly: true,
+              aiAutofillOnly: false,
+              aiValueMappings: {},
+            },
           });
-          const aiTotal = summarizeFrameResults(aiFrameResults);
+          const aiTotal = summarizeFrameResults(aiFill.results);
+          aiTotal.failed += aiFill.failedFields;
           total.filled += aiTotal.filled;
           total.matched += aiTotal.matched;
           total.empty += aiTotal.empty;
+          total.failed += aiTotal.failed;
           total.manual = Math.max(0, total.manual - aiTotal.filled);
           total.unmatched.push(...aiTotal.unmatched);
         }
@@ -544,13 +662,13 @@ async function fillCurrentPage() {
       updateTaskProgress(3, 4, `${reason}，继续整理待确认项`);
     }
 
-    updateProgress("fill", "success", `填写完成 ${total.filled}/${total.matched || total.scanned}`);
-    updateProgress("summary", "success", `共 ${total.manual} 个需手动确认，其中 ${total.empty || 0} 个在简历中没有对应值`);
-    updateTaskProgress(4, 4, `已填写 ${total.filled} 项，${total.manual} 项需手动确认`);
+    updateProgress("fill", total.failed > 0 ? "fallback" : "success", `填写完成 ${total.filled}/${total.matched || total.scanned}${total.failed > 0 ? `，${total.failed} 项写入失败` : ""}`);
+    updateProgress("summary", total.failed > 0 ? "fallback" : "success", `共 ${total.manual} 个需手动确认，其中 ${total.empty || 0} 个在简历中没有对应值`);
+    updateTaskProgress(4, 4, `已填写 ${total.filled} 项，${total.manual} 项需手动确认${total.failed > 0 ? `，${total.failed} 项写入失败` : ""}`);
     showResult(
-      `已填写 ${total.filled} 项`,
-      `保留已有内容 ${total.preserved} 项，仍有 ${total.manual} 项需要你确认。提交前请逐项检查。`,
-      "success",
+      total.failed > 0 ? `已填写 ${total.filled} 项，部分未完成` : `已填写 ${total.filled} 项`,
+      `保留已有内容 ${total.preserved} 项，仍有 ${total.manual} 项需要你确认。${total.failed > 0 ? `其中 ${total.failed} 项因页面控件异常写入失败。` : ""}提交前请逐项检查。`,
+      total.failed > 0 ? "warning" : "success",
       total.unmatched,
     );
   } catch (error) {

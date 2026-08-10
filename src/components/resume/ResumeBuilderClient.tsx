@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
-import { Copy, FileText, FileUp, Languages, LoaderCircle, Plus, Puzzle, Trash2 } from "lucide-react";
+import { ChevronDown, Copy, FileText, FileUp, Languages, LoaderCircle, Plus, Puzzle, Trash2 } from "lucide-react";
 import { AnimatePresence } from "motion/react";
 import { ResumeCreateDialog } from "@/components/resume/ResumeCreateDialog";
 import { ResumeEditor, type EditorSection } from "@/components/resume/ResumeEditor";
@@ -92,6 +92,7 @@ export function ResumeBuilderClient({
   const hydratingUserIdRef = useRef<string | null>(null);
   const mountedRef = useRef(true);
   const translationAbortRef = useRef<AbortController | null>(null);
+  const mobileActionsRef = useRef<HTMLDetailsElement | null>(null);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -613,18 +614,53 @@ export function ResumeBuilderClient({
           <span className="status-pill rounded-md px-3 py-2 text-sm text-ink-secondary">
             {saveState}
           </span>
-          <Link href="/extension" className="muted-button pressable inline-flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-semibold">
-            <Puzzle aria-hidden="true" className="size-4" />
-            网申助手
-          </Link>
-          <Button variant="secondary" onClick={() => setShowImportDialog(true)} className="gap-2">
-            <FileUp aria-hidden="true" className="size-4" />
-            导入简历
-          </Button>
-          <Button onClick={() => setShowCreateDialog(true)} className="gap-2">
-            <Plus aria-hidden="true" className="size-4" />
-            新建简历
-          </Button>
+          <div className="hidden flex-wrap items-center gap-3 sm:flex">
+            <Link href="/extension" className="muted-button pressable inline-flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-semibold">
+              <Puzzle aria-hidden="true" className="size-4" />
+              网申助手
+            </Link>
+            <Button variant="secondary" onClick={() => setShowImportDialog(true)} className="gap-2">
+              <FileUp aria-hidden="true" className="size-4" />
+              导入简历
+            </Button>
+            <Button onClick={() => setShowCreateDialog(true)} className="gap-2">
+              <Plus aria-hidden="true" className="size-4" />
+              新建简历
+            </Button>
+          </div>
+          <div className="flex w-full items-center gap-2 sm:hidden">
+            <Button onClick={() => setShowCreateDialog(true)} className="min-w-0 flex-1 gap-2">
+              <Plus aria-hidden="true" className="size-4" />
+              新建简历
+            </Button>
+            <details ref={mobileActionsRef} className="group relative shrink-0">
+              <summary className="muted-button pressable flex h-10 cursor-pointer list-none items-center gap-1 rounded-lg px-3 text-sm font-semibold [&::-webkit-details-marker]:hidden">
+                更多
+                <ChevronDown aria-hidden="true" className="size-3.5 transition-transform group-open:rotate-180" />
+              </summary>
+              <div className="absolute right-0 top-[calc(100%+.4rem)] z-30 min-w-44 overflow-hidden rounded-xl border border-[color:var(--line-ghost)] bg-[color:var(--surface-read-bg-strong)] p-1.5 shadow-[0_18px_48px_rgba(0,0,0,0.16)]">
+                <Link
+                  href="/extension"
+                  className="pressable flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-medium text-ink-secondary hover:bg-[color:var(--surface-hover-bg)] hover:text-ink-primary"
+                  onClick={() => mobileActionsRef.current?.removeAttribute("open")}
+                >
+                  <Puzzle aria-hidden="true" className="size-4" />
+                  网申助手
+                </Link>
+                <button
+                  type="button"
+                  className="pressable flex min-h-11 w-full items-center gap-2 rounded-lg px-3 text-left text-sm font-medium text-ink-secondary hover:bg-[color:var(--surface-hover-bg)] hover:text-ink-primary"
+                  onClick={() => {
+                    mobileActionsRef.current?.removeAttribute("open");
+                    setShowImportDialog(true);
+                  }}
+                >
+                  <FileUp aria-hidden="true" className="size-4" />
+                  导入简历
+                </button>
+              </div>
+            </details>
+          </div>
         </div>
       </section>
 

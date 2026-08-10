@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { resolveResumeAiAccess } from "@/lib/resume-ai-access";
+import { cleanResumeBullet } from "@/lib/resume-import-text";
 
-export const maxDuration = 90;
+export const maxDuration = 120;
 
-const REQUEST_TIMEOUT_MS = 70_000;
-const REVIEW_PARTS_TOTAL = 3;
+const REQUEST_TIMEOUT_MS = 100_000;
+const REVIEW_PARTS_TOTAL = 2;
 
 const text = (max: number) => z.string().trim().max(max);
 const bullets = z.array(text(1_000)).max(12);
@@ -82,54 +83,8 @@ const resultSchema = z.object({
   warnings: z.array(text(500)).max(20),
 }).strict();
 
-const coreResultSchema = z.object({
-  summary: text(500),
-  warnings: z.array(text(500)).max(10),
-  draft: z.object({
-    language: z.enum(["zh-CN", "en-US"]),
-    title: text(180),
-    targetRole: text(180),
-    basics: basicsSchema,
-    education: z.array(educationSchema).max(8),
-  }).strict(),
-}).strict();
-const experienceResultSchema = z.object({
-  summary: text(500),
-  warnings: z.array(text(500)).max(10),
-  draft: z.object({
-    work: z.array(experienceSchema).max(12),
-    projects: z.array(projectSchema).max(12),
-  }).strict(),
-}).strict();
-const extrasResultSchema = z.object({
-  summary: text(500),
-  warnings: z.array(text(500)).max(10),
-  draft: z.object({
-    skills: z.array(skillSchema).max(12),
-    campus: z.array(customSectionSchema).max(8),
-    awards: z.array(customSectionSchema).max(8),
-    certifications: z.array(customSectionSchema).max(8),
-    languages: z.array(customSectionSchema).max(8),
-    customSections: z.array(customSectionSchema).max(8),
-  }).strict(),
-}).strict();
-
 type ImportInput = z.infer<typeof inputSchema>;
-type ReviewPartKind = "core" | "experience" | "extras";
 type ReviewProgress = { completed: number; total: number; label: string; fallback: boolean };
-type ReviewPartResult = {
-  kind: ReviewPartKind;
-  summary: string;
-  warnings: string[];
-  draft: Record<string, unknown>;
-  fallback: boolean;
-};
-
-const REVIEW_PARTS: Array<{ kind: ReviewPartKind; label: string; maxTokens: number }> = [
-  { kind: "core", label: "基础信息与教育经历", maxTokens: 1_900 },
-  { kind: "experience", label: "工作与项目经历", maxTokens: 2_900 },
-  { kind: "extras", label: "技能与其他内容", maxTokens: 2_000 },
-];
 
 export async function POST(request: NextRequest) {
   const contentLength = Number(request.headers.get("content-length") ?? 0);
@@ -163,12 +118,17 @@ export async function POST(request: NextRequest) {
   }
 
   if (parsed.data.progressMode === "ndjson") {
-    return createProgressResponse(parsed.data, { apiKey, baseUrl, model });
+    return createProgressResponse(parsed.data, { apiKey, baseUrl, model }, request.signal);
   }
 
   const startedAt = Date.now();
   try {
-    const result = await reviewResumeInParts(parsed.data, { apiKey, baseUrl, model });
+    const result = await reviewResumeInParts(
+      parsed.data,
+      { apiKey, baseUrl, model },
+      undefined,
+      request.signal,
+    );
     logImportTiming("success", parsed.data, Date.now() - startedAt);
     return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
@@ -177,16 +137,19 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function createProgressResponse(input: ImportInput, config: AiConfig) {
+function createProgressResponse(input: ImportInput, config: AiConfig, requestSignal: AbortSignal) {
   const encoder = new TextEncoder();
   const taskController = new AbortController();
+  const abortFromRequest = () => taskController.abort();
+  requestSignal.addEventListener("abort", abortFromRequest, { once: true });
+  if (requestSignal.aborted) abortFromRequest();
   let closed = false;
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
       const send = (value: unknown) => {
         if (!closed) controller.enqueue(encoder.encode(`${JSON.stringify(value)}\n`));
       };
-      send({ type: "start", completed: 0, total: REVIEW_PARTS_TOTAL, label: "已拆分为 3 个复核区块，正在并行处理" });
+      send({ type: "start", completed: 0, total: REVIEW_PARTS_TOTAL, label: "AI 正在通读整份简历并判断区块归属" });
       const startedAt = Date.now();
       void reviewResumeInParts(input, config, (progress) => send({ type: "progress", ...progress }), taskController.signal)
         .then((result) => {
@@ -198,13 +161,14 @@ function createProgressResponse(input: ImportInput, config: AiConfig) {
           send({ type: "error", error: getUpstreamErrorMessage(error) });
         })
         .finally(() => {
+          requestSignal.removeEventListener("abort", abortFromRequest);
           if (!closed) controller.close();
           closed = true;
         });
     },
     cancel() {
       closed = true;
-      taskController.abort("client_cancelled");
+      taskController.abort();
     },
   });
   return new Response(stream, {
@@ -225,61 +189,36 @@ async function reviewResumeInParts(
   onProgress?: (progress: ReviewProgress) => void,
   signal?: AbortSignal,
 ) {
-  let completed = 0;
-  const failures: unknown[] = [];
-  const parts = await Promise.all(REVIEW_PARTS.map(async (part) => {
-    let result: ReviewPartResult;
-    try {
-      const content = await callMimo({
-        ...config,
-        messages: buildPartMessages(input, part.kind),
-        maxTokens: part.maxTokens,
-        externalSignal: signal,
-      });
-      const parsedPart = parsePartResult(part.kind, content);
-      if (!parsedPart) throw new UpstreamError(502, "invalid");
-      result = parsedPart;
-    } catch (error) {
-      failures.push(error);
-      logServerError(`resume_import_${part.kind}`, error, input);
-      result = createFallbackPart(part.kind, input.localDraft);
-    }
-    completed += 1;
-    onProgress?.({
-      completed,
-      total: REVIEW_PARTS_TOTAL,
-      fallback: result.fallback,
-      label: result.fallback
-        ? `${part.label}暂用本地识别结果，其余区块继续处理`
-        : `${part.label}复核完成`,
-    });
-    return result;
-  }));
-
-  if (parts.every((part) => part.fallback)) {
-    throw failures[0] ?? new UpstreamError(502, "invalid");
-  }
-
-  const core = parts.find((part) => part.kind === "core")!;
-  const experience = parts.find((part) => part.kind === "experience")!;
-  const extras = parts.find((part) => part.kind === "extras")!;
-  const combined = resultSchema.safeParse({
-    summary: parts.every((part) => !part.fallback)
-      ? "已分区核对基础信息、经历与其他内容；生成后请逐项对照原文。"
-      : `已完成 ${parts.filter((part) => !part.fallback).length}/3 个智能复核区块；其余内容沿用本地识别结果。`,
-    draft: {
-      ...core.draft,
-      ...experience.draft,
-      ...extras.draft,
-      basics: preserveDeterministicBasics(
-        core.draft.basics as z.infer<typeof basicsSchema>,
-        input.localDraft.basics,
-      ),
-    },
-    warnings: [...new Set(parts.flatMap((part) => part.warnings))].slice(0, 20),
+  const content = await callMimo({
+    ...config,
+    messages: buildWholeResumeMessages(input),
+    maxTokens: 7_600,
+    externalSignal: signal,
   });
-  if (!combined.success) throw new UpstreamError(502, "invalid");
-  return combined.data;
+  onProgress?.({
+    completed: 1,
+    total: REVIEW_PARTS_TOTAL,
+    fallback: false,
+    label: "AI 已理解全文，正在校验每个区块与原文的对应关系",
+  });
+
+  const parsed = parseWholeResumeResult(content);
+  if (!parsed) throw new UpstreamError(502, "invalid");
+  const verified = resultSchema.safeParse({
+    ...parsed,
+    draft: sanitizeReviewedDraft({
+      ...parsed.draft,
+      basics: preserveDeterministicBasics(parsed.draft.basics, input.localDraft.basics),
+    }),
+  });
+  if (!verified.success) throw new UpstreamError(502, "invalid");
+  onProgress?.({
+    completed: REVIEW_PARTS_TOTAL,
+    total: REVIEW_PARTS_TOTAL,
+    fallback: false,
+    label: "全部区块已完成智能整理，可以核对后导入",
+  });
+  return verified.data;
 }
 
 async function callMimo({
@@ -291,9 +230,10 @@ async function callMimo({
   externalSignal,
 }: AiConfig & { messages: ChatMessage[]; maxTokens: number; externalSignal?: AbortSignal }) {
   const controller = new AbortController();
-  const cancelFromOutside = () => controller.abort("cancelled");
+  const cancelFromOutside = () => controller.abort();
   externalSignal?.addEventListener("abort", cancelFromOutside, { once: true });
-  const timeout = setTimeout(() => controller.abort("timeout"), REQUEST_TIMEOUT_MS);
+  if (externalSignal?.aborted) cancelFromOutside();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
     const response = await fetch(getChatCompletionsUrl(baseUrl), {
       method: "POST",
@@ -321,93 +261,74 @@ async function callMimo({
   }
 }
 
-function buildPartMessages(input: ImportInput, kind: ReviewPartKind): ChatMessage[] {
-  const part = REVIEW_PARTS.find((item) => item.kind === kind)!;
+function buildWholeResumeMessages(input: ImportInput): ChatMessage[] {
   return [
     { role: "system", content: SYSTEM_PROMPT },
     {
       role: "user",
       content: [
-        `本批只复核：${part.label}。不要输出其他区块。`,
+        "请先通读全文、判断各段边界，再一次性填写全部拾星简历区块。不要把尚未完成的局部结果当作最终答案。",
         `文件名：${input.fileName}`,
-        `程序本地识别线索：${JSON.stringify(buildLocalReviewHints(input.localDraft, kind))}`,
+        `程序本地识别线索（仅用于定位，不是事实来源）：${JSON.stringify(buildWholeReviewHints(input.localDraft))}`,
         "以下是从用户文件直接提取的完整原文：",
         "<resume_text>",
         input.sourceText,
         "</resume_text>",
-        PART_RESULT_SHAPES[kind],
+        FULL_RESULT_SHAPE,
       ].join("\n"),
     },
   ];
 }
 
-function buildLocalReviewHints(draft: z.infer<typeof draftSchema>, kind: ReviewPartKind) {
+function buildWholeReviewHints(draft: z.infer<typeof draftSchema>) {
   const compact = <T extends Record<string, unknown>>(value: T) => Object.fromEntries(
     Object.entries(value).filter(([, item]) => item !== "" && item !== null && item !== undefined),
   );
-  const anchors = <T extends { bullets: string[] }>(items: T[]) => items.map(({ bullets: itemBullets, ...item }) => ({
-    ...compact(item),
-    bulletCount: itemBullets.length,
-  }));
-  if (kind === "core") {
-    return { language: draft.language, title: draft.title, targetRole: draft.targetRole, basics: compact(draft.basics), education: draft.education.map(compact) };
-  }
-  if (kind === "experience") return { work: anchors(draft.work), projects: anchors(draft.projects) };
   return {
-    skills: draft.skills.map((item) => ({ category: item.category, skillCount: item.skills.length })),
-    campus: anchors(draft.campus),
-    awards: anchors(draft.awards),
-    certifications: anchors(draft.certifications),
-    languages: anchors(draft.languages),
-    customSections: anchors(draft.customSections),
+    language: draft.language,
+    title: draft.title,
+    targetRole: draft.targetRole,
+    basics: compact(draft.basics),
+    detectedCounts: {
+      education: draft.education.length,
+      work: draft.work.length,
+      projects: draft.projects.length,
+      skills: draft.skills.length,
+      campus: draft.campus.length,
+      awards: draft.awards.length,
+      certifications: draft.certifications.length,
+      languages: draft.languages.length,
+      customSections: draft.customSections.length,
+    },
   };
 }
 
-function parsePartResult(kind: ReviewPartKind, content: string): ReviewPartResult | null {
+function parseWholeResumeResult(content: string) {
   const candidate = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
   try {
     const value = JSON.parse(candidate);
-    const schema = kind === "core" ? coreResultSchema : kind === "experience" ? experienceResultSchema : extrasResultSchema;
-    const parsed = schema.safeParse(value);
-    return parsed.success ? { kind, ...parsed.data, fallback: false } : null;
+    const parsed = resultSchema.safeParse(value);
+    return parsed.success ? parsed.data : null;
   } catch {
     return null;
   }
 }
 
-function createFallbackPart(kind: ReviewPartKind, draft: z.infer<typeof draftSchema>): ReviewPartResult {
-  if (kind === "core") {
-    return {
-      kind,
-      summary: "基础信息暂用本地识别结果",
-      warnings: ["基础信息与教育经历智能复核未完成，已保留本地识别结果。"],
-      draft: { language: draft.language, title: draft.title, targetRole: draft.targetRole, basics: draft.basics, education: draft.education },
-      fallback: true,
-    };
+function sanitizeReviewedDraft(draft: z.infer<typeof draftSchema>) {
+  return sanitizeReviewedValue(draft) as z.infer<typeof draftSchema>;
+}
+
+function sanitizeReviewedValue(value: unknown, field = ""): unknown {
+  if (typeof value === "string") {
+    return field === "bullets"
+      ? cleanResumeBullet(value)
+      : value.replace(/\u00ad/g, "").replace(/[ \t]+/g, " ").trim();
   }
-  if (kind === "experience") {
-    return {
-      kind,
-      summary: "经历暂用本地识别结果",
-      warnings: ["工作与项目经历智能复核未完成，已保留本地识别结果。"],
-      draft: { work: draft.work, projects: draft.projects },
-      fallback: true,
-    };
+  if (Array.isArray(value)) return value.map((item) => sanitizeReviewedValue(item, field));
+  if (value && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, sanitizeReviewedValue(item, key)]));
   }
-  return {
-    kind,
-    summary: "其他内容暂用本地识别结果",
-    warnings: ["技能与其他内容智能复核未完成，已保留本地识别结果。"],
-    draft: {
-      skills: draft.skills,
-      campus: draft.campus,
-      awards: draft.awards,
-      certifications: draft.certifications,
-      languages: draft.languages,
-      customSections: draft.customSections,
-    },
-    fallback: true,
-  };
+  return value;
 }
 
 function preserveDeterministicBasics(ai: z.infer<typeof basicsSchema>, local: z.infer<typeof basicsSchema>) {
@@ -449,7 +370,7 @@ function logServerError(scope: string, error: unknown, input?: ImportInput, elap
 }
 
 function logImportTiming(outcome: "success", input: ImportInput, elapsedMs: number) {
-  console.info("[resume_import_timing]", { outcome, elapsedMs, strategy: "parallel_parts_v2", ...getImportMetrics(input) });
+  console.info("[resume_import_timing]", { outcome, elapsedMs, strategy: "holistic_structure_v3", ...getImportMetrics(input) });
 }
 
 function getImportMetrics(input: ImportInput) {
@@ -472,7 +393,7 @@ function getImportMetrics(input: ImportInput) {
 }
 
 function getUpstreamErrorMessage(error: unknown) {
-  if (error instanceof DOMException && error.name === "AbortError") return "结构复核等待超时。本地识别结果仍可直接导入，也可稍后重试。";
+  if (error instanceof DOMException && error.name === "AbortError") return "AI 智能整理等待超时。本地识别结果仍可直接导入，也可稍后重试。";
   if (error instanceof UpstreamError) {
     if (error.status === 401 || error.status === 403) return "AI 服务鉴权失败，请联系管理员检查配置";
     if (error.status === 429) return "AI 服务繁忙，请稍后重试";
@@ -489,20 +410,18 @@ function mapUpstreamError(error: unknown) {
   return NextResponse.json({ error: getUpstreamErrorMessage(error) }, { status });
 }
 
-const PART_RESULT_SHAPES: Record<ReviewPartKind, string> = {
-  core: `只返回严格 JSON：{"summary":"string","warnings":["string"],"draft":{"language":"zh-CN|en-US","title":"string","targetRole":"string","basics":{"name":"string","englishName":"string","birthDate":"仅原文明确标注时返回 YYYY-MM-DD，否则空字符串","phone":"string","email":"string","city":"string","linkedin":"string","github":"string","website":"string","targetRole":"string"},"education":[{"school":"string","degree":"string","major":"string","startDate":"string","endDate":"string","gpa":"string","courses":"string","honors":"string"}]}}`,
-  experience: `只返回严格 JSON：{"summary":"string","warnings":["string"],"draft":{"work":[{"company":"string","title":"string","location":"string","startDate":"string","endDate":"string","current":false,"bullets":["string"]}],"projects":[{"name":"string","role":"string","startDate":"string","endDate":"string","bullets":["string"],"keywords":"string"}]}}`,
-  extras: `只返回严格 JSON：{"summary":"string","warnings":["string"],"draft":{"skills":[{"category":"string","skills":["string"]}],"campus":[{"title":"string","role":"string","date":"string","bullets":["string"]}],"awards":[{"title":"string","role":"string","date":"string","bullets":["string"]}],"certifications":[{"title":"string","role":"string","date":"string","bullets":["string"]}],"languages":[{"title":"string","role":"string","date":"string","bullets":["string"]}],"customSections":[{"title":"string","role":"string","date":"string","bullets":["string"]}]}}`,
-};
+const FULL_RESULT_SHAPE = `只返回一个完整严格 JSON，不要省略任何键：{"summary":"string","warnings":["string"],"draft":{"language":"zh-CN|en-US","title":"string","targetRole":"string","basics":{"name":"string","englishName":"string","birthDate":"仅原文明确标注时返回 YYYY-MM-DD，否则空字符串","phone":"string","email":"string","city":"string","linkedin":"string","github":"string","website":"string","targetRole":"string"},"education":[{"school":"string","degree":"string","major":"string","startDate":"string","endDate":"string","gpa":"string","courses":"string","honors":"string"}],"work":[{"company":"string","title":"string","location":"string","startDate":"string","endDate":"string","current":false,"bullets":["string"]}],"projects":[{"name":"string","role":"string","startDate":"string","endDate":"string","bullets":["string"],"keywords":"string"}],"skills":[{"category":"string","skills":["string"]}],"campus":[{"title":"string","role":"string","date":"string","bullets":["string"]}],"awards":[{"title":"string","role":"string","date":"string","bullets":["string"]}],"certifications":[{"title":"string","role":"string","date":"string","bullets":["string"]}],"languages":[{"title":"string","role":"string","date":"string","bullets":["string"]}],"customSections":[{"title":"string","role":"string","date":"string","bullets":["string"]}]}}`;
 
-const SYSTEM_PROMPT = `你是拾星简历导入校对器。程序已经先从用户自己的文件提取文本并生成本地草稿；你的任务是依据原文复核、拆分并映射为拾星简历结构。
+const SYSTEM_PROMPT = `你是拾星简历智能整理器。你必须先通读用户整份简历，理解标题、版面顺序和每段经历的语义边界，再把原文一次性映射为完整的拾星简历结构；不能把任务拆成彼此不知道上下文的局部猜测。
 规则：
 1. 只能使用 <resume_text> 中明确存在的信息。不得虚构姓名、学校、组织、岗位、时间、数字、成果、技能、证书或语言水平。
 2. localDraft 只是候选，不是事实来源；若它与原文冲突，以原文为准。但邮箱、手机号、LinkedIn、GitHub 和个人网站应保留原文精确字符。
-3. 保持每段经历的公司/项目、岗位、日期和 bullet 绑定，不跨教育、工作、项目、校园、奖项、证书、语言区块猜测。
-4. 可以规范日期格式和去除项目符号，可以把同一段连续文字拆成 bullet；不得润色事实、增加结果或升级责任等级。
-5. 无法确认的字段返回空字符串；不确定的映射写入 warnings。不要把简历页眉页脚、页码或联系方式误当经历。
-6. birthDate 只有原文以出生日期、生日、date of birth 或 DOB 明确标注时才填写并规范为 YYYY-MM-DD；不得根据年龄、教育日期或证件号码推断。
-7. title 使用文件名或“姓名 · 目标岗位”；targetRole 只有原文明确写出求职意向时才填写。
-8. language 必须根据原文主要叙述语言返回 zh-CN 或 en-US；中英混合时按经历描述、项目描述等正文占比判断。
-9. 只返回本批要求的完整严格 JSON；没有内容的数组返回 []，不要 Markdown 或额外解释。`;
+3. 必须先识别 EDUCATION、EXPERIENCE、PROJECTS、SKILLS 等标题与相邻内容的真实范围，再决定每一条应该进入 education、work、projects、skills、campus、awards、certifications、languages 或 customSections。网站地址、联系方式、页眉、页脚和下一节标题绝不能成为公司或经历。
+4. 保持每段经历的公司/项目、岗位、地点、日期和 bullet 绑定；一个公司或项目结束后，后续组织、岗位和日期必须新建对应记录，不得粘到上一条经历中。
+5. PDF 提取可能把项目符号错误显示为 ü、、、· ü 或把一句话按视觉换行拆开。它们只是排版噪声：输出中必须去掉这些符号，并在不改写原意的前提下合并同一句的换行。
+6. 可以规范日期格式和去除项目符号，可以把同一段连续文字拆成 bullet；不得润色事实、增加结果或升级责任等级。
+7. 无法确认的字段返回空字符串；不确定的映射写入 warnings。不要把简历页眉页脚、页码或联系方式误当经历。
+8. birthDate 只有原文以出生日期、生日、date of birth 或 DOB 明确标注时才填写并规范为 YYYY-MM-DD；不得根据年龄、教育日期或证件号码推断。
+9. title 使用文件名或“姓名 · 目标岗位”；targetRole 只有原文明确写出求职意向时才填写。
+10. language 必须根据原文主要叙述语言返回 zh-CN 或 en-US；中英混合时按经历描述、项目描述等正文占比判断。
+11. 必须返回全部区块的完整严格 JSON；没有内容的数组返回 []，不要 Markdown、注释、省略号或额外解释。`;

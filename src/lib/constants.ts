@@ -20,8 +20,8 @@ export const APPLICATION_STATUS_LABELS = {
   second_round: "二面",
   final_round: "终面",
   offer: "Offer",
-  rejected: "已结束",
-  withdrawn: "已结束",
+  rejected: "未通过",
+  withdrawn: "不投了",
 } as const;
 
 export const APPLICATION_CANDIDATE_STAGE = ["evaluating", "saved", "preparing"] as const;

@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>拾星 AI 130+ 字段跨页面区域测试</title>
+  </head>
+  <body>
+    <main>
+      <section id="emptyState" hidden></section>
+      <section id="readyState" hidden>
+        <select id="resumeSelect"></select>
+        <label><input type="radio" name="fillMode" value="merge" />只填空白项</label>
+        <label><input type="radio" name="fillMode" value="overwrite" />覆盖已有内容</label>
+        <label><input type="radio" name="fillMode" value="ai" checked />AI 智能填写</label>
+        <p id="modeHint"></p>
+        <button id="fillButton" type="button">AI 智能填写当前页面</button>
+        <p id="syncMeta"></p>
+      </section>
+      <section id="resultPanel" hidden>
+        <strong id="resultTitle"></strong>
+        <p id="resultText"></p>
+        <details id="unmatchedDetails" hidden><ul id="unmatchedList"></ul></details>
+      </section>
+      <section id="progressPanel" hidden>
+        <p id="progressAnnouncement"></p>
+        <span id="progressElapsed"></span>
+        <span id="progressLabel"></span>
+        <strong id="progressValue"></strong>
+        <div id="progressMeter"><span id="progressMeterFill"></span></div>
+        <div data-step="extract"><p></p></div>
+        <div data-step="match"><p></p></div>
+        <div data-step="fill"><p></p></div>
+        <div data-step="summary"><p></p></div>
+      </section>
+      <button id="openSync" type="button"></button>
+      <button id="openSyncFromEmpty" type="button"></button>
+      <button id="openGuide" type="button"></button>
+      <button id="clearData" type="button"></button>
+    </main>
+    <iframe id="frame-primary" title="主申请表区域" width="900" height="600"></iframe>
+    <iframe id="frame-secondary" title="补充申请表区域" width="900" height="600"></iframe>
+    <pre id="result">pending</pre>
+    <script>
+      const FRAME_CASES = [
+        { id: "frame-primary", frameId: 11, count: 110 },
+        { id: "frame-secondary", frameId: 22, count: 30 },
+      ];
+      const resume = {
+        id: "resume-large-iframe",
+        title: "大表单回归简历",
+        targetRole: "产品运营",
+        content: {
+          basics: { name: "王小星", phone: "13800000000", email: "resume@example.com", targetRole: "产品运营" },
+          education: [], work: [], projects: [], skills: [], campus: [], awards: [], certifications: [], languages: [], customSections: [],
+        },
+      };
+      const storage = {
+        starjobResumes: [resume],
+        activeResumeId: resume.id,
+        fillMode: "ai",
+        lastSyncedAt: "2026-08-10T00:00:00.000Z",
+        matchToken: "fixture-token",
+        matchTokenExpiresAt: "2099-01-01T00:00:00.000Z",
+        aiMatchingAvailable: true,
+        analysisOnly: false,
+        aiOnly: false,
+        aiFieldMappings: {},
+        aiAutofillOnly: false,
+        aiValueMappings: {},
+      };
+
+      const modelRequests = [];
+      const analysisCounts = [];
+      const fillSummaries = [];
+      let completedModelBatches = 0;
+      let fillStartedBeforeAllBatches = false;
+
+      window.chrome = {
+        storage: {
+          local: {
+            get: async () => ({ ...storage }),
+            set: async (values) => Object.assign(storage, values),
+            remove: async (keys) => {
+              for (const key of Array.isArray(keys) ? keys : [keys]) delete storage[key];
+            },
+          },
+        },
+        tabs: {
+          query: async () => [{ id: 7, url: "https://ats.example/apply" }],
+          create: async () => ({}),
+        },
+        scripting: {
+          executeScript: async ({ target }) => {
+            if (target.allFrames) {
+              const results = [];
+              for (const frameCase of FRAME_CASES) {
+                const frame = document.querySelector(`#${frameCase.id}`);
+                const result = await frame.contentWindow.eval(window.__fillSource);
+                analysisCounts.push(result.fields.length);
+                results.push({ frameId: frameCase.frameId, result });
+              }
+              return results;
+            }
+
+            if (completedModelBatches !== 3) fillStartedBeforeAllBatches = true;
+            const frameId = target.frameIds[0];
+            const frameCase = FRAME_CASES.find((item) => item.frameId === frameId);
+            const frame = document.querySelector(`#${frameCase.id}`);
+            const result = await frame.contentWindow.eval(window.__fillSource);
+            fillSummaries.push({ frameId, result });
+            return [{ frameId, result }];
+          },
+        },
+      };
+
+      function waitFor(predicate, timeoutMs = 5000) {
+        const startedAt = Date.now();
+        return new Promise((resolve, reject) => {
+          const check = () => {
+            if (predicate()) {
+              resolve();
+              return;
+            }
+            if (Date.now() - startedAt >= timeoutMs) {
+              reject(new Error("fixture wait timeout"));
+              return;
+            }
+            setTimeout(check, 10);
+          };
+          check();
+        });
+      }
+
+      function mountFrame(frameCase) {
+        return new Promise((resolve) => {
+          const frame = document.querySelector(`#${frameCase.id}`);
+          frame.addEventListener("load", () => {
+            frame.contentWindow.chrome = window.chrome;
+            resolve();
+          }, { once: true });
+          const controls = Array.from({ length: frameCase.count }, (_, index) => (
+            `<label>补充问题 ${index}<input id="question-${index}" name="question-${index}" /></label>`
+          )).join("");
+          frame.srcdoc = `<!doctype html><html lang="zh-CN"><head><style>label{display:block}input{display:block;width:240px;height:28px}</style></head><body><form>${controls}</form></body></html>`;
+        });
+      }
+
+      async function runFixture() {
+        const [popupSource, fillSource] = await Promise.all([
+          fetch("../starjob-resume-assistant/popup.js").then((response) => response.text()),
+          fetch("../starjob-resume-assistant/fill.js").then((response) => response.text()),
+        ]);
+        window.__fillSource = fillSource;
+        await Promise.all(FRAME_CASES.map(mountFrame));
+
+        window.fetch = async (url, options) => {
+          if (url !== "https://www.starjob.space/api/resume/extension-autofill") {
+            throw new Error(`unexpected fetch: ${url}`);
+          }
+          const body = JSON.parse(options.body);
+          const requestIndex = modelRequests.length;
+          modelRequests.push(body);
+          await new Promise((resolve) => setTimeout(resolve, [25, 5, 15][requestIndex]));
+          completedModelBatches += 1;
+          return {
+            ok: true,
+            json: async () => ({
+              mappings: body.fields.map((field) => {
+                const match = field.fieldKey.match(/^(\d+)::(\d+)::/);
+                return {
+                  fieldKey: field.fieldKey,
+                  value: `value-${match[1]}-${match[2]}`,
+                  confidence: 0.99,
+                  basis: "resume",
+                };
+              }),
+            }),
+          };
+        };
+
+        window.eval(popupSource);
+        await waitFor(() => document.querySelector("#resumeSelect").value === resume.id);
+        document.querySelector('input[name="fillMode"][value="ai"]').click();
+        document.querySelector("#fillButton").click();
+        await waitFor(() => document.querySelector("#resultTitle").textContent.startsWith("AI 已填写"));
+
+        const allModelFields = modelRequests.flatMap((request) => request.fields);
+        const operationIds = new Set(modelRequests.map((request) => request.operationId));
+        const totalFilled = fillSummaries.reduce((sum, item) => sum + item.result.filled, 0);
+        const totalManual = fillSummaries.reduce((sum, item) => sum + item.result.manual, 0);
+        const actual = {
+          analysisCounts,
+          modelBatchSizes: modelRequests.map((request) => request.fields.length),
+          modelFieldCount: allModelFields.length,
+          uniqueModelFieldCount: new Set(allModelFields.map((field) => field.fieldKey)).size,
+          operationCount: operationIds.size,
+          completedModelBatches,
+          fillStartedBeforeAllBatches,
+          fillFrameCount: fillSummaries.length,
+          totalFilled,
+          totalManual,
+          primaryTail: document.querySelector("#frame-primary").contentDocument.querySelector("#question-109").value,
+          secondaryTail: document.querySelector("#frame-secondary").contentDocument.querySelector("#question-29").value,
+          sentPrimaryTail: allModelFields.some((field) => field.fieldKey.startsWith("11::109::")),
+          sentSecondaryTail: allModelFields.some((field) => field.fieldKey.startsWith("22::29::")),
+          resultTitle: document.querySelector("#resultTitle").textContent,
+          progressLabel: document.querySelector("#progressLabel").textContent,
+          summaryText: document.querySelector('[data-step="summary"] p').textContent,
+        };
+        const passed = actual.analysisCounts.join(",") === "110,30"
+          && actual.modelBatchSizes.join(",") === "50,50,40"
+          && actual.modelFieldCount === 140
+          && actual.uniqueModelFieldCount === 140
+          && actual.operationCount === 1
+          && actual.completedModelBatches === 3
+          && actual.fillStartedBeforeAllBatches === false
+          && actual.fillFrameCount === 2
+          && actual.totalFilled === 140
+          && actual.totalManual === 0
+          && actual.primaryTail === "value-11-109"
+          && actual.secondaryTail === "value-22-29"
+          && actual.sentPrimaryTail
+          && actual.sentSecondaryTail
+          && actual.resultTitle === "AI 已填写 140 项"
+          && actual.progressLabel.includes("已填写 140 项")
+          && actual.progressLabel.includes("0 项需手动确认")
+          && actual.summaryText.includes("0 项需手动确认");
+        document.querySelector("#result").textContent = JSON.stringify({ passed, actual });
+        document.title = passed
+          ? "STARJOB_AI_AUTOFILL_LARGE_IFRAME_TEST_PASS"
+          : "STARJOB_AI_AUTOFILL_LARGE_IFRAME_TEST_FAIL";
+      }
+
+      runFixture().catch((error) => {
+        document.querySelector("#result").textContent = JSON.stringify({ passed: false, error: String(error), stack: error?.stack });
+        document.title = "STARJOB_AI_AUTOFILL_LARGE_IFRAME_TEST_FAIL";
+      });
+    </script>
+  </body>
+</html>

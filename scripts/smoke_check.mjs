@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
-import { existsSync, readFileSync, readdirSync, rmSync, statSync } from "node:fs";
+import { randomUUID } from "node:crypto";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { createServer } from "node:net";
-import { createClient } from "@supabase/supabase-js";
 
 const ROOT = new URL("..", import.meta.url);
 const ENV_FILE = new URL(".env.local", ROOT);
@@ -27,15 +27,27 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/star-interview/completion/route.ts",
-    mustInclude: ["validateStarInterviewClient", "requireStarInterviewUsageAccess", "\"completion\"", "starInterviewUsageHeaders", "getStarInterviewLLMConfiguration", "z.enum([\"mimo-v2.5\", \"deepseek-v4-flash\"])", "response_format", "json_object", "thinking: { type: \"disabled\" }", "Cache-Control", "no-store", "maxDuration = 60", "preferredRegion = \"hkg1\"", "max_tokens"],
+    mustInclude: ["validateStarInterviewClient", "requireStarInterviewUsageAccess", "\"completion\"", "starInterviewUsageHeaders", "getStarInterviewLLMConfiguration", "z.enum([\"mimo-v2.5\", \"deepseek-v4-flash\"])", "acquireCompletionReservation", "reserveStarInterviewCompletion", "getStarInterviewCompletion", "markStarInterviewCompletionDispatchIntent", "markStarInterviewCompletionDispatched", "commitStarInterviewCompletionStream", "completeStarInterviewCompletion", "failStarInterviewCompletion", "assertValidCompletionPayload", "upstreamFetchStarted && isCallerAbortError(error)", "StarInterviewCallerAbortError", "CompletionStreamCallerAbortError", "createCompletionRequestHash", "signal: request.signal", "firstContentTimeoutMs: 55_000", "totalTimeoutMs: 150_000", "timeoutMs: 150_000", "response_format", "json_object", "thinking: { type: \"disabled\" }", "Cache-Control", "no-store", "maxDuration = 240", "preferredRegion = \"hkg1\"", "max_tokens"],
     mustNotInclude: ["getStarInterviewASRConfiguration", "max_completion_tokens", "NEXT_PUBLIC_", "SUPABASE_SERVICE_ROLE_KEY"],
     label: "诘星 macOS 文本生成由服务端固定路由 DeepSeek 并兼容现有客户端标记",
   },
   {
+    file: "supabase/migrations/20260810143000_star_interview_completion_reservations.sql",
+    mustInclude: ["star_interview_completion_requests", "'dispatching'", "'dispatched'", "star_interview_asr_meter_aliases", "user_id uuid primary key", "on conflict (user_id) do nothing", "2026-08-17 00:00:00+00", "purge_star_interview_completion_cache", "reserve_star_interview_completion", "mark_star_interview_completion_dispatch_intent", "mark_star_interview_completion_dispatched", "get_star_interview_completion", "commit_star_interview_completion_stream", "complete_star_interview_completion", "fail_star_interview_completion", "reconcile_star_interview_completion_leases", "p_refund boolean default true", "cancelled_after_dispatch", "dispatch intent lease expired", "dispatched request lease expired", "dispatch_phase_at_expiry", "rolling_deploy_compatibility", "legacy completion already charged", "reservation lease expired", "interval '24 hours'", "interval '210 seconds'", "for update skip locked", "create extension if not exists pg_cron", "star-interview-completion-cache-purge", "star-interview-maintenance-history-purge", "'* * * * *'", "to service_role"],
+    mustNotInclude: ["to anon", "to authenticated"],
+    label: "诘星回答在上游前原子预占、流式首字节前记账并以持久化结果保证重试幂等",
+  },
+  {
     file: "src/app/api/star-interview/asr/route.ts",
-    mustInclude: ["validateStarInterviewClient", "requireStarInterviewUsageAccess", "\"asr\"", "starInterviewUsageHeaders", "getStarInterviewASRConfiguration", "input_audio", "asr_options", "installLimit: 600", "ipLimit: 3_000", "preferredRegion = \"hkg1\"", "Cache-Control", "no-store"],
-    mustNotInclude: ["getStarInterviewLLMConfiguration", "DEEPSEEK_", "runtime = \"edge\"", "NEXT_PUBLIC_", "SUPABASE_SERVICE_ROLE_KEY"],
-    label: "诘星实时语音转写继续独立路由 MiMo ASR 且频率额度覆盖高频分片",
+    mustInclude: ["validateStarInterviewClient", "requireStarInterviewUsageAccess", "\"asr\"", "starInterviewUsageHeaders", "getStarInterviewASRConfiguration", "createWavAudioBillingKey", "normalizeBase64WavAudio", "reserveStarInterviewASR", "confirmStarInterviewASRDispatch", "beforeDispatch", "completeStarInterviewASR", "failStarInterviewASR", "meterKey: billingMeterKey", "reservation.action === \"cached\"", "reservation.action === \"consumed\"", "STAR_INTERVIEW_ASR_IN_PROGRESS", "STAR_INTERVIEW_ASR_RESULT_CONSUMED", "STAR_INTERVIEW_BALANCE_INSUFFICIENT", "input_audio", "asr_options", "signal: request.signal", "responseBody: transcript", "responseBody: null", "consumed: true", "installLimit: 600", "ipLimit: 3_000", "preferredRegion = \"hkg1\"", "Cache-Control", "no-store"],
+    mustNotInclude: ["chargeStarInterviewUsage", "getStarInterviewLLMConfiguration", "DEEPSEEK_", "runtime = \"edge\"", "NEXT_PUBLIC_", "SUPABASE_SERVICE_ROLE_KEY"],
+    label: "诘星实时语音转写在上游前持久预留并于成功后结算、已知失败时退款",
+  },
+  {
+    file: "supabase/migrations/20260810144500_star_interview_asr_reservations.sql",
+    mustInclude: ["star_interview_asr_requests", "unique (user_id, meter_key)", "'reserved', 'succeeded', 'consumed', 'failed'", "response_body", "cache_expires_at", "star_interview_asr_requests_cache_idx", "reserve_star_interview_asr", "confirm_star_interview_asr_dispatch", "asr_request.unlimited is distinct from resolved_unlimited", "asr_request.reserved_fen <> (case", "complete_star_interview_asr", "interval '24 hours'", "fail_star_interview_asr", "reconcile_star_interview_asr_leases", "'purged', purged_count", "star_interview_asr_meter_aliases", "2026-08-17 00:00:00+00", "balance_fen = balance_fen - actual_reserve", "balance_fen = balance_fen + asr_request.reserved_fen", "consume_star_interview_usage_before_asr_reservations", "for update skip locked", "star-interview-asr-lease-reconcile", "'* * * * *'", "to service_role"],
+    mustNotInclude: ["to anon", "to authenticated"],
+    label: "诘星 ASR durable request 以用户钱包锁防并发透支并由全局 cron 回收失联预留",
   },
   {
     file: "src/lib/star-interview-server.ts",
@@ -45,9 +57,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/lib/star-interview-access.ts",
-    mustInclude: ["authenticateStarInterviewRequest", "star_interview_unlimited_access", '"metered"', "chargeStarInterviewUsage", "consumeStarInterviewUsage", "createAdminClient"],
-    mustNotInclude: ["NEXT_PUBLIC_", "SUPABASE_SERVICE_ROLE_KEY"],
-    label: "诘星 ASR 与回答共用登录鉴权、无限访问权限和按量计费扣费口",
+    mustInclude: ["authenticateStarInterviewRequest", "star_interview_unlimited_access", '"metered"', "chargeStarInterviewUsage", "consumeStarInterviewUsage", "createAdminClient", "admin_user_mutation_guards", "STAR_INTERVIEW_ACCOUNT_RECOVERY_REQUIRED", "already-paid key"],
+    mustNotInclude: ["getStarInterviewWallet", "mode === \"standard\" && _feature === \"asr\"", "NEXT_PUBLIC_", "SUPABASE_SERVICE_ROLE_KEY"],
+    label: "诘星共用鉴权会冻结未完成管理员操作，并把 ASR 与回答余额判断留给各自持久化原子预占",
   },
   {
     file: "src/app/layout.tsx",
@@ -495,9 +507,21 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/lib/resume-import.ts",
-    mustInclude: ["parseResumeTextLocally", "createResumeFromImport", "detectResumeLanguage", "getDefaultResumeTemplate", "splitSections", "extractDateRange", "教育背景", "工作经历", "项目经历", "createId", "英文简历", "中文简历"],
+    mustInclude: ["parseResumeTextLocally", "createResumeFromImport", "detectResumeLanguage", "getDefaultResumeTemplate", "splitSections", "extractDateRange", "教育背景", "工作经历", "项目经历", "createId", "英文简历", "中文简历", "normalizeResumeImportText", "cleanResumeBullet"],
     mustNotInclude: ["fetch(", "MIMO_API_KEY", "SUPABASE_SERVICE_ROLE_KEY"],
     label: "简历导入先用确定性规则识别基础字段和硬区块再生成平台结构",
+  },
+  {
+    file: "src/lib/resume-import-text.ts",
+    mustInclude: ["normalizeResumeImportText", "cleanResumeBullet", "PDF_BULLET_GLYPHS", "ü"],
+    mustNotInclude: ["fetch(", "MIMO_API_KEY", "SUPABASE_SERVICE_ROLE_KEY"],
+    label: "PDF 项目符号乱码在本地确定性清理且不破坏正文中的合法字符",
+  },
+  {
+    file: "tests/resume-import-text.test.ts",
+    mustInclude: ["PDF Wingdings 项目符号乱码", "· ü Conducted data analysis", " Applied SQL and Excel", " Evaluated category growth", "München office"],
+    mustNotInclude: [],
+    label: "简历导入回归覆盖三类伪项目符号与合法变音字符保留",
   },
   {
     file: "src/components/ui/AiTaskProgress.tsx",
@@ -507,13 +531,13 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/resume/import/route.ts",
-    mustInclude: ["resolveResumeAiAccess", "access.takeRateSlot", "MIMO_API_KEY", "response_format", "json_object", "localDraft", "sourceText", "preserveDeterministicBasics", "language", "zh-CN", "en-US", "role", "不得虚构", "区块", "Cache-Control", "no-store", "maxDuration = 90", "REQUEST_TIMEOUT_MS = 70_000", "buildLocalReviewHints", "bulletCount", "elapsedMs", "progressMode", "application/x-ndjson", "REVIEW_PARTS_TOTAL = 3", "Promise.all", "enable_thinking: false", "createFallbackPart", "本地识别结果仍可直接导入"],
-    mustNotInclude: ["createAdminClient", "SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_", "request.formData", "console.log"],
-    label: "AI 将完整原文分成三个输出区块并行复核、实时回传进度且保留旧 JSON 返回契约",
+    mustInclude: ["resolveResumeAiAccess", "access.takeRateSlot", "MIMO_API_KEY", "response_format", "json_object", "localDraft", "sourceText", "preserveDeterministicBasics", "language", "zh-CN", "en-US", "role", "不得虚构", "区块", "Cache-Control", "no-store", "maxDuration = 120", "REQUEST_TIMEOUT_MS = 100_000", "buildWholeReviewHints", "bulletCount", "elapsedMs", "progressMode", "application/x-ndjson", "REVIEW_PARTS_TOTAL = 2", "buildWholeResumeMessages", "sanitizeReviewedDraft", "holistic_structure_v3", "enable_thinking: false", "本地识别结果仍可直接导入"],
+    mustNotInclude: ["createAdminClient", "SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_", "request.formData", "console.log", "createFallbackPart", "Promise.all(REVIEW_PARTS"],
+    label: "AI 先通读整份原文再一次性决定全部区块归属，完整校验后才返回且保留旧 JSON 契约",
   },
   {
     file: "src/components/resume/ResumeImportDialog.tsx",
-    mustInclude: ["01 本地读取 · 02 分区复核 · 03 确认导入", "extractResumeFileText", "parseResumeTextLocally", "不会上传原文件", "进行结构复核", "英文简历", "中文简历", "直接导入本地结果", "导入复核结果", "即使复核超时或失败，当前结果仍会保留", "ResumeImportMode", "AbortController", "105_000", "当前网络不可用", "停止复核", "本地识别结果已保留", "readImportReviewStream", "AiTaskProgress"],
+    mustInclude: ["01 本地读取 · 02 AI 理解全文 · 03 确认导入", "extractResumeFileText", "parseResumeTextLocally", "不会上传原文件", "AI 智能整理", "英文简历", "中文简历", "直接导入本地结果", "导入智能整理结果", "失败不会混入未复核的局部结果", "ResumeImportMode", "AbortController", "118_000", "当前网络不可用", "停止复核", "本地识别结果已保留", "readImportReviewStream", "AiTaskProgress"],
     mustNotInclude: ["request.formData", "window.location.reload"],
     label: "简历导入必须先预览程序结果和 AI 警告再由用户确认生成",
   },
@@ -555,7 +579,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/miniprogram/resume/translate/route.ts",
-    mustInclude: ["maxDuration = 180", "@/app/api/resume/translate/route"],
+    mustInclude: ["export { maxDuration, POST }", "@/app/api/resume/translate/route"],
     mustNotInclude: ["MIMO_API_KEY", "SUPABASE_SERVICE_ROLE_KEY"],
     label: "小程序兼容翻译入口复用网页翻译实现并保留长任务运行窗口",
   },
@@ -685,7 +709,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/jobs/HomeClient.tsx",
-    mustInclude: ["ChinaJobMap", "岗位分布", "岗位清单", "按省份查看", "正在绘制岗位地图", "mapMatchingJobs", "location: \"\"", "selectedLocation={filters.location}", "handleFiltersChange({ ...filters, location })", "CaptureAnimation", "candidateStage", "\"evaluating\"", "\"saved\"", "\"preparing\"", "upsertApplication(supabase, user.id, job.id, \"preparing\")", "openApplicationWebsite(job, applyWindow)", "岗位已收入星瓶，投递官网已打开", "focusJob", "encodeURIComponent(\"/explore\")", "href=\"/my\"", "最新开放", "ApplyReturnConfirm", "visibilitychange", "keep_opened", "useSearchParams", "\"cats\"", "window.history.replaceState", "discoveryScope", "recentJobs", "recentPreferenceJobs", "recentJobs: recentJobs.length", "label=\"近 7 日新增\"", "grid-cols-2", "sm:grid-cols-4", "filteredJobs.map"],
+    mustInclude: ["ChinaJobMap", "岗位分布", "岗位清单", "按省份查看", "正在绘制岗位地图", "mapMatchingJobs", "location: \"\"", "selectedLocation={filters.location}", "handleFiltersChange({ ...filters, location })", "CaptureAnimation", "candidateStage", "\"evaluating\"", "\"saved\"", "\"preparing\"", "upsertApplication(supabase, user.id, job.id, \"preparing\")", "openApplicationWebsite(job, applyWindow)", "岗位已收入星瓶，投递官网已打开", "focusJob", "encodeURIComponent(\"/explore\")", "href=\"/my\"", "最新开放", "ApplyReturnConfirm", "visibilitychange", "keep_opened", "useSearchParams", "\"cats\"", "window.history.replaceState", "discoveryScope", "recentJobs", "recentPreferenceJobs", "recentJobs: recentJobs.length", "label=\"近 7 日新增\"", "grid-cols-2", "lg:grid-cols-4", "filteredJobs.map"],
     mustNotInclude: ["NebulaGateway", "nebulaSelection", "按行业探索", "已加入星瓶。先评估岗位", "encodeURIComponent(\"/jobs\")", "href=\"/my-applications\"", "router.replace(query ? `/explore?${query}` : \"/explore\"", "JOB_LIST_PAGE_SIZE", "displayedJobs", "IntersectionObserver", ">继续加载<"],
     label: "全国地图与线性清单共用筛选，首次加入星瓶后直接打开官网并保留返回确认闭环",
   },
@@ -694,6 +718,36 @@ const SOURCE_INVARIANTS = [
     mustInclude: ["快捷查看", "近 7 日新增", "近 7 日新增 · 符合偏好", "新增以本站收录时间为准", "求职偏好", "disabled={!hasPreferences}"],
     mustNotInclude: ["无限滚动", "继续加载"],
     label: "岗位筛选提供可解释的新上与偏好快捷范围且偏好为空时不制造假匹配",
+  },
+  {
+    file: "src/components/layout/Navbar.tsx",
+    mustInclude: ["tabletPrimaryNavItems", "tabletMoreNavItems", "lg:hidden", "更多", "--app-safe-bottom"],
+    mustNotInclude: [],
+    label: "顶部导航在平板宽度收纳次要入口并为移动端底栏预留安全区",
+  },
+  {
+    file: "src/components/galaxy/SpaceHome.tsx",
+    mustInclude: ["compactDesktopHeight", "desktopVerticalReserve", "desktopMinimumScale"],
+    mustNotInclude: [],
+    label: "低高度桌面视口压缩星轨并避让导航与底部安全区",
+  },
+  {
+    file: "src/components/forum/PostCard.tsx",
+    mustInclude: ["line-clamp-2", "sm:truncate"],
+    mustNotInclude: [],
+    label: "论坛置顶帖在窄屏保留两行标题且不挤压操作区",
+  },
+  {
+    file: "src/components/resume/ResumeBuilderClient.tsx",
+    mustInclude: ["mobileActionsRef", "新建简历", "网申助手", "导入简历", "更多"],
+    mustNotInclude: [],
+    label: "移动端简历页保留单一主操作并将次要入口收纳到更多菜单",
+  },
+  {
+    file: "src/components/jobs/ChinaJobMap.tsx",
+    mustInclude: ["md:grid-cols-[minmax(0,1.15fr)_minmax(240px,.85fr)]", "md:hidden"],
+    mustNotInclude: [],
+    label: "岗位地图在平板启用紧凑分栏并隐藏重复的省份快捷条",
   },
   {
     file: "src/components/jobs/ApplyReturnConfirm.tsx",
@@ -871,9 +925,27 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/admin/users/route.ts",
-    mustInclude: ["requireAdmin", "auth.getUser", "createAdminClient", "listAllAuthUsers", "listUsers", "buildMetrics", "active24h", "active3d", "last_sign_in_at", "matchesFilters", "totalFiltered", "updateUserById", "不能停用或降级当前管理员账号", "ban_duration", "email_confirm: true", "PRIMARY_ADMIN_EMAIL", "star_interview_unlimited_access", "只有主管理员可以调整 StarInterview 无限访问", "isPrimaryAdmin"],
+    mustInclude: ["requireAdminAccess", "requirePrimaryAdminRecoveryAccess", "createAdminClient", "listAllAuthUsers", "listUsers", "buildMetrics", "active24h", "active3d", "last_sign_in_at", "matchesFilters", "totalFiltered", "admin.auth.admin.getUserById", "admin.auth.admin.updateUserById", "reserveAdminUserMutation", "finalizeAdminUserMutation", "cancelAdminUserMutation", "recoverAdminUserMutation", "rollbackGuardedAuthAndCancel", "classifyGuardedAuthState", "不能停用或降级当前管理员账号", "email_confirm: true", "只有主管理员可以调整 StarInterview 无限访问", "isPrimaryAdmin", "reservationToken", "maxDuration = 60"],
     mustNotInclude: ["NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY"],
-    label: "管理员用户 API 在服务端复核身份并将 StarInterview 无限权限调整限制给主管理员",
+    label: "管理员用户 API 使用持久 guard 编排 Auth/Profile 写入、显式恢复并将无限权限调整限制给主管理员",
+  },
+  {
+    file: "src/lib/admin-access.ts",
+    mustInclude: ["supabase.auth.getUser()", "supabase.rpc(\"is_admin\")", "ADMIN_ACCESS_SUSPENDED", "isPrimaryAdminEmail", "requirePrimaryAdminRecoveryAccess", "admin.auth.admin.getUserById", "profile?.role !== \"admin\""],
+    mustNotInclude: ["NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY"],
+    label: "共享管理员鉴权同时复核登录、数据库角色、封禁与未完成 target guard",
+  },
+  {
+    file: "src/lib/admin-auth-mutation.ts",
+    mustInclude: ["star_interview_unlimited_access", "ban_duration", "buildGuardedAuthPatch", "buildGuardedAuthRollbackPatch", "classifyGuardedAuthState", "guardedAuthMatchesOriginal"],
+    mustNotInclude: ["...user.app_metadata", "...current.app_metadata"],
+    label: "管理员 Auth 补偿只拥有封禁与 StarInterview 单键并以权威快照判断状态",
+  },
+  {
+    file: "supabase/migrations/20260810142000_admin_user_mutation_guard.sql",
+    mustInclude: ["admin_user_mutation_guards", "target_user_id uuid primary key", "fail-closed", "reserve_admin_user_mutation", "finalize_admin_user_mutation", "cancel_admin_user_mutation", "for update", "ADMIN_MUTATION_IN_PROGRESS", "ADMIN_ACTOR_REVOKED", "PRIMARY_ADMIN_REQUIRED", "to service_role"],
+    mustNotInclude: ["lease_expires_at", "to anon", "to authenticated"],
+    label: "管理员角色与停用操作以持久化目标锁跨越 Auth 调用并在提交点原子复核权限",
   },
   {
     file: "src/components/admin/AdminUsersClient.tsx",
@@ -895,7 +967,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/admin/star-interview-balance/route.ts",
-    mustInclude: ["summaryOnly", "selectedUserId", "star_interview_ledger", "fundedUsers", "totalBalanceFen", "requirePrimaryAdmin", "idempotencyKey"],
+    mustInclude: ["summaryOnly", "selectedUserId", "star_interview_ledger", "fundedUsers", "totalBalanceFen", "requireAdminAccess({ primaryOnly: true })", "idempotencyKey"],
     mustNotInclude: ["NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY"],
     label: "余额管理 API 独立提供概览、搜索结果、单用户账本和幂等发放",
   },
@@ -1024,15 +1096,15 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/admin/forum/pin/route.ts",
-    mustInclude: ["auth.getUser", "profile?.role !== \"admin\"", "只有管理员可以设置指南重点内容", "is_pinned"],
-    mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY", ".update({ is_pinned: false })", ".neq(\"id\", input.postId)"],
-    label: "指南重点接口服务端复核管理员身份且允许多篇内容同时突出",
+    mustInclude: ["requireAdminAccess", "const { supabase } = access", ".update({ is_pinned: input.isPinned })", "is_pinned"],
+    mustNotInclude: ["createAdminClient", "SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY", ".update({ is_pinned: false })", ".neq(\"id\", input.postId)"],
+    label: "指南重点接口通过共享鉴权与 guard-aware RLS 提交并允许多篇内容同时突出",
   },
   {
     file: "src/app/api/admin/forum/posts/route.ts",
-    mustInclude: ["getAdminUser", "profile?.role !== \"admin\"", "createAdminClient", "GUIDE_CATEGORIES", "只有管理员可以发布指南内容", "export async function POST", "export async function PATCH", "export async function DELETE"],
-    mustNotInclude: ["NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY", "display_name", "forum_comments", "forum_likes"],
-    label: "指南发布编辑删除由受保护的管理员 API 执行",
+    mustInclude: ["requireAdminAccess", "const { user, supabase } = access", "const { supabase } = access", "await supabase", "GUIDE_CATEGORIES", "export async function POST", "export async function PATCH", "export async function DELETE"],
+    mustNotInclude: ["createAdminClient", "SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY", "display_name", "forum_comments", "forum_likes"],
+    label: "指南发布编辑删除使用调用者会话与 guard-aware RLS 在提交时再次复核管理员权限",
   },
   {
     file: "supabase/migrations/20260714200000_forum_to_guide_center.sql",
@@ -1054,13 +1126,13 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "browser-extension/starjob-resume-assistant/manifest.json",
-    mustInclude: ["\"manifest_version\": 3", "\"version\": \"0.2.5\"", "\"activeTab\"", "\"scripting\"", "\"storage\"", "https://www.starjob.space/extension*", "https://www.starjob.space/*"],
+    mustInclude: ["\"manifest_version\": 3", "\"version\": \"0.2.6\"", "\"activeTab\"", "\"scripting\"", "\"storage\"", "https://www.starjob.space/extension*", "https://www.starjob.space/*"],
     mustNotInclude: ["\"cookies\"", "\"tabs\"", "<all_urls>", "localhost", "nowcoder", "牛客"],
     label: "拾星网申助手使用 Manifest V3 和用户触发的最小权限",
   },
   {
     file: "browser-extension/starjob-resume-assistant/fill.js",
-    mustInclude: ["fillMode === \"overwrite\"", "analysisOnly", "aiFieldMappings", "createFieldKey", "toAnalysisField", "getExplicitRecordNumber", "getRepeatableOccurrenceKey", "takeNextOccurrenceIndex", "isUsableRecordIndex(plannedRecordIndex, matchedDefinition)", "isUsableRecordIndex(normalizedRecordIndex, matchedDefinition)", "isUsableRecordIndex(containerRecordIndex, matchedDefinition)", "assignRecordIndices", "recordIndex", "inferStructuredFieldContract", "structuredContract", "getExactStructuredValue", "starjobPreviouslyFilled", "dateValuesEquivalent", "repairInvalidFilledDateRanges", "invalidDatesRepaired", "invalidDatesUnresolved", "start.year * 12 + start.month <= end.year * 12 + end.month", "\"工作职责\"", "\"职责描述\"", "\"主要工作\"", "\"工作业绩\"", "\"工作成果\"", "\"项目职责\"", "\"项目成果\"", "\"项目经历描述\"", "\"个人贡献\"", "/项目经历|项目名称|项目角色|项目链接|项目描述|项目内容|projectexperience|projectname|projectrole|projectdescription/", "[\"描述\", \"description\"].includes(normalizedAlias)", "definition.section !== sectionHint", "recordNumberMaps", "recordContainerMaps", "inferSectionHint", "hasMultipleRecordHeadings", "inferPairedDateKey", "tryExactDatePickerSelection", "findActiveDatePickerPanel", "yearSteps = Math.min(150", "basics.birthDate", "birthDateField", "awards.title", "awards.description", "duplicateAdjacentAnchor", "anchorKeys", "deterministicConfidence", "sensitiveTerms", "input[type='file']", "dispatchEvents", "data-starjob-filled", "manual += 1", "education.description", "certifications.title"],
+    mustInclude: ["fillMode === \"overwrite\"", "analysisOnly", "aiFieldMappings", "createFieldKey", "toAnalysisField", "getExplicitRecordNumber", "getRepeatableOccurrenceKey", "takeNextOccurrenceIndex", "isUsableRecordIndex(plannedRecordIndex, matchedDefinition)", "isUsableRecordIndex(normalizedRecordIndex, matchedDefinition)", "isUsableRecordIndex(containerRecordIndex, matchedDefinition)", "assignRecordIndices", "recordIndex", "inferStructuredFieldContract", "structuredContract", "getExactStructuredValue", "starjobPreviouslyFilled", "dateValuesEquivalent", "repairInvalidFilledDateRanges", "invalidDatesRepaired", "invalidDatesUnresolved", "fillElementSafely", "failed += 1", "start.year * 12 + start.month <= end.year * 12 + end.month", "\"工作职责\"", "\"职责描述\"", "\"主要工作\"", "\"工作业绩\"", "\"工作成果\"", "\"项目职责\"", "\"项目成果\"", "\"项目经历描述\"", "\"个人贡献\"", "/项目经历|项目名称|项目角色|项目链接|项目描述|项目内容|projectexperience|projectname|projectrole|projectdescription/", "[\"描述\", \"description\"].includes(normalizedAlias)", "definition.section !== sectionHint", "recordNumberMaps", "recordContainerMaps", "inferSectionHint", "hasMultipleRecordHeadings", "inferPairedDateKey", "tryExactDatePickerSelection", "findActiveDatePickerPanel", "yearSteps = Math.min(150", "basics.birthDate", "birthDateField", "awards.title", "awards.description", "duplicateAdjacentAnchor", "anchorKeys", "deterministicConfidence", "sensitiveTerms", "input[type='file']", "dispatchEvents", "data-starjob-filled", "manual += 1", "education.description", "certifications.title"],
     mustNotInclude: [".submit()", ".click()", "SUPABASE_SERVICE_ROLE_KEY", "document.cookie", "chrome.cookies"],
     label: "网申填写只处理可核对字段且不读取 Cookie 或自动提交",
   },
@@ -1084,9 +1156,15 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/resume/extension-autofill/route.ts",
-    mustInclude: ["export const maxDuration = 90", "preferredRegion = \"hkg1\"", "REQUEST_TIMEOUT_MS = 75_000", "verifyExtensionMatchToken", "DEEPSEEK_API_KEY", "DEEPSEEK_BASE_URL", "DEEPSEEK_MODEL", "https://api.deepseek.com", "deepseek-v4-flash", "thinking: { type: \"disabled\" }", "REQUEST_TIMEOUT_MS", "RATE_LIMIT", "MIN_CONFIDENCE", "response_format", "json_object", "resumeSchema", "fieldSchema", "resultSchema", "basis", "derived", "recordIndex", "deriveRecordDateValue", "deriveRecordDescriptionValue", "getScopedFieldFacts", "hasFieldSpecificResumeBasis", "isEducationDescriptionField", "必须以第一人称“我”开头", "责任心强、执行力强", "沟通能力强、善于协作", "经历描述”本身绝不等同于自我描述", "只要存在课程、荣誉或职责内容就必须填写经历描述", "严禁交换开始和结束日期", "normalizeChoice", "field.options.some", "returnedByKey", "discardedUnknown", "discardedDuplicate", "fieldKey: `f${index}`", "originalFields", "value: null, confidence: 0, basis: null", "collectResumeFacts", "collectResumeSummaryFacts", "hasResumeBasis", "isAllowedDerivedValue", "isSafeResumeSummary", "basics.birthDate", "自我描述", "deriveGraduationValue", "parseYearMonth", "不可信文本", "唯一事实来源", "从上到下逐字段处理", "中文姓名的无声调汉语拼音", "不得推断或填写身份证", "不得代答开放性申请题", "options 中已有", "mappings 必须与页面字段数量相同", "Wang Xiaoxing", "Cache-Control", "no-store"],
+    mustInclude: ["export const maxDuration = 90", "preferredRegion = \"hkg1\"", "REQUEST_TIMEOUT_MS = 75_000", "verifyExtensionMatchToken", "takeExtensionAutofillRateSlot", "DEEPSEEK_API_KEY", "DEEPSEEK_BASE_URL", "DEEPSEEK_MODEL", "https://api.deepseek.com", "deepseek-v4-flash", "thinking: { type: \"disabled\" }", "REQUEST_TIMEOUT_MS", "MIN_CONFIDENCE", "operationId", "rateSlotAllowed", "response_format", "json_object", "resumeSchema", "fieldSchema", "resultSchema", "basis", "derived", "recordIndex", "deriveRecordDateValue", "deriveRecordDescriptionValue", "getScopedFieldFacts", "hasFieldSpecificResumeBasis", "isEducationDescriptionField", "必须以第一人称“我”开头", "责任心强、执行力强", "沟通能力强、善于协作", "经历描述”本身绝不等同于自我描述", "只要存在课程、荣誉或职责内容就必须填写经历描述", "严禁交换开始和结束日期", "normalizeChoice", "field.options.some", "returnedByKey", "discardedUnknown", "discardedDuplicate", "fieldKey: `f${index}`", "originalFields", "value: null, confidence: 0, basis: null", "collectResumeFacts", "collectResumeSummaryFacts", "hasResumeBasis", "isAllowedDerivedValue", "isSafeResumeSummary", "basics.birthDate", "自我描述", "deriveGraduationValue", "parseYearMonth", "不可信文本", "唯一事实来源", "从上到下逐字段处理", "中文姓名的无声调汉语拼音", "不得推断或填写身份证", "不得代答开放性申请题", "options 中已有", "mappings 必须与页面字段数量相同", "Wang Xiaoxing", "Cache-Control", "no-store"],
     mustNotInclude: ["MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL", "createAdminClient", "SUPABASE_SERVICE_ROLE_KEY", "document.cookie", "console.log"],
     label: "AI 智能填写使用受限令牌、结构化简历白名单和全表单保守规则调用 DeepSeek V4 Flash",
+  },
+  {
+    file: "supabase/migrations/20260810110000_extension_autofill_durable_rate_limit.sql",
+    mustInclude: ["extension_autofill_rate_operations", "extension_autofill_rate_batches", "pg_advisory_xact_lock", "interval '10 minutes'", "current_batch_count >= 15", "active_operation_count >= 5", "active_batch_count >= 15", "to service_role"],
+    mustNotInclude: ["to anon", "to authenticated"],
+    label: "网申助手额度由数据库按用户、操作和批次原子限制而非依赖单实例内存",
   },
   {
     file: "src/lib/extension-match-token.ts",
@@ -1096,7 +1174,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "browser-extension/starjob-resume-assistant/popup.js",
-    mustInclude: ["正在读取可见表单字段", "analysisOnly", "aiOnly", "extension-match", "extension-autofill", "matchToken", "智能复核", "AI 智能填写", "从页面顶部开始，按每条记录和字段顺序逐项填写", "AI_AUTOFILL_TIMEOUT_MS = 85_000", "AI_AUTOFILL_BATCH_SIZE = 50", "AI 单批分析超过 85 秒", "batches.push(fields.slice", "Promise.all", "所有批次成功后", "sanitizeResumeForAi", "includeBirthDate", "basics.birthDate", "aiValueMappings", "SMART_MATCH_TIMEOUT_MS", "SMART_MATCH_MAX_FIELDS = 12", "deterministicConfidence", "AbortController", "activeFillAbortController", "updateTaskProgress", "停止本次智能填写", "正在安全写入页面", "立即填写", "后台复核", "aiFieldMappings", "CONFIRM_WINDOW_MS", "再次点击，确认覆盖并填写", "再次点击确认清除", "unmatchedFields", "friendlyFillError", "扩展与当前页面的连接已失效"],
+    mustInclude: ["正在读取可见表单字段", "analysisOnly", "aiOnly", "extension-match", "extension-autofill", "matchToken", "智能复核", "AI 智能填写", "从页面顶部开始，按每条记录和字段顺序逐项填写", "AI_AUTOFILL_TIMEOUT_MS = 85_000", "AI_AUTOFILL_BATCH_SIZE = 50", "AI_AUTOFILL_MAX_FIELDS = 750", "AI 单批分析超过 85 秒", "batches.push(fields.slice", "Promise.all", "所有批次成功后", "表单字段过多，未开始填写", "本次未调用 AI，也没有改动页面", "sanitizeResumeForAi", "includeBirthDate", "basics.birthDate", "aiValueMappings", "SMART_MATCH_TIMEOUT_MS", "SMART_MATCH_MAX_FIELDS = 12", "deterministicConfidence", "AbortController", "activeFillAbortController", "updateTaskProgress", "停止本次智能填写", "正在安全写入页面", "立即填写", "后台复核", "aiFieldMappings", "qualifyFrameFieldKey", "executeMappedFillByFrame", "sourceFieldKey", "operationId", "部分未完成", "CONFIRM_WINDOW_MS", "再次点击，确认覆盖并填写", "再次点击确认清除", "unmatchedFields", "friendlyFillError", "扩展与当前页面的连接已失效"],
     mustNotInclude: ["MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL", "SUPABASE_SERVICE_ROLE_KEY", "document.cookie"],
     label: "扩展按字段提取、智能匹配、逐项填写和未填整理四阶段执行",
   },
@@ -1113,6 +1191,12 @@ const SOURCE_INVARIANTS = [
     label: "扩展弹窗使用稳定的工具栏视口宽度并保留开放工作面、分隔线和状态色",
   },
   {
+    file: "browser-extension/tests/form-fixture.html",
+    mustInclude: ["STARJOB_EXTENSION_TEST_PASS", "async function runFixture", "await window.eval(fillSource)", "actual.filledCount >= 42"],
+    mustNotInclude: ["}, 250);", "SUPABASE_SERVICE_ROLE_KEY", ".submit()"],
+    label: "本地规则填写浏览器夹具等待真实填写任务完成而非依赖固定 250ms",
+  },
+  {
     file: "browser-extension/tests/ai-autofill-fixture.html",
     mustInclude: ["STARJOB_AI_AUTOFILL_TEST_PASS", "Wang Xiaoxing", "basis: \"derived\"", "user-kept@example.com", "毕业状态", "studentStatus === true", "自我描述", "basicInfo_recruitEducationList_0_description", "basicInfo_recruitWorkingList_0_startDate", "basicInfo_recruitWorkingList_1_description", "actual.educationDescription", "actual.work1Description", "actual.work2Description", "actual.summary.structured === 7", "invalidDatesRepaired === 0", "birth-date", "2000-02-03", "ant-picker-header-super-prev-btn", "身份证号", "同意隐私协议", "actual.summary.derived === 3"],
     mustNotInclude: ["MIMO_API_KEY", "SUPABASE_SERVICE_ROLE_KEY", ".submit()"],
@@ -1120,21 +1204,27 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/extension/ExtensionHubClient.tsx",
-    mustInclude: ["<span className=\"block\">一份简历，</span>", "<span className=\"block\">抵达更多坐标</span>", "把拾星简历同步到浏览器，在网申页面填写常用字段；你负责核对与提交。", "starjob-resume-assistant-iphone17pm.png", "iPhone 17 Pro Max", "获取安装包", "安装后重新检测", "window.location.reload()", "LEGACY_COMPATIBLE_VERSIONS", "SHORT_TIMEOUT_AI_VERSIONS", "PREVIOUS_AI_VERSIONS", "new Set([\"0.1.7\", \"0.1.8\", \"0.1.9\"])", "new Set([\"0.2.0\"])", "new Set([\"0.2.1\", \"0.2.2\", \"0.2.3\", \"0.2.4\"])", "AI 智能填写需要升级到 0.2.5", "最新版本 0.2.5", "/downloads/starjob-resume-assistant-v0.2.5.zip"],
+    mustInclude: ["<span className=\"block\">一份简历，</span>", "<span className=\"block\">抵达更多坐标</span>", "把拾星简历同步到浏览器，在网申页面填写常用字段；你负责核对与提交。", "starjob-resume-assistant-popup-v026.png", "展示三种填写方式、填写结果和处理进度", "获取安装包", "安装后重新检测", "window.location.reload()", "LEGACY_COMPATIBLE_VERSIONS", "SHORT_TIMEOUT_AI_VERSIONS", "PREVIOUS_AI_VERSIONS", "new Set([\"0.1.7\", \"0.1.8\", \"0.1.9\"])", "new Set([\"0.2.0\"])", "new Set([\"0.2.1\", \"0.2.2\", \"0.2.3\", \"0.2.4\", \"0.2.5\"])", "AI 智能填写需要升级到 0.2.6", "最新版本 0.2.6", "/downloads/starjob-resume-assistant-v0.2.6.zip"],
     mustNotInclude: ["一份简历，投向更多可能", "常见网申字段按页面顺序填入", "你只需检查，再决定提交", "简历写一次，网申少重复", "请升级到 0.1.8", "extensionVersion !==", "starjob-resume-assistant-popup.png", "https://pan.baidu.com/s/1q9gVenToSLL5x5tXZzYLig?pwd=SXZS", "https://pan.baidu.com/s/13sk2UUdep9S1zoJdEk_sSA?pwd=SXZS", "https://pan.baidu.com/s/1jl_OHVc_HxXbUrI1-IS56g?pwd=SXZS"],
     label: "网申助手首屏使用更克制的价值表达与带灵动岛的设备实机展示",
   },
   {
     file: "src/components/extension/ExtensionGuide.tsx",
-    mustInclude: ["/downloads/starjob-resume-assistant-v0.2.5.zip", "安装包由拾星官网直接提供", "最新版本 0.2.5", "真实批次进度与已用时", "全部批次成功后才会改动页面", "返回拾星并同步简历", "安装后刷新检测", "步骤 {String(index + 1).padStart(2, \"0\")}"],
+    mustInclude: ["/downloads/starjob-resume-assistant-v0.2.6.zip", "安装包由拾星官网直接提供", "最新版本 0.2.6", "真实批次进度与已用时", "不同页面框架的字段分别处理", "返回拾星并同步简历", "安装后刷新检测", "步骤 {String(index + 1).padStart(2, \"0\")}"],
     mustNotInclude: ["pan.baidu.com", "百度网盘提取码", "最新版本 0.1.9"],
-    label: "网申助手下载页与安装教程共用 0.2.5 官网安装包",
+    label: "网申助手下载页与安装教程共用 0.2.6 官网安装包",
   },
   {
     file: "scripts/build_resume_extension.mjs",
     mustInclude: ["Manifest V3", "manifest.permissions.includes(\"cookies\")", "public", "downloads", "manifest.version", "拾星网申助手-v${manifest.version}.zip"],
     mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY", "accounts.csv", "password"],
     label: "扩展安装包可复现生成并在打包时复核权限边界",
+  },
+  {
+    file: "scripts/test_extension_fixtures.mjs",
+    mustInclude: ["STARJOB_EXTENSION_TEST_PASS", "STARJOB_AI_AUTOFILL_TEST_PASS", "STARJOB_AI_AUTOFILL_LARGE_IFRAME_TEST_PASS", "STARJOB_AI_AUTOFILL_LIMIT_TEST_PASS", "STARJOB_AI_AUTOFILL_BATCH_FAILURE_TEST_PASS", "--headless=new", "--dump-dom", "扩展浏览器夹具全部通过"],
+    mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY", "MIMO_API_KEY", "DEEPSEEK_API_KEY", "https://www.starjob.space"],
+    label: "扩展五份本地表单夹具可通过无头浏览器自动执行",
   },
   {
     file: "scripts/build_resume_extension_dev.mjs",
@@ -1196,6 +1286,18 @@ const SOURCE_INVARIANTS = [
     mustNotInclude: ["grant execute on function public.merge_wechat_user_into_email_user(uuid, uuid)\\n  to authenticated"],
     label: "指南可见性、反馈队列和账号合并均由数据库约束",
   },
+  {
+    file: "starjob-miniprogram/scripts/validate-project.mjs",
+    mustInclude: ["scanClientSourceForSecrets", "secretScan.files.length", "递归扫描"],
+    mustNotInclude: ["const sourceFiles = [", "miniprogram/pages/login/index.ts"],
+    label: "小程序结构校验递归扫描完整客户端源码而非六个硬编码文件",
+  },
+  {
+    file: "starjob-miniprogram/scripts/validate-project-lib.mjs",
+    mustInclude: ["collectClientSourceFiles", "scanClientSourceForSecrets", "DEEPSEEK_API_KEY", "CLIENT_SOURCE_EXTENSIONS"],
+    mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY =", "WECHAT_APP_SECRET ="],
+    label: "小程序密钥扫描覆盖页面、服务、配置和模板源码",
+  },
 ];
 const REQUIRED_FILES = [
   "public/assets/space-background-desktop.png",
@@ -1207,6 +1309,7 @@ const REQUIRED_FILES = [
   "public/assets/star-bottle-image2.png",
   "public/assets/extension/starjob-resume-assistant-popup.png",
   "public/assets/extension/starjob-resume-assistant-iphone17pm.png",
+  "public/assets/extension/starjob-resume-assistant-popup-v026.png",
   "public/downloads/starjob-resume-assistant-v0.1.7.zip",
   "public/downloads/starjob-resume-assistant-v0.1.8.zip",
   "public/downloads/starjob-resume-assistant-v0.1.9.zip",
@@ -1216,6 +1319,7 @@ const REQUIRED_FILES = [
   "public/downloads/starjob-resume-assistant-v0.2.3.zip",
   "public/downloads/starjob-resume-assistant-v0.2.4.zip",
   "public/downloads/starjob-resume-assistant-v0.2.5.zip",
+  "public/downloads/starjob-resume-assistant-v0.2.6.zip",
   "browser-extension/starjob-resume-assistant/assets/icon16.png",
   "browser-extension/starjob-resume-assistant/assets/icon48.png",
   "browser-extension/starjob-resume-assistant/assets/icon128.png",
@@ -1370,97 +1474,9 @@ async function checkSupabase(env) {
   console.log(`✓ Supabase jobs 可读：${count} 条开放岗位`);
 }
 
-async function checkSecurityProbe(env) {
-  const url = env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const smokeEmail = env.SMOKE_USER_EMAIL;
-  const smokePassword = env.SMOKE_USER_PASSWORD;
-  if (!url || !key) throw new Error("缺少 Supabase URL 或 publishable key");
-
-  const anonymous = createClient(url, key, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-
-  const { data: roleData, error: roleError } = await anonymous
-    .from("profiles")
-    .update({ role: "admin" })
-    .eq("id", "00000000-0000-0000-0000-000000000000")
-    .select("id");
-  if (!roleError && (roleData ?? []).length > 0) {
-    throw new Error("安全探针失败：匿名用户实际修改了 profiles.role");
-  }
-
-  const logoPath = `smoke/anonymous-${Date.now()}.txt`;
-  const { error: uploadError } = await anonymous.storage
-    .from("company-logos")
-    .upload(logoPath, new Blob(["smoke"], { type: "text/plain" }), { upsert: false });
-  if (!uploadError) {
-    throw new Error("安全探针失败：匿名用户可以上传 company-logos");
-  }
-
-  const { data: foreignApplications, error: foreignReadError } = await anonymous
-    .from("user_applications")
-    .select("id")
-    .eq("user_id", "00000000-0000-0000-0000-000000000000");
-  if (foreignReadError) {
-    throw new Error(`安全探针失败：匿名读取投递记录返回错误 ${foreignReadError.message}`);
-  }
-  if ((foreignApplications ?? []).length !== 0) {
-    throw new Error("安全探针失败：匿名用户读取到了他人的 user_applications");
-  }
-
-  if (!smokeEmail || !smokePassword) {
-    console.log("✓ 安全探针通过：匿名提权、匿名 logo 上传、匿名跨用户投递读取均被拒绝；登录重复 upsert 探针因未配置 SMOKE_USER_EMAIL/PASSWORD 已跳过");
-    return;
-  }
-
-  const authenticated = createClient(url, key, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-  const { data: signIn, error: signInError } = await authenticated.auth.signInWithPassword({
-    email: smokeEmail,
-    password: smokePassword,
-  });
-  if (signInError || !signIn.user) {
-    throw new Error(`安全探针失败：测试用户登录失败 ${signInError?.message ?? ""}`.trim());
-  }
-
-  const { data: job, error: jobError } = await authenticated
-    .from("jobs")
-    .select("id")
-    .eq("is_active", true)
-    .limit(1)
-    .single();
-  if (jobError || !job) {
-    throw new Error(`安全探针失败：无法读取测试岗位 ${jobError?.message ?? ""}`.trim());
-  }
-
-  const payload = {
-    user_id: signIn.user.id,
-    job_id: job.id,
-    status: "opened",
-  };
-  const first = await authenticated
-    .from("user_applications")
-    .upsert(payload, { onConflict: "user_id,job_id" })
-    .select("id");
-  if (first.error) throw new Error(`安全探针失败：首次 upsert 失败 ${first.error.message}`);
-
-  const second = await authenticated
-    .from("user_applications")
-    .upsert(payload, { onConflict: "user_id,job_id" })
-    .select("id");
-  if (second.error) throw new Error(`安全探针失败：重复 upsert 失败 ${second.error.message}`);
-
-  const { count, error: countError } = await authenticated
-    .from("user_applications")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", signIn.user.id)
-    .eq("job_id", job.id);
-  if (countError) throw new Error(`安全探针失败：重复 upsert 计数失败 ${countError.message}`);
-  if (count !== 1) throw new Error(`安全探针失败：重复 upsert 后记录数为 ${count}`);
-
-  console.log("✓ 安全探针通过：匿名写入被拒、跨用户读取为 0、重复 upsert 仅保留一行");
+function reportSecurityCoverage() {
+  console.log("↷ RLS/认证写入探针未验证：默认 smoke 严格只读，不尝试匿名提权、对象上传或认证 upsert");
+  console.log("↷ 跨用户隔离未验证：必须在带受控真实夹具和清理机制的隔离测试库中验证，不能用不存在的 UUID 推断安全性");
 }
 
 function checkSourceInvariants() {
@@ -1840,7 +1856,12 @@ async function checkResumeImportProbe() {
   const resumeModule = typescript.transpileModule(resumeSource, { compilerOptions }).outputText;
   const resumeUrl = `data:text/javascript;base64,${Buffer.from(resumeModule).toString("base64")}`;
   const resumeRuntime = await import(resumeUrl);
+  const importTextSource = readFileSync(new URL("src/lib/resume-import-text.ts", ROOT), "utf8");
+  const importTextModule = typescript.transpileModule(importTextSource, { compilerOptions }).outputText;
+  const importTextUrl = `data:text/javascript;base64,${Buffer.from(importTextModule).toString("base64")}`;
+  const importTextRuntime = await import(importTextUrl);
   const importSource = readFileSync(new URL("src/lib/resume-import.ts", ROOT), "utf8")
+    .replace("@/lib/resume-import-text", importTextUrl)
     .replace("@/lib/resume", resumeUrl);
   const importModule = typescript.transpileModule(importSource, { compilerOptions }).outputText;
   const importer = await import(`data:text/javascript;base64,${Buffer.from(importModule).toString("base64")}`);
@@ -1894,8 +1915,9 @@ Fudan University | Bachelor | Information Systems | 2023.09 - 2027.06
 
 Work Experience
 StarJob | Product Intern | Shanghai | 2025.06 - 2025.09
-- Collected user feedback and supported product requirement analysis.
-- Validated the application tracking workflow with the engineering team.
+· ü Collected user feedback and supported product requirement analysis.
+ Validated the application tracking workflow with the engineering team.
+• Coordinated with the München office.
 
 Projects
 Graduate Recruitment Assistant | Product Lead | 2025.01 - 2025.05
@@ -1905,6 +1927,12 @@ Skills
 Product: User Research, Figma, SQL`;
   const englishParsed = importer.parseResumeTextLocally(englishText, "Stella-Wang-Resume.pdf");
   if (englishParsed.draft.language !== "en-US") throw new Error(`简历导入探针失败：英文简历语言识别为 ${englishParsed.draft.language}`);
+  if (/(·\s*ü||)/u.test(englishParsed.normalizedText) || !englishParsed.normalizedText.includes("München")) {
+    throw new Error("简历导入探针失败：PDF 伪项目符号未清理或合法非 ASCII 文本被误改");
+  }
+  if (importTextRuntime.normalizeResumeImportText("· ü Applied SQL\n Built dashboard\nMünchen office") !== "• Applied SQL\n• Built dashboard\nMünchen office") {
+    throw new Error("简历导入探针失败：PDF 字体项目符号归一化异常");
+  }
   const englishDocument = importer.createResumeFromImport(englishParsed.draft);
   if (englishDocument.templateId !== "english_classic") throw new Error("简历导入探针失败：英文简历未分配英文模板");
   if (resumeRuntime.getResumeTemplatesForLanguage("zh-CN").length !== 6 || resumeRuntime.getResumeTemplatesForLanguage("en-US").length !== 2) {
@@ -2063,31 +2091,10 @@ async function checkSeoEndpoints(baseUrl) {
   console.log("✓ SEO 探针通过：robots、sitemap、私密页 noindex 与岗位结构化数据正常");
 }
 
-async function findReusableServer() {
-  const candidates = [
-    process.env.SMOKE_BASE_URL,
-    "http://127.0.0.1:3001",
-    "http://localhost:3001",
-    "http://127.0.0.1:3000",
-    "http://localhost:3000",
-  ].filter(Boolean);
-
-  for (const candidate of candidates) {
-    try {
-      const response = await fetch(candidate, { signal: AbortSignal.timeout(1200) });
-      const html = await response.text();
-      if (response.ok && html.includes("拾星")) return candidate;
-    } catch {
-      // Keep trying the next likely local server.
-    }
-  }
-  return null;
-}
-
 async function main() {
   const env = { ...process.env, ...readEnvFile() };
   await checkSupabase(env);
-  await checkSecurityProbe(env);
+  reportSecurityCoverage();
   checkSourceInvariants();
   checkBottleGeometryProbe();
   await checkCategoryProbe();
@@ -2096,24 +2103,19 @@ async function main() {
   await checkResumeFontProbe();
   await checkApplicationUrlProbe();
 
-  const reusableServer = await findReusableServer();
-  if (reusableServer) {
-    console.log(`✓ 复用已有本地站点：${reusableServer}`);
-    await checkPages(reusableServer);
-    await checkSeoEndpoints(reusableServer);
-    console.log("✓ 冒烟检查通过");
-    return;
-  }
-
   const port = await getOpenPort();
   const baseUrl = `http://127.0.0.1:${port}`;
-  rmSync(new URL(".next/dev", ROOT), { recursive: true, force: true });
+  const runId = randomUUID();
   const child = spawn(
     NEXT_BIN.pathname,
     ["dev", "--hostname", "127.0.0.1", "--port", String(port)],
     {
       cwd: ROOT,
-      env,
+      env: {
+        ...env,
+        STARJOB_SMOKE_RUN_ID: runId,
+        WATCHPACK_POLLING: "true",
+      },
       stdio: ["ignore", "pipe", "pipe"],
     },
   );
@@ -2128,6 +2130,10 @@ async function main() {
 
   try {
     await fetchWithRetry(baseUrl, {}, 60);
+    if (child.exitCode !== null) {
+      throw new Error(`独立本地站点提前退出：exit ${child.exitCode}`);
+    }
+    console.log(`✓ 独立本地站点已启动：run ${runId}，port ${port}；未复用 3000/3001 上的未知进程`);
     await checkPages(baseUrl);
     await checkSeoEndpoints(baseUrl);
     console.log("✓ 冒烟检查通过");

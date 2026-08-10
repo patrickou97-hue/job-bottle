@@ -216,7 +216,7 @@ export function LoginForm() {
               className="text-center font-mono text-lg tracking-[0.24em]"
             />
           </label>
-          {message ? <p className="info-banner text-sm">{message}</p> : null}
+          {message ? <p className="info-banner text-sm" role="status" aria-live="polite">{message}</p> : null}
           <Button type="submit" className="w-full" disabled={busy || wechatCode.length !== 8}>
             使用微信账户登录
           </Button>
@@ -322,7 +322,7 @@ export function LoginForm() {
           ) : null}
         </label>
 
-        {message ? <p className="info-banner text-sm">{message}</p> : null}
+        {message ? <p className="info-banner text-sm" role="status" aria-live="polite">{message}</p> : null}
 
         <Button type="submit" className="w-full" disabled={busy}>
           {isRegister ? "注册" : "登录"}

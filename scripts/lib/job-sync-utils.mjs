@@ -175,6 +175,7 @@ export function planJobChanges(candidates, existingJobs) {
   const sourceFingerprints = new Set();
   const inserts = [];
   const updates = [];
+  const identityConflicts = [];
   let sourceDuplicates = 0;
   let previousImports = 0;
   let unchanged = 0;
@@ -188,6 +189,18 @@ export function planJobChanges(candidates, existingJobs) {
     sourceFingerprints.add(fingerprint);
 
     const current = existingById.get(candidate.payload.id);
+    if (current) {
+      const changedFields = getCoreIdentityChanges(candidate.payload, current);
+      if (changedFields.length > 0) {
+        identityConflicts.push({
+          recordId: candidate.recordId,
+          rowNumber: candidate.rowNumber,
+          jobId: candidate.payload.id,
+          changedFields,
+        });
+        continue;
+      }
+    }
     const matchingExistingIds = existingByFingerprint.get(fingerprint) ?? new Set();
     const matchingOtherJob = Array.from(matchingExistingIds).some((id) => id !== candidate.payload.id);
     if (matchingOtherJob) {
@@ -209,7 +222,23 @@ export function planJobChanges(candidates, existingJobs) {
     inserts.push(candidate.payload);
   }
 
-  return { inserts, updates, sourceDuplicates, previousImports, unchanged };
+  return { inserts, updates, identityConflicts, sourceDuplicates, previousImports, unchanged };
+}
+
+export function assertNoJobIdentityConflicts(plan) {
+  if (!Array.isArray(plan?.identityConflicts) || plan.identityConflicts.length === 0) return;
+  const sample = plan.identityConflicts
+    .slice(0, 5)
+    .map((conflict) => {
+      const location = conflict.recordId
+        ? `记录${conflict.recordId}`
+        : `第${conflict.rowNumber ?? "?"}条`;
+      return `${location}:${conflict.changedFields.join("/")}`;
+    })
+    .join("、");
+  throw new Error(
+    `检测到同一腾讯源记录核心身份变化（${sample}），共${plan.identityConflicts.length}条，本次零写入`,
+  );
 }
 
 export function getJobMergeFingerprint(row) {
@@ -315,6 +344,20 @@ function splitToTags(...values) {
 
 function areSyncFieldsEqual(left, right) {
   return SYNC_FIELDS.every((field) => normalizeComparable(left[field]) === normalizeComparable(right[field]));
+}
+
+function getCoreIdentityChanges(incoming, current) {
+  const fields = [];
+  if (normalizeFingerprintValue(incoming.company_name) !== normalizeFingerprintValue(current.company_name)) {
+    fields.push("公司名称");
+  }
+  if (normalizeUrl(incoming.apply_url) !== normalizeUrl(current.apply_url)) {
+    fields.push("投递链接");
+  }
+  if (normalizeFingerprintValue(incoming.batch_type) !== normalizeFingerprintValue(current.batch_type)) {
+    fields.push("批次类型");
+  }
+  return fields;
 }
 
 function normalizeComparable(value) {

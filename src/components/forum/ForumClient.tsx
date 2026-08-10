@@ -30,7 +30,7 @@ const QUICK_LINKS = [
 export function ForumClient() {
   const [posts, setPosts] = useState<ForumPostView[]>([]);
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState("");
+  const [loadError, setLoadError] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("全部");
   const [showForm, setShowForm] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -50,11 +50,11 @@ export function ForumClient() {
 
   async function loadPosts() {
     setLoading(true);
-    setMessage("");
+    setLoadError("");
     try {
       if (!isSupabaseConfigured()) {
         console.error("Supabase environment variables are not configured.");
-        setMessage("拾星指南暂时无法读取，请稍后重试。");
+        setLoadError("拾星指南暂时无法读取，请稍后重试。");
         return;
       }
       const supabase = createClient();
@@ -75,7 +75,7 @@ export function ForumClient() {
       });
       setPosts(result);
     } catch {
-      setMessage("读取指南内容失败，请稍后再试。");
+      setLoadError("读取指南内容失败，请稍后再试。");
     } finally {
       setLoading(false);
     }
@@ -183,16 +183,18 @@ export function ForumClient() {
         <span className="section-meta">{visiblePosts.length} 篇内容</span>
       </section>
 
-      {message ? (
-        <div className="message-banner text-sm">
-          {message}
-        </div>
-      ) : null}
-
       <section className="list-surface">
         {loading ? (
           <div className="empty-state">
             <span className="loading-line">正在读取指南</span>
+          </div>
+        ) : loadError ? (
+          <div className="empty-state" role="alert">
+            <div>
+              <h2>拾星指南暂时无法读取</h2>
+              <p>{loadError}</p>
+              <Button className="mt-5" onClick={loadPosts}>重试</Button>
+            </div>
           </div>
         ) : visiblePosts.length === 0 ? (
           <div className="empty-state">

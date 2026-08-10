@@ -116,6 +116,12 @@ const SECTION_ORDER_LABELS = Object.fromEntries(
 
 const DRAFT_PREFIX = "starjob_resume_draft_v1:";
 let draftTimer: ReturnType<typeof setTimeout> | undefined;
+type AiTaskKind = "" | "polish" | "translate";
+let aiProgressTimer: ReturnType<typeof setInterval> | undefined;
+let activeAiRequest: WechatMiniprogram.RequestTask | undefined;
+let nextAiOperationId = 0;
+let activeAiOperationId = 0;
+let cancelledAiOperationId = 0;
 
 Page({
   data: {
@@ -134,6 +140,9 @@ Page({
     polishResult: null as ResumePolishResult | null,
     polishBusy: false,
     verificationConfirmed: false,
+    aiTaskKind: "" as AiTaskKind,
+    aiTaskStage: "",
+    aiTaskElapsedSeconds: 0,
   },
 
   onLoad(options: Record<string, string | undefined>) {
@@ -142,11 +151,13 @@ Page({
   },
 
   onHide() {
+    this.cancelAiTask(false);
     this.persistDraft();
   },
 
   onUnload() {
     if (draftTimer) clearTimeout(draftTimer);
+    this.cancelAiTask(false);
     this.persistDraft();
   },
 
@@ -362,7 +373,10 @@ Page({
   },
 
   onPolishItem(event: WechatMiniprogram.TouchEvent) {
-    if (this.data.polishBusy) return;
+    if (this.data.polishBusy || this.data.aiTaskKind) {
+      wx.showToast({ title: "请先完成或取消当前智能任务", icon: "none" });
+      return;
+    }
     const section = String(
       event.currentTarget.dataset.section || "",
     ) as PolishableSection;
@@ -408,12 +422,27 @@ Page({
       verificationConfirmed: false,
       errorMessage: "",
     });
+    const operationId = this.startAiTask("polish");
     try {
       const result = await apiRequest<ResumePolishResult>(
         "/resume/ai-polish",
         {
           method: "POST",
-          timeout: 25_000,
+          timeout: 65_000,
+          isCancelled: () => (
+            cancelledAiOperationId === operationId ||
+            activeAiOperationId !== operationId
+          ),
+          onRequestTask: (task) => {
+            if (
+              activeAiOperationId === operationId &&
+              cancelledAiOperationId !== operationId
+            ) {
+              activeAiRequest = task;
+            } else {
+              task.abort();
+            }
+          },
           data: {
             sectionType: target.sectionType,
             content: {
@@ -431,8 +460,15 @@ Page({
           },
         },
       );
+      if (
+        cancelledAiOperationId === operationId ||
+        activeAiOperationId !== operationId
+      ) {
+        return;
+      }
       this.setData({ polishResult: result });
     } catch (error) {
+      if (cancelledAiOperationId === operationId) return;
       this.setData({
         errorMessage:
           error instanceof Error
@@ -441,8 +477,71 @@ Page({
         polishTarget: null,
       });
     } finally {
-      this.setData({ polishBusy: false });
+      if (activeAiOperationId === operationId) {
+        this.finishAiTask();
+      }
     }
+  },
+
+  startAiTask(kind: Exclude<AiTaskKind, "">) {
+    if (aiProgressTimer) clearInterval(aiProgressTimer);
+    activeAiOperationId = ++nextAiOperationId;
+    activeAiRequest = undefined;
+    this.setData({
+      aiTaskKind: kind,
+      aiTaskStage:
+        kind === "translate"
+          ? "AI 正在生成完整译本"
+          : "AI 正在润色这段内容",
+      aiTaskElapsedSeconds: 0,
+      errorMessage: "",
+    });
+    aiProgressTimer = setInterval(() => {
+      const elapsed = this.data.aiTaskElapsedSeconds + 1;
+      this.setData({ aiTaskElapsedSeconds: elapsed });
+    }, 1_000);
+    return activeAiOperationId;
+  },
+
+  onCancelAiTask() {
+    this.cancelAiTask(true);
+  },
+
+  cancelAiTask(showFeedback: boolean) {
+    const kind = this.data.aiTaskKind;
+    if (!kind || !activeAiOperationId) return;
+    cancelledAiOperationId = activeAiOperationId;
+    activeAiOperationId = 0;
+    activeAiRequest?.abort();
+    this.setData({
+      ...(kind === "polish"
+        ? {
+            polishTarget: null,
+            polishResult: null,
+            verificationConfirmed: false,
+          }
+        : {}),
+    });
+    this.finishAiTask();
+    if (showFeedback) {
+      wx.showToast({
+        title: kind === "translate" ? "已取消，原简历未改动" : "已取消，原文未改动",
+        icon: "none",
+      });
+    }
+  },
+
+  finishAiTask() {
+    if (aiProgressTimer) clearInterval(aiProgressTimer);
+    aiProgressTimer = undefined;
+    activeAiRequest = undefined;
+    activeAiOperationId = 0;
+    this.setData({
+      aiTaskKind: "",
+      aiTaskStage: "",
+      aiTaskElapsedSeconds: 0,
+      polishBusy: false,
+    });
   },
 
   onVerificationChange(event: WechatMiniprogram.CheckboxGroupChange) {
@@ -484,6 +583,10 @@ Page({
   },
 
   onSave() {
+    if (this.data.aiTaskKind) {
+      wx.showToast({ title: "请先完成或取消当前智能任务", icon: "none" });
+      return;
+    }
     void this.saveResume(false);
   },
 
@@ -557,6 +660,10 @@ Page({
   },
 
   onMoreActions() {
+    if (this.data.aiTaskKind) {
+      wx.showToast({ title: "请先完成或取消当前智能任务", icon: "none" });
+      return;
+    }
     const translateLabel = isEnglishTemplate(this.data.resume?.templateId)
       ? "翻译为中文简历"
       : "翻译为英文简历";
@@ -577,16 +684,40 @@ Page({
   },
 
   async translateResume() {
+    if (this.data.aiTaskKind) return;
     if (this.data.dirty) {
       const saved = await this.saveResume(false);
       if (!saved) return;
     }
-    this.setData({ saving: true, errorMessage: "" });
+    const operationId = this.startAiTask("translate");
     try {
       const response = await apiRequest<ResumeTranslationResponse>(
         `/resumes/${encodeURIComponent(this.data.id)}/translate`,
-        { method: "POST", timeout: 45_000 },
+        {
+          method: "POST",
+          timeout: 190_000,
+          isCancelled: () => (
+            cancelledAiOperationId === operationId ||
+            activeAiOperationId !== operationId
+          ),
+          onRequestTask: (task) => {
+            if (
+              activeAiOperationId === operationId &&
+              cancelledAiOperationId !== operationId
+            ) {
+              activeAiRequest = task;
+            } else {
+              task.abort();
+            }
+          },
+        },
       );
+      if (
+        cancelledAiOperationId === operationId ||
+        activeAiOperationId !== operationId
+      ) {
+        return;
+      }
       const translated = response.data.resume;
       const warningCopy = response.data.warnings.slice(0, 2).join("\n");
       wx.showModal({
@@ -601,6 +732,7 @@ Page({
         },
       });
     } catch (error) {
+      if (cancelledAiOperationId === operationId) return;
       this.setData({
         errorMessage:
           error instanceof Error
@@ -608,7 +740,9 @@ Page({
             : "翻译暂时不可用，原简历未改动。",
       });
     } finally {
-      this.setData({ saving: false });
+      if (activeAiOperationId === operationId) {
+        this.finishAiTask();
+      }
     }
   },
 

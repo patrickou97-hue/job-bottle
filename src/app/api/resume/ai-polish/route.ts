@@ -105,6 +105,7 @@ export async function POST(request: NextRequest) {
       baseUrl,
       model,
       messages: buildMessages(parsed.data),
+      signal: request.signal,
     });
     const firstResult = parseResult(first, parsed.data.content);
     if (!firstResult) {
@@ -125,13 +126,18 @@ async function callMimo({
   baseUrl,
   model,
   messages,
+  signal,
 }: {
   apiKey: string;
   baseUrl: string;
   model: string;
   messages: ChatMessage[];
+  signal?: AbortSignal;
 }) {
   const controller = new AbortController();
+  const abortFromRequest = () => controller.abort();
+  signal?.addEventListener("abort", abortFromRequest, { once: true });
+  if (signal?.aborted) abortFromRequest();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
     const response = await fetch(getChatCompletionsUrl(baseUrl), {
@@ -161,6 +167,7 @@ async function callMimo({
     return content;
   } finally {
     clearTimeout(timeout);
+    signal?.removeEventListener("abort", abortFromRequest);
   }
 }
 

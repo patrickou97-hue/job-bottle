@@ -35,6 +35,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   if (!isUuid(id)) {
     return NextResponse.json({ error: "简历编号无效。" }, { status: 400 });
   }
+  if (request.signal.aborted) return cancelledResponse();
 
   try {
     const admin = createAdminClient();
@@ -43,6 +44,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       .select("*")
       .eq("id", id)
       .eq("user_id", identity.sub)
+      .abortSignal(request.signal)
       .maybeSingle();
     if (error) throw error;
     if (!row) {
@@ -68,6 +70,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
           targetLanguage,
           resume: createResumeTranslationSource(source),
         }),
+        signal: request.signal,
       },
     );
     const translationResponse = await translateResume(translationRequest);
@@ -90,6 +93,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         { status: translationResponse.status || 502 },
       );
     }
+    if (request.signal.aborted) return cancelledResponse();
 
     const translated = createResumeFromTranslation(
       source,
@@ -114,6 +118,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         updated_at: translated.updatedAt,
       })
       .select("*")
+      .abortSignal(request.signal)
       .single();
     if (createError) throw createError;
 
@@ -128,6 +133,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       { status: 201, headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {
+    if (request.signal.aborted) return cancelledResponse();
     console.error("[miniprogram_resume_translate]", {
       code:
         error && typeof error === "object" && "code" in error
@@ -139,6 +145,13 @@ export async function POST(request: NextRequest, context: RouteContext) {
       { status: 500 },
     );
   }
+}
+
+function cancelledResponse() {
+  return NextResponse.json(
+    { error: "本次翻译已取消，未创建译本。" },
+    { status: 499, headers: { "Cache-Control": "no-store" } },
+  );
 }
 
 function isUuid(value: string) {

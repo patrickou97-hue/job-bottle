@@ -22,15 +22,14 @@ export function SegmentedControl<T extends string>({
   value: T;
 }) {
   return (
-    <div className={cn("apple-segmented", className)} role="tablist" aria-label={ariaLabel}>
+    <div className={cn("apple-segmented", className)} role="group" aria-label={ariaLabel}>
       {options.map((option) => {
         const active = option.value === value;
         return (
           <button
             key={option.value}
             type="button"
-            role="tab"
-            aria-selected={active}
+            aria-pressed={active}
             className="apple-segmented__item"
             onClick={() => onChange(option.value)}
           >

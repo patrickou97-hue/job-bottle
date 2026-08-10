@@ -176,7 +176,7 @@ export function JobDetailActions({
       if (status === "applied") void track("application_recorded", { job_id: job.id });
       applyConfirmationArmedRef.current = false;
       setShowApplyConfirmation(false);
-      setMessage(status === "applied" ? "投递已记录，这颗星已进入你的投递星图。" : "已结束这次考虑。");
+      setMessage(status === "applied" ? "投递已记录，这颗星已进入你的投递星图。" : "已标记为不投了。");
     } catch {
       setMessage("状态暂未更新，请稍后重试。");
     } finally {

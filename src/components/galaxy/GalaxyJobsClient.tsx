@@ -159,7 +159,7 @@ export function GalaxyJobsClient({ kind, slug }: { kind: GalaxyKind; slug: strin
       });
       setPendingConfirmation(null);
       setShowConfirmation(false);
-      setMessage(status === "applied" ? "投递已记录，这颗星已进入你的投递星图。" : "已结束这次考虑。");
+      setMessage(status === "applied" ? "投递已记录，这颗星已进入你的投递星图。" : "已标记为不投了。");
       await loadData();
     } catch {
       setMessage("状态暂未更新，请稍后重试。");
@@ -228,6 +228,9 @@ export function GalaxyJobsClient({ kind, slug }: { kind: GalaxyKind; slug: strin
             jobs={jobs}
             applicationByJobId={applicationByJobId}
             onApply={handleApply}
+            onOpenProgress={(job) => {
+              void handleApply(job);
+            }}
             hoveredJobId={hoveredJobId}
             focusedJobId={focusedJobId}
             onHoverJob={(job) => setHoveredJobId(job?.id ?? null)}

@@ -18,6 +18,16 @@ export class StarInterviewUpstreamError extends Error {
   }
 }
 
+export class StarInterviewCallerAbortError extends Error {
+  override name = "StarInterviewCallerAbortError";
+  reason?: unknown;
+
+  constructor(reason?: unknown) {
+    super("StarInterview request was cancelled by the caller");
+    this.reason = reason;
+  }
+}
+
 export function validateStarInterviewClient(
   request: NextRequest,
   limits: {
@@ -88,16 +98,40 @@ export async function fetchOpenAICompatibleJSON({
   baseUrl,
   body,
   timeoutMs,
+  signal,
+  beforeDispatch,
+  onFetchStarted,
+  afterDispatch,
 }: {
   apiKey: string;
   baseUrl: string;
   body: unknown;
   timeoutMs: number;
+  signal?: AbortSignal;
+  beforeDispatch?: () => Promise<void>;
+  onFetchStarted?: () => void;
+  afterDispatch?: () => Promise<void>;
 }) {
+  throwIfAborted(signal);
+  await beforeDispatch?.();
+  throwIfAborted(signal);
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  let fetchOutcome: "pending" | "success" | "upstream_error" | "transport_error" = "pending";
+  let callerAbortWon = false;
+  const abortFromCaller = () => {
+    // A caller cancellation wins only while a successful response is still
+    // being opened/read. Once fetch has already produced a transport error or
+    // non-2xx response, a later client abort must not change refund semantics.
+    if (fetchOutcome === "pending" || fetchOutcome === "success") callerAbortWon = true;
+    controller.abort(signal?.reason);
+  };
+  if (signal?.aborted) abortFromCaller();
+  else signal?.addEventListener("abort", abortFromCaller, { once: true });
+  let responsePromise: Promise<Response> | null = null;
   try {
-    const response = await fetch(getChatCompletionsUrl(baseUrl), {
+    responsePromise = fetch(getChatCompletionsUrl(baseUrl), {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -107,18 +141,54 @@ export async function fetchOpenAICompatibleJSON({
       cache: "no-store",
       signal: controller.signal,
     });
-    const payload = await response.json().catch(() => null);
+    // Record settlement and attach both handlers in the same tick as fetch().
+    // The durable dispatch marker below may otherwise outlive a fast rejection
+    // and let Node report it as unhandled before this function awaits it.
+    void responsePromise.then(
+      (response) => { fetchOutcome = response.ok ? "success" : "upstream_error"; },
+      () => { fetchOutcome = "transport_error"; },
+    );
+    onFetchStarted?.();
+    // Let an already-settled fetch publish its causal outcome before the
+    // dispatched-marker RPC yields to external work.
+    await Promise.resolve();
+    await afterDispatch?.();
+    if (callerAbortWon) throw new StarInterviewCallerAbortError(signal?.reason);
+    const response = await responsePromise;
+    let payload: unknown = null;
+    try {
+      payload = await response.json();
+    } catch (error) {
+      if (callerAbortWon) throw new StarInterviewCallerAbortError(signal?.reason ?? error);
+    }
     if (!response.ok) {
       throw new StarInterviewUpstreamError(response.status);
     }
     return payload;
+  } catch (error) {
+    const surfacedError = callerAbortWon && !(error instanceof StarInterviewCallerAbortError)
+      ? new StarInterviewCallerAbortError(signal?.reason ?? error)
+      : error;
+    controller.abort(surfacedError);
+    await responsePromise?.catch(() => undefined);
+    throw surfacedError;
   } finally {
     clearTimeout(timeout);
+    signal?.removeEventListener("abort", abortFromCaller);
   }
+}
+
+function throwIfAborted(signal?: AbortSignal) {
+  if (!signal?.aborted) return;
+  if (signal.reason instanceof Error) throw signal.reason;
+  throw new DOMException("Request aborted", "AbortError");
 }
 
 export function mapStarInterviewError(error: unknown, action: string) {
   logStarInterviewError(action, error);
+  if (error instanceof StarInterviewCallerAbortError) {
+    return NextResponse.json({ error: `${action}已取消。` }, { status: 499 });
+  }
   if (error instanceof DOMException && error.name === "AbortError") {
     return NextResponse.json({ error: `${action}超时，请检查网络后重试。` }, { status: 504 });
   }

@@ -7,7 +7,6 @@ import { authenticateStarInterviewRequest } from "@/lib/star-interview-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   consumeStarInterviewUsage,
-  getStarInterviewWallet,
   starInterviewChargeHeaders,
   type StarInterviewChargeResult,
 } from "@/lib/star-interview-billing";
@@ -34,7 +33,7 @@ export type StarInterviewUsageAccess = {
  */
 export async function requireStarInterviewUsageAccess(
   request: NextRequest,
-  _feature: StarInterviewFeature,
+  feature: StarInterviewFeature,
 ) {
   const session = await authenticateStarInterviewRequest(request);
   if (!session) {
@@ -47,14 +46,43 @@ export async function requireStarInterviewUsageAccess(
   }
 
   const admin = createAdminClient();
-  const [{ data: auth, error: authError }, { data: profile, error: profileError }] = await Promise.all([
+  const [
+    { data: auth, error: authError },
+    { data: profile, error: profileError },
+    { data: mutationGuard, error: mutationGuardError },
+  ] = await Promise.all([
     admin.auth.admin.getUserById(session.sub),
     admin.from("profiles").select("role").eq("id", session.sub).maybeSingle(),
+    admin
+      .from("admin_user_mutation_guards")
+      .select("reservation_token")
+      .eq("target_user_id", session.sub)
+      .maybeSingle(),
   ]);
-  if (authError || profileError || !auth.user || isDisabled(auth.user)) {
+  if (authError || profileError || mutationGuardError) {
+    return {
+      response: NextResponse.json(
+        { error: "当前账户安全状态暂时无法确认，请稍后重试。" },
+        { status: 503, headers: { "Cache-Control": "no-store" } },
+      ),
+    };
+  }
+  if (!auth.user || isDisabled(auth.user)) {
     return {
       response: NextResponse.json(
         { error: "当前账户不可用，请重新登录拾星或联系管理员。" },
+        { status: 403, headers: { "Cache-Control": "no-store" } },
+      ),
+    };
+  }
+  if (mutationGuard) {
+    return {
+      response: NextResponse.json(
+        {
+          error: "当前账户存在未完成的安全操作，请联系主管理员恢复后再试。",
+          code: "STAR_INTERVIEW_ACCOUNT_RECOVERY_REQUIRED",
+          feature,
+        },
         { status: 403, headers: { "Cache-Control": "no-store" } },
       ),
     };
@@ -64,24 +92,9 @@ export async function requireStarInterviewUsageAccess(
     auth.user,
     profile?.role ?? "user",
   );
-  if (mode === "standard") {
-    const wallet = await getStarInterviewWallet(session.sub);
-    const minimumFen = _feature === "completion" ? 80 : 1;
-    if (wallet.balanceFen < minimumFen) {
-      return {
-        response: NextResponse.json(
-          {
-            error: "诘星余额不足，请充值后继续。",
-            code: "STAR_INTERVIEW_BALANCE_INSUFFICIENT",
-            balanceFen: wallet.balanceFen,
-            requiredFen: minimumFen,
-            action: "OPEN_BILLING_IN_APP",
-          },
-          { status: 402, headers: { "Cache-Control": "no-store" } },
-        ),
-      };
-    }
-  }
+  // Completion and ASR both perform durable atomic reservations after their
+  // idempotency rows are inspected. Do not pre-reject on wallet balance here:
+  // a zero-balance user must still be able to replay/re-run an already-paid key.
   return {
     access: {
       userId: session.sub,

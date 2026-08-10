@@ -2,7 +2,7 @@
 
 import { Search } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { EMPTY_JOB_FILTERS } from "@/lib/constants";
 import {
   buildLocationGroups,
@@ -28,6 +28,7 @@ export function JobFilterBar({
   recentPreferenceCount,
   hasPreferences,
   isAuthenticated,
+  resetVersion,
 }: {
   filters: JobFilters;
   facets: {
@@ -44,11 +45,35 @@ export function JobFilterBar({
   recentPreferenceCount: number;
   hasPreferences: boolean;
   isAuthenticated: boolean;
+  resetVersion: number;
 }) {
   const locationGroups = useMemo(() => buildLocationGroups(facets.locations), [facets.locations]);
   const initialLocation = getLocationFilterLabel(filters.location);
   const [locationLevel, setLocationLevel] = useState<LocationFilterLevel>(() => getLocationFilterLevel(filters.location));
   const [cityProvince, setCityProvince] = useState(() => getProvinceForCity(initialLocation, locationGroups));
+  const internalBlankLocationChangeRef = useRef(false);
+  const previousResetVersionRef = useRef(resetVersion);
+
+  useEffect(() => {
+    const resetRequested = previousResetVersionRef.current !== resetVersion;
+    previousResetVersionRef.current = resetVersion;
+    if (internalBlankLocationChangeRef.current && !filters.location && !resetRequested) {
+      internalBlankLocationChangeRef.current = false;
+      return;
+    }
+    internalBlankLocationChangeRef.current = false;
+
+    const nextLevel = getLocationFilterLevel(filters.location);
+    const nextLocation = getLocationFilterLabel(filters.location);
+    setLocationLevel(nextLevel);
+    setCityProvince(
+      nextLevel === "province"
+        ? nextLocation
+        : nextLevel === "city"
+          ? getProvinceForCity(nextLocation, locationGroups)
+          : locationGroups[0]?.province ?? "",
+    );
+  }, [filters.location, locationGroups, resetVersion]);
 
   function setFilter(partial: Partial<JobFilters>) {
     onChange({ ...filters, ...partial });
@@ -68,6 +93,7 @@ export function JobFilterBar({
       return;
     }
     if (level === "city" && !cityProvince) setCityProvince(locationGroups[0]?.province ?? "");
+    internalBlankLocationChangeRef.current = true;
     setFilter({ location: "" });
   }
 
@@ -184,6 +210,7 @@ export function JobFilterBar({
           }}
           onCityProvinceChange={(province) => {
             setCityProvince(province);
+            internalBlankLocationChangeRef.current = true;
             setFilter({ location: "" });
           }}
           onCityChange={(city) => setFilter({ location: city ? `city:${city}` : "" })}

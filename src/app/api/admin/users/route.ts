@@ -14,8 +14,30 @@ import {
   getAccountType,
   isWechatInternalEmail,
 } from "@/lib/account-identity";
+import {
+  checkAdminUserMutationPolicy,
+} from "@/lib/admin-user-policy";
+import {
+  cancelAdminUserMutation,
+  finalizeAdminUserMutation,
+  recoverAdminUserMutation,
+  reserveAdminUserMutation,
+  type AdminUserMutationGuardResult,
+} from "@/lib/admin-user-mutation-guard";
+import {
+  buildGuardedAuthPatch,
+  buildGuardedAuthRollbackPatch,
+  classifyGuardedAuthState,
+  guardedAuthMatchesOriginal,
+  isEmptyGuardedAuthPatch,
+  STAR_INTERVIEW_ACCESS_KEY,
+  type GuardedAuthPlan,
+} from "@/lib/admin-auth-mutation";
+import {
+  requireAdminAccess,
+  requirePrimaryAdminRecoveryAccess,
+} from "@/lib/admin-access";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
 import type { Database, Profile, ProfileRole } from "@/lib/types";
 
 const AUTH_PAGE_SIZE = 1000;
@@ -24,14 +46,21 @@ const MAX_PAGE_SIZE = 100;
 const DATABASE_CHUNK_SIZE = 500;
 const USAGE_PAGE_SIZE = 1000;
 const HOUR_MS = 60 * 60 * 1000;
-const PRIMARY_ADMIN_EMAIL = "raywang6688@outlook.com";
-const STAR_INTERVIEW_ACCESS_KEY = "star_interview_unlimited_access";
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+// The recovery RPC enforces a five-minute quiescence window before it may
+// restore and release a guard. Keeping this route's hard lifetime below that
+// window fences any pre-recovery GoTrue request from a later generation.
+export const maxDuration = 60;
 
 type AdminProfile = Pick<Profile, "id" | "display_name" | "role" | "school" | "target_roles">;
 type AdminWechatIdentity = { id: string; user_id: string };
 
 export async function GET(request: NextRequest) {
-  const access = await requireAdmin();
+  if (request.nextUrl.searchParams.get("view") === "recovery") {
+    return listAdminMutationGuards();
+  }
+  const access = await requireAdminAccess();
   if ("response" in access) return access.response;
 
   try {
@@ -85,17 +114,87 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function PATCH(request: NextRequest) {
-  const access = await requireAdmin();
-  if ("response" in access) return access.response;
+async function listAdminMutationGuards() {
+  const recoveryAccess = await requirePrimaryAdminRecoveryAccess();
+  if ("response" in recoveryAccess) return recoveryAccess.response;
 
   try {
+    const admin = createAdminClient();
+    const { data: guards, error: guardError } = await admin
+      .from("admin_user_mutation_guards")
+      .select("target_user_id,reservation_token,mutation_kind,reserved_at,recovery_requested_at,recovery_reason")
+      .order("reserved_at", { ascending: true })
+      .limit(100);
+    if (guardError) throw guardError;
+    const targetIds = (guards ?? []).map((guard) => guard.target_user_id);
+    const profiles = targetIds.length
+      ? await admin.from("profiles").select("id,display_name").in("id", targetIds)
+      : { data: [], error: null };
+    if (profiles.error) throw profiles.error;
+    const displayNames = new Map(
+      (profiles.data ?? []).map((profile) => [profile.id, profile.display_name]),
+    );
+    const authUsers = await Promise.all(targetIds.map(async (targetUserId) => {
+      const { data, error } = await admin.auth.admin.getUserById(targetUserId);
+      return [targetUserId, error ? null : data.user] as const;
+    }));
+    const authById = new Map(authUsers);
+
+    return NextResponse.json(
+      {
+        guards: (guards ?? []).map((guard) => ({
+          targetUserId: guard.target_user_id,
+          reservationToken: guard.reservation_token,
+          mutationKind: guard.mutation_kind,
+          reservedAt: guard.reserved_at,
+          recoveryRequestedAt: guard.recovery_requested_at,
+          recoveryReason: guard.recovery_reason,
+          displayName: displayNames.get(guard.target_user_id) ?? null,
+          email: authById.get(guard.target_user_id)?.email ?? null,
+        })),
+      },
+      { headers: { "Cache-Control": "private, no-store" } },
+    );
+  } catch (error) {
+    return NextResponse.json(
+      { error: getServerError(error) },
+      { status: 500, headers: { "Cache-Control": "private, no-store" } },
+    );
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
     const body = await request.json().catch(() => null);
+    if (isAdminMutationRecovery(body)) {
+      const recoveryAccess = await requirePrimaryAdminRecoveryAccess();
+      if ("response" in recoveryAccess) return recoveryAccess.response;
+      const recovered = await recoverAdminUserMutation(createAdminClient(), {
+        primaryUserId: recoveryAccess.userId,
+        targetUserId: body.id,
+        reservationToken: body.reservationToken,
+        reason: body.reason,
+      });
+      if (recovered.action !== "recovered") return adminMutationGuardResponse(recovered);
+      return NextResponse.json({
+        recovered: true,
+        id: body.id,
+        role: recovered.role,
+        displayName: recovered.displayName,
+      });
+    }
+
+    const access = await requireAdminAccess();
+    if ("response" in access) return access.response;
     if (isStarInterviewAccessUpdate(body)) {
       if (!access.isPrimaryAdmin) {
         return NextResponse.json({ error: "只有主管理员可以调整 StarInterview 无限访问。" }, { status: 403 });
       }
-      return await updateStarInterviewAccess(body.id, body.unlimitedAccess);
+      return await updateStarInterviewAccess(
+        access.userId,
+        body.id,
+        body.unlimitedAccess,
+      );
     }
     if (isConfirmEmailUpdate(body)) {
       return await confirmUserEmail(body.id);
@@ -118,50 +217,103 @@ export async function PATCH(request: NextRequest) {
 
     const { data: previousAuth, error: previousAuthError } = await admin.auth.admin.getUserById(input.id);
     if (previousAuthError) throw previousAuthError;
-    const wasDisabled = isFutureDate(previousAuth.user.banned_until);
     const previousProfile = await admin
       .from("profiles")
-      .select("role")
+      .select("id,display_name,role,school,target_roles")
       .eq("id", input.id)
       .maybeSingle();
     if (previousProfile.error) throw previousProfile.error;
-    const preserveImplicitAccess = typeof previousAuth.user.app_metadata?.[STAR_INTERVIEW_ACCESS_KEY] !== "boolean"
-      ? {
-          app_metadata: {
-            ...previousAuth.user.app_metadata,
-            [STAR_INTERVIEW_ACCESS_KEY]: resolveStarInterviewAccess(
-              previousAuth.user,
-              previousProfile.data?.role ?? "user",
-            ).unlimited,
-          },
-        }
-      : {};
-    const { data: authData, error: authError } = await admin.auth.admin.updateUserById(input.id, {
-      ban_duration: input.disabled ? "876000h" : "none",
-      ...preserveImplicitAccess,
+    const mutationPolicy = checkAdminUserMutationPolicy({
+      actorUserId: access.userId,
+      actorIsPrimaryAdmin: access.isPrimaryAdmin,
+      targetUserId: input.id,
+      targetEmail: previousAuth.user.email,
+      currentRole: previousProfile.data?.role ?? "user",
+      nextRole: input.role,
+      nextDisabled: input.disabled,
     });
-    if (authError) throw authError;
-
-    const { data: profile, error: profileError } = await admin
-      .from("profiles")
-      .upsert({
-        id: input.id,
-        display_name: input.displayName || "秋招用户",
-        role: input.role,
-      }, { onConflict: "id" })
-      .select("*")
-      .single();
-    if (profileError) {
-      await admin.auth.admin.updateUserById(input.id, {
-        ban_duration: wasDisabled ? "876000h" : "none",
-      });
-      throw profileError;
+    if (!mutationPolicy.allowed) {
+      return NextResponse.json(
+        { error: mutationPolicy.error, code: mutationPolicy.code },
+        { status: mutationPolicy.status },
+      );
     }
 
+    // The Auth ban and profiles role live behind different APIs. Reserve the
+    // target before touching Auth, then atomically revalidate and apply the
+    // profile mutation. Every failure either restores Auth before releasing the
+    // guard or leaves the target fail-closed for explicit recovery.
+    const reservation = await reserveAdminUserMutation(admin, {
+      actorUserId: access.userId,
+      targetUserId: input.id,
+      mutationKind: "profile_auth",
+      nextRole: input.role,
+      nextDisabled: input.disabled,
+    });
+    if (reservation.action !== "claimed"
+      || !reservation.reservationToken
+      || !reservation.currentRole
+      || !reservation.nextRole) {
+      return adminMutationGuardResponse(reservation);
+    }
+
+    const guard = {
+      reservationToken: reservation.reservationToken,
+      actorUserId: access.userId,
+      targetUserId: input.id,
+    };
+    const authPlan = guardAuthPlan(reservation);
+    const authUser = await applyGuardedAuthTarget(admin, guard, authPlan);
+    const finalized = await finalizeAdminUserMutation(admin, {
+      ...guard,
+      displayName: input.displayName || "秋招用户",
+    });
+    if (finalized.action !== "applied") {
+      const safelyRolledBack = await rollbackGuardedAuthAndCancel(
+        admin,
+        guard,
+        authPlan,
+      );
+      if (!safelyRolledBack) {
+        throw new Error("管理员账户变更状态无法证明，目标账户已保持锁定，需由主管理员恢复。");
+      }
+      return adminMutationGuardResponse(finalized);
+    }
+
+    // `applied` means the database transaction has already committed and the
+    // guard has been released. A malformed/lost payload must never make us
+    // "roll back" Auth after that commit, because doing so could leave the
+    // profile and Auth halves disagreeing without a guard. Re-read the durable
+    // profile instead; if even that cannot be proven, fail the response and
+    // let the operator refresh rather than starting a compensating write.
+    let appliedRole = finalized.role;
+    let appliedDisplayName = finalized.displayName;
+    if (!appliedRole || appliedDisplayName === undefined) {
+      const { data: appliedProfile, error: appliedProfileError } = await admin
+        .from("profiles")
+        .select("role,display_name")
+        .eq("id", input.id)
+        .maybeSingle();
+      if (appliedProfileError
+        || !appliedProfile
+        || (appliedProfile.role !== "user" && appliedProfile.role !== "admin")) {
+        throw new Error("管理员账户变更已经提交，但结果回读失败；请刷新列表确认最新状态。");
+      }
+      appliedRole = appliedProfile.role;
+      appliedDisplayName = appliedProfile.display_name ?? "秋招用户";
+    }
+
+    const profile: AdminProfile = {
+      id: input.id,
+      display_name: appliedDisplayName,
+      role: appliedRole,
+      school: previousProfile.data?.school ?? null,
+      target_roles: previousProfile.data?.target_roles ?? [],
+    };
     return NextResponse.json({
       user: toSummary(
-        authData.user,
-        profile as Profile,
+        authUser,
+        profile,
         (wechatIdentityResult.data as AdminWechatIdentity | null) ?? undefined,
         applicationCountResult.count ?? 0,
         resumeCountResult.count ?? 0,
@@ -172,6 +324,29 @@ export async function PATCH(request: NextRequest) {
     const status = message === "请求格式无效。" ? 400 : 500;
     return NextResponse.json({ error: status === 400 ? message : getServerError(error) }, { status });
   }
+}
+
+function adminMutationGuardResponse(result: AdminUserMutationGuardResult) {
+  const status = result.action === "missing"
+    ? 404
+    : ["busy", "conflict", "stale", "quiescing"].includes(result.action)
+      ? 409
+      : result.code === "ADMIN_SELF_PROTECTED" ? 400 : 403;
+  const retryAfter = result.action === "quiescing"
+    ? Math.max(1, result.retryAfterSeconds ?? 300)
+    : result.action === "busy" ? 3 : undefined;
+  return NextResponse.json(
+    {
+      error: result.error || "账户管理操作未能安全完成，请刷新后重试。",
+      code: result.code || "ADMIN_MUTATION_REJECTED",
+      action: result.action,
+      retryAfterSeconds: retryAfter,
+    },
+    {
+      status,
+      headers: retryAfter ? { "Retry-After": String(retryAfter) } : undefined,
+    },
+  );
 }
 
 async function confirmUserEmail(id: string) {
@@ -214,33 +389,6 @@ async function confirmUserEmail(id: string) {
   });
 }
 
-async function requireAdmin() {
-  try {
-    const supabase = await createClient();
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (error || !user) {
-      return { response: NextResponse.json({ error: "请先登录管理员账号。" }, { status: 401 }) };
-    }
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .maybeSingle();
-    if (profileError) {
-      return { response: NextResponse.json({ error: "管理员权限读取失败，请稍后重试。" }, { status: 500 }) };
-    }
-    if (profile?.role !== "admin") {
-      return { response: NextResponse.json({ error: "无权限管理用户账户。" }, { status: 403 }) };
-    }
-    return {
-      userId: user.id,
-      isPrimaryAdmin: user.email?.trim().toLowerCase() === PRIMARY_ADMIN_EMAIL,
-    };
-  } catch {
-    return { response: NextResponse.json({ error: "管理员鉴权服务暂时不可用。" }, { status: 503 }) };
-  }
-}
-
 function validateUpdate(value: unknown): AdminUserUpdate & { id: string } {
   if (!value || typeof value !== "object") throw new Error("请求格式无效。");
   const input = value as Record<string, unknown>;
@@ -275,22 +423,156 @@ function isStarInterviewAccessUpdate(value: unknown): value is {
     && typeof input.unlimitedAccess === "boolean";
 }
 
-async function updateStarInterviewAccess(id: string, unlimitedAccess: boolean) {
+function isAdminMutationRecovery(value: unknown): value is {
+  id: string;
+  action: "recover_admin_mutation";
+  reservationToken: string;
+  reason: string;
+} {
+  if (!value || typeof value !== "object") return false;
+  const input = value as Record<string, unknown>;
+  return typeof input.id === "string"
+    && UUID_PATTERN.test(input.id)
+    && input.action === "recover_admin_mutation"
+    && typeof input.reservationToken === "string"
+    && UUID_PATTERN.test(input.reservationToken)
+    && typeof input.reason === "string"
+    && input.reason.trim().length >= 2
+    && input.reason.trim().length <= 200;
+}
+
+async function updateStarInterviewAccess(
+  actorUserId: string,
+  id: string,
+  unlimitedAccess: boolean,
+) {
   const admin = createAdminClient();
-  const { data: current, error: currentError } = await admin.auth.admin.getUserById(id);
-  if (currentError || !current.user) throw currentError ?? new Error("目标用户不存在。");
-  const { error } = await admin.auth.admin.updateUserById(id, {
-    app_metadata: {
-      ...current.user.app_metadata,
-      [STAR_INTERVIEW_ACCESS_KEY]: unlimitedAccess,
-    },
+  const reservation = await reserveAdminUserMutation(admin, {
+    actorUserId,
+    targetUserId: id,
+    mutationKind: "star_interview_access",
+    nextStarInterviewAccess: unlimitedAccess,
   });
-  if (error) throw error;
+  if (reservation.action !== "claimed" || !reservation.reservationToken) {
+    return adminMutationGuardResponse(reservation);
+  }
+  const guard = {
+    reservationToken: reservation.reservationToken,
+    actorUserId,
+    targetUserId: id,
+  };
+  const authPlan = guardAuthPlan(reservation);
+  await applyGuardedAuthTarget(admin, guard, authPlan);
+  const finalized = await finalizeAdminUserMutation(admin, {
+    ...guard,
+    displayName: "",
+  });
+  if (finalized.action !== "applied") {
+    const safelyRolledBack = await rollbackGuardedAuthAndCancel(admin, guard, authPlan);
+    if (!safelyRolledBack) {
+      throw new Error("StarInterview 访问权限状态无法证明，目标账户已保持锁定，需由主管理员恢复。");
+    }
+    return adminMutationGuardResponse(finalized);
+  }
   return NextResponse.json({
     id,
     starInterviewUnlimitedAccess: unlimitedAccess,
     starInterviewAccessSource: "explicit",
   });
+}
+
+type GuardIdentity = {
+  reservationToken: string;
+  actorUserId: string;
+  targetUserId: string;
+};
+
+function guardAuthPlan(reservation: AdminUserMutationGuardResult): GuardedAuthPlan {
+  if (reservation.currentDisabled === undefined
+    || reservation.previousAccessKeyPresent === undefined
+    || reservation.nextDisabled === undefined
+    || reservation.mutateAccessKey === undefined
+    || reservation.nextAccessValue === undefined) {
+    throw new Error("管理员安全预留未返回完整 Auth 快照，目标账户已保持锁定。");
+  }
+  return {
+    currentDisabled: reservation.currentDisabled,
+    previousBannedUntil: reservation.previousBannedUntil,
+    previousAccessKeyPresent: reservation.previousAccessKeyPresent,
+    previousAccessValue: reservation.previousAccessValue,
+    nextDisabled: reservation.nextDisabled,
+    mutateAccessKey: reservation.mutateAccessKey,
+    nextAccessValue: reservation.nextAccessValue,
+  };
+}
+
+async function applyGuardedAuthTarget(
+  admin: SupabaseClient<Database>,
+  guard: GuardIdentity,
+  plan: GuardedAuthPlan,
+) {
+  const patch = buildGuardedAuthPatch(plan);
+  let mutationError: unknown = null;
+  let mutationAttempted = false;
+  if (!isEmptyGuardedAuthPatch(patch)) {
+    mutationAttempted = true;
+    try {
+      const result = await admin.auth.admin.updateUserById(guard.targetUserId, patch);
+      mutationError = result.error;
+    } catch (error) {
+      mutationError = error;
+    }
+  }
+
+  const { data: observed, error: observedError } = await admin.auth.admin
+    .getUserById(guard.targetUserId);
+  if (observedError || !observed.user) {
+    throw new Error("Auth 变更结果无法回读，目标账户已保持锁定，需由主管理员恢复。", {
+      cause: observedError ?? mutationError,
+    });
+  }
+  const state = classifyGuardedAuthState(plan, observed.user);
+  if (state === "target") return observed.user;
+  if (state === "original") {
+    if (mutationAttempted) {
+      throw new Error(
+        mutationError
+          ? "Auth 请求结果仍可能异步生效，目标账户已保持锁定，需由主管理员恢复。"
+          : "Auth 请求已发出但未达到目标状态，目标账户已保持锁定，需由主管理员恢复。",
+        { cause: mutationError },
+      );
+    }
+    const cancelled = await cancelAdminUserMutation(admin, guard);
+    if (!cancelled) {
+      throw new Error("Auth 虽仍为原状态，但安全锁无法证明可释放，目标账户已保持锁定。");
+    }
+    throw new Error("Auth 变更未生效，已确认原状态并安全取消本次操作。", {
+      cause: mutationError,
+    });
+  }
+  throw new Error("Auth 变更结果既非原状态也非目标状态，目标账户已保持锁定，需由主管理员恢复。", {
+    cause: mutationError,
+  });
+}
+
+async function rollbackGuardedAuthAndCancel(
+  admin: SupabaseClient<Database>,
+  guard: GuardIdentity,
+  plan: GuardedAuthPlan,
+) {
+  const rollbackPatch = buildGuardedAuthRollbackPatch(plan);
+  if (!isEmptyGuardedAuthPatch(rollbackPatch)) {
+    try {
+      await admin.auth.admin.updateUserById(guard.targetUserId, rollbackPatch);
+    } catch {
+      // The result is uncertain until the authoritative read below.
+    }
+  }
+  const { data: observed, error } = await admin.auth.admin.getUserById(guard.targetUserId);
+  if (error || !observed.user || !guardedAuthMatchesOriginal(plan, observed.user)) {
+    return false;
+  }
+  return cancelAdminUserMutation(admin, guard);
 }
 
 function toSummary(

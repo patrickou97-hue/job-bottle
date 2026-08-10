@@ -302,6 +302,63 @@ export type ForumPostWithComments = ForumPostView & {
 export type Database = {
   public: {
     Tables: {
+      admin_user_mutation_guards: {
+        Row: {
+          target_user_id: string;
+          reservation_token: string;
+          actor_user_id: string;
+          mutation_kind: "profile_auth" | "star_interview_access";
+          actor_is_primary: boolean;
+          actor_auth_updated_at: string;
+          actor_profile_updated_at: string;
+          target_is_primary: boolean;
+          previous_role: ProfileRole;
+          previous_display_name: string | null;
+          previous_banned_until: string | null;
+          previous_access_key_present: boolean;
+          previous_access_value: unknown;
+          next_role: ProfileRole;
+          next_disabled: boolean;
+          mutate_access_key: boolean;
+          next_access_value: boolean;
+          reserved_at: string;
+          recovery_requested_at: string | null;
+          recovery_requested_by_user_id: string | null;
+          recovery_reason: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          target_user_id: string;
+          reservation_token?: string;
+          actor_user_id: string;
+          mutation_kind: "profile_auth" | "star_interview_access";
+          actor_is_primary: boolean;
+          actor_auth_updated_at: string;
+          actor_profile_updated_at: string;
+          target_is_primary: boolean;
+          previous_role: ProfileRole;
+          previous_display_name?: string | null;
+          previous_banned_until?: string | null;
+          previous_access_key_present: boolean;
+          previous_access_value?: unknown;
+          next_role: ProfileRole;
+          next_disabled: boolean;
+          mutate_access_key: boolean;
+          next_access_value: boolean;
+          reserved_at?: string;
+          recovery_requested_at?: string | null;
+          recovery_requested_by_user_id?: string | null;
+          recovery_reason?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          recovery_requested_at?: string | null;
+          recovery_requested_by_user_id?: string | null;
+          recovery_reason?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: Profile;
         Insert: {
@@ -677,6 +734,124 @@ export type Database = {
         };
         Relationships: [];
       };
+      star_interview_asr_requests: {
+        Row: {
+          id: string;
+          user_id: string;
+          meter_key: string;
+          state: "reserved" | "succeeded" | "consumed" | "failed";
+          reservation_token: string | null;
+          lease_expires_at: string | null;
+          units: number;
+          unlimited: boolean;
+          reserved_fen: number;
+          actual_charge_fen: number;
+          nominal_charge_fen: number;
+          attempt_count: number;
+          last_error: string | null;
+          response_body: string | null;
+          completed_at: string | null;
+          cache_expires_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          meter_key: string;
+          state?: "reserved" | "succeeded" | "consumed" | "failed";
+          reservation_token?: string | null;
+          lease_expires_at?: string | null;
+          units: number;
+          unlimited?: boolean;
+          reserved_fen?: number;
+          actual_charge_fen?: number;
+          nominal_charge_fen?: number;
+          attempt_count?: number;
+          last_error?: string | null;
+          response_body?: string | null;
+          completed_at?: string | null;
+          cache_expires_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          state?: "reserved" | "succeeded" | "consumed" | "failed";
+          reservation_token?: string | null;
+          lease_expires_at?: string | null;
+          units?: number;
+          unlimited?: boolean;
+          reserved_fen?: number;
+          actual_charge_fen?: number;
+          nominal_charge_fen?: number;
+          attempt_count?: number;
+          last_error?: string | null;
+          response_body?: string | null;
+          completed_at?: string | null;
+          cache_expires_at?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      star_interview_completion_requests: {
+        Row: {
+          id: string;
+          user_id: string;
+          meter_key: string;
+          request_hash: string;
+          stream: boolean;
+          state: "reserved" | "streaming" | "succeeded" | "failed" | "consumed";
+          reservation_token: string | null;
+          lease_expires_at: string | null;
+          reserved_fen: number;
+          actual_charge_fen: number;
+          nominal_charge_fen: number;
+          response_body: string | null;
+          response_content_type: string | null;
+          last_error: string | null;
+          attempt_count: number;
+          completed_at: string | null;
+          cache_expires_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          meter_key: string;
+          request_hash: string;
+          stream: boolean;
+          state?: "reserved" | "streaming" | "succeeded" | "failed" | "consumed";
+          reservation_token?: string | null;
+          lease_expires_at?: string | null;
+          reserved_fen?: number;
+          actual_charge_fen?: number;
+          nominal_charge_fen?: number;
+          response_body?: string | null;
+          response_content_type?: string | null;
+          last_error?: string | null;
+          attempt_count?: number;
+          completed_at?: string | null;
+          cache_expires_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          state?: "reserved" | "streaming" | "succeeded" | "failed" | "consumed";
+          reservation_token?: string | null;
+          lease_expires_at?: string | null;
+          reserved_fen?: number;
+          actual_charge_fen?: number;
+          response_body?: string | null;
+          response_content_type?: string | null;
+          last_error?: string | null;
+          attempt_count?: number;
+          completed_at?: string | null;
+          cache_expires_at?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       star_interview_recharge_orders: {
         Row: {
           id: string;
@@ -772,6 +947,47 @@ export type Database = {
         Args: { target_user_id: string };
         Returns: boolean;
       };
+      take_extension_autofill_rate_slot: {
+        Args: { p_user_id: string; p_operation_id: string };
+        Returns: boolean;
+      };
+      reserve_admin_user_mutation: {
+        Args: {
+          p_actor_user_id: string;
+          p_target_user_id: string;
+          p_mutation_kind: "profile_auth" | "star_interview_access";
+          p_next_role: ProfileRole | null;
+          p_next_disabled: boolean | null;
+          p_next_star_interview_access: boolean | null;
+        };
+        Returns: Record<string, unknown>;
+      };
+      finalize_admin_user_mutation: {
+        Args: {
+          p_reservation_token: string;
+          p_actor_user_id: string;
+          p_target_user_id: string;
+          p_display_name: string;
+        };
+        Returns: Record<string, unknown>;
+      };
+      cancel_admin_user_mutation: {
+        Args: {
+          p_reservation_token: string;
+          p_actor_user_id: string;
+          p_target_user_id: string;
+        };
+        Returns: boolean;
+      };
+      recover_admin_user_mutation: {
+        Args: {
+          p_primary_user_id: string;
+          p_target_user_id: string;
+          p_reservation_token: string;
+          p_reason: string;
+        };
+        Returns: Record<string, unknown>;
+      };
       reserve_wechat_web_login_code: {
         Args: {
           p_user_id: string;
@@ -815,6 +1031,121 @@ export type Database = {
         };
         Returns: Record<string, unknown>;
       };
+      reserve_star_interview_asr: {
+        Args: {
+          p_user_id: string;
+          p_meter_key: string;
+          p_units: number;
+          p_unlimited: boolean;
+        };
+        Returns: Record<string, unknown>;
+      };
+      confirm_star_interview_asr_dispatch: {
+        Args: {
+          p_user_id: string;
+          p_meter_key: string;
+          p_reservation_token: string;
+        };
+        Returns: Record<string, unknown>;
+      };
+      complete_star_interview_asr: {
+        Args: {
+          p_user_id: string;
+          p_meter_key: string;
+          p_reservation_token: string;
+          p_response_body: string | null;
+          p_consumed?: boolean;
+        };
+        Returns: Record<string, unknown>;
+      };
+      fail_star_interview_asr: {
+        Args: {
+          p_user_id: string;
+          p_meter_key: string;
+          p_reservation_token: string;
+          p_reason: string;
+        };
+        Returns: Record<string, unknown>;
+      };
+      reconcile_star_interview_asr_leases: {
+        Args: { p_limit?: number };
+        Returns: Record<string, unknown>;
+      };
+      reserve_star_interview_completion: {
+        Args: {
+          p_user_id: string;
+          p_meter_key: string;
+          p_request_hash: string;
+          p_stream: boolean;
+          p_unlimited: boolean;
+        };
+        Returns: Record<string, unknown>;
+      };
+      purge_star_interview_completion_cache: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
+      reconcile_star_interview_completion_leases: {
+        Args: { p_limit?: number };
+        Returns: Record<string, unknown>;
+      };
+      get_star_interview_completion: {
+        Args: {
+          p_user_id: string;
+          p_meter_key: string;
+          p_request_hash: string;
+        };
+        Returns: Record<string, unknown>;
+      };
+      mark_star_interview_completion_dispatched: {
+        Args: {
+          p_user_id: string;
+          p_meter_key: string;
+          p_request_hash: string;
+          p_reservation_token: string;
+        };
+        Returns: Record<string, unknown>;
+      };
+      mark_star_interview_completion_dispatch_intent: {
+        Args: {
+          p_user_id: string;
+          p_meter_key: string;
+          p_request_hash: string;
+          p_reservation_token: string;
+        };
+        Returns: Record<string, unknown>;
+      };
+      commit_star_interview_completion_stream: {
+        Args: {
+          p_user_id: string;
+          p_meter_key: string;
+          p_request_hash: string;
+          p_reservation_token: string;
+        };
+        Returns: Record<string, unknown>;
+      };
+      complete_star_interview_completion: {
+        Args: {
+          p_user_id: string;
+          p_meter_key: string;
+          p_request_hash: string;
+          p_reservation_token: string;
+          p_response_body: string;
+          p_response_content_type: string;
+        };
+        Returns: Record<string, unknown>;
+      };
+      fail_star_interview_completion: {
+        Args: {
+          p_user_id: string;
+          p_meter_key: string;
+          p_request_hash: string;
+          p_reservation_token: string;
+          p_reason: string;
+          p_refund: boolean;
+        };
+        Returns: Record<string, unknown>;
+      };
       adjust_star_interview_balance: {
         Args: {
           p_user_id: string;
@@ -823,6 +1154,16 @@ export type Database = {
           p_reference_key: string;
           p_note: string;
           p_actor_user_id: string | null;
+        };
+        Returns: Record<string, unknown>;
+      };
+      adjust_star_interview_admin_grant: {
+        Args: {
+          p_user_id: string;
+          p_amount_fen: number;
+          p_reference_key: string;
+          p_note: string;
+          p_actor_user_id: string;
         };
         Returns: Record<string, unknown>;
       };

@@ -154,7 +154,7 @@ export function PostCard({
     >
       <button
         type="button"
-        className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-4 py-5 text-left sm:px-5"
+        className="grid w-full grid-cols-1 items-start gap-3 px-4 py-5 text-left sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-4 sm:px-5"
         onClick={onToggle}
         aria-expanded={expanded}
         aria-controls={contentId}
@@ -162,9 +162,6 @@ export function PostCard({
         <div className="min-w-0">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             <CategoryLabel category={post.category} />
-            <h2 className="min-w-0 flex-1 truncate text-[15px] font-semibold text-[color:var(--text-primary)] sm:text-base">
-              {post.title}
-            </h2>
             {post.is_pinned ? (
               <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-[#efc29a] px-2 py-1 text-[11px] font-bold tracking-[0.08em] text-[#121827]">
                 <Pin aria-hidden="true" className="size-3 fill-current" />
@@ -172,6 +169,9 @@ export function PostCard({
               </span>
             ) : null}
           </div>
+          <h2 className={`mt-2 min-w-0 text-[15px] font-semibold leading-6 text-[color:var(--text-primary)] sm:text-base ${post.is_pinned ? "line-clamp-2 min-h-12 sm:min-h-0 sm:truncate" : "truncate"}`}>
+            {post.title}
+          </h2>
           <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[color:var(--text-muted)]">
             <span className="font-medium text-[color:var(--text-secondary)]">拾星官方</span>
             <span aria-hidden="true">·</span>
@@ -186,7 +186,7 @@ export function PostCard({
             ) : null}
           </div>
         </div>
-        <span className="shrink-0 text-xs font-medium text-[color:var(--text-muted)]">
+        <span className="shrink-0 justify-self-end text-xs font-medium text-[color:var(--text-muted)] sm:justify-self-auto">
           {expanded ? "收起" : "阅读全文"}
         </span>
       </button>

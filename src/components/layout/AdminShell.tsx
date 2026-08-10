@@ -92,7 +92,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
         <div className="mx-auto flex min-h-15 w-full max-w-[1380px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2 sm:px-6 lg:px-8">
           <Link href="/admin" className="flex min-w-0 shrink-0 items-center gap-3" aria-label="管理">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/shi-xing-wordmark.png" alt={SITE_NAME} className="brand-wordmark h-7 w-auto shrink-0 object-contain" />
+            <img src="/brand/shi-xing-wordmark.png" alt={SITE_NAME} width={1216} height={542} className="brand-wordmark h-7 w-auto shrink-0 object-contain" />
             <span className="text-sm font-semibold text-ink-primary">管理</span>
           </Link>
 

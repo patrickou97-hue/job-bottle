@@ -10,6 +10,13 @@
     "build:extension:dev": "node scripts/build_resume_extension_dev.mjs",
     "start": "next start",
     "lint": "eslint",
+    "prepare:typecheck": "node scripts/prepare_typecheck.mjs",
+    "typecheck": "npm run prepare:typecheck && tsc --noEmit --incremental false",
+    "test": "node --conditions=react-server --test tests/*.test.ts scripts/tests/*.test.mjs",
+    "test:extension": "node scripts/test_extension_fixtures.mjs",
+    "verify:extension-package": "node scripts/verify_resume_extension_package.mjs",
+    "check": "npm run typecheck && npm run lint && npm test && npm run test:extension && npm run verify:extension-package && npm --prefix starjob-miniprogram run check",
+    "check:release": "npm run check && npm run build && npm run smoke",
     "smoke": "node scripts/smoke_check.mjs"
   },
   "dependencies": {
@@ -26,7 +33,7 @@
     "motion": "^12.42.2",
     "next": "16.2.11",
     "papaparse": "^5.5.4",
-    "pdfjs-dist": "^6.1.200",
+    "pdfjs-dist": "6.2.108",
     "qrcode": "^1.5.4",
     "react": "19.2.4",
     "react-dom": "19.2.4",

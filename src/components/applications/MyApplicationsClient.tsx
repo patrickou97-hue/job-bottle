@@ -42,18 +42,18 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
   const [view, setView] = useState<WorkspaceView>("list");
   const [loading, setLoading] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
-  const [message, setMessage] = useState("");
+  const [loadError, setLoadError] = useState("");
   const loadRequestRef = useRef(0);
 
   async function loadData() {
     const requestId = loadRequestRef.current + 1;
     loadRequestRef.current = requestId;
     setLoading(true);
-    setMessage("");
+    setLoadError("");
     try {
       if (!isSupabaseConfigured()) {
         console.error("Supabase environment variables are not configured.");
-        setMessage("投递记录暂时无法读取，请稍后重试。");
+        setLoadError("投递记录暂时无法读取，请稍后重试。");
         return;
       }
       const supabase = createClient();
@@ -76,7 +76,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
       setResumes(resumeResult);
     } catch {
       if (requestId !== loadRequestRef.current) return;
-      setMessage("投递记录暂时无法读取，请稍后重试。");
+      setLoadError("投递记录暂时无法读取，请稍后重试。");
     } finally {
       if (requestId === loadRequestRef.current) setLoading(false);
     }
@@ -153,12 +153,18 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
         </div>
       </section>
 
-      {message ? <div className="message-banner text-sm">{message}</div> : null}
-
       {loading || redirecting ? (
         <div className="empty-state">
           <span className="loading-line">{redirecting ? "正在前往登录" : "正在整理投递记录"}</span>
         </div>
+      ) : loadError ? (
+        <section className="empty-state border-y border-[color:var(--line-ghost)]" role="alert">
+          <div>
+            <h2>投递记录暂时无法读取</h2>
+            <p>{loadError}</p>
+            <Button className="mt-5" onClick={loadData}>重试</Button>
+          </div>
+        </section>
       ) : applications.length === 0 ? (
         <section className="empty-state border-y border-[color:var(--line-ghost)]">
           <div>
@@ -235,13 +241,17 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
           <section className="border-y border-[color:var(--line-ghost)] py-4">
             <div className="grid gap-4 md:grid-cols-[1fr_220px_auto]">
               <div className="relative">
+                <label htmlFor="application-search" className="sr-only">搜索公司或岗位</label>
                 <Search aria-hidden="true" className="absolute left-0 top-1/2 size-4 -translate-y-1/2 text-nebula-blue/70" />
-                <Input className="pl-7" value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder="搜索公司或岗位" />
+                <Input id="application-search" name="application-search" type="search" autoComplete="off" className="pl-7" value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder="搜索公司或岗位" />
               </div>
-              <Select value={status} onChange={(event) => setStatus(event.target.value as ApplicationStatus | "")}>
-                <option value="">全部阶段</option>
-                {APPLICATION_STATUS.map((item) => <option key={item} value={item}>{APPLICATION_STATUS_LABELS[item]}</option>)}
-              </Select>
+              <div>
+                <label htmlFor="application-status-filter" className="sr-only">按投递阶段筛选</label>
+                <Select id="application-status-filter" name="application-status-filter" value={status} onChange={(event) => setStatus(event.target.value as ApplicationStatus | "")}>
+                  <option value="">全部阶段</option>
+                  {APPLICATION_STATUS.map((item) => <option key={item} value={item}>{APPLICATION_STATUS_LABELS[item]}</option>)}
+                </Select>
+              </div>
               <Button variant="secondary" className="gap-2" onClick={loadData}>
                 <RefreshCw aria-hidden="true" className="size-4" />
                 刷新
@@ -254,7 +264,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
               <div>
                 <h2 className="section-title">投递记录</h2>
               </div>
-              <div className="inline-flex rounded-lg bg-[color:var(--apple-control-bg)] p-1" aria-label="投递视图">
+              <div className="inline-flex rounded-lg bg-[color:var(--apple-control-bg)] p-1" role="group" aria-label="投递视图">
                 <ViewButton active={view === "list"} icon={<List aria-hidden="true" className="size-3.5" />} label="列表" onClick={() => setView("list")} />
                 <ViewButton active={view === "board"} icon={<Columns3 aria-hidden="true" className="size-3.5" />} label="看板" onClick={() => setView("board")} />
                 <ViewButton active={view === "map"} icon={<Orbit aria-hidden="true" className="size-3.5" />} label="星图" onClick={() => setView("map")} />

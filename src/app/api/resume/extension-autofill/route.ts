@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { takeExtensionAutofillRateSlot } from "@/lib/extension-autofill-rate-limit";
 import { verifyExtensionMatchToken } from "@/lib/extension-match-token";
 
 export const maxDuration = 90;
 export const preferredRegion = "hkg1";
 
 const REQUEST_TIMEOUT_MS = 75_000;
-const RATE_WINDOW_MS = 10 * 60 * 1_000;
-const RATE_LIMIT = 5;
 const MIN_CONFIDENCE = 0.82;
 
 const shortText = z.string().max(240).optional().default("");
@@ -95,6 +94,10 @@ const fieldSchema = z.object({
 const inputSchema = z.object({
   resume: resumeSchema,
   fields: z.array(fieldSchema).min(1).max(100),
+  // 0.2.5 and older extension builds do not send this field. They retain the
+  // former per-request quota behavior; newer builds group internal batches as
+  // one user operation.
+  operationId: z.string().uuid().optional(),
 }).strict();
 
 const resultSchema = z.object({
@@ -106,10 +109,6 @@ const resultSchema = z.object({
   }).strict()).max(100),
 }).strict();
 
-type RateBucket = { count: number; resetAt: number };
-const globalRateBuckets = globalThis as typeof globalThis & { __starjobExtensionAutofillRate?: Map<string, RateBucket> };
-const rateBuckets = globalRateBuckets.__starjobExtensionAutofillRate ??= new Map<string, RateBucket>();
-
 export async function POST(request: NextRequest) {
   if (Number(request.headers.get("content-length") ?? 0) > 128_000) {
     return NextResponse.json({ error: "简历或页面字段过多，请分段填写" }, { status: 413 });
@@ -118,10 +117,6 @@ export async function POST(request: NextRequest) {
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") || "";
   const tokenPayload = verifyExtensionMatchToken(token);
   if (!tokenPayload) return NextResponse.json({ error: "请重新同步拾星简历后再使用 AI 智能填写" }, { status: 401 });
-  if (!takeRateSlot(tokenPayload.sub)) {
-    return NextResponse.json({ error: "AI 智能填写请求较频繁，请稍后重试" }, { status: 429, headers: { "Retry-After": "600" } });
-  }
-
   const rawBody = await request.text().catch(() => "");
   if (new TextEncoder().encode(rawBody).byteLength > 128_000) {
     return NextResponse.json({ error: "简历或页面字段过多，请分段填写" }, { status: 413 });
@@ -134,6 +129,19 @@ export async function POST(request: NextRequest) {
     }
   })());
   if (!parsed.success) return NextResponse.json({ error: "简历或页面字段格式无法识别" }, { status: 400 });
+  let rateSlotAllowed: boolean;
+  try {
+    rateSlotAllowed = await takeExtensionAutofillRateSlot(tokenPayload.sub, parsed.data.operationId);
+  } catch (error) {
+    logServerError(error);
+    return NextResponse.json(
+      { error: "AI 智能填写服务暂时无法核验请求额度，请稍后重试" },
+      { status: 503, headers: { "Retry-After": "30" } },
+    );
+  }
+  if (!rateSlotAllowed) {
+    return NextResponse.json({ error: "AI 智能填写请求较频繁，请稍后重试" }, { status: 429, headers: { "Retry-After": "600" } });
+  }
 
   const apiKey = process.env.DEEPSEEK_API_KEY?.trim();
   const baseUrl = process.env.DEEPSEEK_BASE_URL?.trim() || "https://api.deepseek.com";
@@ -143,6 +151,9 @@ export async function POST(request: NextRequest) {
   try {
     const modelFields = parsed.data.fields.map((field, index) => ({ ...field, fieldKey: `f${index}` }));
     const controller = new AbortController();
+    const abortForClientDisconnect = () => controller.abort(request.signal.reason);
+    if (request.signal.aborted) abortForClientDisconnect();
+    else request.signal.addEventListener("abort", abortForClientDisconnect, { once: true });
     const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     let response: Response;
     try {
@@ -166,6 +177,7 @@ export async function POST(request: NextRequest) {
       });
     } finally {
       clearTimeout(timeout);
+      request.signal.removeEventListener("abort", abortForClientDisconnect);
     }
 
     if (!response.ok) throw new ExtensionAutofillUpstreamError(response.status);
@@ -181,18 +193,6 @@ export async function POST(request: NextRequest) {
     if (error instanceof ExtensionAutofillUpstreamError && error.status === 429) return NextResponse.json({ error: "AI 智能填写服务繁忙，请稍后重试" }, { status: 429 });
     return NextResponse.json({ error: "AI 智能填写暂时不可用，请稍后重试" }, { status: 502 });
   }
-}
-
-function takeRateSlot(userId: string) {
-  const now = Date.now();
-  const current = rateBuckets.get(userId);
-  if (!current || current.resetAt <= now) {
-    rateBuckets.set(userId, { count: 1, resetAt: now + RATE_WINDOW_MS });
-    return true;
-  }
-  if (current.count >= RATE_LIMIT) return false;
-  current.count += 1;
-  return true;
 }
 
 function getChatCompletionsUrl(baseUrl: string) {

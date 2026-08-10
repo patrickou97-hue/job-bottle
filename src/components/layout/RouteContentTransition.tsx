@@ -13,6 +13,8 @@ export function RouteContentTransition({ children }: { children: ReactNode }) {
     <AnimatePresence initial={false} mode="popLayout">
       <motion.main
         key={pathname}
+        id="main-content"
+        tabIndex={-1}
         className="mx-auto w-full max-w-[1320px] px-4 pb-24 pt-8 sm:px-6 md:pb-10 lg:px-8 lg:py-10"
         variants={reducedMotion ? undefined : pageVariants}
         initial={reducedMotion ? { opacity: 0 } : "initial"}

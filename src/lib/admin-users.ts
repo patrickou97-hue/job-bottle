@@ -52,6 +52,17 @@ export type AdminUserUpdate = {
   disabled: boolean;
 };
 
+export type AdminUserMutationGuardSummary = {
+  targetUserId: string;
+  reservationToken: string;
+  mutationKind: "profile_auth" | "star_interview_access";
+  reservedAt: string;
+  recoveryRequestedAt: string | null;
+  recoveryReason: string | null;
+  displayName: string | null;
+  email: string | null;
+};
+
 export type AdminUserQuery = {
   page?: number;
   pageSize?: number;
@@ -80,6 +91,48 @@ export async function fetchAdminUsers(input: AdminUserQuery = {}) {
   const payload = await readJson(response);
   if (!response.ok) throw new Error(getErrorMessage(payload, "用户列表暂时无法读取，请稍后重试。"));
   return payload as AdminUsersResponse;
+}
+
+export async function fetchAdminUserMutationGuards() {
+  const response = await fetch("/api/admin/users?view=recovery", { cache: "no-store" });
+  const payload = await readJson(response);
+  if (response.status === 401 || response.status === 403) return null;
+  if (!response.ok) {
+    throw new Error(getErrorMessage(payload, "待恢复安全操作暂时无法读取，请稍后重试。"));
+  }
+  return payload as { guards: AdminUserMutationGuardSummary[] };
+}
+
+export async function recoverAdminUserMutation(
+  guard: Pick<AdminUserMutationGuardSummary, "targetUserId" | "reservationToken">,
+  reason: string,
+) {
+  const response = await fetch("/api/admin/users", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      id: guard.targetUserId,
+      action: "recover_admin_mutation",
+      reservationToken: guard.reservationToken,
+      reason,
+    }),
+  });
+  const payload = await readJson(response);
+  if (response.ok) {
+    return { action: "recovered" as const };
+  }
+  if (response.status === 409
+    && isRecord(payload)
+    && payload.action === "quiescing") {
+    return {
+      action: "quiescing" as const,
+      retryAfterSeconds: typeof payload.retryAfterSeconds === "number"
+        ? payload.retryAfterSeconds
+        : Number(response.headers.get("Retry-After") ?? 300),
+      message: getErrorMessage(payload, "安全恢复仍在静默期。"),
+    };
+  }
+  throw new Error(getErrorMessage(payload, "账户安全恢复失败，请重新核对后再试。"));
 }
 
 export async function updateStarInterviewAccess(id: string, unlimitedAccess: boolean) {
@@ -128,4 +181,8 @@ function getErrorMessage(payload: unknown, fallback: string) {
     return payload.error;
   }
   return fallback;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }

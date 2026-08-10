@@ -2,7 +2,7 @@
 
 import { FileText, Languages, X } from "lucide-react";
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ResumeTemplatePicker } from "@/components/resume/ResumeTemplatePicker";
 import { Button } from "@/components/ui/Button";
 import { MotionDialog } from "@/components/ui/MotionDialog";
@@ -23,14 +23,6 @@ export function ResumeCreateDialog({
   const [language, setLanguage] = useState<ResumeLanguage>("zh-CN");
   const [templateId, setTemplateId] = useState<ResumeTemplateId>(getDefaultResumeTemplate("zh-CN"));
 
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
-
   function chooseLanguage(nextLanguage: ResumeLanguage) {
     setLanguage(nextLanguage);
     setTemplateId(getDefaultResumeTemplate(nextLanguage));
@@ -41,6 +33,7 @@ export function ResumeCreateDialog({
       labelledBy="resume-create-title"
       className="max-w-4xl p-5 sm:p-7"
       onBackdropClick={onClose}
+      onEscapeKeyDown={onClose}
     >
         <div className="mb-3 flex justify-center sm:hidden"><span className="apple-sheet-handle" /></div>
         <header className="flex items-start justify-between gap-4 border-b border-[color:var(--line-ghost)] pb-5">

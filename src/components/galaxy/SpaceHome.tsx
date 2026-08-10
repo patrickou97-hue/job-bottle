@@ -132,13 +132,16 @@ export function SpaceHome() {
   const entering = planetTransition !== null
   const shouldOrbit = !reducedMotion && !entering
   const desktopMaxOrbitRadius = Math.max(...planets.map((planet) => planet.orbitRadius))
+  const compactDesktopHeight = viewportHeight <= 720
+  const desktopVerticalReserve = compactDesktopHeight ? 220 : 120
+  const desktopMinimumScale = compactDesktopHeight ? 0.26 : 0.52
   const desktopOrbitScale = Math.min(
     0.78,
     Math.max(
-      0.52,
+      desktopMinimumScale,
       Math.min(
         (viewportWidth - 220) / (desktopMaxOrbitRadius * 2),
-        (viewportHeight - 120) / (desktopMaxOrbitRadius * 2),
+        (viewportHeight - desktopVerticalReserve) / (desktopMaxOrbitRadius * 2),
       ),
     ),
   )
@@ -201,7 +204,7 @@ export function SpaceHome() {
             variant: 'auth',
           })
         }
-        className="absolute right-6 top-5 z-30 text-sm font-medium outline-none md:right-10 md:top-8"
+        className="absolute right-6 top-5 z-30 rounded-md text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--aurora)] focus-visible:ring-offset-2 focus-visible:ring-offset-black md:right-10 md:top-8"
         style={{
           color: 'var(--text-secondary)',
           opacity: entering ? 0.25 : 1,
@@ -211,7 +214,7 @@ export function SpaceHome() {
         {user ? '资料' : '登录'}
       </button>
 
-      <section className="absolute inset-0 z-10 hidden items-center justify-center md:flex">
+      <section className="absolute inset-x-0 bottom-10 top-20 z-10 hidden items-center justify-center md:flex lg:bottom-8 lg:top-16">
         <motion.div
           animate={{ opacity: entering ? 0 : 1, scale: entering ? 1.08 : 1 }}
           transition={{ duration: 0.48, ease: 'easeOut' }}

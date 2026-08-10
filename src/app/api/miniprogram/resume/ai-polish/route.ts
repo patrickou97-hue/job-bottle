@@ -1,1 +1,1 @@
-export { POST } from "@/app/api/resume/ai-polish/route";
+export { maxDuration, POST } from "@/app/api/resume/ai-polish/route";

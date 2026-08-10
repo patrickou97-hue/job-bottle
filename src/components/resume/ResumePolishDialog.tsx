@@ -58,14 +58,6 @@ export function ResumePolishDialog({
   const mountedRef = useRef(true);
 
   useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
-
-  useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
@@ -119,6 +111,7 @@ export function ResumePolishDialog({
       labelledBy="resume-polish-title"
       className="max-w-4xl p-5 sm:p-7"
       onBackdropClick={closeDialog}
+      onEscapeKeyDown={closeDialog}
     >
         <div className="mb-3 flex justify-center sm:hidden"><span className="apple-sheet-handle" /></div>
         <header className="flex items-start justify-between gap-4 border-b border-[color:var(--line-ghost)] pb-5">

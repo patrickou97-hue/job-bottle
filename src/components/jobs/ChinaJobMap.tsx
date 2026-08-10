@@ -55,8 +55,8 @@ export function ChinaJobMap({
   }
 
   return (
-    <div className="grid min-h-[32rem] border-y border-[color:var(--line-ghost)] lg:grid-cols-[minmax(0,1.25fr)_minmax(300px,.75fr)]">
-      <div className="min-w-0 py-5 lg:pr-8">
+    <div className="grid min-h-[26rem] border-y border-[color:var(--line-ghost)] md:min-h-[28rem] md:grid-cols-[minmax(0,1.15fr)_minmax(240px,.85fr)] lg:min-h-[32rem] lg:grid-cols-[minmax(0,1.25fr)_minmax(300px,.75fr)]">
+      <div className="min-w-0 py-4 md:pr-6 lg:py-5 lg:pr-8">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 text-xs text-ink-muted">
           <span>颜色越深，岗位越集中</span>
           <button
@@ -149,7 +149,7 @@ export function ChinaJobMap({
           })}
         </svg>
 
-        <div className="mt-4 flex gap-2 overflow-x-auto pb-1 lg:hidden" aria-label="有岗位的省份">
+        <div className="mt-4 flex gap-2 overflow-x-auto pb-1 md:hidden" aria-label="有岗位的省份">
           <button
             type="button"
             className="chip-button shrink-0 px-3 py-2 text-xs"
@@ -172,7 +172,7 @@ export function ChinaJobMap({
         </div>
       </div>
 
-      <section className="min-w-0 border-t border-[color:var(--line-ghost)] lg:border-l lg:border-t-0 lg:pl-7" aria-labelledby="region-jobs-title">
+      <section className="min-w-0 border-t border-[color:var(--line-ghost)] md:border-l md:border-t-0 md:pl-5 lg:pl-7" aria-labelledby="region-jobs-title">
         <div className="flex items-end justify-between gap-4 border-b border-[color:var(--line-ghost)] py-4">
           <div>
             <h3 id="region-jobs-title" className="text-base font-semibold text-ink-primary">{activeLabel}</h3>

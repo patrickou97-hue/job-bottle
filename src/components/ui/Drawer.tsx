@@ -87,7 +87,7 @@ export function Drawer({
             </div>
             <div
               data-drawer-scroll
-              className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] [-webkit-overflow-scrolling:touch] md:px-7 md:pb-7"
+              className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-5 pb-[var(--app-safe-content-bottom)] [-webkit-overflow-scrolling:touch] md:px-7 md:pb-7"
             >
               {children}
               {showHelpLink ? (

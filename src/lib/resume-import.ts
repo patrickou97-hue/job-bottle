@@ -7,6 +7,7 @@ import {
   type ResumeLanguage,
   type ResumeTemplateId,
 } from "@/lib/resume";
+import { cleanResumeBullet, normalizeResumeImportText } from "@/lib/resume-import-text";
 
 export type ImportedResumeBasics = {
   name: string;
@@ -213,14 +214,7 @@ export function detectResumeLanguage(sourceText: string): ResumeLanguage {
 }
 
 function normalizeExtractedText(value: string) {
-  return value
-    .replace(/\u0000/g, "")
-    .replace(/\r\n?/g, "\n")
-    .replace(/[\t\f\v]+/g, " ")
-    .replace(/[ ]{2,}/g, " ")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim()
-    .slice(0, 24_000);
+  return normalizeResumeImportText(value);
 }
 
 function findExplicitBirthDate(value: string) {
@@ -382,7 +376,7 @@ function cleanList(values: string[]) {
 }
 
 function cleanBullet(value: string) {
-  return value.replace(/^[-•·▪◦*]+\s*/, "").trim();
+  return cleanResumeBullet(value);
 }
 
 function trimUrl(value: string) {

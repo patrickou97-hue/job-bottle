@@ -954,7 +954,6 @@
       identified: plans.filter((plan) => !plan.sensitive && plan.matchedDefinition && plan.bestScore >= 0.74).length,
       fields: extractedFields
         .filter((field) => !field.sensitive)
-        .slice(0, 100)
         .map(toAnalysisField),
       sensitive: sensitiveCount,
     };
@@ -1005,11 +1004,26 @@
   let manual = aiOnly ? 0 : document.querySelectorAll("input[type='file']").length;
   let derived = 0;
   let structured = 0;
+  let failed = 0;
 
   function rememberUnmatched(signals) {
     const label = signals.visible.find(Boolean) || signals.attributes.find(Boolean);
     const cleanLabel = String(label || "").replace(/\s+/g, " ").trim().slice(0, 48);
     if (cleanLabel && !unmatchedLabels.includes(cleanLabel)) unmatchedLabels.push(cleanLabel);
+  }
+
+  async function fillElementSafely(element, value, definition) {
+    try {
+      return await fillElement(element, value, definition);
+    } catch (error) {
+      failed += 1;
+      console.warn("[starjob_fill_field_failed]", {
+        tag: element?.tagName,
+        type: element instanceof HTMLInputElement ? element.type : undefined,
+        message: error instanceof Error ? error.message : String(error),
+      });
+      return false;
+    }
   }
 
   async function repairInvalidFilledDateRanges() {
@@ -1035,7 +1049,7 @@
       if (!plansToRepair.length) continue;
 
       for (const plan of plansToRepair) {
-        if (plan.expectedDateValue && await fillElement(plan.element, plan.expectedDateValue, { date: true })) {
+        if (plan.expectedDateValue && await fillElementSafely(plan.element, plan.expectedDateValue, { date: true })) {
           markFilled(plan.element, plan.signals.visible.find(Boolean) || "经历日期");
         }
       }
@@ -1100,7 +1114,7 @@
       const isCheckbox = element instanceof HTMLInputElement && element.type === "checkbox";
       const checkboxValue = /^(true|1|yes|y|是|至今|仍在职)$/i.test(String(value));
       if (matchedDefinition?.date) plan.expectedDateValue = value;
-      if (await fillElement(element, isCheckbox ? checkboxValue : value, {
+      if (await fillElementSafely(element, isCheckbox ? checkboxValue : value, {
         date: Boolean(matchedDefinition?.date) || isLikelyDateControl(element),
         checkbox: isCheckbox,
       })) {
@@ -1169,7 +1183,7 @@
       continue;
     }
     if (matchedDefinition.date) plan.expectedDateValue = value;
-    if (await fillElement(element, value, matchedDefinition)) {
+    if (await fillElementSafely(element, value, matchedDefinition)) {
       filled += 1;
       markFilled(element, matchedDefinition.aliases[0]);
     } else {
@@ -1192,6 +1206,7 @@
     manual,
     derived,
     structured,
+    failed,
     invalidDatesRepaired: invalidDateRanges.repaired,
     invalidDatesUnresolved: invalidDateRanges.unresolved,
     unmatched: unmatchedLabels.slice(0, 12),

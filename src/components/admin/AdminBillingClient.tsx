@@ -15,12 +15,14 @@ import {
   UsersRound,
   WalletCards,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { cn, formatDateTime } from "@/lib/utils";
 
 const AMOUNT_PRESETS = ["10", "20", "50", "100"];
+const OPERATION_KEY_STORAGE_PREFIX = "starjob:admin-balance-operation:v1:";
+const OPERATION_KEY_TTL_MS = 24 * 60 * 60 * 1_000;
 
 const EMPTY_SUMMARY: BalanceSummary = {
   totalUsers: 0,
@@ -49,6 +51,8 @@ export function AdminBillingClient() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [messageTone, setMessageTone] = useState<"info" | "success" | "error">("info");
+  const pendingOperationKeysRef = useRef(new Map<string, PendingGrantOperation>());
+  const submitInFlightRef = useRef(false);
 
   useEffect(() => {
     void loadSummary();
@@ -99,6 +103,7 @@ export function AdminBillingClient() {
   }
 
   async function selectUser(user: BalanceUser) {
+    if (submitInFlightRef.current) return;
     setMode("single");
     setSelectedUser(user);
     setConfirming(false);
@@ -124,6 +129,8 @@ export function AdminBillingClient() {
   }
 
   async function submit() {
+    if (submitInFlightRef.current) return;
+
     const amount = Number(amountYuan);
     if (!Number.isFinite(amount) || amount < 1 || amount > 1_000) {
       setMessage("发放金额需在 ¥1.00 至 ¥1,000.00 之间。");
@@ -140,6 +147,28 @@ export function AdminBillingClient() {
       setMessageTone("error");
       return;
     }
+
+    const normalizedGrant = {
+      mode,
+      recipient: mode === "batch" ? "all" : selectedUser!.id,
+      amountFen: Math.round(amount * 100),
+      reason: reason.trim(),
+    } as const;
+    const operationFingerprint = JSON.stringify(normalizedGrant);
+    submitInFlightRef.current = true;
+    let pendingOperation: PendingGrantOperation;
+    try {
+      pendingOperation = await getOrCreatePendingGrantOperation(
+        operationFingerprint,
+        pendingOperationKeysRef.current,
+      );
+    } catch {
+      submitInFlightRef.current = false;
+      setMessage("暂时无法创建安全的发放操作编号，请稍后重试。");
+      setMessageTone("error");
+      return;
+    }
+
     if (!confirming) {
       setConfirming(true);
       setMessageTone("info");
@@ -148,45 +177,66 @@ export function AdminBillingClient() {
           ? `将向全部 ${summary.totalUsers} 位注册用户发放 ¥${amount.toFixed(2)}，请再次点击确认。`
           : `将向 ${selectedUser?.displayName} 发放 ¥${amount.toFixed(2)}，请再次点击确认。`,
       );
+      submitInFlightRef.current = false;
       return;
     }
 
     setSaving(true);
     setMessage("");
-    const response = await fetch("/api/admin/star-interview-balance", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...(mode === "batch" ? { allUsers: true } : { userIds: [selectedUser?.id] }),
-        amountFen: Math.round(amount * 100),
-        reason: reason.trim(),
-        idempotencyKey: crypto.randomUUID(),
-      }),
-    });
-    const payload = await response.json().catch(() => ({}));
-    setSaving(false);
-    setConfirming(false);
+    try {
+      const response = await fetch("/api/admin/star-interview-balance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...(normalizedGrant.mode === "batch"
+            ? { allUsers: true }
+            : { userIds: [normalizedGrant.recipient] }),
+          amountFen: normalizedGrant.amountFen,
+          reason: normalizedGrant.reason,
+          idempotencyKey: pendingOperation.idempotencyKey,
+        }),
+      });
+      const payload: unknown = await response.json().catch(() => null);
 
-    if (!response.ok) {
-      setMessage(typeof payload.error === "string" ? payload.error : "余额发放失败。");
-      setMessageTone("error");
-      return;
-    }
-
-    setMessage(`发放完成：${payload.succeeded} 位用户已到账 ¥${amount.toFixed(2)}。`);
-    setMessageTone("success");
-    void loadSummary();
-    if (selectedUser && mode === "single") {
-      const responseAfterGrant = await fetch(
-        `/api/admin/star-interview-balance?userId=${encodeURIComponent(selectedUser.id)}`,
-        { cache: "no-store" },
-      );
-      const payloadAfterGrant = await responseAfterGrant.json().catch(() => ({}));
-      if (responseAfterGrant.ok) {
-        setSelectedUser(payloadAfterGrant.user as BalanceUser);
-        setLedger(payloadAfterGrant.ledger as LedgerEntry[]);
-        setLedgerState("ready");
+      if (!response.ok) {
+        const error = readGrantError(payload) ?? "余额发放失败。";
+        setMessage(`${error} 保持发放对象、金额和说明不变后重试时，将沿用同一操作编号。`);
+        setMessageTone("error");
+        return;
       }
+      if (!isConfirmedGrantResponse(payload)) {
+        setMessage("未能确认本次发放结果。请保持发放对象、金额和说明不变后再次确认；重试会沿用同一操作编号，避免重复到账。");
+        setMessageTone("error");
+        return;
+      }
+
+      await clearPendingGrantOperation(pendingOperation, pendingOperationKeysRef.current);
+      setMessage(`发放完成：${payload.succeeded} 位用户已到账 ¥${(normalizedGrant.amountFen / 100).toFixed(2)}。`);
+      setMessageTone("success");
+      void loadSummary();
+      if (selectedUser && normalizedGrant.mode === "single") {
+        try {
+          const responseAfterGrant = await fetch(
+            `/api/admin/star-interview-balance?userId=${encodeURIComponent(normalizedGrant.recipient)}`,
+            { cache: "no-store" },
+          );
+          const payloadAfterGrant = await responseAfterGrant.json().catch(() => ({}));
+          if (responseAfterGrant.ok) {
+            setSelectedUser(payloadAfterGrant.user as BalanceUser);
+            setLedger(payloadAfterGrant.ledger as LedgerEntry[]);
+            setLedgerState("ready");
+          }
+        } catch {
+          setLedgerState("error");
+        }
+      }
+    } catch {
+      setMessage("网络中断，暂时无法确认本次发放结果。请保持发放对象、金额和说明不变后再次确认；重试会沿用同一操作编号，避免重复到账。");
+      setMessageTone("error");
+    } finally {
+      submitInFlightRef.current = false;
+      setSaving(false);
+      setConfirming(false);
     }
   }
 
@@ -212,9 +262,11 @@ export function AdminBillingClient() {
             <button
               type="button"
               onClick={() => {
+                if (submitInFlightRef.current) return;
                 setMode("single");
                 resetConfirmation();
               }}
+              disabled={saving}
               className={modeButtonClass(mode === "single")}
               aria-pressed={mode === "single"}
             >
@@ -224,9 +276,11 @@ export function AdminBillingClient() {
             <button
               type="button"
               onClick={() => {
+                if (submitInFlightRef.current) return;
                 setMode("batch");
                 resetConfirmation();
               }}
+              disabled={saving}
               className={modeButtonClass(mode === "batch")}
               aria-pressed={mode === "batch"}
             >
@@ -319,6 +373,7 @@ export function AdminBillingClient() {
                         key={user.id}
                         type="button"
                         onClick={() => void selectUser(user)}
+                        disabled={saving}
                         className={cn(
                           "group grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-b border-[color:var(--line-ghost)] px-4 py-4 text-left transition-colors last:border-b-0 hover:bg-[color:var(--surface-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--aurora)]",
                           active && "bg-[color:var(--surface-hover-bg)]",
@@ -433,9 +488,11 @@ export function AdminBillingClient() {
                     key={amount}
                     type="button"
                     onClick={() => {
+                      if (submitInFlightRef.current) return;
                       setAmountYuan(amount);
                       resetConfirmation();
                     }}
+                    disabled={saving}
                     className={cn(
                       "pressable min-h-10 rounded-lg border px-4 text-sm tabular-nums transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--aurora)]",
                       amountYuan === amount
@@ -458,7 +515,9 @@ export function AdminBillingClient() {
                   max="1000"
                   step="1"
                   value={amountYuan}
+                  disabled={saving}
                   onChange={(event) => {
+                    if (submitInFlightRef.current) return;
                     setAmountYuan(event.target.value);
                     resetConfirmation();
                   }}
@@ -469,7 +528,9 @@ export function AdminBillingClient() {
                 <Input
                   value={reason}
                   maxLength={120}
+                  disabled={saving}
                   onChange={(event) => {
+                    if (submitInFlightRef.current) return;
                     setReason(event.target.value);
                     resetConfirmation();
                   }}
@@ -603,6 +664,199 @@ function ledgerLabel(entry: LedgerEntry) {
 function fen(value: number) {
   return (value / 100).toFixed(2);
 }
+
+function readGrantError(payload: unknown) {
+  if (!payload || typeof payload !== "object" || !("error" in payload)) return null;
+  return typeof payload.error === "string" ? payload.error : null;
+}
+
+function isConfirmedGrantResponse(payload: unknown): payload is { succeeded: number; total: number } {
+  if (!payload || typeof payload !== "object") return false;
+  if (!("succeeded" in payload) || !("total" in payload)) return false;
+  const result = payload as { succeeded: unknown; total: unknown };
+  return typeof result.succeeded === "number"
+    && typeof result.total === "number"
+    && Number.isInteger(result.succeeded)
+    && Number.isInteger(result.total)
+    && result.succeeded >= 0
+    && result.succeeded === result.total;
+}
+
+async function getOrCreatePendingGrantOperation(
+  fingerprint: string,
+  memory: Map<string, PendingGrantOperation>,
+) {
+  const digest = await digestOperationFingerprint(fingerprint);
+  const storageKey = digest ? `${OPERATION_KEY_STORAGE_PREFIX}${digest}` : null;
+  const resolveOperation = () => {
+    const now = Date.now();
+    if (storageKey) {
+      const persisted = readPersistedGrantOperation(storageKey, now);
+      if (persisted) {
+        const operation = { fingerprint, storageKey, ...persisted };
+        memory.set(fingerprint, operation);
+        return operation;
+      }
+    }
+
+    const cached = memory.get(fingerprint);
+    if (cached && cached.expiresAt > now) {
+      const persisted = storageKey
+        ? writePersistedGrantOperation(storageKey, cached)
+        : false;
+      const operation = {
+        ...cached,
+        storageKey: persisted ? storageKey : cached.storageKey,
+      };
+      memory.set(fingerprint, operation);
+      return operation;
+    }
+    memory.delete(fingerprint);
+
+    const operation: PendingGrantOperation = {
+      fingerprint,
+      storageKey: null,
+      idempotencyKey: createIdempotencyKey(),
+      expiresAt: now + OPERATION_KEY_TTL_MS,
+    };
+    if (storageKey && writePersistedGrantOperation(storageKey, operation)) {
+      operation.storageKey = storageKey;
+    }
+    memory.set(fingerprint, operation);
+    return operation;
+  };
+
+  return storageKey
+    ? withOperationStorageLock(storageKey, resolveOperation)
+    : resolveOperation();
+}
+
+async function clearPendingGrantOperation(
+  operation: PendingGrantOperation,
+  memory: Map<string, PendingGrantOperation>,
+) {
+  if (memory.get(operation.fingerprint)?.idempotencyKey === operation.idempotencyKey) {
+    memory.delete(operation.fingerprint);
+  }
+  if (!operation.storageKey) return;
+
+  await withOperationStorageLock(operation.storageKey, () => {
+    const persisted = readPersistedGrantOperation(operation.storageKey!, Date.now());
+    if (persisted?.idempotencyKey === operation.idempotencyKey) {
+      removePersistedGrantOperation(operation.storageKey!);
+    }
+  });
+}
+
+async function digestOperationFingerprint(fingerprint: string) {
+  if (typeof globalThis.crypto?.subtle === "undefined" || typeof TextEncoder === "undefined") {
+    return null;
+  }
+  try {
+    const digest = await globalThis.crypto.subtle.digest(
+      "SHA-256",
+      new TextEncoder().encode(fingerprint),
+    );
+    return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+  } catch {
+    return null;
+  }
+}
+
+function readPersistedGrantOperation(storageKey: string, now: number) {
+  const storage = getOperationStorage();
+  if (!storage) return null;
+  try {
+    const raw = storage.getItem(storageKey);
+    if (!raw) return null;
+    const value: unknown = JSON.parse(raw);
+    if (!isPersistedGrantOperation(value, now)) {
+      storage.removeItem(storageKey);
+      return null;
+    }
+    return value;
+  } catch {
+    return null;
+  }
+}
+
+function writePersistedGrantOperation(
+  storageKey: string,
+  operation: Pick<PendingGrantOperation, "idempotencyKey" | "expiresAt">,
+) {
+  const storage = getOperationStorage();
+  if (!storage) return false;
+  try {
+    storage.setItem(storageKey, JSON.stringify({
+      idempotencyKey: operation.idempotencyKey,
+      expiresAt: operation.expiresAt,
+    }));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function removePersistedGrantOperation(storageKey: string) {
+  try {
+    getOperationStorage()?.removeItem(storageKey);
+  } catch {
+    // A storage failure only reduces persistence; the in-memory key is still cleared after success.
+  }
+}
+
+function getOperationStorage() {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+async function withOperationStorageLock<T>(storageKey: string, task: () => T | Promise<T>) {
+  if (typeof navigator === "undefined" || !navigator.locks?.request) return task();
+  try {
+    return await navigator.locks.request(`starjob-admin-balance:${storageKey}`, { mode: "exclusive" }, task);
+  } catch {
+    return task();
+  }
+}
+
+function isPersistedGrantOperation(
+  value: unknown,
+  now: number,
+): value is Pick<PendingGrantOperation, "idempotencyKey" | "expiresAt"> {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as { idempotencyKey?: unknown; expiresAt?: unknown };
+  return typeof candidate.idempotencyKey === "string"
+    && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(candidate.idempotencyKey)
+    && typeof candidate.expiresAt === "number"
+    && Number.isFinite(candidate.expiresAt)
+    && candidate.expiresAt > now
+    && candidate.expiresAt <= now + OPERATION_KEY_TTL_MS;
+}
+
+function createIdempotencyKey() {
+  if (typeof globalThis.crypto?.randomUUID === "function") {
+    return globalThis.crypto.randomUUID();
+  }
+  if (typeof globalThis.crypto?.getRandomValues === "function") {
+    const bytes = globalThis.crypto.getRandomValues(new Uint8Array(16));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0"));
+    return `${hex.slice(0, 4).join("")}-${hex.slice(4, 6).join("")}-${hex.slice(6, 8).join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10).join("")}`;
+  }
+  throw new Error("Secure random values are unavailable.");
+}
+
+type PendingGrantOperation = {
+  fingerprint: string;
+  storageKey: string | null;
+  idempotencyKey: string;
+  expiresAt: number;
+};
 
 type BalanceSummary = {
   totalUsers: number;

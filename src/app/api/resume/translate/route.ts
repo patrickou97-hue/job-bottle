@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const result = await executeTranslationPlan(options);
+    const result = await executeTranslationPlan({ ...options, signal: request.signal });
     return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     logServerError("resume_translate_upstream", error);
@@ -177,6 +177,7 @@ function createProgressResponse(
       abortTranslation = () => translationController.abort();
       const abortFromRequest = () => translationController.abort();
       requestSignal.addEventListener("abort", abortFromRequest, { once: true });
+      if (requestSignal.aborted) abortFromRequest();
       const send = (event: unknown) => {
         if (closed) return;
         try {

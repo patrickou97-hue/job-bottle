@@ -140,9 +140,10 @@
         document.querySelector("#project-date-panel").classList.remove("is-open");
       });
     </script>
-    <script src="../starjob-resume-assistant/fill.js"></script>
     <script>
-      window.setTimeout(() => {
+      async function runFixture() {
+        const fillSource = await fetch("../starjob-resume-assistant/fill.js").then((response) => response.text());
+        const summary = await window.eval(fillSource);
         const actual = {
           name: document.querySelector("#candidate-name").value,
           email: document.querySelector("#candidate-email").value,
@@ -188,7 +189,8 @@
           certificateScore: document.querySelector("#certificate-score").value,
           certificateDate: document.querySelector("#certificate-date").value,
           nationalId: document.querySelector("#national-id").value,
-          filledCount: document.querySelectorAll("[data-starjob-filled='true']").length
+          filledCount: document.querySelectorAll("[data-starjob-filled='true']").length,
+          summary,
         };
         const passed = actual.name === "王小星"
           && actual.email === "stella@starjob.space"
@@ -242,7 +244,12 @@
           && actual.filledCount >= 42;
         document.querySelector("#result").textContent = JSON.stringify({ passed, actual });
         document.title = passed ? "STARJOB_EXTENSION_TEST_PASS" : "STARJOB_EXTENSION_TEST_FAIL";
-      }, 250);
+      }
+
+      runFixture().catch((error) => {
+        document.querySelector("#result").textContent = JSON.stringify({ passed: false, error: String(error) });
+        document.title = "STARJOB_EXTENSION_TEST_FAIL";
+      });
     </script>
   </body>
 </html>

@@ -24,6 +24,12 @@ const TEMPLATE_LABELS: Record<string, string> = {
   english_modern: "English Modern",
 };
 
+let importProgressTimer: ReturnType<typeof setInterval> | undefined;
+let activeImportRequest: WechatMiniprogram.RequestTask | undefined;
+let nextImportOperationId = 0;
+let activeImportOperationId = 0;
+let cancelledImportOperationId = 0;
+
 Page({
   data: {
     authenticated: false,
@@ -34,6 +40,9 @@ Page({
     showImportForm: false,
     creating: false,
     importingMode: "",
+    importErrorMessage: "",
+    importStage: "",
+    importElapsedSeconds: 0,
     draftTitle: "",
     draftTargetRole: "",
     draftTemplateId: "compact",
@@ -54,6 +63,14 @@ Page({
     const authenticated = hasActiveSession();
     this.setData({ authenticated });
     if (authenticated) void this.loadResumes();
+  },
+
+  onUnload() {
+    this.cancelImportTask(false);
+  },
+
+  onHide() {
+    this.cancelImportTask(false);
   },
 
   onPullDownRefresh() {
@@ -119,6 +136,10 @@ Page({
   },
 
   onToggleImport() {
+    if (this.data.importingMode) {
+      wx.showToast({ title: "请先完成或取消当前导入", icon: "none" });
+      return;
+    }
     if (!this.data.authenticated) {
       this.onLogin();
       return;
@@ -127,6 +148,7 @@ Page({
       showImportForm: !this.data.showImportForm,
       showCreateForm: false,
       errorMessage: "",
+      importErrorMessage: "",
     });
   },
 
@@ -179,10 +201,24 @@ Page({
       return;
     }
     const mode = event.currentTarget.dataset.mode === "program" ? "program" : "ai";
-    this.setData({ importingMode: mode, errorMessage: "" });
+    const operationId = this.startImportProgress(mode);
     void apiRequest<ResumeImportResponse>("/resumes/import", {
       method: "POST",
-      timeout: mode === "ai" ? 45_000 : 15_000,
+      timeout: mode === "ai" ? 105_000 : 25_000,
+      isCancelled: () => (
+        cancelledImportOperationId === operationId ||
+        activeImportOperationId !== operationId
+      ),
+      onRequestTask: (task) => {
+        if (
+          activeImportOperationId === operationId &&
+          cancelledImportOperationId !== operationId
+        ) {
+          activeImportRequest = task;
+        } else {
+          task.abort();
+        }
+      },
       data: {
         sourceText,
         fileName: this.data.importFileName,
@@ -190,11 +226,18 @@ Page({
       },
     })
       .then((response) => {
+        if (
+          cancelledImportOperationId === operationId ||
+          activeImportOperationId !== operationId
+        ) {
+          return;
+        }
         const resume = response.data.resume;
         this.setData({
           showImportForm: false,
           importText: "",
           importFileName: "粘贴导入简历",
+          importErrorMessage: "",
           resumes: [
             {
               ...resume,
@@ -219,14 +262,67 @@ Page({
         });
       })
       .catch((error: unknown) => {
+        if (cancelledImportOperationId === operationId) return;
         this.setData({
-          errorMessage:
+          importErrorMessage:
             error instanceof Error
               ? error.message
               : "简历导入失败，未创建简历。",
         });
       })
-      .finally(() => this.setData({ importingMode: "" }));
+      .finally(() => {
+        if (activeImportOperationId === operationId) {
+          this.finishImportProgress();
+        }
+      });
+  },
+
+  startImportProgress(mode: "program" | "ai") {
+    if (importProgressTimer) clearInterval(importProgressTimer);
+    activeImportOperationId = ++nextImportOperationId;
+    activeImportRequest = undefined;
+    this.setData({
+      importingMode: mode,
+      errorMessage: "",
+      importErrorMessage: "",
+      importElapsedSeconds: 0,
+      importStage:
+        mode === "ai"
+          ? "AI 正在复核简历内容"
+          : "正在识别简历结构",
+    });
+    importProgressTimer = setInterval(() => {
+      const elapsed = this.data.importElapsedSeconds + 1;
+      this.setData({ importElapsedSeconds: elapsed });
+    }, 1_000);
+    return activeImportOperationId;
+  },
+
+  onCancelImport() {
+    this.cancelImportTask(true);
+  },
+
+  cancelImportTask(showFeedback: boolean) {
+    if (!this.data.importingMode || !activeImportOperationId) return;
+    cancelledImportOperationId = activeImportOperationId;
+    activeImportOperationId = 0;
+    activeImportRequest?.abort();
+    this.finishImportProgress();
+    if (showFeedback) {
+      wx.showToast({ title: "已取消，未改动原简历", icon: "none" });
+    }
+  },
+
+  finishImportProgress() {
+    if (importProgressTimer) clearInterval(importProgressTimer);
+    importProgressTimer = undefined;
+    activeImportRequest = undefined;
+    activeImportOperationId = 0;
+    this.setData({
+      importingMode: "",
+      importStage: "",
+      importElapsedSeconds: 0,
+    });
   },
 
   onDraftTitleInput(event: WechatMiniprogram.Input) {

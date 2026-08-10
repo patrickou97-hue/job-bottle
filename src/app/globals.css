@@ -12,6 +12,8 @@
   --glass-highlight: rgba(231, 226, 255, 0.09);
   --font-interface: var(--font-sans-cn);
   --font-display: var(--font-sans-cn);
+  --app-safe-bottom: max(0.65rem, env(safe-area-inset-bottom));
+  --app-safe-content-bottom: max(1.25rem, env(safe-area-inset-bottom));
 }
 
 @theme inline {
@@ -709,7 +711,7 @@ html[data-scene-transition="arrived"] .scene-arrival-veil__stars {
   transition: color var(--motion-duration-fast) var(--motion-ease-standard);
 }
 
-.apple-segmented__item[aria-selected="true"] { color: var(--text-primary); }
+.apple-segmented__item[aria-pressed="true"] { color: var(--text-primary); }
 
 .apple-segmented__indicator {
   position: absolute;
@@ -841,6 +843,8 @@ html[data-scene-transition="arrived"] .scene-arrival-veil__stars {
 .extension-product-visual img {
   display: block;
   width: 100%;
+  border: 1px solid var(--line-ghost);
+  border-radius: 1.5rem;
   filter: drop-shadow(0 30px 28px rgba(18, 41, 78, 0.18));
 }
 

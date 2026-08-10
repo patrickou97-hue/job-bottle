@@ -4,6 +4,7 @@ import {
   SOURCE_DOCUMENT_ID,
   SOURCE_TAB_ID,
   SOURCE_VIEW_ID,
+  assertNoJobIdentityConflicts,
   build27AutumnJobCandidates,
   collectSmartSheetModel,
   planJobChanges,
@@ -42,6 +43,7 @@ async function main() {
   const supabase = createSyncClient();
   const existingJobs = await fetchExistingJobs(supabase);
   const plan = planJobChanges(parsed.candidates, existingJobs);
+  assertNoJobIdentityConflicts(plan);
   const pending = [...plan.inserts, ...plan.updates];
 
   if (APPLY_CHANGES) {

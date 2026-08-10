@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { BriefcaseIcon, FileTextIcon, FlaskIcon, ListChecksIcon, ShieldCheckIcon, SignOutIcon, UserCircleIcon } from "@phosphor-icons/react";
-import { BookOpen } from "lucide-react";
+import { BookOpen, ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { getCurrentUserOrNull } from "@/lib/auth";
@@ -23,6 +23,9 @@ const navItems = [
   { href: "/profile", label: "个人中心" },
   { href: "/feedback", label: "反馈" },
 ];
+
+const tabletPrimaryNavItems = navItems.slice(0, 3);
+const tabletMoreNavItems = navItems.slice(3);
 
 const mobileNavItems = [
   { href: "/explore", label: "岗位", icon: BriefcaseIcon },
@@ -137,11 +140,11 @@ export function Navbar({ appearance = "work" }: { appearance?: "scene" | "work" 
           </Link>
           <Link href="/" className="flex items-center" aria-label="返回首页">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/shi-xing-wordmark.png" alt={SITE_NAME} className="brand-wordmark h-7 w-auto object-contain" />
+            <img src="/brand/shi-xing-wordmark.png" alt={SITE_NAME} width={1216} height={542} className="brand-wordmark h-7 w-auto object-contain" />
           </Link>
         </div>
 
-        <nav className="hidden min-w-0 flex-1 items-center gap-1 md:flex" aria-label="主导航">
+        <nav className="hidden min-w-0 flex-1 items-center gap-1 lg:flex" aria-label="主导航">
           {navItems.map((item) => {
             const active = pathname.startsWith(item.href);
             return (
@@ -167,6 +170,63 @@ export function Navbar({ appearance = "work" }: { appearance?: "scene" | "work" 
               </Link>
             );
           })}
+        </nav>
+
+        <nav className="relative hidden min-w-0 flex-1 items-center gap-1 md:flex lg:hidden" aria-label="平板主导航">
+          {tabletPrimaryNavItems.map((item) => {
+            const active = pathname.startsWith(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={navClass(item.href)}
+                aria-current={active ? "page" : undefined}
+                onClick={(event) => handleSceneLink(event, item.href)}
+              >
+                {item.label}
+                {active ? (
+                  <motion.span
+                    layoutId="tablet-nav-indicator"
+                    className="absolute inset-x-2.5 bottom-0 h-0.5 bg-[color:var(--aurora)]"
+                    transition={{ type: "spring", stiffness: 420, damping: 38 }}
+                  />
+                ) : null}
+              </Link>
+            );
+          })}
+          <details className="group relative">
+            <summary
+              className={cn(
+                "pressable flex h-10 cursor-pointer list-none items-center gap-1 rounded-md px-2.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--star-apricot)] [&::-webkit-details-marker]:hidden",
+                tabletMoreNavItems.some((item) => pathname.startsWith(item.href))
+                  ? "text-ink-primary"
+                  : "text-ink-secondary hover:text-ink-primary",
+              )}
+            >
+              更多
+              <ChevronDown aria-hidden="true" className="size-3.5 transition-transform group-open:rotate-180" />
+            </summary>
+            <div className="absolute left-0 top-[calc(100%+.35rem)] z-50 min-w-40 overflow-hidden rounded-xl border border-[color:var(--line-ghost)] bg-[color:var(--surface-read-bg-strong)] p-1.5 shadow-[0_18px_48px_rgba(0,0,0,0.16)]">
+              {tabletMoreNavItems.map((item) => {
+                const active = pathname.startsWith(item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "pressable flex min-h-10 items-center justify-between rounded-lg px-3 text-sm transition",
+                      active ? "bg-[color:var(--surface-selected-bg)] text-ink-primary" : "text-ink-secondary hover:bg-[color:var(--surface-hover-bg)] hover:text-ink-primary",
+                    )}
+                    aria-current={active ? "page" : undefined}
+                    onClick={(event) => handleSceneLink(event, item.href)}
+                  >
+                    <span>{item.label}</span>
+                    {item.beta ? <span className="text-[9px] font-semibold tracking-[0.08em] text-[color:var(--aurora)]">BETA</span> : null}
+                  </Link>
+                );
+              })}
+            </div>
+          </details>
         </nav>
 
         <div className="nav-account ml-auto hidden items-center gap-1 border-l pl-3 md:flex">
@@ -212,7 +272,7 @@ export function Navbar({ appearance = "work" }: { appearance?: "scene" | "work" 
         </div>
       </header>
       <nav
-        className="apple-dock fixed inset-x-3 bottom-[max(.65rem,env(safe-area-inset-bottom))] z-50 grid grid-cols-6 md:hidden"
+        className="apple-dock fixed inset-x-3 bottom-[var(--app-safe-bottom)] z-50 grid grid-cols-6 md:hidden"
         aria-label="移动主导航"
       >
         {mobileNavItems.map((item) => {

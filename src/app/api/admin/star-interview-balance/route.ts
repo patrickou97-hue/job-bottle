@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { User } from "@supabase/supabase-js";
 import { z } from "zod";
+import { requireAdminAccess } from "@/lib/admin-access";
 import { adjustStarInterviewBalance } from "@/lib/star-interview-billing";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
-
-const PRIMARY_ADMIN_EMAIL = "raywang6688@outlook.com";
 const schema = z.object({
   userIds: z.array(z.string().uuid()).max(500).optional(),
   allUsers: z.boolean().optional(),
@@ -17,7 +15,7 @@ const schema = z.object({
 });
 
 export async function GET(request: NextRequest) {
-  const access = await requirePrimaryAdmin();
+  const access = await requireAdminAccess({ primaryOnly: true });
   if ("response" in access) return access.response;
   const query = request.nextUrl.searchParams.get("query")?.trim().toLowerCase() ?? "";
   const selectedUserId = request.nextUrl.searchParams.get("userId")?.trim() ?? "";
@@ -108,7 +106,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const access = await requirePrimaryAdmin();
+  const access = await requireAdminAccess({ primaryOnly: true });
   if ("response" in access) return access.response;
   const parsed = schema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
@@ -152,15 +150,6 @@ async function listAllUsers() {
     if (data.users.length < 1_000) break;
   }
   return users;
-}
-
-async function requirePrimaryAdmin() {
-  const supabase = await createClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user || user.email?.toLowerCase() !== PRIMARY_ADMIN_EMAIL) {
-    return { response: NextResponse.json({ error: "只有主管理员可以管理诘星余额。" }, { status: 403 }) };
-  }
-  return { userId: user.id };
 }
 
 function resolveAccessMode(user: User, role: string) {

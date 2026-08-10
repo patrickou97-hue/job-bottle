@@ -365,7 +365,7 @@ function PhotoField({ value, onChange }: { value: string; onChange: (value: stri
       <div className="flex h-28 w-[86px] items-center justify-center overflow-hidden rounded-lg bg-[#eef0f3] ring-1 ring-[color:var(--line-ghost)]">
         {value ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={value} alt="简历照片预览" className="h-full w-full object-cover" />
+          <img src={value} alt="简历照片预览" width={86} height={112} className="h-full w-full object-cover" />
         ) : (
           <ImagePlus aria-hidden="true" className="size-7 text-ink-muted" />
         )}

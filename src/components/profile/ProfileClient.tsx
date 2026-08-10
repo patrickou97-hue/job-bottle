@@ -53,6 +53,8 @@ export function ProfileClient() {
   const [graduationYear, setGraduationYear] = useState("");
   const [preferredRegions, setPreferredRegions] = useState("");
   const [targetRoles, setTargetRoles] = useState("");
+  const [authResolved, setAuthResolved] = useState(() => !isSupabaseConfigured());
+  const [authFailed, setAuthFailed] = useState(() => !isSupabaseConfigured());
   const [message, setMessage] = useState(() =>
     isSupabaseConfigured() ? "正在读取资料" : "个人资料暂时无法读取，请稍后重试。",
   );
@@ -67,10 +69,14 @@ export function ProfileClient() {
       const user = await getCurrentUserOrNull(supabase);
       if (!mounted) return;
       if (!user) {
+        setAuthFailed(false);
+        setAuthResolved(true);
         setMessage("登录后可保存资料、简历与投递记录。");
         return;
       }
 
+      setUserId(user.id);
+      setUserEmail(user.email ?? "");
       await ensureProfile(supabase, user);
       const [profileResult, jobsResult, resumesResult, applicationsResult] = await Promise.allSettled([
         supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
@@ -82,8 +88,6 @@ export function ProfileClient() {
 
       const nextProfile =
         profileResult.status === "fulfilled" ? (profileResult.value.data as Profile | null) : null;
-      setUserId(user.id);
-      setUserEmail(user.email ?? "");
       setJobs(jobsResult.status === "fulfilled" ? jobsResult.value : []);
       setApplications(applicationsResult.status === "fulfilled" ? applicationsResult.value : []);
       setResumes(
@@ -101,11 +105,15 @@ export function ProfileClient() {
       setGraduationYear(nextProfile?.graduation_year ?? "");
       setPreferredRegions(formatPreferenceInput(nextProfile?.preferred_regions));
       setTargetRoles(formatPreferenceInput(nextProfile?.target_roles));
+      setAuthFailed(false);
+      setAuthResolved(true);
       setMessage("");
     }
 
     void loadProfile().catch((error) => {
       if (!mounted) return;
+      setAuthFailed(true);
+      setAuthResolved(true);
       setMessage(
         isProfileSchemaError(error)
           ? "个人资料服务正在升级，请稍后重试。"
@@ -189,6 +197,7 @@ export function ProfileClient() {
       setGraduationYear(next.graduation_year ?? "");
       setPreferredRegions(formatPreferenceInput(next.preferred_regions));
       setTargetRoles(formatPreferenceInput(next.target_roles));
+      setAuthFailed(false);
       setMessage("个人资料已保存。");
     } catch (error) {
       setMessage(
@@ -208,6 +217,21 @@ export function ProfileClient() {
     router.refresh();
   }
 
+  if (!authResolved) {
+    return (
+      <div className="observatory-page space-y-8">
+        <section className="page-hero">
+          <div>
+            <h1 className="page-title">个人中心</h1>
+          </div>
+        </section>
+        <div className="empty-state border-y border-[color:var(--line-ghost)]" role="status" aria-live="polite">
+          <span className="loading-line">正在读取资料</span>
+        </div>
+      </div>
+    );
+  }
+
   if (!userId) {
     return (
       <div className="observatory-page space-y-8">
@@ -216,14 +240,16 @@ export function ProfileClient() {
             <h1 className="page-title">个人中心</h1>
           </div>
         </section>
-        {message ? <div className="info-banner text-sm">{message}</div> : null}
+        {message ? <div className="info-banner text-sm" role={authFailed ? "alert" : "status"}>{message}</div> : null}
         <section className="empty-state border-y border-[color:var(--line-ghost)]">
           <div>
-            <h2>登录后继续</h2>
-            <p>登录后可保存资料、简历与投递记录。</p>
-            <Link href="/login?next=/profile" className="gold-button mt-4 inline-flex rounded-lg px-4 py-2 text-sm font-medium">
-              去登录
-            </Link>
+            <h2>{authFailed ? "个人资料暂时无法读取" : "登录后继续"}</h2>
+            <p>{authFailed ? "请稍后重试；当前页面不会改动你的资料。" : "登录后可保存资料、简历与投递记录。"}</p>
+            {!authFailed ? (
+              <Link href="/login?next=/profile" className="gold-button mt-4 inline-flex rounded-lg px-4 py-2 text-sm font-medium">
+                去登录
+              </Link>
+            ) : null}
           </div>
         </section>
       </div>
@@ -269,7 +295,7 @@ export function ProfileClient() {
         </p>
       ) : null}
 
-      {message ? <div className="info-banner my-6 text-sm">{message}</div> : null}
+      {message ? <div className="info-banner my-6 text-sm" role={authFailed ? "alert" : "status"} aria-live="polite">{message}</div> : null}
 
       <div className="divide-y divide-[color:var(--line-ghost)] border-b border-[color:var(--line-ghost)]">
         <ProfileSection

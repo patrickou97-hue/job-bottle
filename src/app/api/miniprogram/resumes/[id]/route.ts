@@ -129,13 +129,15 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       error?.code === "23514" &&
       String(error.message).includes("template_id")
     ) {
-      const fallback = await admin
+      let fallbackUpdate = admin
         .from("resumes")
         .update({ ...payload, template_id: "compact" })
         .eq("id", id)
-        .eq("user_id", identity.sub)
-        .select("*")
-        .maybeSingle();
+        .eq("user_id", identity.sub);
+      if (!parsed.data.force) {
+        fallbackUpdate = fallbackUpdate.eq("updated_at", parsed.data.baseUpdatedAt);
+      }
+      const fallback = await fallbackUpdate.select("*").maybeSingle();
       data = fallback.data;
       error = fallback.error;
     }

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdminAccess } from "@/lib/admin-access";
 
 const GUIDE_CATEGORIES = ["公告", "教程", "分享"] as const;
 const PLATFORM_VISIBILITIES = ["both", "web", "miniprogram"] as const;
@@ -15,20 +14,6 @@ type GuideInput = {
   tags?: unknown;
   platformVisibility?: unknown;
 };
-
-async function getAdminUser() {
-  const supabase = await createClient();
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) return null;
-
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-  if (profileError || profile?.role !== "admin") return null;
-  return user;
-}
 
 function parseContentInput(input: GuideInput) {
   const title = typeof input.title === "string" ? input.title.trim() : "";
@@ -68,15 +53,19 @@ function errorResponse(error: unknown, fallback: string) {
 }
 
 export async function POST(request: NextRequest) {
-  const user = await getAdminUser();
-  if (!user) return NextResponse.json({ error: "只有管理员可以发布指南内容。" }, { status: 403 });
+  const access = await requireAdminAccess();
+  if ("response" in access) return access.response;
+  const { user, supabase } = access;
 
   const input = await request.json().catch(() => null) as GuideInput | null;
   const content = input ? parseContentInput(input) : null;
   if (!content) return NextResponse.json({ error: "请检查标题、分类和正文。" }, { status: 400 });
 
   try {
-    const { data: post, error } = await createAdminClient()
+    // Use the caller-scoped client so RLS re-runs guard-aware is_admin() at
+    // statement time. A service-role write here would leave a revocation race
+    // between the route's initial check and the database commit.
+    const { data: post, error } = await supabase
       .from("forum_posts")
       .insert({ user_id: user.id, ...content })
       .select("*")
@@ -89,8 +78,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const user = await getAdminUser();
-  if (!user) return NextResponse.json({ error: "只有管理员可以编辑指南内容。" }, { status: 403 });
+  const access = await requireAdminAccess();
+  if ("response" in access) return access.response;
+  const { supabase } = access;
 
   const input = await request.json().catch(() => null) as GuideInput | null;
   const content = input ? parseContentInput(input) : null;
@@ -99,7 +89,7 @@ export async function PATCH(request: NextRequest) {
   }
 
   try {
-    const { data: post, error } = await createAdminClient()
+    const { data: post, error } = await supabase
       .from("forum_posts")
       .update(content)
       .eq("id", input.postId)
@@ -114,14 +104,15 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const user = await getAdminUser();
-  if (!user) return NextResponse.json({ error: "只有管理员可以删除指南内容。" }, { status: 403 });
+  const access = await requireAdminAccess();
+  if ("response" in access) return access.response;
+  const { supabase } = access;
 
   const input = await request.json().catch(() => null) as GuideInput | null;
   if (!input?.postId) return NextResponse.json({ error: "内容编号无效。" }, { status: 400 });
 
   try {
-    const { data: post, error } = await createAdminClient()
+    const { data: post, error } = await supabase
       .from("forum_posts")
       .delete()
       .eq("id", input.postId)

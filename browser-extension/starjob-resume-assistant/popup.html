@@ -61,7 +61,8 @@
         </div>
       </section>
 
-      <section id="progressPanel" class="progress-panel" aria-live="polite" hidden>
+      <section id="progressPanel" class="progress-panel" hidden>
+        <p id="progressAnnouncement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
         <div class="progress-heading"><strong>处理进度</strong><span id="progressElapsed">已用时 0 秒</span></div>
         <div class="progress-meter-copy"><span id="progressLabel">准备读取页面</span><strong id="progressValue">处理中</strong></div>
         <div id="progressMeter" class="progress-meter" role="progressbar" aria-label="网申填写进度" aria-valuetext="准备读取页面">

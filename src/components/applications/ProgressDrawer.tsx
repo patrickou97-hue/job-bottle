@@ -289,7 +289,7 @@ export function ProgressDrawer({
               <h3 className="min-w-0 text-2xl font-semibold text-ink-primary">{job.company_name}</h3>
               {ended ? (
                 <span className="shrink-0 rounded-md bg-[color:var(--surface-hover-bg)] px-2 py-1 text-[10px] text-ink-muted">
-                  已结束
+                  {APPLICATION_STATUS_LABELS[status]}
                 </span>
               ) : null}
             </div>
@@ -363,7 +363,7 @@ export function ProgressDrawer({
                     key={item}
                     id={`progress-status-node-${item}`}
                     type="button"
-                    className="group flex w-12 flex-col items-center gap-3 text-center outline-none"
+                    className="group flex w-12 flex-col items-center gap-3 rounded-md text-center outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--aurora)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--background)]"
                     aria-current={active ? "step" : undefined}
                     aria-label={`设为${APPLICATION_STATUS_LABELS[item]}`}
                     disabled={saving}

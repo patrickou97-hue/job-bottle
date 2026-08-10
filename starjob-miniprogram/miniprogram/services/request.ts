@@ -11,6 +11,8 @@ type RequestOptions = {
   auth?: boolean;
   retryGetOnNetworkError?: boolean;
   timeout?: number;
+  onRequestTask?: (task: WechatMiniprogram.RequestTask) => void;
+  isCancelled?: () => boolean;
 };
 
 export class ApiError extends Error {
@@ -36,7 +38,9 @@ export async function apiRequest<T>(
 ): Promise<T> {
   const method = options.method ?? "GET";
   const shouldUseAuth = options.auth ?? true;
+  throwIfCancelled(options);
   const token = shouldUseAuth ? await getValidAccessToken() : null;
+  throwIfCancelled(options);
 
   try {
     return await requestOnce<T>(path, {
@@ -51,6 +55,7 @@ export async function apiRequest<T>(
       shouldUseAuth
     ) {
       const refreshed = await refreshSession();
+      throwIfCancelled(options);
       if (refreshed) {
         return requestOnce<T>(path, {
           ...options,
@@ -64,6 +69,7 @@ export async function apiRequest<T>(
       options.retryGetOnNetworkError !== false &&
       isNetworkError(error)
     ) {
+      throwIfCancelled(options);
       return requestOnce<T>(path, {
         ...options,
         method,
@@ -79,7 +85,11 @@ function requestOnce<T>(
   options: RequestOptions & { method: RequestMethod; token: string | null },
 ) {
   return new Promise<T>((resolve, reject) => {
-    wx.request({
+    if (options.isCancelled?.()) {
+      reject(new Error("请求已取消"));
+      return;
+    }
+    const requestTask = wx.request({
       url: `${API_BASE_URL}${path}`,
       method: options.method,
       data: options.data,
@@ -111,7 +121,12 @@ function requestOnce<T>(
         reject(new Error(error.errMsg || "网络连接失败，请重试。"));
       },
     });
+    options.onRequestTask?.(requestTask);
   });
+}
+
+function throwIfCancelled(options: Pick<RequestOptions, "isCancelled">) {
+  if (options.isCancelled?.()) throw new Error("请求已取消");
 }
 
 function readableStatusMessage(statusCode: number) {
