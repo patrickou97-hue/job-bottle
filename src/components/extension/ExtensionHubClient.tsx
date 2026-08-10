@@ -163,7 +163,13 @@ export function ExtensionHubClient() {
 
         <div className="extension-product-visual mx-auto w-full max-w-[350px]" aria-label="拾星网申助手 0.2.6 产品图">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/assets/extension/starjob-resume-assistant-popup-v026.png" alt="拾星网申助手 0.2.6 真实扩展面板，展示三种填写方式、填写结果和处理进度" width={380} height={840} />
+          <img
+            src="/assets/extension/starjob-resume-assistant-popup-v026.png"
+            alt="拾星网申助手 0.2.6 真实扩展面板，展示三种填写方式、填写结果和处理进度"
+            width={760}
+            height={1680}
+            className="h-auto w-full"
+          />
         </div>
       </section>
 

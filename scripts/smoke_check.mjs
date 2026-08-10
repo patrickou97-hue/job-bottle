@@ -1485,6 +1485,15 @@ function checkSourceInvariants() {
     console.log(`✓ 资源存在：${file}`);
   }
 
+  const extensionPreview = readFileSync(new URL("public/assets/extension/starjob-resume-assistant-popup-v026.png", ROOT));
+  const isPng = extensionPreview.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+  const previewWidth = isPng ? extensionPreview.readUInt32BE(16) : 0;
+  const previewHeight = isPng ? extensionPreview.readUInt32BE(20) : 0;
+  if (previewWidth !== 760 || previewHeight !== 1680) {
+    throw new Error(`网申助手产品图必须为 Retina 2× PNG，当前为 ${previewWidth}×${previewHeight}`);
+  }
+  console.log("✓ 网申助手产品图为 760×1680 Retina 2× PNG");
+
   for (const invariant of SOURCE_INVARIANTS) {
     const fileUrl = new URL(invariant.file, ROOT);
     if (!existsSync(fileUrl)) throw new Error(`缺少关键文件：${invariant.file}`);
