@@ -4,6 +4,7 @@ import { resolveResumeAiAccess } from "@/lib/resume-ai-access";
 import {
   applyTranslationValues,
   createTranslationPlan,
+  getTranslationOutputLimit,
   type TranslationChunk,
   type TranslationPlan,
 } from "@/lib/resume-translation-plan";
@@ -15,52 +16,56 @@ const CHUNK_TIMEOUT_MS = 60_000;
 const MAX_CHUNK_OUTPUT_TOKENS = 2_200;
 const TRANSLATION_CONCURRENCY = 2;
 
-const text = (max: number) => z.string().trim().max(max);
-const bullets = z.array(text(1_000)).max(12);
+const boundedText = (max: number) => z.string().trim().max(max);
+const translatedText = (sourceMax: number) => z.string().trim().max(getTranslationOutputLimit(sourceMax));
+const bullets = z.array(translatedText(1_000)).max(12);
 const basicsSchema = z.object({
-  name: text(100),
-  englishName: text(120),
-  city: text(120),
-  targetRole: text(180),
+  name: translatedText(100),
+  englishName: translatedText(120),
+  city: translatedText(120),
+  targetRole: translatedText(180),
 }).strict();
 const educationSchema = z.object({
-  school: text(180),
-  degree: text(100),
-  major: text(180),
-  startDate: text(40),
-  endDate: text(40),
-  gpa: text(80),
-  courses: text(800),
-  honors: text(800),
+  school: translatedText(180),
+  degree: translatedText(100),
+  major: translatedText(180),
+  startDate: boundedText(40),
+  endDate: boundedText(40),
+  gpa: boundedText(80),
+  courses: translatedText(800),
+  honors: translatedText(800),
 }).strict();
 const experienceSchema = z.object({
-  company: text(180),
-  title: text(180),
-  location: text(120),
-  startDate: text(40),
-  endDate: text(40),
+  company: translatedText(180),
+  title: translatedText(180),
+  location: translatedText(120),
+  startDate: boundedText(40),
+  endDate: boundedText(40),
   current: z.boolean(),
   bullets,
 }).strict();
 const projectSchema = z.object({
-  name: text(180),
-  role: text(180),
-  startDate: text(40),
-  endDate: text(40),
+  name: translatedText(180),
+  role: translatedText(180),
+  startDate: boundedText(40),
+  endDate: boundedText(40),
   bullets,
-  keywords: text(500),
+  keywords: translatedText(500),
 }).strict();
-const skillSchema = z.object({ category: text(120), skills: z.array(text(120)).max(30) }).strict();
+const skillSchema = z.object({
+  category: translatedText(120),
+  skills: z.array(translatedText(120)).max(30),
+}).strict();
 const customSectionSchema = z.object({
-  title: text(180),
-  role: text(180).optional().default(""),
-  date: text(80).optional().default(""),
+  title: translatedText(180),
+  role: translatedText(180).optional().default(""),
+  date: boundedText(80).optional().default(""),
   bullets,
 }).strict();
 const resumeSchema = z.object({
-  title: text(180),
-  targetRole: text(180),
-  jobTarget: text(500),
+  title: translatedText(180),
+  targetRole: translatedText(180),
+  jobTarget: translatedText(500),
   basics: basicsSchema,
   education: z.array(educationSchema).max(8),
   work: z.array(experienceSchema).max(12),
@@ -81,16 +86,16 @@ const inputSchema = z.object({
   message: "source and target languages must differ",
 });
 const resultSchema = z.object({
-  summary: text(500),
+  summary: boundedText(500),
   translated: resumeSchema,
-  warnings: z.array(text(500)).max(20),
+  warnings: z.array(boundedText(500)).max(20),
 }).strict();
 const chunkResultSchema = z.object({
   translations: z.array(z.object({
     key: z.string().regex(/^t\d+$/),
-    value: text(1_000),
+    value: translatedText(1_000),
   }).strict()).max(24),
-  warnings: z.array(text(500)).max(10),
+  warnings: z.array(boundedText(500)).max(10),
 }).strict();
 
 type ResumeDraft = z.infer<typeof resumeSchema>;

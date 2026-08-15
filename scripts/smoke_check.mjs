@@ -573,9 +573,15 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/lib/resume-translation-plan.ts",
-    mustInclude: ["MAX_TRANSLATION_CHUNK_SOURCE_CHARS = 1_800", "MAX_TRANSLATION_CHUNK_ENTRIES = 24", "createTranslationPlan", "applyTranslationValues", "key: `t${keyIndex++}`", "targetLanguage", "person_name_pinyin", "preferredEnglishName", "containsCjk", "structuredClone", "education", "work", "projects", "skills", "campus", "awards", "certifications", "languages", "customSections"],
+    mustInclude: ["MAX_TRANSLATION_CHUNK_SOURCE_CHARS = 1_800", "MAX_TRANSLATION_CHUNK_ENTRIES = 24", "TRANSLATION_TEXT_EXPANSION_FACTOR = 4", "getTranslationOutputLimit", "createTranslationPlan", "applyTranslationValues", "key: `t${keyIndex++}`", "targetLanguage", "person_name_pinyin", "preferredEnglishName", "containsCjk", "structuredClone", "education", "work", "projects", "skills", "campus", "awards", "certifications", "languages", "customSections"],
     mustNotInclude: ["MIMO_API_KEY", "SUPABASE_SERVICE_ROLE_KEY", "fetch("],
     label: "翻译计划只暴露短键文字叶子并在本地恢复原结构",
+  },
+  {
+    file: "tests/resume-translation-plan.test.ts",
+    mustInclude: ["合法英文译文可按语言膨胀", "getTranslationOutputLimit(180)", "1_579", "译文仍受四倍安全上限约束"],
+    mustNotInclude: ["MIMO_API_KEY", "SUPABASE_SERVICE_ROLE_KEY", "fetch("],
+    label: "整份翻译允许合法语言膨胀且继续拒绝超过安全上限的结果",
   },
   {
     file: "src/app/api/miniprogram/resume/translate/route.ts",

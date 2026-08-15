@@ -2,6 +2,11 @@ import type { ResumeTranslationDraft } from "@/lib/resume-translation";
 
 export const MAX_TRANSLATION_CHUNK_SOURCE_CHARS = 1_800;
 export const MAX_TRANSLATION_CHUNK_ENTRIES = 24;
+export const TRANSLATION_TEXT_EXPANSION_FACTOR = 4;
+
+export function getTranslationOutputLimit(sourceLimit: number) {
+  return sourceLimit * TRANSLATION_TEXT_EXPANSION_FACTOR;
+}
 
 export type TranslationEntry = {
   key: string;
@@ -55,7 +60,7 @@ export function createTranslationPlan(
       key: `t${keyIndex++}`,
       kind,
       value,
-      maxLength,
+      maxLength: getTranslationOutputLimit(maxLength),
       path,
     });
   };
