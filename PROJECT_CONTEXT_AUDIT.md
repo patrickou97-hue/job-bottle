@@ -6,6 +6,16 @@
 
 每次三文档记录至少写明：日期、用户目标、根因/决策、实际改动文件与行为、兼容边界、验证命令和结果、提交与部署证据（如有）、已确认和未确认的外部状态。若本次只完成诊断而没有修改，也必须在三份文档中同步写清“零修改/零部署”及诊断证据。
 
+## 2026-08-18 本地完成待上线：内推码广场、即时 MiMo 单次审核与管理员下架
+
+- 用户先要求建立独立内推码系统，随后明确最终审核规则：登录用户提交后先立即公开，再在同一次服务端请求中立刻调用 MiMo 审查；每条码最多调用模型一次，高置信度判定为求职机构、求职辅导、付费服务、代投或引流时自动下架，证据不足保留公开；管理员还必须能在后台查看状态并填写原因人工下架。每三小时任务不再重复审查正常记录，只补偿因请求中断而尚未开始首次审核的漏单。
+- 用户端 `/referrals`、岗位清单行内“内推码”入口和公司抽屉继续按公司聚合匿名分享，支持搜索、有效期筛选、复制与举报。上传公司的长下拉已改为当前开放岗位库搜索组合框，完全匹配优先、最多 8 条，支持键盘与鼠标选择；此前截图中的下拉透底叠字由未定义 `--surface-strong-bg` 导致，现使用不透明 `--surface-read-bg-strong`、独立层叠上下文和 13rem 内部滚动区。用户可见文案仅写“智能审核”，不暴露模型供应商。
+- 新增 `/api/referrals` 与 `referral-moderation.ts`：浏览器不能直接写表，接口先用真实会话鉴权并调用 service-role-only `create_referral_code_for_review`，数据库原子复核公司/岗位、唯一键并以 advisory lock 限制每账号十分钟最多 5 条；记录写入时 `is_active=true`，因此在审核开始前已公开。随后 `claim_referral_code_for_review` 先把 `review_attempts` 从 0 原子改为 1，再调用 MiMo；模型请求关闭 thinking、要求严格 JSON、把全部用户字段视作不可信内容，并只在指定违规类别且置信度至少 0.8 时下架。模型配置缺失、超时、空响应、非法 JSON或持久化异常均不重复调用，记录保持公开并进入人工复核，服务端日志不写码、公司、说明、原始模型响应或密钥。
+- migration `20260817180000_referral_code_plaza.sql` 现在同时定义 `referral_codes`、`referral_code_reports`、单次审核状态/时间/分类/置信度、AI/管理员下架审计字段与四个受控 RPC。匿名和普通登录用户只可读取 `is_active=true` 的公开列，公开列不含 `user_id` 与审核内部字段；普通客户端没有 insert/update grant，只保留 owner 删除和登录举报。批量 claim 使用 `FOR UPDATE SKIP LOCKED`，每次最多 100 条；已领取后失联超过一小时的记录只转人工，不再调用模型。
+- 新增 `.github/workflows/review-referral-codes.yml` 与 `scripts/review_referral_codes.mjs`，每三小时运行一次，只领取 `review_attempts=0` 的漏单并最多四条并发完成首次审核；workflow 使用仓库加密的 Supabase 与 MiMo 密钥，日志只输出 claimed/approved/rejected/error 计数。新增 `/admin/referrals`、管理员 API 和 `AdminReferralsClient.tsx`，可按公开/下架/等待/通过/智能下架/人工复核筛选，查看审核依据、置信度、举报数和发布时间；人工下架必须填写 2–240 字原因，API 与数据库 RPC 在提交时双重复核管理员权限，不允许普通用户调用。
+- 上传弹窗明确说明“提交后先公开并立即完成一次智能审核”，提交按钮显示“正在上传并审核”；通过、自动下架、人工复核和 localhost 演示分别返回真实状态文案。风险提示仍要求回到官方渠道核对并拒绝联系方式、外链、收费交易和敏感凭证；localhost 仅在正式表/服务不可用时保留显式假演示码回退，正式域名不展示演示数据。
+- 当前已通过内推专项 9/9、Node 全量 132/132、TypeScript、定向 ESLint、完整只读 Smoke（595 条开放岗位）和 59 页生产构建；Smoke 新增即时审核顺序、0/1 次调用门禁、提示注入防护、客户端禁写、原子限流、管理员 RPC、三小时漏单任务和加密密钥引用检查。Supabase dry-run 只列出 `20260817180000`，随后已成功应用到正式项目 `uzzdcjdjlbnxmhvilldj`；空队列脚本返回 claimed/approved/rejected/error 均为 0，匿名公开列读取为 HTTP 200 / `[]`，匿名读取 `user_id` 为 HTTP 401。GitHub Actions 已新增 `MIMO_API_KEY`、`MIMO_BASE_URL`、`MIMO_MODEL` 三项加密 secret，并与既有两项 Supabase secret 共同核验名称和更新时间，值未输出。功能提交 `90ac876`（`feat: launch moderated referral code plaza`）精确包含 18 个内推码、审核、后台、迁移和测试文件，不含用户原有 `package.json`、`.codex-artifacts/` 与五份 PRD；当前仍待推送与正式部署，真实登录上传→公开→MiMo→下架/保留及管理员人工下架 E2E 待发布后验证。
+
 ## 2026-08-17 已上线：单一投递清单与每家公司独立星轨
 
 - 用户进一步明确：不同公司的招聘流程不同，星轨不能按账户全局共用，必须允许逐公司单独编辑；“现在要做”和独立“材料准备”对当前管理无帮助，应从主工作台移除；所有公司应集中在一张交互清晰的列表中，并支持按进程与跟进时效组合筛选。
