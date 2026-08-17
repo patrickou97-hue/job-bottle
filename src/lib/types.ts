@@ -198,6 +198,48 @@ export type Report = {
   resolved: boolean;
 };
 
+export type ReferralCode = {
+  id: string;
+  user_id: string;
+  company_name: string;
+  job_id: string | null;
+  applicable_roles: string | null;
+  code: string;
+  usage_note: string | null;
+  expires_at: string | null;
+  is_active: boolean;
+  review_status: "queued" | "reviewing" | "approved" | "rejected" | "error";
+  review_due_at: string;
+  review_started_at: string | null;
+  reviewed_at: string | null;
+  review_attempts: number;
+  review_category: string | null;
+  review_confidence: number | null;
+  review_reason: string | null;
+  review_version: string | null;
+  deactivated_at: string | null;
+  deactivated_source: "ai" | "admin" | null;
+  deactivated_by: string | null;
+  deactivation_reason: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdminReferralCode = Pick<ReferralCode,
+  "id" | "company_name" | "applicable_roles" | "code" | "usage_note" | "expires_at" |
+  "is_active" | "review_status" | "review_due_at" | "reviewed_at" | "review_category" |
+  "review_confidence" | "review_reason" | "deactivated_source" | "deactivation_reason" | "created_at"
+> & { report_count: number };
+
+export type ReferralCodeReport = {
+  id: string;
+  referral_code_id: string;
+  reporter_id: string;
+  reason: string;
+  created_at: string;
+  resolved_at: string | null;
+};
+
 export type AnalyticsEvent = {
   id: string;
   user_id: string | null;
@@ -417,6 +459,72 @@ export type Database = {
           updated_at?: string;
         };
         Update: Partial<Omit<Job, "id" | "created_at">>;
+        Relationships: [];
+      };
+      referral_codes: {
+        Row: ReferralCode;
+        Insert: {
+          id?: string;
+          user_id: string;
+          company_name: string;
+          job_id?: string | null;
+          applicable_roles?: string | null;
+          code: string;
+          usage_note?: string | null;
+          expires_at?: string | null;
+          is_active?: boolean;
+          review_status?: ReferralCode["review_status"];
+          review_due_at?: string;
+          review_started_at?: string | null;
+          reviewed_at?: string | null;
+          review_attempts?: number;
+          review_category?: string | null;
+          review_confidence?: number | null;
+          review_reason?: string | null;
+          review_version?: string | null;
+          deactivated_at?: string | null;
+          deactivated_source?: ReferralCode["deactivated_source"];
+          deactivated_by?: string | null;
+          deactivation_reason?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          applicable_roles?: string | null;
+          code?: string;
+          usage_note?: string | null;
+          expires_at?: string | null;
+          is_active?: boolean;
+          review_status?: ReferralCode["review_status"];
+          review_due_at?: string;
+          review_started_at?: string | null;
+          reviewed_at?: string | null;
+          review_attempts?: number;
+          review_category?: string | null;
+          review_confidence?: number | null;
+          review_reason?: string | null;
+          review_version?: string | null;
+          deactivated_at?: string | null;
+          deactivated_source?: ReferralCode["deactivated_source"];
+          deactivated_by?: string | null;
+          deactivation_reason?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      referral_code_reports: {
+        Row: ReferralCodeReport;
+        Insert: {
+          id?: string;
+          referral_code_id: string;
+          reporter_id: string;
+          reason: string;
+          created_at?: string;
+          resolved_at?: string | null;
+        };
+        Update: {
+          resolved_at?: string | null;
+        };
         Relationships: [];
       };
       user_applications: {
@@ -941,6 +1049,61 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      create_referral_code_for_review: {
+        Args: {
+          p_user_id: string;
+          p_company_name: string;
+          p_job_id: string | null;
+          p_applicable_roles: string;
+          p_code: string;
+          p_usage_note: string;
+          p_expires_at: string | null;
+        };
+        Returns: Array<Pick<ReferralCode,
+          "id" | "company_name" | "job_id" | "applicable_roles" | "code" |
+          "usage_note" | "expires_at" | "created_at" | "updated_at"
+        >>;
+      };
+      claim_referral_code_for_review: {
+        Args: { p_id: string };
+        Returns: Array<{
+          id: string;
+          company_name: string;
+          applicable_roles: string | null;
+          code: string;
+          usage_note: string | null;
+          expires_at: string | null;
+        }>;
+      };
+      claim_referral_codes_for_review: {
+        Args: { p_limit?: number };
+        Returns: Array<{
+          id: string;
+          company_name: string;
+          applicable_roles: string | null;
+          code: string;
+          usage_note: string | null;
+          expires_at: string | null;
+        }>;
+      };
+      complete_referral_code_review: {
+        Args: {
+          p_id: string;
+          p_outcome: "approved" | "rejected" | "error";
+          p_category: string;
+          p_confidence: number | null;
+          p_reason: string;
+        };
+        Returns: boolean;
+      };
+      list_referral_codes_for_admin: {
+        Args: Record<string, never>;
+        Returns: AdminReferralCode[];
+      };
+      deactivate_referral_code_as_admin: {
+        Args: { p_id: string; p_reason: string };
+        Returns: boolean;
+      };
       is_admin: {
         Args: Record<string, never>;
         Returns: boolean;

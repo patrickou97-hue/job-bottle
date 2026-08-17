@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ArrowLeft, Coins, Database, LogOut, Rows3, Settings, Users } from "lucide-react";
+import { ArrowLeft, Coins, Database, KeyRound, LogOut, Rows3, Settings, Users } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { getCurrentUserOrNull } from "@/lib/auth";
@@ -16,6 +16,7 @@ const adminNavItems = [
   { href: "/admin", label: "管理后台", icon: Settings },
   { href: "/admin/jobs", label: "岗位管理", icon: Rows3 },
   { href: "/admin/import", label: "批量导入", icon: Database },
+  { href: "/admin/referrals", label: "内推码", icon: KeyRound },
   { href: "/admin/users", label: "用户管理", icon: Users },
   { href: "/admin/billing", label: "诘星计费", icon: Coins },
 ];

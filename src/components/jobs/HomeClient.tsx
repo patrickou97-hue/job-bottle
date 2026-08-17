@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Archive, Sparkles } from "lucide-react";
+import { Archive, KeyRound, Sparkles } from "lucide-react";
 import { EMPTY_JOB_FILTERS } from "@/lib/constants";
 import { parseJobCategoriesParam, serializeJobCategories } from "@/lib/categories";
 import {
@@ -34,6 +34,7 @@ import { EmptyConstellation } from "@/components/visuals/EmptyConstellation";
 import { ChinaJobMap } from "@/components/jobs/ChinaJobMap";
 import { CaptureAnimation } from "@/components/capture/CaptureAnimation";
 import { useCaptureMotion } from "@/components/capture/useCaptureMotion";
+import { ReferralCodeDrawer } from "@/components/referrals/ReferralCodeHub";
 import type {
   ApplicationWithJob,
   Job,
@@ -74,6 +75,7 @@ export function HomeClient() {
     useState<ApplicationWithJob | null>(null);
   const [drawerApplication, setDrawerApplication] =
     useState<ApplicationWithJob | null>(null);
+  const [referralJob, setReferralJob] = useState<Job | null>(null);
   const [hoveredJobId, setHoveredJobId] = useState<string | null>(null);
   const [focusedJobId, setFocusedJobId] = useState<string | null>(null);
   const [pendingApplyConfirmation, setPendingApplyConfirmation] =
@@ -620,6 +622,7 @@ export function HomeClient() {
                       highlighted={hoveredJobId === job.id || focusedJobId === job.id}
                       onApply={handleApply}
                       onOpenProgress={openProgressByJob}
+                      onOpenReferral={setReferralJob}
                       onHover={(target) => setHoveredJobId(target?.id ?? null)}
                       onFocusJob={(target) => setFocusedJobId(target.id)}
                     />
@@ -639,6 +642,7 @@ export function HomeClient() {
                       highlighted={hoveredJobId === job.id || focusedJobId === job.id}
                       onApply={handleApply}
                       onOpenProgress={openProgressByJob}
+                      onOpenReferral={setReferralJob}
                       onHover={(target) => setHoveredJobId(target?.id ?? null)}
                       onFocusJob={(target) => setFocusedJobId(target.id)}
                     />
@@ -656,6 +660,15 @@ export function HomeClient() {
         onClose={() => setDrawerApplication(null)}
         onChanged={handleApplicationChanged}
         onDeleted={handleApplicationDeleted}
+      />
+      <ReferralCodeDrawer
+        open={Boolean(referralJob)}
+        companyName={referralJob?.company_name ?? ""}
+        jobId={referralJob?.id ?? null}
+        jobTitle={referralJob?.job_titles}
+        currentUserId={currentUserId}
+        jobs={jobs}
+        onClose={() => setReferralJob(null)}
       />
 
       {/* Bottom detail card for selected application */}
@@ -791,6 +804,13 @@ function JobRadarHeader({
           </div>
 
           <div className="flex gap-2">
+            <Link
+              href="/referrals"
+              className="text-action pressable px-3 py-2 text-xs"
+            >
+              <KeyRound aria-hidden="true" className="size-4" />
+              内推码
+            </Link>
             <Link
               href="/my"
               className="text-action pressable px-3 py-2 text-xs"

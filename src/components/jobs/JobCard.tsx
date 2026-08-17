@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FileText } from "lucide-react";
+import { FileText, KeyRound } from "lucide-react";
 import { StatusPill } from "@/components/applications/StatusPill";
 import { getApplicationStageLabel, getJobPrimaryAction, type MaterialReadiness } from "@/lib/career-workspace";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,7 @@ export function JobCard({
   highlighted = false,
   onApply,
   onOpenProgress,
+  onOpenReferral,
   onHover,
   onFocusJob,
 }: {
@@ -29,6 +30,7 @@ export function JobCard({
   highlighted?: boolean;
   onApply: (job: Job) => Promise<void>;
   onOpenProgress?: (job: Job) => void;
+  onOpenReferral?: (job: Job) => void;
   onHover?: (job: Job | null) => void;
   onFocusJob?: (job: Job) => void;
 }) {
@@ -75,38 +77,48 @@ export function JobCard({
         </div>
       </div>
 
-      {primaryAction.kind === "progress" ? (
+      <div className="flex shrink-0 items-center gap-1">
         <button
           type="button"
-          className="job-row-action pressable inline-flex shrink-0 items-center gap-1.5 px-3 py-2 text-xs"
-          onClick={() => onOpenProgress?.(job)}
+          className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-md px-2 text-xs text-ink-muted transition hover:bg-[color:var(--surface-hover-bg)] hover:text-ink-primary"
+          onClick={() => onOpenReferral?.(job)}
         >
-          <StatusPill
-            status={application?.status}
-            label={application ? getApplicationStageLabel(application) : undefined}
-            className="px-2 py-1 text-[11px]"
-          />
-          <span className="hidden sm:inline">{primaryAction.label}</span>
+          <KeyRound aria-hidden="true" className="size-3.5" />
+          <span className="hidden md:inline">内推码</span>
         </button>
-      ) : (
-        <button
-          type="button"
-          className="job-row-action pressable inline-flex shrink-0 items-center gap-1.5 px-3 py-2 text-xs"
-          onClick={() => {
-            onFocusJob?.(job);
-            void onApply(job);
-          }}
-        >
-          {application ? (
+        {primaryAction.kind === "progress" ? (
+          <button
+            type="button"
+            className="job-row-action pressable inline-flex shrink-0 items-center gap-1.5 px-3 py-2 text-xs"
+            onClick={() => onOpenProgress?.(job)}
+          >
             <StatusPill
-              status={application.status}
-              label={getApplicationStageLabel(application)}
+              status={application?.status}
+              label={application ? getApplicationStageLabel(application) : undefined}
               className="px-2 py-1 text-[11px]"
             />
-          ) : null}
-          <span>{primaryAction.label}</span>
-        </button>
-      )}
+            <span className="hidden sm:inline">{primaryAction.label}</span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="job-row-action pressable inline-flex shrink-0 items-center gap-1.5 px-3 py-2 text-xs"
+            onClick={() => {
+              onFocusJob?.(job);
+              void onApply(job);
+            }}
+          >
+            {application ? (
+              <StatusPill
+                status={application.status}
+                label={getApplicationStageLabel(application)}
+                className="px-2 py-1 text-[11px]"
+              />
+            ) : null}
+            <span>{primaryAction.label}</span>
+          </button>
+        )}
+      </div>
     </div>
   );
 }
