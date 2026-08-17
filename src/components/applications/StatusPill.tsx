@@ -18,10 +18,12 @@ const statusClassName: Record<ApplicationStatus | "none", string> = {
 export function StatusPill({
   status,
   label,
+  custom = false,
   className,
 }: {
   status?: ApplicationStatus | null;
   label?: string;
+  custom?: boolean;
   className?: string;
 }) {
   const key = status ?? "none";
@@ -32,7 +34,10 @@ export function StatusPill({
         statusClassName[key],
         className,
       )}
+      data-status={key}
+      data-custom={custom ? "true" : "false"}
     >
+      {custom ? <span aria-hidden="true" className="mr-1 size-1.5 rotate-45 rounded-[1px] bg-current" /> : null}
       {label ?? (status ? APPLICATION_STATUS_LABELS[status] : "未收录")}
     </span>
   );

@@ -20,6 +20,8 @@ const WORKFLOW_UPDATE_KEYS = [
   "next_action_at",
   "resume_id",
   "custom_stage_label",
+  "workflow_node_id",
+  "workflow_nodes",
   "review_note",
 ] as const;
 
@@ -162,7 +164,7 @@ export function isMissingApplicationWorkflowColumnsError(error: unknown) {
     : typeof error === "object" && error && "message" in error
       ? String(error.message)
       : String(error ?? "");
-  return /candidate_stage|priority|saved_at|application_channel|application_account|contact_name|next_action|resume_id|custom_stage_label|review_note/i.test(message)
+  return /candidate_stage|priority|saved_at|application_channel|application_account|contact_name|next_action|resume_id|custom_stage_label|workflow_node_id|workflow_nodes|review_note/i.test(message)
     && /column|schema cache|does not exist|could not find/i.test(message);
 }
 

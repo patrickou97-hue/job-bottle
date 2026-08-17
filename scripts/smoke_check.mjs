@@ -865,9 +865,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/MyApplicationsClient.tsx",
-    mustInclude: ["application.job.company_name", "StatusPill", "handleApplicationChanged", "handleApplicationDeleted", "type WorkspaceView = \"list\" | \"board\" | \"map\"", "本周待办", "ApplicationListItem", "投递视图"],
-    mustNotInclude: ["DeadlineChip", "formatDateTime, isValidHttpUrl", "onChanged={loadData}"],
-    label: "我的星图列表保留投递状态且不展示下线日期",
+    mustInclude: ["application.job.company_name", "StatusPill", "handleApplicationChanged", "handleApplicationDeleted", "type StageGroup", "type FreshnessFilter", "getApplicationWorkflow(application)", "ApplicationStageSelect", "ApplicationListRow", "编辑流程", "7 天以上无进展", "需要关注优先"],
+    mustNotInclude: ["DeadlineChip", "formatDateTime, isValidHttpUrl", "onChanged={loadData}", "type WorkspaceView", "现在要做", "材料准备", "ApplicationOrbitSystem"],
+    label: "投递管理使用可按阶段和跟进时效筛选的单一公司清单",
   },
   {
     file: "src/components/applications/ApplicationOrbitConfig.ts",
@@ -901,9 +901,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/MyApplicationsClient.tsx",
-    mustInclude: ["当前阶段", "投递管理", "本周待办", "材料准备", "投递记录", "getApplicationPhase", "getWorkspaceTasks"],
-    mustNotInclude: ["HomeWorkspace", "SUPABASE_SERVICE_ROLE_KEY"],
-    label: "阶段推进和本周行动直接合并到投递管理",
+    mustInclude: ["投递管理", "一张清单管理所有公司", "每家公司使用自己的投递流程", "按投递进程筛选", "按最近进展筛选", "最近进展按该投递最后一次状态或信息更新时间计算"],
+    mustNotInclude: ["HomeWorkspace", "SUPABASE_SERVICE_ROLE_KEY", "getWorkspaceTasks", "getTaskSummary", "我的投递星轨"],
+    label: "投递管理将公司独立流程和跟进时效集中到一张清单",
   },
   {
     file: "src/app/api/resume/ai-polish/route.ts",
@@ -928,6 +928,12 @@ const SOURCE_INVARIANTS = [
     mustInclude: ["responsibilities", "must_have", "preferred_qualifications", "keywords text[]", "jobs_keywords_idx"],
     mustNotInclude: ["drop table", "delete from public.jobs"],
     label: "岗位决策字段迁移以可选结构化内容增强详情且不重写旧备注",
+  },
+  {
+    file: "supabase/migrations/20260817090000_application_workflow_custom_nodes.sql",
+    mustInclude: ["workflow_nodes jsonb", "jsonb_array_length(workflow_nodes) between 2 and 12", "workflow_node_id", "Each company can have its own application track"],
+    mustNotInclude: ["create table", "application_workflows_select_own", "drop table", "delete from public.user_applications"],
+    label: "每条投递记录独立保存自定义星轨并保留标准状态兼容层",
   },
   {
     file: "src/app/api/admin/users/route.ts",
@@ -1369,7 +1375,7 @@ const REQUIRED_FILES = [
 const REQUIRED_TEXT = {
   "/": ["拾星"],
   "/explore": ["岗位坐标", "正在整理岗位"],
-  "/my": ["投递管理", "当前阶段"],
+  "/my": ["投递管理", "一张清单管理所有公司"],
   "/profile": ["个人中心"],
   "/feedback": ["帮助与反馈", "把遇到的问题或想到的建议告诉我们，每一条都会被认真阅读", "问题类型", "提交反馈"],
   "/bottle": ["星瓶"],

@@ -1,45 +1,56 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, FileText, List, Orbit, RefreshCw, Search, Columns3 } from "lucide-react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { APPLICATION_STATUS, APPLICATION_STATUS_LABELS } from "@/lib/constants";
-import { fetchMyApplications } from "@/lib/applications";
-import {
-  getMaterialReadiness,
-  getApplicationStageLabel,
-  getNextAction,
-  getPipelineColumns,
-  getWorkspaceTasks,
-} from "@/lib/career-workspace";
+import { ArrowRight, RefreshCw, Search, Settings2, SlidersHorizontal } from "lucide-react";
+import { motion } from "motion/react";
+import { APPLICATION_PRIORITY_LABELS } from "@/lib/constants";
+import { fetchMyApplications, updateApplication } from "@/lib/applications";
+import { getNextAction } from "@/lib/career-workspace";
 import { getCurrentUserOrNull } from "@/lib/auth";
-import { fetchMyResumes, isMissingResumeTableError } from "@/lib/resume-sync";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { formatDateTime } from "@/lib/utils";
 import { ProgressDrawer } from "@/components/applications/ProgressDrawer";
 import { StatusPill } from "@/components/applications/StatusPill";
-import { ApplicationOrbitSystem } from "@/components/applications/ApplicationOrbitSystem";
+import {
+  ApplicationStageSelect,
+  ApplicationWorkflowEditor,
+  type ApplicationStageChange,
+} from "@/components/applications/ApplicationWorkflowRail";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
-import type { ResumeDocument } from "@/lib/resume";
 import type { ApplicationStatus, ApplicationWithJob } from "@/lib/types";
-import { layoutTransition, motionDuration, motionEase } from "@/lib/motion";
+import { layoutTransition } from "@/lib/motion";
+import {
+  cloneDefaultApplicationWorkflow,
+  getApplicationWorkflow,
+  getApplicationWorkflowLabel,
+  getApplicationWorkflowNode,
+  isApplicationCustomStage,
+  type ApplicationWorkflowNode,
+} from "@/lib/application-workflow";
 
-type WorkspaceView = "list" | "board" | "map";
+type StageGroup = "" | "preparing" | "waiting" | "interview" | "offer" | "ended";
+type FreshnessFilter = "" | "today" | "within7" | "over7" | "over14" | "overdueAction";
+type ApplicationSort = "attention" | "recent" | "company";
+
+const INTERVIEW_STATUSES: ApplicationStatus[] = ["written_test", "first_round", "second_round", "final_round"];
+const ENDED_STATUSES: ApplicationStatus[] = ["rejected", "withdrawn"];
 
 export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { loginNextPath?: string }) {
   const router = useRouter();
-  const reducedMotion = useReducedMotion();
   const [applications, setApplications] = useState<ApplicationWithJob[]>([]);
-  const [resumes, setResumes] = useState<ResumeDocument[]>([]);
-  const [selected, setSelected] = useState<ApplicationWithJob | null>(null);
   const [drawerApplication, setDrawerApplication] = useState<ApplicationWithJob | null>(null);
+  const [workflowEditorApplication, setWorkflowEditorApplication] = useState<ApplicationWithJob | null>(null);
   const [keyword, setKeyword] = useState("");
-  const [status, setStatus] = useState<ApplicationStatus | "">("");
-  const [view, setView] = useState<WorkspaceView>("list");
+  const [stageGroup, setStageGroup] = useState<StageGroup>("");
+  const [freshness, setFreshness] = useState<FreshnessFilter>("");
+  const [sort, setSort] = useState<ApplicationSort>("attention");
+  const [workflowSaving, setWorkflowSaving] = useState(false);
+  const [stageSavingId, setStageSavingId] = useState("");
+  const [workspaceMessage, setWorkspaceMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
   const [loadError, setLoadError] = useState("");
@@ -52,7 +63,6 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
     setLoadError("");
     try {
       if (!isSupabaseConfigured()) {
-        console.error("Supabase environment variables are not configured.");
         setLoadError("投递记录暂时无法读取，请稍后重试。");
         return;
       }
@@ -64,16 +74,9 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
         return;
       }
       setRedirecting(false);
-      const [applicationRows, resumeResult] = await Promise.all([
-        fetchMyApplications(supabase, user.id),
-        fetchMyResumes(supabase).catch((error: unknown) => {
-          if (isMissingResumeTableError(error)) return [];
-          throw error;
-        }),
-      ]);
+      const applicationRows = await fetchMyApplications(supabase, user.id);
       if (requestId !== loadRequestRef.current) return;
       setApplications(applicationRows);
-      setResumes(resumeResult);
     } catch {
       if (requestId !== loadRequestRef.current) return;
       setLoadError("投递记录暂时无法读取，请稍后重试。");
@@ -83,9 +86,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
   }
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      void loadData();
-    }, 0);
+    const timer = window.setTimeout(() => void loadData(), 0);
     return () => {
       window.clearTimeout(timer);
       loadRequestRef.current += 1;
@@ -93,326 +94,355 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loginNextPath]);
 
+  const stageCounts = useMemo(() => ({
+    all: applications.length,
+    preparing: applications.filter((item) => item.status === "opened").length,
+    waiting: applications.filter((item) => item.status === "applied").length,
+    interview: applications.filter((item) => INTERVIEW_STATUSES.includes(item.status)).length,
+    offer: applications.filter((item) => item.status === "offer").length,
+    ended: applications.filter((item) => ENDED_STATUSES.includes(item.status)).length,
+  }), [applications]);
+
+  const staleCount = applications.filter((application) => isActive(application) && getDaysSinceUpdate(application) >= 7).length;
+
   const filtered = useMemo(() => {
     const key = keyword.trim().toLowerCase();
-    return applications.filter((application) => {
-      const matchesKeyword =
-        !key ||
-        application.job.company_name.toLowerCase().includes(key) ||
-        (application.job.job_titles ?? "").toLowerCase().includes(key);
-      return matchesKeyword && (!status || application.status === status);
-    });
-  }, [applications, keyword, status]);
-
-  const tasks = useMemo(() => getWorkspaceTasks(applications).slice(0, 4), [applications]);
-  const columns = useMemo(() => getPipelineColumns(filtered), [filtered]);
-  const activeApplications = applications.filter(
-    (application) => !["rejected", "withdrawn", "offer"].includes(application.status),
-  );
-  const materialReadyCount = applications.filter((application) =>
-    getMaterialReadiness(application.job_id, resumes).ready,
-  ).length;
-  const needsMaterial = applications
-    .filter((application) => !["rejected", "withdrawn"].includes(application.status))
-    .filter((application) => !getMaterialReadiness(application.job_id, resumes).ready)
-    .slice(0, 3);
+    return applications
+      .filter((application) => {
+        const workflow = getApplicationWorkflow(application);
+        const matchesKeyword = !key || [
+          application.job.company_name,
+          application.job.job_titles ?? "",
+          application.job.job_categories.join("、"),
+          getApplicationWorkflowLabel(application, workflow),
+        ].some((value) => value.toLowerCase().includes(key));
+        return matchesKeyword
+          && matchesStageGroup(application, stageGroup)
+          && matchesFreshness(application, freshness);
+      })
+      .sort((a, b) => compareApplications(a, b, sort));
+  }, [applications, freshness, keyword, sort, stageGroup]);
 
   function handleApplicationChanged(nextApplication: ApplicationWithJob) {
-    setApplications((current) =>
-      current.map((application) =>
-        application.id === nextApplication.id ? nextApplication : application,
-      ),
-    );
-    setSelected((current) =>
-      current?.id === nextApplication.id ? nextApplication : current,
-    );
-    setDrawerApplication((current) =>
-      current?.id === nextApplication.id ? nextApplication : current,
-    );
+    setApplications((current) => current.map((application) => application.id === nextApplication.id ? nextApplication : application));
+    setDrawerApplication((current) => current?.id === nextApplication.id ? nextApplication : current);
+    setWorkflowEditorApplication((current) => current?.id === nextApplication.id ? nextApplication : current);
   }
 
   function handleApplicationDeleted(applicationId: string) {
     setApplications((current) => current.filter((application) => application.id !== applicationId));
-    setSelected((current) => (current?.id === applicationId ? null : current));
-    setDrawerApplication((current) => (current?.id === applicationId ? null : current));
+    setDrawerApplication((current) => current?.id === applicationId ? null : current);
+    setWorkflowEditorApplication((current) => current?.id === applicationId ? null : current);
   }
 
+  async function handleStageChange(application: ApplicationWithJob, change: ApplicationStageChange) {
+    if (stageSavingId) return;
+    const previous = application;
+    const optimistic: ApplicationWithJob = {
+      ...application,
+      status: change.status,
+      workflow_node_id: change.workflowNodeId,
+      custom_stage_label: change.customStageLabel,
+      updated_at: new Date().toISOString(),
+    };
+    setStageSavingId(application.id);
+    setWorkspaceMessage("");
+    handleApplicationChanged(optimistic);
+    try {
+      const updated = await updateApplication(createClient(), application.id, {
+        status: change.status,
+        custom_stage_label: change.customStageLabel,
+        ...(application.workflow_nodes != null || application.workflow_node_id != null || change.workflowNodeId != null
+          ? { workflow_node_id: change.workflowNodeId }
+          : {}),
+      });
+      handleApplicationChanged({ ...optimistic, ...updated, job: application.job });
+      setWorkspaceMessage(`已将 ${application.job.company_name} 更新为 ${change.label}。`);
+    } catch (error) {
+      handleApplicationChanged(previous);
+      setWorkspaceMessage(error instanceof Error ? error.message : "状态更新失败，请稍后重试。");
+    } finally {
+      setStageSavingId("");
+    }
+  }
+
+  function openWorkflowEditor(application: ApplicationWithJob) {
+    setDrawerApplication(null);
+    setWorkflowEditorApplication(application);
+  }
+
+  async function handleWorkflowSave(nodes: ApplicationWorkflowNode[]) {
+    const application = workflowEditorApplication;
+    if (!application || workflowSaving) return;
+    const previousNodes = getApplicationWorkflow(application);
+    const previousCurrentNode = getApplicationWorkflowNode(application, previousNodes);
+    const nextCurrentNode = ENDED_STATUSES.includes(application.status)
+      ? null
+      : nodes.find((node) => node.id === previousCurrentNode?.id)
+        ?? nodes.find((node) => node.status === application.status)
+        ?? null;
+    const optimistic: ApplicationWithJob = {
+      ...application,
+      workflow_nodes: nodes,
+      workflow_node_id: nextCurrentNode?.id ?? null,
+      custom_stage_label: nextCurrentNode?.isCustom ? nextCurrentNode.label : null,
+      updated_at: new Date().toISOString(),
+    };
+    setWorkflowSaving(true);
+    setWorkspaceMessage("");
+    handleApplicationChanged(optimistic);
+    try {
+      const updated = await updateApplication(createClient(), application.id, {
+        workflow_nodes: nodes,
+        workflow_node_id: optimistic.workflow_node_id,
+        custom_stage_label: optimistic.custom_stage_label,
+      });
+      handleApplicationChanged({ ...optimistic, ...updated, job: application.job });
+      setWorkflowEditorApplication(null);
+      setWorkspaceMessage(`${application.job.company_name} 的独立投递流程已保存。`);
+    } catch (error) {
+      handleApplicationChanged(application);
+      setWorkspaceMessage(error instanceof Error ? error.message : "公司流程保存失败，请稍后重试。");
+    } finally {
+      setWorkflowSaving(false);
+    }
+  }
+
+  function clearFilters() {
+    setKeyword("");
+    setStageGroup("");
+    setFreshness("");
+    setSort("attention");
+  }
+
+  const filtersActive = Boolean(keyword || stageGroup || freshness || sort !== "attention");
+
   return (
-    <div className="observatory-page space-y-8">
+    <div className="observatory-page space-y-7">
       <section className="page-hero">
         <div>
-          <p className="page-kicker">当前阶段</p>
+          <p className="page-kicker">投递总览</p>
           <h1 className="page-title">投递管理</h1>
-          <p className="page-description">{getApplicationPhase(applications)}</p>
+          <p className="page-description">一张清单管理所有公司，每家公司使用自己的投递流程。</p>
         </div>
         <div className="progress-summary grid grid-cols-2 gap-x-6 gap-y-5 px-4 py-3 md:grid-cols-4 md:px-5">
-          <StatBlock value={applications.length} label="全部记录" />
-          <StatBlock value={activeApplications.length} label="进行中" />
-          <StatBlock value={tasks.length} label="待跟进" />
-          <StatBlock value={materialReadyCount} label="已绑定简历" />
+          <StatBlock value={applications.length} label="全部公司" />
+          <StatBlock value={stageCounts.interview} label="笔试 / 面试" />
+          <StatBlock value={stageCounts.offer} label="收到 Offer" />
+          <StatBlock value={staleCount} label="7 天以上无进展" urgent={staleCount > 0} />
         </div>
       </section>
 
       {loading || redirecting ? (
-        <div className="empty-state">
-          <span className="loading-line">{redirecting ? "正在前往登录" : "正在整理投递记录"}</span>
-        </div>
+        <div className="empty-state"><span className="loading-line">{redirecting ? "正在前往登录" : "正在整理投递记录"}</span></div>
       ) : loadError ? (
         <section className="empty-state border-y border-[color:var(--line-ghost)]" role="alert">
-          <div>
-            <h2>投递记录暂时无法读取</h2>
-            <p>{loadError}</p>
-            <Button className="mt-5" onClick={loadData}>重试</Button>
-          </div>
+          <div><h2>投递记录暂时无法读取</h2><p>{loadError}</p><Button className="mt-5" onClick={loadData}>重试</Button></div>
         </section>
       ) : applications.length === 0 ? (
         <section className="empty-state border-y border-[color:var(--line-ghost)]">
-          <div>
-            <h2>从第一颗星开始</h2>
-            <p>先从岗位坐标收入一个岗位，再在这里记录每一步进展。</p>
-            <Link href="/explore" className="gold-button mt-5 inline-flex rounded-lg px-4 py-2 text-sm font-medium">
-              去岗位坐标
-            </Link>
-          </div>
+          <div><h2>还没有投递记录</h2><p>先从岗位坐标收录一个岗位，再在这里管理每家公司的独立流程。</p><Link href="/explore" className="gold-button mt-5 inline-flex rounded-lg px-4 py-2 text-sm font-medium">去岗位坐标</Link></div>
         </section>
       ) : (
         <>
-          <section className="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_320px]">
-            <div className="list-surface">
-              <div className="section-heading px-4 pt-4 sm:px-5">
-                <div>
-                  <h2 className="section-title">本周待办</h2>
-                </div>
-                <span className="section-meta">{tasks.length} 项</span>
-              </div>
-              {tasks.length === 0 ? (
-                <div className="px-4 pb-5 text-sm text-ink-muted">本周暂时没有需要处理的投递。</div>
-              ) : (
-                tasks.map((task) => (
-                  <button
-                    key={task.application.id}
-                    type="button"
-                    className="data-row grid w-full grid-cols-[minmax(0,1fr)_auto] gap-4 px-4 text-left sm:px-5"
-                    onClick={() => setDrawerApplication(task.application)}
-                  >
-                    <span className="min-w-0 py-3">
-                      <span className="flex min-w-0 items-center gap-2">
-                        <span className="truncate text-sm font-semibold text-ink-primary">{task.application.job.company_name}</span>
-                        <StatusPill status={task.application.status} label={getApplicationStageLabel(task.application)} />
-                      </span>
-                      <span className="mt-1 block text-sm text-ink-secondary">{task.title}</span>
-                      <span className="mt-1 block truncate text-xs text-ink-muted">{task.detail}</span>
-                    </span>
-                    <ArrowRight aria-hidden="true" className="my-auto size-4 text-ink-muted" />
-                  </button>
-                ))
-              )}
-            </div>
+          {workspaceMessage ? <div className="info-banner px-4 py-3 text-sm" role="status">{workspaceMessage}</div> : null}
 
-            <aside className="border-l border-[color:var(--line-ghost)] pl-5">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <h2 className="section-title">材料准备</h2>
-                </div>
-                <FileText aria-hidden="true" className="size-5 text-nebula-silver" />
-              </div>
-              <p className="mt-5 text-3xl font-semibold tabular-nums text-ink-primary">
-                {materialReadyCount}<span className="ml-1 text-sm font-medium text-ink-muted">/ {applications.length}</span>
-              </p>
-              {needsMaterial.length > 0 ? (
-                <div className="mt-5 space-y-3">
-                  {needsMaterial.map((application) => (
-                    <Link key={application.id} href="/resume" className="block border-b border-[color:var(--line-ghost)] pb-3 last:border-b-0">
-                      <p className="truncate text-sm font-medium text-ink-primary">{application.job.company_name}</p>
-                      <p className="mt-1 text-xs text-ink-muted">{getMaterialReadiness(application.job_id, resumes).label}</p>
-                    </Link>
-                  ))}
-                </div>
-              ) : (
-                <p className="mt-4 text-sm leading-6 text-ink-secondary">进行中的岗位均已绑定简历版本。</p>
-              )}
-              <Link href="/resume" className="text-action mt-5 text-sm">
-                管理简历
-                <ArrowRight aria-hidden="true" className="size-4" />
-              </Link>
-            </aside>
-          </section>
-
-          <section className="border-y border-[color:var(--line-ghost)] py-4">
-            <div className="grid gap-4 md:grid-cols-[1fr_220px_auto]">
-              <div className="relative">
-                <label htmlFor="application-search" className="sr-only">搜索公司或岗位</label>
-                <Search aria-hidden="true" className="absolute left-0 top-1/2 size-4 -translate-y-1/2 text-nebula-blue/70" />
-                <Input id="application-search" name="application-search" type="search" autoComplete="off" className="pl-7" value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder="搜索公司或岗位" />
-              </div>
-              <div>
-                <label htmlFor="application-status-filter" className="sr-only">按投递阶段筛选</label>
-                <Select id="application-status-filter" name="application-status-filter" value={status} onChange={(event) => setStatus(event.target.value as ApplicationStatus | "")}>
-                  <option value="">全部阶段</option>
-                  {APPLICATION_STATUS.map((item) => <option key={item} value={item}>{APPLICATION_STATUS_LABELS[item]}</option>)}
-                </Select>
-              </div>
-              <Button variant="secondary" className="gap-2" onClick={loadData}>
-                <RefreshCw aria-hidden="true" className="size-4" />
-                刷新
-              </Button>
-            </div>
-          </section>
-
-          <section>
-            <div className="section-heading">
+          <section className="border-y border-[color:var(--line-ghost)]">
+            <div className="flex flex-wrap items-end justify-between gap-4 px-1 py-4">
               <div>
                 <h2 className="section-title">投递记录</h2>
+                <p className="mt-1 text-xs text-ink-muted">最近进展按该投递最后一次状态或信息更新时间计算。</p>
               </div>
-              <div className="inline-flex rounded-lg bg-[color:var(--apple-control-bg)] p-1" role="group" aria-label="投递视图">
-                <ViewButton active={view === "list"} icon={<List aria-hidden="true" className="size-3.5" />} label="列表" onClick={() => setView("list")} />
-                <ViewButton active={view === "board"} icon={<Columns3 aria-hidden="true" className="size-3.5" />} label="看板" onClick={() => setView("board")} />
-                <ViewButton active={view === "map"} icon={<Orbit aria-hidden="true" className="size-3.5" />} label="星图" onClick={() => setView("map")} />
-              </div>
+              <span className="text-sm tabular-nums text-ink-muted">{filtered.length} / {applications.length}</span>
             </div>
 
-            <AnimatePresence initial={false} mode="wait">
-            <motion.div
-              key={view}
-              initial={reducedMotion ? { opacity: 0 } : { opacity: 0, x: 8 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={reducedMotion ? { opacity: 0 } : { opacity: 0, x: -6 }}
-              transition={{ duration: reducedMotion ? motionDuration.instant : motionDuration.normal, ease: motionEase.enter }}
-            >
-            {view === "list" ? (
-              filtered.length === 0 ? (
-                <div className="empty-state border-y border-[color:var(--line-ghost)]">
-                  <div><h3>没有符合条件的投递</h3><p>调整关键词或阶段筛选后再试。</p></div>
-                </div>
-              ) : (
-                <div className="divide-y divide-[color:var(--line-ghost)] border-y border-[color:var(--line-ghost)]">
-                  <AnimatePresence initial={false}>
-                  {filtered.map((application) => (
-                    <motion.div key={application.id} layout="position" transition={layoutTransition}>
-                    <ApplicationListItem
-                      application={application}
-                      resumes={resumes}
-                      onOpen={() => setDrawerApplication(application)}
-                    />
-                    </motion.div>
-                  ))}
-                  </AnimatePresence>
-                </div>
-              )
-            ) : view === "board" ? (
-              filtered.length === 0 ? (
-                <div className="empty-state border-y border-[color:var(--line-ghost)]">
-                  <div>
-                    <h3>没有符合条件的投递</h3>
-                    <p>调整关键词或阶段筛选后再试。</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="grid overflow-hidden border-y border-[color:var(--line-ghost)] xl:grid-cols-4 xl:divide-x xl:divide-[color:var(--line-ghost)]">
-                  {columns.map((column) => (
-                    <section key={column.id} className="min-h-60 p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <h3 className="text-sm font-semibold text-ink-primary">{column.label}</h3>
-                          <p className="mt-1 text-xs leading-5 text-ink-muted">{column.description}</p>
-                        </div>
-                        <span className="text-sm tabular-nums text-ink-secondary">{column.applications.length}</span>
-                      </div>
-                      <div className="mt-4 space-y-2">
-                        {column.applications.length === 0 ? <p className="py-3 text-xs text-ink-muted">这一阶段暂无记录</p> : null}
-                        {column.applications.map((application) => <motion.div layout key={application.id} transition={layoutTransition}><PipelineItem application={application} resumes={resumes} onOpen={() => setDrawerApplication(application)} /></motion.div>)}
-                      </div>
-                    </section>
-                  ))}
-                </div>
-              )
-            ) : (
-              <div className="visualization-boundary p-3 sm:p-5">
-                <div className="mb-3 flex items-center gap-2 text-sm text-ink-secondary"><Orbit aria-hidden="true" className="size-4" /> 投递星图</div>
-                <ApplicationOrbitSystem applications={filtered} selectedApplication={selected} onSelect={setSelected} onEdit={setDrawerApplication} />
+            <div className="flex gap-1 overflow-x-auto border-y border-[color:var(--line-ghost)] py-2" role="group" aria-label="按投递进程筛选">
+              <StageFilterButton label="全部" count={stageCounts.all} active={!stageGroup} onClick={() => setStageGroup("")} />
+              <StageFilterButton label="准备投递" count={stageCounts.preparing} active={stageGroup === "preparing"} onClick={() => setStageGroup("preparing")} />
+              <StageFilterButton label="已投待反馈" count={stageCounts.waiting} active={stageGroup === "waiting"} onClick={() => setStageGroup("waiting")} />
+              <StageFilterButton label="笔试 / 面试" count={stageCounts.interview} active={stageGroup === "interview"} onClick={() => setStageGroup("interview")} />
+              <StageFilterButton label="Offer" count={stageCounts.offer} active={stageGroup === "offer"} onClick={() => setStageGroup("offer")} />
+              <StageFilterButton label="已结束" count={stageCounts.ended} active={stageGroup === "ended"} onClick={() => setStageGroup("ended")} />
+            </div>
+
+            <div className="grid gap-3 py-4 md:grid-cols-[minmax(220px,1fr)_210px_180px_auto]">
+              <div className="relative">
+                <label htmlFor="application-search" className="sr-only">搜索公司、岗位或自定义进程</label>
+                <Search aria-hidden="true" className="absolute left-0 top-1/2 size-4 -translate-y-1/2 text-nebula-blue/70" />
+                <Input id="application-search" type="search" autoComplete="off" className="pl-7" value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder="搜索公司、岗位或进程" />
               </div>
-            )}
-            </motion.div>
-            </AnimatePresence>
+              <Select value={freshness} onChange={(event) => setFreshness(event.target.value as FreshnessFilter)} aria-label="按最近进展筛选">
+                <option value="">全部更新时间</option>
+                <option value="today">今天有进展</option>
+                <option value="within7">7 天内有进展</option>
+                <option value="over7">7 天以上无进展</option>
+                <option value="over14">14 天以上无进展</option>
+                <option value="overdueAction">下一步已逾期</option>
+              </Select>
+              <Select value={sort} onChange={(event) => setSort(event.target.value as ApplicationSort)} aria-label="投递记录排序">
+                <option value="attention">需要关注优先</option>
+                <option value="recent">最近更新优先</option>
+                <option value="company">按公司名称</option>
+              </Select>
+              <div className="flex gap-2">
+                {filtersActive ? <Button variant="secondary" className="gap-2" onClick={clearFilters}><SlidersHorizontal aria-hidden="true" className="size-4" />清除</Button> : null}
+                <Button variant="secondary" className="gap-2" onClick={loadData}><RefreshCw aria-hidden="true" className="size-4" />刷新</Button>
+              </div>
+            </div>
           </section>
+
+          {filtered.length === 0 ? (
+            <div className="empty-state border-y border-[color:var(--line-ghost)]"><div><h3>没有符合条件的公司</h3><p>调整进程、更新时间或搜索条件后再试。</p><Button variant="secondary" className="mt-4" onClick={clearFilters}>清除筛选</Button></div></div>
+          ) : (
+            <section aria-label="投递公司清单">
+              <div className="hidden grid-cols-[minmax(190px,1.1fr)_minmax(170px,0.8fr)_150px_minmax(180px,0.9fr)_auto] gap-4 border-b border-[color:var(--line)] px-4 pb-3 text-[11px] font-medium text-ink-muted lg:grid">
+                <span>公司与岗位</span><span>当前进程</span><span>最近进展</span><span>下一步</span><span className="text-right">操作</span>
+              </div>
+              <div className="divide-y divide-[color:var(--line-ghost)] border-b border-[color:var(--line-ghost)]">
+                {filtered.map((application) => (
+                  <motion.div key={application.id} layout="position" transition={layoutTransition}>
+                    <ApplicationListRow
+                      application={application}
+                      saving={stageSavingId === application.id}
+                      onOpen={() => setDrawerApplication(application)}
+                      onEditWorkflow={() => openWorkflowEditor(application)}
+                      onStageChange={(change) => void handleStageChange(application, change)}
+                    />
+                  </motion.div>
+                ))}
+              </div>
+            </section>
+          )}
         </>
       )}
 
-      <ProgressDrawer application={drawerApplication} open={Boolean(drawerApplication)} onClose={() => setDrawerApplication(null)} onChanged={handleApplicationChanged} onDeleted={handleApplicationDeleted} />
+      <ProgressDrawer
+        application={drawerApplication}
+        workflowNodes={drawerApplication ? getApplicationWorkflow(drawerApplication) : cloneDefaultApplicationWorkflow()}
+        open={Boolean(drawerApplication)}
+        onClose={() => setDrawerApplication(null)}
+        onChanged={handleApplicationChanged}
+        onDeleted={handleApplicationDeleted}
+        onEditWorkflow={openWorkflowEditor}
+      />
+      {workflowEditorApplication ? (
+        <ApplicationWorkflowEditor
+          open
+          companyName={workflowEditorApplication.job.company_name}
+          nodes={getApplicationWorkflow(workflowEditorApplication)}
+          saving={workflowSaving}
+          onClose={() => setWorkflowEditorApplication(null)}
+          onSave={handleWorkflowSave}
+        />
+      ) : null}
     </div>
   );
 }
 
-function getApplicationPhase(applications: ApplicationWithJob[]) {
-  if (applications.length === 0) return "先收录候选岗位，再按优先级推进准备与投递。";
-  if (applications.some((item) => ["first_round", "second_round", "final_round"].includes(item.status))) return "跟进面试安排，及时记下下一步。";
-  if (applications.some((item) => item.status !== "opened")) return "处理临近节点，更新已投岗位的最新进展。";
-  return "评估候选岗位，绑定简历并完成投递准备。";
-}
-
-function PipelineItem({ application, resumes, onOpen }: { application: ApplicationWithJob; resumes: ResumeDocument[]; onOpen: () => void }) {
+function ApplicationListRow({ application, saving, onOpen, onEditWorkflow, onStageChange }: {
+  application: ApplicationWithJob;
+  saving: boolean;
+  onOpen: () => void;
+  onEditWorkflow: () => void;
+  onStageChange: (change: ApplicationStageChange) => void;
+}) {
+  const workflow = getApplicationWorkflow(application);
   const nextAction = getNextAction(application);
-  const material = getMaterialReadiness(application.job_id, resumes);
+  const recency = getRecencyInfo(application);
+  const priorityKey = (application.priority ?? 0) as keyof typeof APPLICATION_PRIORITY_LABELS;
+  const priorityLabel = APPLICATION_PRIORITY_LABELS[priorityKey] ?? APPLICATION_PRIORITY_LABELS[0];
   return (
-    <button type="button" className="w-full border-t border-[color:var(--line-ghost)] py-3 text-left first:border-t-0" onClick={onOpen}>
-      <span className="flex items-center justify-between gap-3">
-        <span className="min-w-0 truncate text-sm font-medium text-ink-primary">{application.job.company_name}</span>
-        <StatusPill status={application.status} label={getApplicationStageLabel(application)} className="px-2 py-1 text-[11px]" />
-      </span>
-      <span className="mt-2 block truncate text-xs text-ink-secondary">{nextAction.title}</span>
-      <span className={material.ready ? "mt-1 block text-xs text-[#39725b]" : "mt-1 block text-xs text-ink-muted"}>{material.label}</span>
-      <span className="mt-2 block text-[11px] text-ink-muted">更新于 {formatDateTime(application.updated_at)}</span>
-    </button>
-  );
-}
-
-function ApplicationListItem({ application, resumes, onOpen }: { application: ApplicationWithJob; resumes: ResumeDocument[]; onOpen: () => void }) {
-  const nextAction = getNextAction(application);
-  const material = getMaterialReadiness(application.job_id, resumes);
-  return (
-    <button
-      type="button"
-      className="data-row grid w-full gap-3 px-3 py-4 text-left sm:grid-cols-[minmax(220px,1fr)_minmax(180px,0.75fr)_minmax(170px,0.75fr)_auto] sm:items-center sm:px-4"
-      onClick={onOpen}
-    >
-      <span className="min-w-0">
+    <article className="data-row grid gap-4 px-3 py-5 lg:grid-cols-[minmax(190px,1.1fr)_minmax(170px,0.8fr)_150px_minmax(180px,0.9fr)_auto] lg:items-center lg:px-4">
+      <button type="button" className="min-w-0 text-left" onClick={onOpen}>
         <span className="block truncate text-sm font-semibold text-ink-primary">{application.job.company_name}</span>
         <span className="mt-1 block truncate text-xs text-ink-secondary">{application.job.job_titles || application.job.job_categories.join("、") || "岗位待补充"}</span>
-      </span>
-      <span className="flex items-center gap-2">
-        <StatusPill status={application.status} label={getApplicationStageLabel(application)} className="px-2 py-1 text-[11px]" />
-        <span className="text-xs text-ink-muted">优先级 {application.priority || "未设"}</span>
-      </span>
-      <span className="min-w-0">
-        <span className="block truncate text-xs text-ink-secondary">{nextAction.title}</span>
-        <span className={material.ready ? "mt-1 block text-xs text-[#39725b]" : "mt-1 block text-xs text-ink-muted"}>{material.label}</span>
-      </span>
-      <span className="flex items-center justify-between gap-3 sm:block sm:text-right">
-        <span className="text-[11px] text-ink-muted">{formatDateTime(application.updated_at)}</span>
-        <ArrowRight aria-hidden="true" className="size-4 text-ink-muted sm:ml-auto sm:mt-2" />
-      </span>
+      </button>
+
+      <div className="min-w-0">
+        <div className="mb-2 flex items-center gap-2">
+          <StatusPill status={application.status} label={getApplicationWorkflowLabel(application, workflow)} custom={isApplicationCustomStage(application, workflow)} className="px-2 py-1 text-[11px]" />
+          <span className="text-[10px] text-ink-muted">{workflow.length} 节点</span>
+        </div>
+        <ApplicationStageSelect application={application} nodes={workflow} compact disabled={saving} onChange={onStageChange} />
+      </div>
+
+      <button type="button" className="text-left" onClick={onOpen}>
+        <span className={recency.urgent ? "block text-sm font-medium text-[color:var(--text-danger)]" : "block text-sm font-medium text-ink-secondary"}>{recency.label}</span>
+        <span className="mt-1 block text-[10px] text-ink-muted">{formatDateTime(application.updated_at)}</span>
+      </button>
+
+      <button type="button" className="min-w-0 text-left" onClick={onOpen}>
+        <span className="block truncate text-xs font-medium text-ink-secondary">{nextAction.title}</span>
+        <span className="mt-1 block truncate text-[11px] text-ink-muted">{application.next_action_at ? `计划 ${formatDateTime(application.next_action_at)}` : nextAction.detail}</span>
+        {priorityLabel !== "未设置" ? <span className="mt-1 block text-[10px] text-ink-muted">{priorityLabel}</span> : null}
+      </button>
+
+      <div className="flex items-center justify-end gap-1">
+        <button type="button" className="inline-flex min-h-9 items-center gap-1.5 rounded-md px-2.5 text-xs text-ink-secondary hover:bg-[color:var(--surface-hover-bg)] hover:text-ink-primary" onClick={onEditWorkflow}>
+          <Settings2 aria-hidden="true" className="size-3.5" />编辑流程
+        </button>
+        <button type="button" className="inline-flex size-9 items-center justify-center rounded-md text-ink-muted hover:bg-[color:var(--surface-hover-bg)] hover:text-ink-primary" onClick={onOpen} aria-label={`查看 ${application.job.company_name} 详情`}>
+          <ArrowRight aria-hidden="true" className="size-4" />
+        </button>
+      </div>
+    </article>
+  );
+}
+
+function StageFilterButton({ label, count, active, onClick }: { label: string; count: number; active: boolean; onClick: () => void }) {
+  return (
+    <button type="button" className={active ? "inline-flex min-h-9 shrink-0 items-center gap-2 rounded-md bg-[#12294e] px-3 text-xs text-white" : "inline-flex min-h-9 shrink-0 items-center gap-2 rounded-md px-3 text-xs text-ink-secondary hover:bg-[color:var(--surface-hover-bg)]"} aria-pressed={active} onClick={onClick}>
+      {label}<span className={active ? "tabular-nums text-white/65" : "tabular-nums text-ink-muted"}>{count}</span>
     </button>
   );
 }
 
-function ViewButton({ active, icon, label, onClick }: { active: boolean; icon: ReactNode; label: string; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      className={active ? "inline-flex min-h-9 items-center gap-1.5 rounded-md bg-white px-3 text-xs text-ink-primary" : "inline-flex min-h-9 items-center gap-1.5 rounded-md px-3 text-xs text-ink-muted"}
-      aria-pressed={active}
-      onClick={onClick}
-    >
-      {icon}{label}
-    </button>
-  );
+function StatBlock({ value, label, urgent = false }: { value: number; label: string; urgent?: boolean }) {
+  return <div><div className={urgent ? "font-display text-2xl font-semibold leading-none tabular-nums text-[color:var(--text-danger)] md:text-3xl" : "font-display text-2xl font-semibold leading-none tabular-nums text-ink-primary md:text-3xl"}>{value}</div><div className="mt-2 whitespace-nowrap text-xs text-ink-muted">{label}</div></div>;
 }
 
-function StatBlock({ value, label }: { value: number; label: string }) {
-  return (
-    <div>
-      <div className="font-display text-2xl font-semibold leading-none text-ink-primary tabular-nums md:text-3xl">{value}</div>
-      <div className="mt-2 whitespace-nowrap text-xs text-ink-muted">{label}</div>
-    </div>
-  );
+function matchesStageGroup(application: ApplicationWithJob, group: StageGroup) {
+  if (!group) return true;
+  if (group === "preparing") return application.status === "opened";
+  if (group === "waiting") return application.status === "applied";
+  if (group === "interview") return INTERVIEW_STATUSES.includes(application.status);
+  if (group === "offer") return application.status === "offer";
+  return ENDED_STATUSES.includes(application.status);
+}
+
+function matchesFreshness(application: ApplicationWithJob, filter: FreshnessFilter) {
+  if (!filter) return true;
+  const days = getDaysSinceUpdate(application);
+  if (filter === "today") return days === 0;
+  if (filter === "within7") return days <= 7;
+  if (filter === "over7") return isActive(application) && days >= 7;
+  if (filter === "over14") return isActive(application) && days >= 14;
+  return isActive(application) && Boolean(application.next_action_at) && new Date(application.next_action_at as string).getTime() < Date.now();
+}
+
+function compareApplications(a: ApplicationWithJob, b: ApplicationWithJob, sort: ApplicationSort) {
+  if (sort === "company") return a.job.company_name.localeCompare(b.job.company_name, "zh-CN");
+  if (sort === "recent") return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+  const aNeedsAttention = isActive(a) ? getDaysSinceUpdate(a) : -1;
+  const bNeedsAttention = isActive(b) ? getDaysSinceUpdate(b) : -1;
+  if (aNeedsAttention !== bNeedsAttention) return bNeedsAttention - aNeedsAttention;
+  const priorityDelta = (b.priority ?? 0) - (a.priority ?? 0);
+  if (priorityDelta !== 0) return priorityDelta;
+  return new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime();
+}
+
+function getDaysSinceUpdate(application: ApplicationWithJob) {
+  return Math.max(0, Math.floor((Date.now() - new Date(application.updated_at).getTime()) / 86_400_000));
+}
+
+function getRecencyInfo(application: ApplicationWithJob) {
+  const days = getDaysSinceUpdate(application);
+  if (days === 0) return { label: "今天有进展", urgent: false };
+  if (days < 7) return { label: `${days} 天前更新`, urgent: false };
+  if (isActive(application)) return { label: `${days} 天无新进展`, urgent: true };
+  return { label: `${days} 天前结束`, urgent: false };
+}
+
+function isActive(application: ApplicationWithJob) {
+  return !["offer", "rejected", "withdrawn"].includes(application.status);
 }

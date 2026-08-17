@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Settings2 } from "lucide-react";
 import {
   APPLICATION_CANDIDATE_STAGE,
   APPLICATION_CANDIDATE_STAGE_LABELS,
   APPLICATION_PRIORITY_LABELS,
-  APPLICATION_PROGRESS_STATUS,
   APPLICATION_STATUS_LABELS,
   TERMINAL_APPLICATION_STATUS,
 } from "@/lib/constants";
@@ -23,19 +22,29 @@ import { Select } from "@/components/ui/Select";
 import { CompanyBadge } from "@/components/jobs/CompanyBadge";
 import type { ResumeDocument } from "@/lib/resume";
 import type { ApplicationCandidateStage, ApplicationStatus, ApplicationWithJob, StatusHistory } from "@/lib/types";
+import {
+  DEFAULT_APPLICATION_WORKFLOW,
+  getApplicationWorkflowNode,
+  type ApplicationWorkflowNode,
+} from "@/lib/application-workflow";
+import { StatusPill } from "@/components/applications/StatusPill";
 
 export function ProgressDrawer({
   application,
+  workflowNodes = DEFAULT_APPLICATION_WORKFLOW,
   open,
   onClose,
   onChanged,
   onDeleted,
+  onEditWorkflow,
 }: {
   application: ApplicationWithJob | null;
+  workflowNodes?: ApplicationWorkflowNode[];
   open: boolean;
   onClose: () => void;
   onChanged: (application: ApplicationWithJob) => Promise<void> | void;
   onDeleted: (applicationId: string) => Promise<void> | void;
+  onEditWorkflow?: (application: ApplicationWithJob) => void;
 }) {
   const [status, setStatus] = useState<ApplicationStatus>("opened");
   const [savedStatus, setSavedStatus] = useState<ApplicationStatus>("opened");
@@ -50,6 +59,7 @@ export function ProgressDrawer({
   const [nextActionAt, setNextActionAt] = useState("");
   const [resumeId, setResumeId] = useState("");
   const [customStageLabel, setCustomStageLabel] = useState("");
+  const [workflowNodeId, setWorkflowNodeId] = useState("");
   const [reviewNote, setReviewNote] = useState("");
   const [savedWorkflowFingerprint, setSavedWorkflowFingerprint] = useState("");
   const [resumes, setResumes] = useState<ResumeDocument[]>([]);
@@ -80,6 +90,7 @@ export function ProgressDrawer({
         channel: currentApplication.application_channel ?? "",
         contactName: currentApplication.contact_name ?? "",
         customStageLabel: currentApplication.custom_stage_label ?? "",
+        workflowNodeId: currentApplication.workflow_node_id ?? "",
         nextAction: currentApplication.next_action ?? "",
         nextActionAt: toDateTimeLocal(currentApplication.next_action_at),
         priority: currentApplication.priority ?? 0,
@@ -95,6 +106,7 @@ export function ProgressDrawer({
       setNextActionAt(nextWorkflow.nextActionAt);
       setResumeId(nextWorkflow.resumeId);
       setCustomStageLabel(nextWorkflow.customStageLabel);
+      setWorkflowNodeId(nextWorkflow.workflowNodeId);
       setReviewNote(nextWorkflow.reviewNote);
       setSavedWorkflowFingerprint(JSON.stringify(nextWorkflow));
       setMessage("");
@@ -137,10 +149,14 @@ export function ProgressDrawer({
     };
   }, []);
 
-  const progressIndex = useMemo(
-    () => APPLICATION_PROGRESS_STATUS.findIndex((item) => item === status),
-    [status],
-  );
+  const progressIndex = useMemo(() => {
+    const currentNode = getApplicationWorkflowNode({
+      status,
+      workflow_node_id: workflowNodeId || null,
+      custom_stage_label: customStageLabel || null,
+    }, workflowNodes);
+    return currentNode ? workflowNodes.findIndex((node) => node.id === currentNode.id) : -1;
+  }, [customStageLabel, status, workflowNodeId, workflowNodes]);
   const ended = TERMINAL_APPLICATION_STATUS.includes(status as (typeof TERMINAL_APPLICATION_STATUS)[number]);
   const workflowFingerprint = JSON.stringify({
     account,
@@ -148,6 +164,7 @@ export function ProgressDrawer({
     channel,
     contactName,
     customStageLabel,
+    workflowNodeId,
     nextAction,
     nextActionAt,
     priority,
@@ -157,18 +174,42 @@ export function ProgressDrawer({
   const workflowDirty = workflowFingerprint !== savedWorkflowFingerprint;
   const isDirty = status !== savedStatus || note.trim() !== savedNote.trim() || workflowDirty;
 
-  async function saveProgress(nextStatus = status, nextNote = note, successMessage = "已保存") {
+  async function saveProgress(
+    nextStatus = status,
+    nextNote = note,
+    successMessage = "已保存",
+    selectedWorkflowNode?: ApplicationWorkflowNode | null,
+  ) {
     if (!application || saving) return false;
     const requestId = saveRequestRef.current + 1;
     saveRequestRef.current = requestId;
     const previousStatus = status;
     const previousNote = note;
-    const previousApplication: ApplicationWithJob = {
-      ...application,
-      status: previousStatus,
-      progress_note: previousNote.trim() || null,
+    const previousWorkflowNodeId = workflowNodeId;
+    const previousCustomStageLabel = customStageLabel;
+    const nextWorkflowNodeId = selectedWorkflowNode === undefined
+      ? workflowNodeId
+      : selectedWorkflowNode?.isCustom ? selectedWorkflowNode.id : "";
+    const nextCustomStageLabel = selectedWorkflowNode === undefined
+      ? customStageLabel
+      : selectedWorkflowNode?.isCustom ? selectedWorkflowNode.label : "";
+    const nextWorkflowSnapshot = {
+      account,
+      candidateStage,
+      channel,
+      contactName,
+      customStageLabel: nextCustomStageLabel,
+      workflowNodeId: nextWorkflowNodeId,
+      nextAction,
+      nextActionAt,
+      priority,
+      resumeId,
+      reviewNote,
     };
-    const workflowValues = workflowDirty
+    const shouldPersistWorkflowNode = application.workflow_nodes != null
+      || application.workflow_node_id != null
+      || Boolean(selectedWorkflowNode?.isCustom);
+    const workflowValues = workflowDirty || selectedWorkflowNode !== undefined
       ? {
           candidate_stage: candidateStage,
           priority,
@@ -178,7 +219,8 @@ export function ProgressDrawer({
           next_action: cleanOptional(nextAction),
           next_action_at: fromDateTimeLocal(nextActionAt),
           resume_id: cleanOptional(resumeId),
-          custom_stage_label: cleanOptional(customStageLabel),
+          custom_stage_label: cleanOptional(nextCustomStageLabel),
+          ...(shouldPersistWorkflowNode ? { workflow_node_id: cleanOptional(nextWorkflowNodeId) } : {}),
           review_note: cleanOptional(reviewNote),
         }
       : {};
@@ -191,6 +233,8 @@ export function ProgressDrawer({
     };
     setStatus(nextStatus);
     setNote(nextNote);
+    setWorkflowNodeId(nextWorkflowNodeId);
+    setCustomStageLabel(nextCustomStageLabel);
     setSaving(true);
     setMessage("");
     void onChanged(optimisticApplication);
@@ -208,7 +252,7 @@ export function ProgressDrawer({
       };
       setSavedStatus(nextStatus);
       setSavedNote(nextNote);
-      setSavedWorkflowFingerprint(workflowFingerprint);
+      setSavedWorkflowFingerprint(JSON.stringify(nextWorkflowSnapshot));
       void onChanged(confirmedApplication);
       if (nextStatus !== savedStatus) {
         void fetchApplicationHistory(createClient(), application.id).then(setHistory).catch(() => setHistoryState("error"));
@@ -224,7 +268,9 @@ export function ProgressDrawer({
       if (requestId !== saveRequestRef.current) return false;
       setStatus(previousStatus);
       setNote(previousNote);
-      void onChanged(previousApplication);
+      setWorkflowNodeId(previousWorkflowNodeId);
+      setCustomStageLabel(previousCustomStageLabel);
+      void onChanged(application);
       setMessage(error instanceof Error
         ? error.message
         : "保存未完成。你填写的内容仍在当前面板中，请检查网络后重试。");
@@ -234,10 +280,11 @@ export function ProgressDrawer({
     }
   }
 
-  async function handleStatusChange(nextStatus: ApplicationStatus) {
+  async function handleStatusChange(nextStatus: ApplicationStatus, node?: ApplicationWorkflowNode | null) {
     if (saving) return;
-    if (nextStatus === status && note.trim() === savedNote.trim()) return;
-    await saveProgress(nextStatus, note, "已保存");
+    const nextWorkflowNodeId = node === undefined ? workflowNodeId : node?.id ?? "";
+    if (nextStatus === status && nextWorkflowNodeId === workflowNodeId && note.trim() === savedNote.trim()) return;
+    await saveProgress(nextStatus, note, "已保存", node);
   }
 
   async function handleNoteBlur() {
@@ -278,6 +325,13 @@ export function ProgressDrawer({
   const { job } = application;
   const meta = [job.locations, job.industry, job.batch_type].filter(Boolean).join(" · ");
   const categories = job.job_categories?.length ? job.job_categories.join("、") : job.job_titles || "岗位类别待补充";
+  const currentWorkflowNode = getApplicationWorkflowNode({
+    status,
+    workflow_node_id: workflowNodeId || null,
+    custom_stage_label: customStageLabel || null,
+  }, workflowNodes);
+  const currentStageLabel = currentWorkflowNode?.label
+    ?? (customStageLabel.trim() || APPLICATION_STATUS_LABELS[status]);
 
   return (
     <Drawer open={open} title="投递" onClose={onClose}>
@@ -292,6 +346,13 @@ export function ProgressDrawer({
                   {APPLICATION_STATUS_LABELS[status]}
                 </span>
               ) : null}
+            </div>
+            <div className="mt-3">
+              <StatusPill
+                status={status}
+                label={currentStageLabel}
+                custom={Boolean(currentWorkflowNode?.isCustom || customStageLabel.trim())}
+              />
             </div>
             <p className="mt-2 text-sm leading-6 text-nebula-silver">{categories}</p>
             <p className="mt-2 text-sm leading-6 text-ink-muted">{meta || "岗位信息待补充"}</p>
@@ -341,8 +402,16 @@ export function ProgressDrawer({
         </section>
 
         <section className={ended ? "opacity-40 transition-opacity" : "transition-opacity"}>
-          <div className="mb-4 text-sm font-medium text-ink-primary">投递轨道</div>
-          <div className="relative px-1 pb-9 pt-4">
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <span className="text-sm font-medium text-ink-primary">投递轨道</span>
+            {onEditWorkflow ? (
+              <button type="button" className="text-action inline-flex items-center gap-1.5 text-xs" onClick={() => onEditWorkflow(application)}>
+                <Settings2 aria-hidden="true" className="size-3.5" />编辑该公司流程
+              </button>
+            ) : <span className="text-[10px] text-ink-muted">点击节点即可推进</span>}
+          </div>
+          <div className="overflow-x-auto pb-2">
+            <div className="relative px-1 pb-7 pt-4" style={{ minWidth: `${Math.max(460, workflowNodes.length * 64)}px` }}>
             <div className="absolute left-7 right-7 top-7 h-[2px] rounded-full bg-[rgba(183,134,40,0.24)] shadow-[0_0_12px_rgba(183,134,40,0.12)]" />
             <div
               className="absolute left-7 top-7 h-[2px] rounded-full bg-[#B78628] shadow-[0_0_12px_rgba(183,134,40,0.3)] transition-[width] duration-300 ease-out motion-reduce:transition-none"
@@ -350,29 +419,29 @@ export function ProgressDrawer({
                 width:
                   progressIndex <= 0
                     ? 0
-                    : `calc(${(progressIndex / (APPLICATION_PROGRESS_STATUS.length - 1)) * 100}% - ${(progressIndex / (APPLICATION_PROGRESS_STATUS.length - 1)) * 56}px)`,
+                    : `calc(${(progressIndex / Math.max(1, workflowNodes.length - 1)) * 100}% - ${(progressIndex / Math.max(1, workflowNodes.length - 1)) * 56}px)`,
               }}
             />
             <div className="relative flex items-start justify-between">
-              {APPLICATION_PROGRESS_STATUS.map((item, index) => {
-                const active = item === status;
+              {workflowNodes.map((node, index) => {
+                const active = index === progressIndex && !ended;
                 const done = progressIndex >= index && progressIndex >= 0;
                 const distantOnNarrow = progressIndex >= 0 && Math.abs(index - progressIndex) > 1;
                 return (
                   <button
-                    key={item}
-                    id={`progress-status-node-${item}`}
+                    key={node.id}
+                    id={`progress-status-node-${node.id}`}
                     type="button"
                     className="group flex w-12 flex-col items-center gap-3 rounded-md text-center outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--aurora)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--background)]"
                     aria-current={active ? "step" : undefined}
-                    aria-label={`设为${APPLICATION_STATUS_LABELS[item]}`}
+                    aria-label={`设为${node.label}`}
                     disabled={saving}
-                    onClick={() => void handleStatusChange(item)}
-                    onKeyDown={(event) => handleNodeKeyDown(event, index)}
+                    onClick={() => void handleStatusChange(node.status, node)}
+                    onKeyDown={(event) => handleNodeKeyDown(event, index, workflowNodes)}
                   >
                     <span className="flex h-6 items-center justify-center">
                       {active ? (
-                        <span className="h-3.5 w-3.5 rotate-45 rounded-[3px] border border-[#E8C979] bg-[#C9973C] shadow-[0_0_18px_rgba(183,134,40,0.42)] motion-safe:animate-pulse" />
+                        <span className="h-3.5 w-3.5 rotate-45 rounded-[3px] border border-[#E8C979] bg-[#C9973C] shadow-[0_0_18px_rgba(183,134,40,0.42)]" />
                       ) : done ? (
                         <span className="h-2.5 w-2.5 rounded-full border border-[#D9B75F] bg-[#B78628] shadow-[0_0_8px_rgba(183,134,40,0.26)]" />
                       ) : (
@@ -386,11 +455,13 @@ export function ProgressDrawer({
                         distantOnNarrow ? "max-[400px]:sr-only" : "",
                       ].join(" ")}
                     >
-                      {APPLICATION_STATUS_LABELS[item]}
+                      {node.label}
                     </span>
+                    {node.isCustom ? <span className="max-[400px]:sr-only text-[9px] font-medium text-[#8C641D]">自定义</span> : null}
                   </button>
                 );
               })}
+            </div>
             </div>
           </div>
           <div className="text-xs text-ink-muted">
@@ -402,7 +473,7 @@ export function ProgressDrawer({
                   type="button"
                   className="text-action inline-flex text-xs"
                   disabled={saving}
-                  onClick={() => void handleStatusChange(item)}
+                  onClick={() => void handleStatusChange(item, null)}
                 >
                   {APPLICATION_STATUS_LABELS[item]}
                 </button>
@@ -423,8 +494,8 @@ export function ProgressDrawer({
             <WorkflowField label="联系人">
               <Input value={contactName} onChange={(event) => setContactName(event.target.value)} placeholder="姓名或联系方式" />
             </WorkflowField>
-            <WorkflowField label="自定义阶段">
-              <Input value={customStageLabel} onChange={(event) => setCustomStageLabel(event.target.value)} placeholder="三面、HR 面或主管面" />
+            <WorkflowField label="当前节点补充名称">
+              <Input value={customStageLabel} onChange={(event) => setCustomStageLabel(event.target.value)} placeholder="可临时覆盖当前节点名称" />
             </WorkflowField>
           </div>
         </section>
@@ -532,14 +603,14 @@ export function ProgressDrawer({
   );
 }
 
-function handleNodeKeyDown(event: KeyboardEvent<HTMLButtonElement>, index: number) {
+function handleNodeKeyDown(event: KeyboardEvent<HTMLButtonElement>, index: number, nodes: ApplicationWorkflowNode[]) {
   if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
   event.preventDefault();
   const nextIndex =
     event.key === "ArrowLeft"
       ? Math.max(0, index - 1)
-      : Math.min(APPLICATION_PROGRESS_STATUS.length - 1, index + 1);
-  document.getElementById(`progress-status-node-${APPLICATION_PROGRESS_STATUS[nextIndex]}`)?.focus();
+      : Math.min(nodes.length - 1, index + 1);
+  document.getElementById(`progress-status-node-${nodes[nextIndex]?.id}`)?.focus();
 }
 
 function WorkflowField({ label, children }: { label: string; children: ReactNode }) {

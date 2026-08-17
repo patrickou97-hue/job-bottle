@@ -996,6 +996,20 @@ html[data-scene-transition="arrived"] .scene-arrival-veil__stars {
 .theme-work .muted-button:hover { background: #eeeeF1; color: #12294e; }
 
 .theme-work .status-pill { background: #eef2f7; color: #334862; box-shadow: none; }
+.theme-work .status-pill[data-status="opened"] { background: #f1f3f6; color: #556274; }
+.theme-work .status-pill[data-status="applied"] { background: #e8f0fa; color: #315f91; }
+.theme-work .status-pill[data-status="written_test"] { background: #eeeafb; color: #644f9a; }
+.theme-work .status-pill[data-status="first_round"],
+.theme-work .status-pill[data-status="second_round"],
+.theme-work .status-pill[data-status="final_round"] { background: #e6f3f3; color: #2d6e70; }
+.theme-work .status-pill[data-status="offer"] { background: #e5f4eb; color: #2f7251; }
+.theme-work .status-pill[data-status="rejected"] { background: #f8e9e8; color: #9a4944; }
+.theme-work .status-pill[data-status="withdrawn"] { background: #eeeeef; color: #686870; }
+.theme-work .status-pill[data-custom="true"] {
+  border: 1px solid rgba(183, 134, 40, 0.32);
+  background: #fbf4df;
+  color: #7d5a1f;
+}
 
 .theme-work .field-shell {
   border-color: rgba(18, 41, 78, 0.12);

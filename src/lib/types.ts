@@ -80,6 +80,8 @@ export type UserApplication = {
   next_action_at?: string | null;
   resume_id?: string | null;
   custom_stage_label?: string | null;
+  workflow_node_id?: string | null;
+  workflow_nodes?: unknown;
   review_note?: string | null;
   updated_at: string;
 };
@@ -438,6 +440,8 @@ export type Database = {
           next_action_at?: string | null;
           resume_id?: string | null;
           custom_stage_label?: string | null;
+          workflow_node_id?: string | null;
+          workflow_nodes?: unknown;
           review_note?: string | null;
           updated_at?: string;
         };
@@ -457,6 +461,8 @@ export type Database = {
           next_action_at?: string | null;
           resume_id?: string | null;
           custom_stage_label?: string | null;
+          workflow_node_id?: string | null;
+          workflow_nodes?: unknown;
           review_note?: string | null;
           updated_at?: string;
         };
