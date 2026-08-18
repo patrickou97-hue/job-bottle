@@ -107,37 +107,7 @@ export function Navbar({ appearance = "work" }: { appearance?: "scene" | "work" 
     <>
       <header className={cn("app-navbar sticky top-0 z-40 border-b", appearance === "scene" && "app-navbar--scene")}>
         <div className="mx-auto flex h-15 w-full max-w-[1320px] items-center gap-4 px-4 sm:px-6 lg:px-8">
-        <div className="flex shrink-0 items-center gap-2.5">
-          <Link
-            href="/interview?preview=recruitment"
-            aria-label="发现诘星 StarInterview 彩蛋"
-            title="有一颗新星正在靠近"
-            className="group grid size-8 place-items-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--aurora)]"
-            onClick={(event) => handleSceneLink(event, "/interview?preview=recruitment")}
-          >
-            <motion.span
-              className="relative grid size-6 place-items-center"
-              whileHover={{ rotate: 18, scale: 1.12 }}
-              whileTap={{ scale: 0.94 }}
-              transition={{ type: "spring", stiffness: 420, damping: 24 }}
-            >
-              <svg viewBox="0 0 24 24" className="size-6 overflow-visible drop-shadow-[0_0_8px_rgba(126,124,181,0.48)]" aria-hidden="true">
-                <defs>
-                  <linearGradient id="star-interview-signal" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
-                    <stop offset="0" stopColor="#67E8F9" />
-                    <stop offset="0.32" stopColor="#818CF8" />
-                    <stop offset="0.66" stopColor="#E879F9" />
-                    <stop offset="1" stopColor="#FBBF24" />
-                  </linearGradient>
-                </defs>
-                <path
-                  d="M12 1.5C12.55 7.65 16.35 11.45 22.5 12C16.35 12.55 12.55 16.35 12 22.5C11.45 16.35 7.65 12.55 1.5 12C7.65 11.45 11.45 7.65 12 1.5Z"
-                  fill="url(#star-interview-signal)"
-                />
-              </svg>
-              <span className="absolute right-0 top-0 size-1 rounded-full bg-[#FBBF24] opacity-70 transition-opacity group-hover:opacity-100" />
-            </motion.span>
-          </Link>
+        <div className="flex shrink-0 items-center">
           <Link href="/" className="flex items-center" aria-label="返回首页">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/brand/shi-xing-wordmark.png" alt={SITE_NAME} width={1216} height={542} className="brand-wordmark h-7 w-auto object-contain" />

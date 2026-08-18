@@ -393,9 +393,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/layout/Navbar.tsx",
-    mustInclude: ["岗位坐标", "投递管理", "简历制作", "href: \"/extension\"", "label: \"网申助手\"", "BETA", "nav-beta", "拾星指南", "星瓶", "个人中心", "href: \"/feedback\"", "label: \"反馈\"", "mobileNavItems", "grid-cols-6", "移动主导航", "bottom-0", "primary-nav-indicator", "mobile-nav-indicator", "profile ? \"个人中心\" : \"登录\"", "/interview?preview=recruitment"],
-    mustNotInclude: ["找岗位", "求职交流", "label: \"我的\"", "label: \"首页\"", "/interview?preview=recruitment#preview-recruitment"],
-    label: "桌面顶部独立展示反馈入口、彩蛋从顶部进入诘星招募页且移动端保持原六项主导航",
+    mustInclude: ["岗位坐标", "投递管理", "简历制作", "href: \"/extension\"", "label: \"网申助手\"", "BETA", "nav-beta", "拾星指南", "星瓶", "个人中心", "href: \"/feedback\"", "label: \"反馈\"", "mobileNavItems", "grid-cols-6", "移动主导航", "bottom-0", "primary-nav-indicator", "mobile-nav-indicator", "profile ? \"个人中心\" : \"登录\"", "href=\"/\"", "aria-label=\"返回首页\""],
+    mustNotInclude: ["找岗位", "求职交流", "label: \"我的\"", "label: \"首页\"", "/interview?preview=recruitment", "发现诘星", "star-interview-signal"],
+    label: "桌面顶部保留清晰品牌入口与反馈入口、移除已下线彩蛋且移动端保持原六项主导航",
   },
   {
     file: "src/components/resume/ResumePreview.tsx",
@@ -787,33 +787,15 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/forum/ForumClient.tsx",
-    mustInclude: ["QUICK_LINKS", "常用入口", "浏览岗位坐标", "处理投递进度", "管理简历", "查看秋招流程", "STAR_INTERVIEW_RECRUITMENT_POST", "url.searchParams.get(\"preview\") === \"star-interview\"", "了解详情"],
-    mustNotInclude: [],
-    label: "拾星指南提供常用入口及不写入线上数据的诘星招募公告预览",
-  },
-  {
-    file: "src/components/forum/starInterviewRecruitment.ts",
-    mustInclude: ["诘星 StarInterview Preview 体验招募中", "¥100 人民币等值", "raywang6688@outlook.com", "接收安装包的邮箱", "计划用于哪些岗位或方向的面试"],
-    mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY", "dangerouslySetInnerHTML"],
-    label: "诘星体验招募公告和申请邮件模板包含额度、收件人及必要申请信息",
+    mustInclude: ["QUICK_LINKS", "常用入口", "浏览岗位坐标", "处理投递进度", "管理简历", "查看秋招流程", "posts.length", "posts.map"],
+    mustNotInclude: ["STAR_INTERVIEW_RECRUITMENT", "preview=star-interview", "localPreviewEnabled", "本地公告预览"],
+    label: "拾星指南只呈现真实内容并保留常用入口，不再注入诘星招募预览",
   },
   {
     file: "src/components/forum/PostCard.tsx",
-    mustInclude: ["STAR_INTERVIEW_RECRUITMENT_TAG", "/interview?preview=recruitment#preview-recruitment", "了解详情"],
-    mustNotInclude: ["mailto:raywang6688@outlook.com"],
-    label: "公告只提供了解详情入口且隐藏内部识别标签，不直接触发申请邮件",
-  },
-  {
-    file: "src/app/interview/StarInterviewTeaser.tsx",
-    mustInclude: ["showRecruitment", "preview-recruitment", "macOS 14", "¥100 人民币等值", "STAR_INTERVIEW_APPLICATION_MAILTO", "发送体验申请"],
-    mustNotInclude: ["dangerouslySetInnerHTML", "SUPABASE_SERVICE_ROLE_KEY"],
-    label: "诘星宣传页彩蛋交代体验要求、额度与最终邮件申请入口",
-  },
-  {
-    file: "src/app/interview/page.tsx",
-    mustInclude: ["searchParams", "params.preview === \"recruitment\""],
-    mustNotInclude: [],
-    label: "诘星宣传页仅在指定预览参数下显示体验招募彩蛋",
+    mustInclude: ["post.tags.length > 0", "post.tags.map", "编辑内容", "删除内容", "设为重点"],
+    mustNotInclude: ["STAR_INTERVIEW_RECRUITMENT", "/interview?preview=recruitment", "StarInterviewRecruitmentDetail", "mailto:raywang6688@outlook.com"],
+    label: "指南卡片统一使用标准内容、标签和管理员操作，不保留诘星招募特例",
   },
   {
     file: "src/app/globals.css",
@@ -1428,9 +1410,6 @@ const REQUIRED_FILES = [
   "public/assets/nebula/cutouts/nebula-industry-consumer.png",
   "public/assets/nebula/cutouts/nebula-industry-healthcare.png",
   "public/assets/nebula/cutouts/nebula-industry-energy.png",
-  "public/brand/star-interview/app-icon.png",
-  "public/brand/star-interview/wordmark.png",
-  "public/brand/star-interview/product-live-coach.png",
 ];
 const REQUIRED_TEXT = {
   "/": ["拾星"],
@@ -1449,7 +1428,6 @@ const REQUIRED_TEXT = {
   "/forum": ["拾星指南"],
   "/extension": ["一份简历，", "抵达更多坐标", "把拾星简历同步到浏览器", "获取安装包", "正在检测网申助手"],
   "/extension/guide": ["安装拾星网申助手", "加载已解压的扩展", "同步简历"],
-  "/interview": ["谛听察意", "应答成章", "先听懂", "协助你结构化表达", "你曾经做过的事", "陪你把话", "表达清楚"],
   "/admin": ["管理后台"],
 };
 

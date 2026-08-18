@@ -11,11 +11,6 @@ import { PostCard } from "@/components/forum/PostCard";
 import { NewPostForm } from "@/components/forum/NewPostForm";
 import { Drawer } from "@/components/ui/Drawer";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
-import {
-  STAR_INTERVIEW_RECRUITMENT_POST,
-  STAR_INTERVIEW_RECRUITMENT_PREVIEW_ID,
-  isStarInterviewRecruitmentPost,
-} from "@/components/forum/starInterviewRecruitment";
 import type { ForumPostView } from "@/lib/types";
 
 const CATEGORIES = ["全部", "公告", "教程", "分享"] as const;
@@ -35,18 +30,6 @@ export function ForumClient() {
   const [showForm, setShowForm] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [currentUserIsAdmin, setCurrentUserIsAdmin] = useState(false);
-  const [localPreviewEnabled, setLocalPreviewEnabled] = useState(false);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const url = new URL(window.location.href);
-      const isLocalHost = url.hostname === "localhost" || url.hostname === "127.0.0.1";
-      const enabled = isLocalHost && url.searchParams.get("preview") === "star-interview";
-      setLocalPreviewEnabled(enabled);
-      if (enabled) setExpandedId(STAR_INTERVIEW_RECRUITMENT_PREVIEW_ID);
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, []);
 
   async function loadPosts() {
     setLoading(true);
@@ -120,16 +103,6 @@ export function ForumClient() {
       )));
   }
 
-  const visiblePosts = localPreviewEnabled && (activeCategory === "全部" || activeCategory === "公告")
-    ? [
-        STAR_INTERVIEW_RECRUITMENT_POST,
-        ...posts.filter(
-          (post) => post.id !== STAR_INTERVIEW_RECRUITMENT_PREVIEW_ID
-            && !isStarInterviewRecruitmentPost(post),
-        ),
-      ]
-    : posts;
-
   return (
     <div className="observatory-page space-y-8">
       <section className="page-hero">
@@ -151,12 +124,6 @@ export function ForumClient() {
       <Drawer open={showForm} title="发布指南内容" onClose={() => setShowForm(false)} showHelpLink={false}>
         <NewPostForm onCreated={handleCreated} onCancel={() => setShowForm(false)} />
       </Drawer>
-
-      {localPreviewEnabled ? (
-        <div className="rounded-xl border border-[#d8b08b] bg-[#fff8f1] px-4 py-3 text-sm text-[#7c4d2d]" role="status">
-          本地公告预览：内容尚未写入线上指南。“了解详情”会进入本地诘星招募彩蛋，申请邮件仍需由用户在邮件客户端中确认发送。
-        </div>
-      ) : null}
 
       <section aria-labelledby="guide-shortcuts-title" className="border-y border-[color:var(--line-ghost)] py-5 sm:py-6">
         <div className="flex items-baseline justify-between gap-4">
@@ -180,7 +147,7 @@ export function ForumClient() {
           value={activeCategory}
           onChange={setActiveCategory}
         />
-        <span className="section-meta">{visiblePosts.length} 篇内容</span>
+        <span className="section-meta">{posts.length} 篇内容</span>
       </section>
 
       <section className="list-surface">
@@ -196,7 +163,7 @@ export function ForumClient() {
               <Button className="mt-5" onClick={loadPosts}>重试</Button>
             </div>
           </div>
-        ) : visiblePosts.length === 0 ? (
+        ) : posts.length === 0 ? (
           <div className="empty-state">
             <div>
               <h2>暂无指南内容</h2>
@@ -204,11 +171,11 @@ export function ForumClient() {
             </div>
           </div>
         ) : (
-          visiblePosts.map((post) => (
+          posts.map((post) => (
             <PostCard
               key={post.id}
               post={post}
-              isAdmin={currentUserIsAdmin && post.id !== STAR_INTERVIEW_RECRUITMENT_PREVIEW_ID}
+              isAdmin={currentUserIsAdmin}
               expanded={expandedId === post.id}
               onToggle={() =>
                 setExpandedId((prev) => (prev === post.id ? null : post.id))
