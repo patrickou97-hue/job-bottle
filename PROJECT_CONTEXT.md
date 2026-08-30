@@ -6,14 +6,15 @@
 
 每次三文档记录至少写明：日期、用户目标、根因/决策、实际改动文件与行为、兼容边界、验证命令和结果、提交与部署证据（如有）、已确认和未确认的外部状态。若本次只完成诊断而没有修改，也必须在三份文档中同步写清“零修改/零部署”及诊断证据。
 
-## 2026-08-30 投递流程保存兼容修复（本地已修复，未上线）
+## 2026-08-30 投递流程保存兼容修复（已上线）
 
-- 用户目标：修复用户反馈的网页版“无法修改投递流程”，只解决已有保存链路的卡点，不新增产品功能、不执行线上 migration、不部署，先保留本地版本验收。
+- 用户目标：修复用户反馈的网页版“无法修改投递流程”，只解决已有保存链路的卡点，不新增产品功能；本轮完成本地验收后上线网页修复。
 - 根因与证据：当前正式 Supabase 只读 schema 已有 `workflow_nodes`、`workflow_node_id`、`custom_stage_label` 等投递流程字段，但仍缺 `user_applications.applied_position`。新版 `ProgressDrawer.saveProgress` 在修改状态、流程或详情时会把该可选字段一起提交，PostgREST 因整次 PATCH 包含不存在字段返回 HTTP 400 / `PGRST204`（`Could not find the 'applied_position' column ... in the schema cache`），于是其他流程字段也没有保存。使用不存在的固定 UUID 做同样请求只验证 schema 解析，未命中任何真实记录、未产生数据写入。
 - 实际改动：`src/lib/applications.ts` 的 `updateApplication` 在明确识别到仅 `applied_position` 缺失时，自动去掉这一列重试同一更新，继续保存已存在的状态、流程节点和跟进字段；其他缺失工作流列仍维持 fail-closed，不静默丢字段。`src/components/applications/ProgressDrawer.tsx` 读取兼容结果后不会把未落库的岗位名伪装成已保存：保留当前输入为未保存状态、从确认行移除不支持字段，并提示“投递流程已保存；实际投递岗位暂未同步”。`tests/applications.test.ts` 新增两个回归用例，覆盖“岗位名缺列但流程继续保存”和“只填岗位名时不误报成功”。
 - 兼容边界：线上已有的投递流程字段不受影响，状态下拉、流程编辑器、节点顺序和其他详情字段可以在 `applied_position` 缺失期间继续保存；“实际投递岗位”本身仍需执行 `supabase/migrations/20260830120000_application_position.sql` 后才能写入，不能把本地兼容重试当成 migration 已上线。没有修改数据库、RLS、migration、Mac App、小程序或新增用户功能。
 - 验证：定向回归测试 2/2、`npm run typecheck`、定向 ESLint、全量 `npm test` 135/135、`npm run build`（58 个页面）通过；清理并恢复可重建 `.next` 缓存后，在允许字体请求的临时本地服务上 `npm run smoke` 通过，包含 908 条岗位只读探针、公开页面和 SEO 探针。首次冒烟仅受本地缓存格式和 Google Fonts 网络阻断，复跑成功；未执行 authenticated E2E、真实投递写入或线上部署。
-- Git 与部署：本轮未暂存、未提交、未推送、未部署；仅修改两处网页源代码和一份回归测试，并同步更新三份交接文档；保留工作区中其他既有修改和未跟踪文件。
+- 验收边界：`npm run check:release` 的网站核心阶段通过，但扩展夹具阶段仍因当前环境 Chrome 未输出页面内容而中断；`npm run verify:extension-package` 与小程序校验通过。该扩展环境问题不影响本次网页构建或投递保存修复。
+- Git 与部署：网页修复与回归测试已提交为 `a2272f2`（`fix: preserve application workflow saves across schema lag`）并推送 `origin/main`；正式域名 `https://www.starjob.space/my` 返回 HTTP 200，加载的 Next JS 资源已检出本次新增兼容提示文案，确认修复已进入生产。正式 Supabase migration 仍未执行，未发生本轮数据库写入；工作区其他未跟踪材料未纳入提交。
 
 ## 2026-08-30 投递单条化、岗位补充与 logo 兼容优化（未上线）
 
