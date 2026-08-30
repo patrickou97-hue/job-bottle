@@ -7,6 +7,10 @@ import type {
 } from "@/lib/types";
 
 export type ApplicationUpdateValues = Database["public"]["Tables"]["user_applications"]["Update"];
+export type ApplicationUpdateResult = UserApplication & {
+  /** Columns omitted only when the hosted schema has not received their migration yet. */
+  omittedApplicationColumns?: readonly (keyof ApplicationUpdateValues)[];
+};
 const APPLICATION_REQUEST_TIMEOUT_MS = 12_000;
 
 const LEGACY_UPDATE_KEYS = ["status", "progress_note", "note", "interview_round", "applied_at"] as const;
@@ -25,6 +29,11 @@ const WORKFLOW_UPDATE_KEYS = [
   "workflow_nodes",
   "review_note",
 ] as const;
+
+// `applied_position` was added after the rest of the workflow details. Keep
+// saving the already-supported workflow fields when a hosted project is
+// between those two migrations.
+const COMPATIBLE_MISSING_UPDATE_KEYS = ["applied_position"] as const;
 
 export async function fetchMyApplications(
   supabase: SupabaseClient<Database>,
@@ -94,7 +103,7 @@ export async function updateApplication(
   supabase: SupabaseClient<Database>,
   id: string,
   values: ApplicationUpdateValues,
-) {
+): Promise<ApplicationUpdateResult> {
   const { data, error } = await runApplicationRequest(async (signal) => await supabase
     .from("user_applications")
     .update(values)
@@ -105,6 +114,33 @@ export async function updateApplication(
 
   if (!error) return data as UserApplication;
   if (!isMissingApplicationWorkflowColumnsError(error)) throw error;
+
+  const compatibleMissingKeys = getCompatibleMissingUpdateKeys(error, values);
+  if (compatibleMissingKeys.length > 0) {
+    const compatibleValues = omitApplicationUpdateKeys(values, compatibleMissingKeys);
+    if (Object.keys(compatibleValues).length === 0) {
+      throw new Error("投递详情字段尚未升级。请先执行最新 Supabase migration，再保存这些信息。");
+    }
+
+    const { data: compatibleData, error: compatibleError } = await runApplicationRequest(async (signal) => await supabase
+      .from("user_applications")
+      .update(compatibleValues)
+      .eq("id", id)
+      .select("*")
+      .abortSignal(signal)
+      .single());
+
+    if (!compatibleError) {
+      return {
+        ...(compatibleData as UserApplication),
+        omittedApplicationColumns: compatibleMissingKeys,
+      };
+    }
+    if (isMissingApplicationWorkflowColumnsError(compatibleError)) {
+      throw new Error("投递详情字段尚未升级，你填写的内容仍保留在当前页面。请先执行最新 Supabase migration 后重试。");
+    }
+    throw compatibleError;
+  }
 
   if (WORKFLOW_UPDATE_KEYS.some((key) => key in values)) {
     throw new Error("投递详情字段尚未升级，你填写的内容仍保留在当前页面。请先执行最新 Supabase migration 后重试。");
@@ -160,13 +196,34 @@ export async function deleteApplication(
 }
 
 export function isMissingApplicationWorkflowColumnsError(error: unknown) {
-  const message = error instanceof Error
+  const message = getErrorMessage(error);
+  return /applied_position|candidate_stage|priority|saved_at|application_channel|application_account|contact_name|next_action|resume_id|custom_stage_label|workflow_node_id|workflow_nodes|review_note/i.test(message)
+    && /column|schema cache|does not exist|could not find/i.test(message);
+}
+
+function getCompatibleMissingUpdateKeys(
+  error: unknown,
+  values: ApplicationUpdateValues,
+) {
+  const message = getErrorMessage(error).toLowerCase();
+  return COMPATIBLE_MISSING_UPDATE_KEYS.filter((key) => key in values && message.includes(key));
+}
+
+function omitApplicationUpdateKeys(
+  values: ApplicationUpdateValues,
+  omittedKeys: readonly (keyof ApplicationUpdateValues)[],
+) {
+  return Object.fromEntries(
+    Object.entries(values).filter(([key]) => !omittedKeys.includes(key as keyof ApplicationUpdateValues)),
+  ) as ApplicationUpdateValues;
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error
     ? error.message
     : typeof error === "object" && error && "message" in error
       ? String(error.message)
       : String(error ?? "");
-  return /applied_position|candidate_stage|priority|saved_at|application_channel|application_account|contact_name|next_action|resume_id|custom_stage_label|workflow_node_id|workflow_nodes|review_note/i.test(message)
-    && /column|schema cache|does not exist|could not find/i.test(message);
 }
 
 function getErrorCode(error: unknown) {

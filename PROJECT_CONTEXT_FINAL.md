@@ -6,6 +6,15 @@
 
 每次三文档记录至少写明：日期、用户目标、根因/决策、实际改动文件与行为、兼容边界、验证命令和结果、提交与部署证据（如有）、已确认和未确认的外部状态。若本次只完成诊断而没有修改，也必须在三份文档中同步写清“零修改/零部署”及诊断证据。
 
+## 2026-08-30 投递流程保存兼容修复（本地已修复，未上线）
+
+- 用户目标：修复用户反馈的网页版“无法修改投递流程”，只解决已有保存链路的卡点，不新增产品功能、不执行线上 migration、不部署，先保留本地版本验收。
+- 根因与证据：当前正式 Supabase 只读 schema 已有 `workflow_nodes`、`workflow_node_id`、`custom_stage_label` 等投递流程字段，但仍缺 `user_applications.applied_position`。新版 `ProgressDrawer.saveProgress` 在修改状态、流程或详情时会把该可选字段一起提交，PostgREST 因整次 PATCH 包含不存在字段返回 HTTP 400 / `PGRST204`（`Could not find the 'applied_position' column ... in the schema cache`），于是其他流程字段也没有保存。使用不存在的固定 UUID 做同样请求只验证 schema 解析，未命中任何真实记录、未产生数据写入。
+- 实际改动：`src/lib/applications.ts` 的 `updateApplication` 在明确识别到仅 `applied_position` 缺失时，自动去掉这一列重试同一更新，继续保存已存在的状态、流程节点和跟进字段；其他缺失工作流列仍维持 fail-closed，不静默丢字段。`src/components/applications/ProgressDrawer.tsx` 读取兼容结果后不会把未落库的岗位名伪装成已保存：保留当前输入为未保存状态、从确认行移除不支持字段，并提示“投递流程已保存；实际投递岗位暂未同步”。`tests/applications.test.ts` 新增两个回归用例，覆盖“岗位名缺列但流程继续保存”和“只填岗位名时不误报成功”。
+- 兼容边界：线上已有的投递流程字段不受影响，状态下拉、流程编辑器、节点顺序和其他详情字段可以在 `applied_position` 缺失期间继续保存；“实际投递岗位”本身仍需执行 `supabase/migrations/20260830120000_application_position.sql` 后才能写入，不能把本地兼容重试当成 migration 已上线。没有修改数据库、RLS、migration、Mac App、小程序或新增用户功能。
+- 验证：定向回归测试 2/2、`npm run typecheck`、定向 ESLint、全量 `npm test` 135/135、`npm run build`（58 个页面）通过；清理并恢复可重建 `.next` 缓存后，在允许字体请求的临时本地服务上 `npm run smoke` 通过，包含 908 条岗位只读探针、公开页面和 SEO 探针。首次冒烟仅受本地缓存格式和 Google Fonts 网络阻断，复跑成功；未执行 authenticated E2E、真实投递写入或线上部署。
+- Git 与部署：本轮未暂存、未提交、未推送、未部署；仅修改两处网页源代码和一份回归测试，并同步更新三份交接文档；保留工作区中其他既有修改和未跟踪文件。
+
 ## 2026-08-30 投递单条化、岗位补充与 logo 兼容优化（未上线）
 
 - 用户目标：根据三张本地截图修复投递管理的真实痛点：不再把一家公司误展示成父级栏目；一条 `user_applications` 记录可以填写实际投递岗位并拥有自己的进度；详情面板提高信息密度；删除没有真实 logo 时的公司名字球；本轮仍只提供本地版本，不上线。
@@ -33,6 +42,17 @@
 - 数据库边界：正式 Supabase 只读探针仍返回 `user_applications.applied_position` 不存在（HTTP 400 / PostgreSQL `42703`）。本机 Supabase CLI 无可用登录凭据且 migration list 无法完成，因此未执行 hosted migration/DDL；线上新增“我实际投递的岗位”暂不能保存，页面会按既有错误保护提示先执行 migration，其他已存在投递状态和旧字段不受影响。不得把本次网站部署写成数据库字段已上线。
 - 验证：发布前后已通过 `npm run typecheck`、`npm run lint`、`npm test`（133/133）、`npm run build`（58 个页面）、`npm run smoke`、`git diff --check`，并完成正式域名页面探针。未执行 authenticated E2E、真实投递保存或指南内容发布。
 - Git 与部署：功能与网站提交已推送并由 Vercel 成功部署；本条部署证据随后以文档提交补回，未执行 Supabase migration、指南发布或其他外部数据写入。
+
+## 2026-08-30 岗位偶发无法读取诊断（零代码修改）
+
+- 用户问题：浏览器有网络时，网页偶尔提示“岗位暂时无法读取”，并询问此前做过但尚未上线的更新。本次只做本地代码、Git、部署记录和正式 Supabase 的只读核对，不新增功能、不修代码、不执行数据库写入或重新部署。
+- 已确认的读取链路：网页公开岗位页由浏览器使用 Supabase publishable key 直接查询 `jobs`；`src/lib/jobs.ts` 的 `fetchActiveJobs` 使用 `.select("*").eq("is_active", true).order("updated_at", { ascending: false })`，通过 `Promise.race` 设置 7 秒总超时，但没有给底层请求传 `AbortSignal`。`/explore` 的 `HomeClient` 和首页岗位星系复用该岗位读取函数。
+- 主要根因判断：系统“有网络”只说明设备具备联网能力，不代表浏览器到 Supabase Edge、Supabase REST、数据库连接池和查询结果返回均在 7 秒内完成。当前请求一次拉取全部开放岗位和全部字段后再在浏览器筛选；本次只读测速返回约 814KB，5 次均成功、耗时约 0.87–1.78 秒，没有复现失败，但仍存在偶发超过 7 秒的窗口。历史构建证据也记录过 `/sitemap.xml` 的岗位数据库瞬时超时后重试成功，支持“上游偶发慢于固定阈值”的判断。
+- 放大问题：`HomeClient.loadData` 先读岗位，随后还会并行读登录用户的 `profiles`、`user_applications`、`resumes`；这些后续请求任一失败，也会落入同一个“岗位暂时无法读取”提示，即使岗位列表已经成功返回。超时后底层岗位请求未被取消，连续点击重试还可能留下多个进行中的大请求；当前只有手动重试，没有带退避的重试或上一次成功数据兜底。以上是用户看到“有网但岗位读不到”的代码级解释，并不把当前测速成功误写成问题已修复。
+- 后续优化方向（本次不实施）：把岗位列表读取与用户私有数据读取拆开报错；将公开岗位查询改为只取页面需要的字段并考虑服务端缓存/分页；为岗位请求增加可取消的超时与一次退避重试；保留最近一次成功列表，避免瞬时上游抖动清空页面。它们都是稳定性与性能修复，不属于新增产品功能。
+- 未上线核对：本轮没有发现仍停留在仓库工作区、且应当作为网页版本发布的已完成代码；`04e306f` 已包含此前投递管理单条化、详情层级、真实 logo 兼容、网页界面痛点修复、简历/网申助手 0.2.7 和安装包，Vercel 已成功部署。文档中 2026-08-30 的“未上线”章节是发布前历史记录，不能按当前状态解读。
+- 仍未完全上线的唯一实质项是 `supabase/migrations/20260830120000_application_position.sql`：代码和页面已部署，但正式 Supabase 只读探针仍显示 `user_applications.applied_position` 不存在（HTTP 400 / PostgreSQL `42703`），所以“我实际投递的岗位”目前不能保存；需要单独执行 hosted migration 后再做登录态保存验收。未跟踪的 PRD、`.codex-artifacts` 和测试夹具属于工作材料，不是漏发的产品更新；《拾星指南》更新日志也按用户要求未自动发布。
+- 证据：岗位请求代码见 `src/lib/jobs.ts`、`src/components/jobs/HomeClient.tsx`、`src/lib/supabase/client.ts`；本次只读测速为 5/5 HTTP 200、约 814KB、0.87–1.78 秒；当前 Git HEAD 为 `1de6f72`，本次仅新增三份等量诊断记录，其余 tracked 文件无修改；本次零代码修改、零数据库写入、零部署。
 
 
 ## 2026-08-30 本地网站界面痛点修复（未上线）

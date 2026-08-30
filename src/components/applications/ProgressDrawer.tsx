@@ -253,15 +253,24 @@ export function ProgressDrawer({
         ...workflowValues,
       });
       if (requestId !== saveRequestRef.current) return true;
-      const confirmedApplication: ApplicationWithJob = {
+      const { omittedApplicationColumns = [], ...serverApplication } = updated;
+      const omittedAppliedPosition = omittedApplicationColumns.includes("applied_position");
+      const mergedApplication: ApplicationWithJob = {
         ...optimisticApplication,
-        ...updated,
+        ...serverApplication,
         job: application.job,
       };
+      const confirmedApplication = omittedAppliedPosition
+        ? withoutAppliedPosition(mergedApplication)
+        : mergedApplication;
       setSavedStatus(nextStatus);
-      setSavedAppliedPosition(appliedPosition.trim());
+      const savedPositionSnapshot = omittedAppliedPosition ? savedAppliedPosition : appliedPosition.trim();
+      setSavedAppliedPosition(savedPositionSnapshot);
       setSavedNote(nextNote);
-      setSavedWorkflowFingerprint(JSON.stringify(nextWorkflowSnapshot));
+      setSavedWorkflowFingerprint(JSON.stringify({
+        ...nextWorkflowSnapshot,
+        appliedPosition: savedPositionSnapshot,
+      }));
       void onChanged(confirmedApplication);
       if (nextStatus !== savedStatus) {
         void fetchApplicationHistory(createClient(), application.id).then(setHistory).catch(() => setHistoryState("error"));
@@ -270,7 +279,9 @@ export function ProgressDrawer({
         if (["first_round", "second_round", "final_round"].includes(nextStatus)) void track("interview_recorded", { application_id: application.id, status: nextStatus });
         if (nextStatus === "offer") void track("offer_recorded", { application_id: application.id });
       }
-      flashMessage(successMessage);
+      flashMessage(omittedAppliedPosition && appliedPosition.trim()
+        ? "投递流程已保存；实际投递岗位暂未同步，请先完成最新数据库升级。"
+        : successMessage);
       setConfirmingDelete(false);
       return true;
     } catch (error) {
@@ -666,6 +677,12 @@ function WorkflowField({ label, children }: { label: string; children: ReactNode
 
 function cleanOptional(value: string) {
   return value.trim() || null;
+}
+
+function withoutAppliedPosition(application: ApplicationWithJob) {
+  const next = { ...application };
+  delete next.applied_position;
+  return next;
 }
 
 function toDateTimeLocal(value?: string | null) {
