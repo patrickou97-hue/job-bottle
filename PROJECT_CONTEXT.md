@@ -25,6 +25,15 @@
 - 验证：本轮修改后 `npm run typecheck`、`npm run lint`、`npm test`（133/133）、`npm run build`（58 个页面）、`npm run smoke` 与 `git diff --check` 均通过；本地预览仍使用 `http://localhost:3000`，不声称 authenticated E2E、真实投递保存或视觉验收通过。
 - Git 与部署：本次仍未暂存、未提交、未推送、未部署。
 
+## 2026-08-30 已上线：当前网站版本与投递管理视觉修正
+
+- 用户明确要求：先把当前已验证的网站版本上线；另需准备一段可由用户自行发布的《拾星指南》更新日志，本轮不自动发布指南内容。
+- 发布范围：当前工作区已验证的网页、投递管理、简历/网申助手、源码门禁、三份交接文档、0.2.7 安装包和 `20260830120000_application_position.sql` 均纳入提交 `04e306f`（`feat: publish current StarJob updates`）；PRD 草稿、`.codex-artifacts` 和测试夹具未纳入。提交已推送 `origin/main`。
+- 正式部署：GitHub Vercel check 对提交回报 `success`，Vercel deployment 为 `6Fo8n38aqP5j54J86FwoaV8XUYk6`，正式部署地址为 `https://vercel.com/job-bottle/job-bottle/6Fo8n38aqP5j54J86FwoaV8XUYk6`。`https://www.starjob.space/`、`/my`、`/referrals`、`/guide`、`/extension` 均实测 HTTP 200；正式 HTML 已检出投递管理单条记录文案、内推码广场文案和 0.2.7 网申助手标识。
+- 数据库边界：正式 Supabase 只读探针仍返回 `user_applications.applied_position` 不存在（HTTP 400 / PostgreSQL `42703`）。本机 Supabase CLI 无可用登录凭据且 migration list 无法完成，因此未执行 hosted migration/DDL；线上新增“我实际投递的岗位”暂不能保存，页面会按既有错误保护提示先执行 migration，其他已存在投递状态和旧字段不受影响。不得把本次网站部署写成数据库字段已上线。
+- 验证：发布前后已通过 `npm run typecheck`、`npm run lint`、`npm test`（133/133）、`npm run build`（58 个页面）、`npm run smoke`、`git diff --check`，并完成正式域名页面探针。未执行 authenticated E2E、真实投递保存或指南内容发布。
+- Git 与部署：功能与网站提交已推送并由 Vercel 成功部署；本条部署证据随后以文档提交补回，未执行 Supabase migration、指南发布或其他外部数据写入。
+
 
 ## 2026-08-30 本地网站界面痛点修复（未上线）
 
