@@ -12,9 +12,10 @@ const source: ResumeTranslationDraft = {
   title: "产品经理简历",
   targetRole: "战略分析、商业运营、数字化转型、增长策略、市场进入、竞争研究、用户洞察、产品规划与项目管理",
   jobTarget: "",
-  basics: { name: "测试用户", englishName: "Test User", city: "上海", targetRole: "产品经理" },
+  basics: { name: "测试用户", englishName: "Test User", gender: "", nationality: "中国", preferredLocations: "上海、香港", city: "上海", targetRole: "产品经理" },
   education: [],
   work: [{
+    experienceType: "internship",
     company: "示例公司",
     title: "产品实习生",
     location: "上海",

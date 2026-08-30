@@ -18,6 +18,16 @@ const FIXTURES = [
     label: "AI 智能填写夹具",
   },
   {
+    path: "/browser-extension/tests/common-ats-fields-fixture.html",
+    marker: "STARJOB_COMMON_ATS_FIELDS_TEST_PASS",
+    label: "常见网申字段与实习分组夹具",
+  },
+  {
+    path: "/browser-extension/tests/common-ats-safety-fixture.html",
+    marker: "STARJOB_COMMON_ATS_SAFETY_TEST_PASS",
+    label: "常见网申空值与防误填夹具",
+  },
+  {
     path: "/browser-extension/tests/ai-autofill-large-iframe-fixture.html",
     marker: "STARJOB_AI_AUTOFILL_LARGE_IFRAME_TEST_PASS",
     label: "AI 130+ 字段跨页面区域夹具",

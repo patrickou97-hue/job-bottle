@@ -48,6 +48,8 @@ export function ProgressDrawer({
 }) {
   const [status, setStatus] = useState<ApplicationStatus>("opened");
   const [savedStatus, setSavedStatus] = useState<ApplicationStatus>("opened");
+  const [appliedPosition, setAppliedPosition] = useState("");
+  const [savedAppliedPosition, setSavedAppliedPosition] = useState("");
   const [note, setNote] = useState("");
   const [savedNote, setSavedNote] = useState("");
   const [candidateStage, setCandidateStage] = useState<ApplicationCandidateStage>("preparing");
@@ -81,10 +83,13 @@ export function ProgressDrawer({
       if (cancelled) return;
       setStatus(currentApplication.status);
       setSavedStatus(currentApplication.status);
+      setAppliedPosition(currentApplication.applied_position ?? "");
+      setSavedAppliedPosition(currentApplication.applied_position ?? "");
       setNote(currentApplication.progress_note ?? "");
       setSavedNote(currentApplication.progress_note ?? "");
       const nextCandidateStage = getCandidateStage(currentApplication);
       const nextWorkflow = {
+        appliedPosition: currentApplication.applied_position ?? "",
         account: currentApplication.application_account ?? "",
         candidateStage: nextCandidateStage,
         channel: currentApplication.application_channel ?? "",
@@ -159,6 +164,7 @@ export function ProgressDrawer({
   }, [customStageLabel, status, workflowNodeId, workflowNodes]);
   const ended = TERMINAL_APPLICATION_STATUS.includes(status as (typeof TERMINAL_APPLICATION_STATUS)[number]);
   const workflowFingerprint = JSON.stringify({
+    appliedPosition,
     account,
     candidateStage,
     channel,
@@ -172,7 +178,7 @@ export function ProgressDrawer({
     reviewNote,
   });
   const workflowDirty = workflowFingerprint !== savedWorkflowFingerprint;
-  const isDirty = status !== savedStatus || note.trim() !== savedNote.trim() || workflowDirty;
+  const isDirty = status !== savedStatus || appliedPosition.trim() !== savedAppliedPosition.trim() || note.trim() !== savedNote.trim() || workflowDirty;
 
   async function saveProgress(
     nextStatus = status,
@@ -194,6 +200,7 @@ export function ProgressDrawer({
       ? customStageLabel
       : selectedWorkflowNode?.isCustom ? selectedWorkflowNode.label : "";
     const nextWorkflowSnapshot = {
+      appliedPosition,
       account,
       candidateStage,
       channel,
@@ -212,6 +219,7 @@ export function ProgressDrawer({
     const workflowValues = workflowDirty || selectedWorkflowNode !== undefined
       ? {
           candidate_stage: candidateStage,
+          applied_position: cleanOptional(appliedPosition),
           priority,
           application_channel: cleanOptional(channel),
           application_account: cleanOptional(account),
@@ -222,7 +230,7 @@ export function ProgressDrawer({
           custom_stage_label: cleanOptional(nextCustomStageLabel),
           ...(shouldPersistWorkflowNode ? { workflow_node_id: cleanOptional(nextWorkflowNodeId) } : {}),
           review_note: cleanOptional(reviewNote),
-        }
+      }
       : {};
     const optimisticApplication: ApplicationWithJob = {
       ...application,
@@ -251,6 +259,7 @@ export function ProgressDrawer({
         job: application.job,
       };
       setSavedStatus(nextStatus);
+      setSavedAppliedPosition(appliedPosition.trim());
       setSavedNote(nextNote);
       setSavedWorkflowFingerprint(JSON.stringify(nextWorkflowSnapshot));
       void onChanged(confirmedApplication);
@@ -282,7 +291,7 @@ export function ProgressDrawer({
 
   async function handleStatusChange(nextStatus: ApplicationStatus, node?: ApplicationWorkflowNode | null) {
     if (saving) return;
-    const nextWorkflowNodeId = node === undefined ? workflowNodeId : node?.id ?? "";
+    const nextWorkflowNodeId = node === undefined ? workflowNodeId : node?.isCustom ? node.id : "";
     if (nextStatus === status && nextWorkflowNodeId === workflowNodeId && note.trim() === savedNote.trim()) return;
     await saveProgress(nextStatus, note, "已保存", node);
   }
@@ -324,7 +333,7 @@ export function ProgressDrawer({
   if (!application) return null;
   const { job } = application;
   const meta = [job.locations, job.industry, job.batch_type].filter(Boolean).join(" · ");
-  const categories = job.job_categories?.length ? job.job_categories.join("、") : job.job_titles || "岗位类别待补充";
+  const jobTitle = appliedPosition.trim() || job.job_titles?.trim() || "岗位待补充";
   const currentWorkflowNode = getApplicationWorkflowNode({
     status,
     workflow_node_id: workflowNodeId || null,
@@ -334,13 +343,13 @@ export function ProgressDrawer({
     ?? (customStageLabel.trim() || APPLICATION_STATUS_LABELS[status]);
 
   return (
-    <Drawer open={open} title="投递" onClose={onClose}>
-      <div className="space-y-8">
+    <Drawer open={open} title="投递详情" onClose={onClose} size="wide">
+      <div className="space-y-6">
         <header className="flex items-start gap-4">
           <CompanyBadge companyName={job.company_name} logoUrl={job.logo_url} size="lg" />
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-3">
-              <h3 className="min-w-0 text-2xl font-semibold text-ink-primary">{job.company_name}</h3>
+              <h3 className="min-w-0 font-display text-3xl font-semibold leading-tight tracking-tight text-ink-primary md:text-4xl">{job.company_name}</h3>
               {ended ? (
                 <span className="shrink-0 rounded-md bg-[color:var(--surface-hover-bg)] px-2 py-1 text-[10px] text-ink-muted">
                   {APPLICATION_STATUS_LABELS[status]}
@@ -354,13 +363,20 @@ export function ProgressDrawer({
                 custom={Boolean(currentWorkflowNode?.isCustom || customStageLabel.trim())}
               />
             </div>
-            <p className="mt-2 text-sm leading-6 text-nebula-silver">{categories}</p>
+            <p className="mt-3 text-sm font-medium leading-6 text-ink-secondary">
+              <span className="mr-2 text-xs font-semibold tracking-wide text-ink-muted">{appliedPosition.trim() ? "实际投递岗位" : "岗位方向"}</span>
+              {jobTitle}
+            </p>
             <p className="mt-2 text-sm leading-6 text-ink-muted">{meta || "岗位信息待补充"}</p>
           </div>
         </header>
 
         <section className="border-y border-[color:var(--line-ghost)] py-5">
-          <div className="grid gap-5 sm:grid-cols-2">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1.45fr)_180px_220px]">
+            <WorkflowField label="我实际投递的岗位">
+              <Input value={appliedPosition} onChange={(event) => setAppliedPosition(event.target.value)} placeholder="例如：产品经理（北京）" maxLength={160} />
+              <span className="mt-2 block text-xs leading-5 text-ink-muted">这条投递中你实际申请的职位，可与招聘信息中的岗位方向不同。</span>
+            </WorkflowField>
             <label className="block">
               <span className="mb-2 block text-sm text-ink-secondary">优先级</span>
               <Select value={String(priority)} onChange={(event) => setPriority(Number(event.target.value))}>
@@ -381,7 +397,7 @@ export function ProgressDrawer({
           </div>
 
           {status === "opened" ? (
-            <div className="mt-5">
+            <div className="mt-5 max-w-xl">
               <span className="mb-2 block text-sm text-ink-secondary">候选阶段</span>
               <div className="grid grid-cols-3 gap-1 rounded-lg bg-[color:var(--apple-control-bg)] p-1">
                 {APPLICATION_CANDIDATE_STAGE.map((item) => (
@@ -402,19 +418,40 @@ export function ProgressDrawer({
         </section>
 
         <section className={ended ? "opacity-40 transition-opacity" : "transition-opacity"}>
+          <div className="mb-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_220px] sm:items-center">
+            <div>
+              <span className="block text-sm font-medium text-ink-primary">当前投递进度</span>
+              <span className="mt-1 block text-xs text-ink-muted">只影响这一条投递记录，点击节点也可以直接推进。</span>
+            </div>
+            {ended ? (
+              <div className="flex min-h-11 items-center rounded-lg bg-[color:var(--surface-subtle-bg)] px-3 text-sm text-ink-secondary">{currentStageLabel}</div>
+            ) : (
+              <Select
+                value={currentWorkflowNode?.id ?? status}
+                aria-label="当前投递进度"
+                onChange={(event) => {
+                  const nextNode = workflowNodes.find((node) => node.id === event.target.value);
+                  if (nextNode) void handleStatusChange(nextNode.status, nextNode);
+                }}
+                disabled={saving}
+              >
+                {workflowNodes.map((node) => <option key={node.id} value={node.id}>{node.label}</option>)}
+              </Select>
+            )}
+          </div>
           <div className="mb-2 flex items-center justify-between gap-3">
-            <span className="text-sm font-medium text-ink-primary">投递轨道</span>
+            <span className="text-xs font-medium text-ink-secondary">进度轨道</span>
             {onEditWorkflow ? (
-              <button type="button" className="text-action inline-flex items-center gap-1.5 text-xs" onClick={() => onEditWorkflow(application)}>
-                <Settings2 aria-hidden="true" className="size-3.5" />编辑该公司流程
+                <button type="button" className="text-action inline-flex items-center gap-1.5 text-xs" onClick={() => onEditWorkflow(application)}>
+                <Settings2 aria-hidden="true" className="size-3.5" />编辑该岗位流程
               </button>
             ) : <span className="text-[10px] text-ink-muted">点击节点即可推进</span>}
           </div>
           <div className="overflow-x-auto pb-2">
             <div className="relative px-1 pb-7 pt-4" style={{ minWidth: `${Math.max(460, workflowNodes.length * 64)}px` }}>
-            <div className="absolute left-7 right-7 top-7 h-[2px] rounded-full bg-[rgba(183,134,40,0.24)] shadow-[0_0_12px_rgba(183,134,40,0.12)]" />
+            <div className="absolute left-7 right-7 top-7 h-[2px] rounded-full bg-[color:var(--line-strong)]" />
             <div
-              className="absolute left-7 top-7 h-[2px] rounded-full bg-[#B78628] shadow-[0_0_12px_rgba(183,134,40,0.3)] transition-[width] duration-300 ease-out motion-reduce:transition-none"
+              className="absolute left-7 top-7 h-[2px] rounded-full bg-[color:var(--aurora)] shadow-[0_0_12px_var(--glow-cold)] transition-[width] duration-300 ease-out motion-reduce:transition-none"
               style={{
                 width:
                   progressIndex <= 0
@@ -441,11 +478,11 @@ export function ProgressDrawer({
                   >
                     <span className="flex h-6 items-center justify-center">
                       {active ? (
-                        <span className="h-3.5 w-3.5 rotate-45 rounded-[3px] border border-[#E8C979] bg-[#C9973C] shadow-[0_0_18px_rgba(183,134,40,0.42)]" />
+                        <span className="h-3.5 w-3.5 rotate-45 rounded-[3px] border border-[color:var(--light-ice)] bg-[color:var(--aurora)] shadow-[0_0_18px_var(--glow-cold-hi)]" />
                       ) : done ? (
-                        <span className="h-2.5 w-2.5 rounded-full border border-[#D9B75F] bg-[#B78628] shadow-[0_0_8px_rgba(183,134,40,0.26)]" />
+                        <span className="h-2.5 w-2.5 rounded-full border border-[color:var(--light-silver)] bg-[color:var(--aurora)] shadow-[0_0_8px_var(--glow-cold)]" />
                       ) : (
-                        <span className="h-2 w-2 rounded-full bg-white ring-1 ring-[#B78628]/45" />
+                        <span className="h-2 w-2 rounded-full bg-[color:var(--surface-read-bg-strong)] ring-1 ring-[color:var(--line-strong)]" />
                       )}
                     </span>
                     <span
@@ -457,7 +494,7 @@ export function ProgressDrawer({
                     >
                       {node.label}
                     </span>
-                    {node.isCustom ? <span className="max-[400px]:sr-only text-[9px] font-medium text-[#8C641D]">自定义</span> : null}
+                    {node.isCustom ? <span className="max-[400px]:sr-only text-[9px] font-medium text-[color:var(--aurora)]">自定义</span> : null}
                   </button>
                 );
               })}
@@ -512,26 +549,28 @@ export function ProgressDrawer({
           </div>
         </section>
 
-        <label className="block">
-          <span className="mb-2 block text-sm text-ink-secondary">投递备注</span>
-          <textarea
-            value={note}
-            onChange={(event) => setNote(event.target.value)}
-            onBlur={() => void handleNoteBlur()}
-            placeholder="记录笔试时间、面试反馈与待跟进事项"
-            className="min-h-28 w-full resize-none border-0 border-b border-[color:var(--line)] bg-transparent px-0 py-3 text-sm leading-6 text-ink-primary outline-none transition placeholder:text-ink-muted focus:border-[color:var(--aurora)] focus:bg-[color:var(--surface-hover-bg)]"
-          />
-        </label>
+        <section className="grid gap-5 lg:grid-cols-2">
+          <label className="block">
+            <span className="mb-2 block text-sm text-ink-secondary">投递备注</span>
+            <textarea
+              value={note}
+              onChange={(event) => setNote(event.target.value)}
+              onBlur={() => void handleNoteBlur()}
+              placeholder="记录笔试时间、面试反馈与待跟进事项"
+              className="min-h-28 w-full resize-none border-0 border-b border-[color:var(--line)] bg-transparent px-0 py-3 text-sm leading-6 text-ink-primary outline-none transition placeholder:text-ink-muted focus:border-[color:var(--aurora)] focus:bg-[color:var(--surface-hover-bg)]"
+            />
+          </label>
 
-        <label className="block">
-          <span className="mb-2 block text-sm text-ink-secondary">复盘</span>
-          <textarea
-            value={reviewNote}
-            onChange={(event) => setReviewNote(event.target.value)}
-            placeholder="记录卡点、有效准备与下次调整"
-            className="min-h-24 w-full resize-none border-0 border-b border-[color:var(--line)] bg-transparent px-0 py-3 text-sm leading-6 text-ink-primary outline-none transition placeholder:text-ink-muted focus:border-[color:var(--aurora)] focus:bg-[color:var(--surface-hover-bg)]"
-          />
-        </label>
+          <label className="block">
+            <span className="mb-2 block text-sm text-ink-secondary">复盘</span>
+            <textarea
+              value={reviewNote}
+              onChange={(event) => setReviewNote(event.target.value)}
+              placeholder="记录卡点、有效准备与下次调整"
+              className="min-h-24 w-full resize-none border-0 border-b border-[color:var(--line)] bg-transparent px-0 py-3 text-sm leading-6 text-ink-primary outline-none transition placeholder:text-ink-muted focus:border-[color:var(--aurora)] focus:bg-[color:var(--surface-hover-bg)]"
+            />
+          </label>
+        </section>
 
         <section>
           <div className="mb-4 flex items-center justify-between gap-3">
@@ -561,18 +600,21 @@ export function ProgressDrawer({
         </section>
 
         <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between gap-3">
-            <a
-              href={isValidHttpUrl(job.apply_url) ? sanitizeApplicationUrl(job.apply_url) : undefined}
-              target="_blank"
-              rel="noreferrer"
-              className="text-action text-sm text-nebula-silver aria-disabled:pointer-events-none aria-disabled:opacity-40"
-              aria-disabled={!isValidHttpUrl(job.apply_url)}
-            >
-              <ExternalLink aria-hidden="true" className="size-4" />
-              打开官网
-            </a>
-            <Button onClick={() => void saveProgress()} disabled={saving || !isDirty}>
+          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+            {isValidHttpUrl(job.apply_url) ? (
+              <a
+                href={sanitizeApplicationUrl(job.apply_url)}
+                target="_blank"
+                rel="noreferrer"
+                className="text-action inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[color:var(--surface-selected-bg)] px-4 text-sm font-semibold text-[color:var(--aurora)] hover:bg-[color:var(--surface-hover-bg)]"
+              >
+                <ExternalLink aria-hidden="true" className="size-4" />
+                打开官网投递
+              </a>
+            ) : (
+              <span className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[color:var(--surface-subtle-bg)] px-4 text-sm text-ink-muted">官网链接待补充</span>
+            )}
+            <Button className="min-w-28" onClick={() => void saveProgress()} disabled={saving || !isDirty}>
               {isDirty ? "保存进度" : "已保存"}
             </Button>
           </div>

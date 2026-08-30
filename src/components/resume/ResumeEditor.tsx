@@ -121,6 +121,14 @@ export function ResumeEditor({
               value={resume.content.basics.birthDate}
               onChange={(value) => patchBasics("birthDate", value)}
             />
+            <SelectField
+              label="性别（可选，仅用于网申助手）"
+              value={resume.content.basics.gender}
+              options={[{ value: "", label: "不填写" }, { value: "男", label: "男" }, { value: "女", label: "女" }, { value: "其他", label: "其他" }]}
+              onChange={(value) => patchBasics("gender", value)}
+            />
+            <TextField label="国籍/地区（可选，仅用于网申助手）" value={resume.content.basics.nationality} onChange={(value) => patchBasics("nationality", value)} />
+            <TextField label="期望工作地点（可选，多个用顿号分隔）" value={resume.content.basics.preferredLocations} onChange={(value) => patchBasics("preferredLocations", value)} />
             <TextField label="手机号" value={resume.content.basics.phone} onChange={(value) => patchBasics("phone", value)} />
             <TextField label="邮箱" value={resume.content.basics.email} onChange={(value) => patchBasics("email", value)} />
             <TextField label="所在城市" value={resume.content.basics.city} onChange={(value) => patchBasics("city", value)} />
@@ -573,6 +581,12 @@ function ExperienceEditor({ item, onChange }: { item: ResumeExperience; onChange
   return (
     <div className="space-y-4">
       <FieldGrid>
+        <SelectField
+          label="经历类型"
+          value={item.experienceType}
+          options={[{ value: "internship", label: "实习经历" }, { value: "employment", label: "正式工作" }, { value: "other", label: "其他经历" }]}
+          onChange={(value) => patch({ experienceType: value as ResumeExperience["experienceType"] })}
+        />
         <TextField label="公司名称" value={item.company} onChange={(value) => patch({ company: value })} />
         <TextField label="岗位名称" value={item.title} onChange={(value) => patch({ title: value })} />
         <TextField label="地点" value={item.location} onChange={(value) => patch({ location: value })} />
@@ -599,6 +613,7 @@ function ProjectEditor({ item, onChange }: { item: ResumeProject; onChange: (ite
       <FieldGrid>
         <TextField label="项目名称" value={item.name} onChange={(value) => patch({ name: value })} />
         <TextField label="角色" value={item.role} onChange={(value) => patch({ role: value })} />
+        <TextField label="项目链接（可选，仅用于网申助手）" value={item.url} onChange={(value) => patch({ url: value })} />
         <TextField label="开始时间（可选）" value={item.startDate} onChange={(value) => patch({ startDate: value })} />
         <TextField label="结束时间（可选）" value={item.endDate} onChange={(value) => patch({ endDate: value })} />
         <TextField label="技术或关键词" value={item.keywords} onChange={(value) => patch({ keywords: value })} />

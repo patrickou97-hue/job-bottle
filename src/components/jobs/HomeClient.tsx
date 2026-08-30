@@ -78,6 +78,7 @@ export function HomeClient() {
   const [referralJob, setReferralJob] = useState<Job | null>(null);
   const [hoveredJobId, setHoveredJobId] = useState<string | null>(null);
   const [focusedJobId, setFocusedJobId] = useState<string | null>(null);
+  const [mapExpanded, setMapExpanded] = useState(false);
   const [pendingApplyConfirmation, setPendingApplyConfirmation] =
     useState<PendingApplyConfirmation | null>(null);
   const [showApplyConfirmation, setShowApplyConfirmation] = useState(false);
@@ -514,7 +515,7 @@ export function HomeClient() {
         onClear={clearAllFilters}
       />
 
-      <section id="job-map" className="border-t border-[color:var(--line-ghost)] pt-4 lg:pt-6">
+      <section id="job-map" className="job-map-section border-t border-[color:var(--line-ghost)] pt-4 lg:pt-6">
         <div className="section-heading items-end">
           <div>
             <h2 className="section-title">岗位分布</h2>
@@ -522,33 +523,46 @@ export function HomeClient() {
               按省份查看当前筛选下的岗位分布，点选地图后，右侧预览和下方清单会同步更新。
             </p>
           </div>
-          {filters.location ? (
-            <span className="text-xs text-ink-muted">当前地区 · {getLocationFilterLabel(filters.location)}</span>
-          ) : null}
+          <div className="flex shrink-0 items-center gap-3">
+            {filters.location ? (
+              <span className="hidden text-xs text-ink-muted sm:inline">当前地区 · {getLocationFilterLabel(filters.location)}</span>
+            ) : null}
+            <button
+              type="button"
+              className="text-action pressable px-2 py-1 text-xs md:hidden"
+              aria-expanded={mapExpanded}
+              aria-controls="job-map-body"
+              onClick={() => setMapExpanded((current) => !current)}
+            >
+              {mapExpanded ? "收起地图" : "打开地图"}
+            </button>
+          </div>
         </div>
-        {loading ? (
-          <div className="grid min-h-[320px] place-items-center border-y border-[color:var(--line-ghost)] text-sm text-ink-muted md:min-h-[360px] lg:min-h-[390px]">
-            <span className="loading-line">正在绘制岗位地图</span>
-          </div>
-        ) : loadError && jobs.length === 0 ? (
-          <div className="grid min-h-[320px] place-items-center border-y border-[color:var(--line-ghost)] px-5 text-center md:min-h-[360px] lg:min-h-[390px]" role="alert">
-            <div>
-              <p className="text-sm text-ink-secondary">{loadError}</p>
-              <Button variant="secondary" className="mt-4" onClick={loadData}>重试</Button>
+        <div id="job-map-body" className={cn("job-map-body", !mapExpanded && "hidden md:block")}>
+          {loading ? (
+            <div className="grid min-h-[320px] place-items-center border-y border-[color:var(--line-ghost)] text-sm text-ink-muted md:min-h-[360px] lg:min-h-[390px]">
+              <span className="loading-line">正在绘制岗位地图</span>
             </div>
-          </div>
-        ) : (
-          <ChinaJobMap
-            jobs={mapVisibleJobs}
-            selectedJobs={filteredJobs}
-            selectedLocation={filters.location}
-            onSelectJob={focusJob}
-            onLocationChange={(location) => {
-              setFocusedJobId(null);
-              handleFiltersChange({ ...filters, location });
-            }}
-          />
-        )}
+          ) : loadError && jobs.length === 0 ? (
+            <div className="grid min-h-[320px] place-items-center border-y border-[color:var(--line-ghost)] px-5 text-center md:min-h-[360px] lg:min-h-[390px]" role="alert">
+              <div>
+                <p className="text-sm text-ink-secondary">{loadError}</p>
+                <Button variant="secondary" className="mt-4" onClick={loadData}>重试</Button>
+              </div>
+            </div>
+          ) : (
+            <ChinaJobMap
+              jobs={mapVisibleJobs}
+              selectedJobs={filteredJobs}
+              selectedLocation={filters.location}
+              onSelectJob={focusJob}
+              onLocationChange={(location) => {
+                setFocusedJobId(null);
+                handleFiltersChange({ ...filters, location });
+              }}
+            />
+          )}
+        </div>
       </section>
 
       <div className="grid gap-8 xl:grid-cols-[300px_minmax(0,1fr)]">
@@ -745,7 +759,7 @@ function JobRadarHeader({
   ];
 
   return (
-    <section className="page-hero">
+    <section className="page-hero page-hero--radar">
       <div className="min-w-0">
         <h1 className="page-title">岗位坐标</h1>
       </div>

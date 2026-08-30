@@ -17,6 +17,9 @@ const basicsSchema = z.object({
   name: shortText,
   englishName: shortText,
   birthDate: shortText,
+  gender: shortText,
+  nationality: shortText,
+  preferredLocations: mediumText,
   phone: shortText,
   email: shortText,
   city: shortText,
@@ -48,6 +51,7 @@ const resumeSchema = z.object({
       honors: mediumText,
     }).strip()).max(12).optional().default([]),
     work: z.array(z.object({
+      experienceType: z.enum(["internship", "employment", "other"]).optional().default("other"),
       company: shortText,
       title: shortText,
       location: shortText,
@@ -58,6 +62,7 @@ const resumeSchema = z.object({
     projects: z.array(z.object({
       name: shortText,
       role: shortText,
+      url: mediumText,
       ...datedEntryFields,
       bullets: bulletList,
       keywords: mediumText,
@@ -88,6 +93,7 @@ const fieldSchema = z.object({
   deterministicKey: z.string().max(80).nullable(),
   deterministicConfidence: z.number().min(0).max(1),
   recordIndex: z.number().int().min(0).max(50).nullable().optional().default(null),
+  recordScope: z.enum(["internship", "employment"]).nullable().optional().default(null),
   options: z.array(optionSchema).max(40).optional().default([]),
 }).strip();
 
@@ -250,13 +256,15 @@ function parseResult(
       const recordDateValue = deriveRecordDateValue(field, resume);
       const recordDescriptionValue = deriveRecordDescriptionValue(field, resume);
       const derivedValue = deriveGraduationValue(field, resume);
+      const ageValue = deriveAgeValue(field, resume);
       if (recordDateValue) {
         return { field, mapping: { ...mapping, value: recordDateValue, confidence: 0.99, basis: "resume" as const } };
       }
       if (recordDescriptionValue) {
         return { field, mapping: { ...mapping, value: recordDescriptionValue, confidence: 0.99, basis: "resume" as const } };
       }
-      return { field, mapping: derivedValue ? { ...mapping, value: derivedValue, confidence: 0.99, basis: "derived" as const } : mapping };
+      const safeDerivedValue = derivedValue || ageValue;
+      return { field, mapping: safeDerivedValue ? { ...mapping, value: safeDerivedValue, confidence: 0.99, basis: "derived" as const } : mapping };
     }).filter(({ field, mapping }) => {
       if (!field || seen.has(mapping.fieldKey)) return false;
       if (!mapping.value?.trim() || !mapping.basis || mapping.confidence < MIN_CONFIDENCE) return false;
@@ -322,12 +330,26 @@ function hasResumeBasis(value: string, field: z.infer<typeof fieldSchema>, facts
   if (isBuiltFromFacts(value, facts)) return true;
   const normalizedValue = normalizeChoice(value);
   const selectedOption = field.options.find((option) => [option.value, option.text].some((item) => normalizeChoice(item) === normalizedValue));
-  return Boolean(selectedOption && [selectedOption.value, selectedOption.text].some((item) => isBuiltFromFacts(item, facts)));
+  return Boolean(selectedOption && [selectedOption.value, selectedOption.text].some((item) =>
+    isBuiltFromFacts(item, facts)
+    || facts.some((fact) => normalizeFact(fact).includes(normalizeFact(item)))));
 }
 
-function getSectionEntries(resume: z.infer<typeof resumeSchema>, section: string): unknown[] {
+function isInternshipEntry(entry: z.infer<typeof resumeSchema>["content"]["work"][number]) {
+  return entry.experienceType === "internship"
+    || (entry.experienceType !== "employment" && /实习|intern(?:ship)?|trainee|暑期|summer analyst|off[- ]?cycle/i.test(entry.title));
+}
+
+function getSectionEntries(resume: z.infer<typeof resumeSchema>, section: string, recordScope: z.infer<typeof fieldSchema>["recordScope"] = null): unknown[] {
   if (section === "education") return resume.content.education;
-  if (section === "work") return resume.content.work;
+  if (section === "work") {
+    if (recordScope === "internship") {
+      const internships = resume.content.work.filter(isInternshipEntry);
+      return internships.length ? internships : resume.content.work;
+    }
+    if (recordScope === "employment") return resume.content.work.filter((entry) => !isInternshipEntry(entry));
+    return resume.content.work;
+  }
   if (section === "project") return resume.content.projects;
   if (section === "campus") return resume.content.campus;
   if (section === "awards") return resume.content.awards;
@@ -338,7 +360,7 @@ function getSectionEntries(resume: z.infer<typeof resumeSchema>, section: string
 
 function getScopedFieldFacts(field: z.infer<typeof fieldSchema>, resume: z.infer<typeof resumeSchema>) {
   const [section, property] = (field.deterministicKey || "").split(".");
-  const entries = getSectionEntries(resume, section);
+  const entries = getSectionEntries(resume, section, field.recordScope);
   if (!entries.length) return null;
   const selected = field.recordIndex === null
     ? entries
@@ -383,6 +405,7 @@ function isAllowedDerivedValue(
   if (isSelfSummaryField(field)) return isSafeResumeSummary(value, summaryFacts, resume);
   if (isEducationDescriptionField(field)) return hasFieldSpecificResumeBasis(value, field, resume, facts);
   if (deriveGraduationValue(field, resume)) return true;
+  if (deriveAgeValue(field, resume)) return true;
   if (hasFieldSpecificResumeBasis(value, field, resume, facts)) return true;
   const descriptor = normalizeChoice(`${field.label} ${field.attributes} ${field.context}`);
   const isPinyinOrNamePart = /拼音|lastname|firstname|surname|givenname|姓氏|名字/.test(descriptor)
@@ -456,8 +479,8 @@ function isSafeResumeSummary(value: string, facts: string[], resume: z.infer<typ
 
 function deriveRecordDateValue(field: z.infer<typeof fieldSchema>, resume: z.infer<typeof resumeSchema>) {
   const [section, property] = (field.deterministicKey || "").split(".");
-  if (!["startDate", "endDate"].includes(property) || field.recordIndex === null) return null;
-  const entry = getSectionEntries(resume, section)[field.recordIndex];
+  if (!["startDate", "endDate", "date"].includes(property) || field.recordIndex === null) return null;
+  const entry = getSectionEntries(resume, section, field.recordScope)[field.recordIndex];
   if (!entry || typeof entry !== "object") return null;
   const value = (entry as Record<string, unknown>)[property];
   return typeof value === "string" && value.trim() ? value.trim() : null;
@@ -466,7 +489,7 @@ function deriveRecordDateValue(field: z.infer<typeof fieldSchema>, resume: z.inf
 function deriveRecordDescriptionValue(field: z.infer<typeof fieldSchema>, resume: z.infer<typeof resumeSchema>) {
   if (!field.deterministicKey?.endsWith(".description") || field.recordIndex === null) return null;
   const [section] = field.deterministicKey.split(".");
-  const entry = getSectionEntries(resume, section)[field.recordIndex];
+  const entry = getSectionEntries(resume, section, field.recordScope)[field.recordIndex];
   if (!entry || typeof entry !== "object") return null;
   const record = entry as Record<string, unknown>;
 
@@ -481,6 +504,20 @@ function deriveRecordDescriptionValue(field: z.infer<typeof fieldSchema>, resume
     ? record.bullets.filter((value): value is string => typeof value === "string" && Boolean(value.trim())).map((value) => value.trim())
     : [];
   return bullets.join("\n") || null;
+}
+
+function deriveAgeValue(field: z.infer<typeof fieldSchema>, resume: z.infer<typeof resumeSchema>) {
+  const descriptor = normalizeChoice(`${field.label} ${field.attributes} ${field.context}`);
+  if (field.deterministicKey !== "basics.age" && !/年龄|周岁|(?:^|[^a-z])age(?:[^a-z]|$)/i.test(descriptor)) return null;
+  const match = resume.content.basics.birthDate.match(/^((?:19|20)\d{2})\D*([01]?\d)?\D*([0-3]?\d)?/);
+  if (!match) return null;
+  const today = new Date();
+  const birthYear = Number(match[1]);
+  const birthMonth = Math.max(1, Math.min(12, Number(match[2] || 1)));
+  const birthDay = Math.max(1, Math.min(31, Number(match[3] || 1)));
+  let age = today.getUTCFullYear() - birthYear;
+  if (today.getUTCMonth() + 1 < birthMonth || (today.getUTCMonth() + 1 === birthMonth && today.getUTCDate() < birthDay)) age -= 1;
+  return age >= 14 && age <= 100 ? String(age) : null;
 }
 
 function deriveGraduationValue(field: z.infer<typeof fieldSchema>, resume: z.infer<typeof resumeSchema>) {
@@ -548,11 +585,11 @@ const SYSTEM_PROMPT = `你是拾星网申助手的保守型填写引擎。你只
 2. 严格按照页面字段在数组中的顺序，从上到下逐字段处理。所有能由简历明确回答的安全字段都应填写，不得只处理派生字段或只处理基础信息。
 3. 只填写简历明确存在的事实，或可从明确事实唯一确定的低风险格式变换。简历没有明确依据时必须返回 null，禁止补全、想象或编造。
 4. 允许的派生包括：中文姓名的无声调汉语拼音、姓与名的拼音拆分、大小写/空格格式、电话或日期格式、根据明确教育结束日期判断毕业状态、从给定选项中选择与简历事实等价的一项。
-5. 只有当 basics.birthDate 明确非空时，才可为出生日期/生日字段填写该日期或做等价日期格式转换；绝不能根据年龄、教育时间、证件号等推断出生日期，也不得填写年龄。
+5. 只有当 basics.birthDate 明确非空时，才可为出生日期/生日字段填写该日期或做等价日期格式转换，并可按当前日期唯一计算整数周岁；绝不能根据年龄、教育时间、证件号等反推出生日期，也不得在 birthDate 缺失时猜测年龄。
 6. 只有字段明确是“自我描述、自我评价、个人总结、个人优势、个人简介、profile summary”时，才允许生成开放文本。“经历描述”本身绝不等同于自我描述。自我描述必须以第一人称“我”开头，中文通常 100–220 字，重点写 2–3 项有经历证据支撑的优势、工作方式或性格倾向，而不是按时间复述学校、公司、岗位和奖项清单。可以使用“我擅长、我注重、我习惯、我能够”等个人口吻，但每项判断都必须能由简历中的技能、职责、项目或校园活动合理支持。如果简历包含主席、负责人、组织策划、持续推进或独立负责的经历，应优先明确归纳“责任心强、执行力强”；如果包含团队协作、汇报展示、客户拜访、跨部门配合或社团组织经历，应优先明确归纳“沟通能力强、善于协作”。不得凭空写性格开朗、抗压、外向、乐观等标签。尽量少列机构名称和日期，只用必要事实说明优势；在读教育不得写“毕业于”。此例外不适用于求职动机、Why company/role、职业规划、可入职时间或其他主观申请题。
 7. 当 deterministicKey=education.description，或字段明确位于教育背景且名称为“经历描述/教育描述”时，只能填写同一条教育记录中的课程、学术训练和校内荣誉；不得写工作、实习、项目经历，也不得使用第一人称自我评价口吻。对应记录只要存在课程、荣誉或职责内容就必须填写经历描述，不得因为它不是自我描述而返回 null。
-8. 当 deterministicKey 以 .startDate 或 .endDate 结尾时，只能使用同一 recordIndex 对应记录的同名日期；严禁交换开始和结束日期，也不得跨经历取值。
-9. 不得推断或填写身份证/护照等证件信息、性别、婚姻、民族、国籍/户籍、政治面貌、宗教、健康/残疾、退伍信息、薪资、家庭成员、验证码、密码、账号、安全问题、法律声明、隐私同意或提交确认。
+8. 当 deterministicKey 以 .startDate、.endDate 或 .date 结尾时，只能使用同一 recordIndex 对应记录的同名日期；recordScope=internship 时只可取实习记录，recordScope=employment 时只可取正式工作记录。严禁交换开始和结束日期，也不得跨经历或跨板块取值。
+9. 性别、国籍/地区和期望工作地点只有在 basics.gender、basics.nationality、basics.preferredLocations 明确非空时才可等价填写或选择；不得从姓名、学校、所在地等其他信息推断。不得推断或填写身份证/护照等证件信息、婚姻、民族、户籍、政治面貌、宗教、健康/残疾、退伍信息、薪资、家庭成员、验证码、密码、账号、安全问题、法律声明、隐私同意或提交确认。
 10. 除规则 6 的简历事实概述外，不得代答开放性申请题、性格题、测评题、求职动机、期望、可入职时间、是否接受调剂或任何需要用户主观决定的问题。
 11. select 或 radio 字段只能返回 options 中已有的 value 或 text，优先返回可见 text；没有唯一匹配则返回 null。
 12. 对普通文本字段，直接摘取简历事实时 basis=resume；规则 4、5、6 的转换或概述使用 basis=derived。

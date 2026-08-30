@@ -76,6 +76,8 @@ export function createTranslationPlan(
     addEntry(entries, ["title"], "resume_title", source.title, 180);
     addEntry(entries, ["targetRole"], "target_role", source.targetRole, 180);
     addEntry(entries, ["jobTarget"], "job_target", source.jobTarget, 500);
+    addEntry(entries, ["basics", "nationality"], "nationality", source.basics.nationality, 120);
+    addEntry(entries, ["basics", "preferredLocations"], "preferred_locations", source.basics.preferredLocations, 300);
     addEntry(entries, ["basics", "city"], "city", source.basics.city, 120);
     addEntry(entries, ["basics", "targetRole"], "target_role", source.basics.targetRole, 180);
   });

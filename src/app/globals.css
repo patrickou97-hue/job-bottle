@@ -275,6 +275,36 @@ html[data-scene-transition="arrived"] .scene-arrival-veil__stars {
   transform: scale(1.06);
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--aurora) 24%, transparent);
+  color: var(--text-primary);
+}
+
+button,
+a,
+select,
+input,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible,
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--aurora) 72%, transparent);
+  outline-offset: 3px;
+}
+
+.pressable:active {
+  transform: translateY(1px) scale(0.985);
+}
+
 .space-bg__image {
   position: absolute;
   inset: 0;
@@ -462,6 +492,24 @@ html[data-scene-transition="arrived"] .scene-arrival-veil__stars {
   color: var(--text-secondary);
   font-size: 0.95rem;
   line-height: 1.8;
+}
+
+.page-description {
+  max-width: 42rem;
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+  line-height: 1.75;
+}
+
+@media (min-width: 768px) {
+  .page-hero--radar {
+    align-items: end;
+  }
+
+  .page-hero--radar > .progress-summary {
+    justify-self: end;
+  }
+
 }
 
 .section-heading {
@@ -870,6 +918,80 @@ html[data-scene-transition="arrived"] .scene-arrival-veil__stars {
   box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
 }
 
+.filter-disclosure__summary {
+  display: flex;
+  min-height: 4.5rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  cursor: pointer;
+  list-style: none;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+}
+
+.filter-disclosure__summary-end {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: var(--text-muted);
+}
+
+.filter-disclosure__chevron {
+  transition: transform var(--motion-duration-fast) var(--motion-ease-standard);
+}
+
+.filter-disclosure[data-open="true"] .filter-disclosure__chevron {
+  transform: rotate(180deg);
+}
+
+.filter-count {
+  display: inline-flex;
+  min-width: 1.45rem;
+  height: 1.45rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--surface-selected-bg);
+  color: var(--aurora);
+  font-size: 0.72rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.filter-disclosure__content {
+  padding-bottom: 1.15rem;
+}
+
+@media (min-width: 1280px) {
+  .filter-disclosure__summary {
+    display: none;
+  }
+
+  .filter-disclosure__content {
+    padding-bottom: 0;
+  }
+}
+
+@media (max-width: 1279px) {
+  .filter-rail {
+    border-left: 0;
+    border-right: 0;
+    border-radius: 0;
+  }
+}
+
+.job-map-section {
+  scroll-margin-top: 5.5rem;
+}
+
+.job-map-body {
+  margin-top: 0.35rem;
+}
+
 .collection-surface {
   border: 1px solid rgba(231,226,255,.06);
   border-radius: var(--apple-radius-panel);
@@ -1170,6 +1292,14 @@ html[data-scene-transition="arrived"] .scene-arrival-veil__stars {
     align-items: end;
     padding-top: 1.5rem;
     padding-bottom: 2.75rem;
+  }
+
+  .page-hero--radar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .page-hero--radar > .md\:col-span-2 {
+    grid-column: 1 / -1;
   }
 
   .apple-sheet {

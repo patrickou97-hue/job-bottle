@@ -30,16 +30,47 @@
   const certifications = Array.isArray(content.certifications) ? content.certifications : [];
   const languages = Array.isArray(content.languages) ? content.languages : [];
 
+  const internshipTitlePattern = /实习|intern(?:ship)?|trainee|暑期|summer analyst|off[- ]?cycle/i;
+  const isInternshipEntry = (item) => item?.experienceType === "internship"
+    || (item?.experienceType !== "employment" && internshipTitlePattern.test(`${item?.title || ""}`));
+  const internshipWork = work.filter(isInternshipEntry);
+  const employmentWork = work.filter((item) => !isInternshipEntry(item));
+  const getWorkEntries = (scope) => {
+    if (scope === "internship") return internshipWork.length ? internshipWork : work;
+    if (scope === "employment") return employmentWork;
+    return work;
+  };
+  const workValues = (property, transform = (value) => value) => ({
+    default: work.map((item) => transform(item?.[property], item)),
+    internship: getWorkEntries("internship").map((item) => transform(item?.[property], item)),
+    employment: getWorkEntries("employment").map((item) => transform(item?.[property], item)),
+  });
+  const calculateAge = (birthDate) => {
+    const match = asText(birthDate).match(/^((?:19|20)\d{2})[^0-9]?([01]?\d)?[^0-9]?([0-3]?\d)?/);
+    if (!match) return "";
+    const birthYear = Number(match[1]);
+    const birthMonth = Math.max(1, Math.min(12, Number(match[2] || 1)));
+    const birthDay = Math.max(1, Math.min(31, Number(match[3] || 1)));
+    const today = new Date();
+    let age = today.getFullYear() - birthYear;
+    if (today.getMonth() + 1 < birthMonth || (today.getMonth() + 1 === birthMonth && today.getDate() < birthDay)) age -= 1;
+    return age >= 14 && age <= 100 ? String(age) : "";
+  };
+
   const definitions = [
     { key: "basics.name", section: "basic", aliases: ["姓名", "中文姓名", "真实姓名", "name", "fullname", "legalname", "applicantname", "candidatename"], values: [basics.name] },
     { key: "basics.englishName", section: "basic", aliases: ["英文名", "英文姓名", "englishname", "preferredname"], values: [basics.englishName] },
     { key: "basics.birthDate", section: "basic", aliases: ["出生日期", "出生年月", "生日", "birthdate", "dateofbirth", "dob"], values: [basics.birthDate], date: true },
+    { key: "basics.age", section: "basic", aliases: ["年龄", "周岁", "age"], values: [calculateAge(basics.birthDate)], localExact: true, localDerived: true },
+    { key: "basics.gender", section: "basic", aliases: ["性别", "gender", "sex"], values: [basics.gender] },
+    { key: "basics.nationality", section: "basic", aliases: ["国籍", "国籍地区", "国家地区", "nationality", "citizenship", "countryregion"], values: [basics.nationality] },
+    { key: "basics.preferredLocations", section: "basic", aliases: ["期望工作地点", "意向工作地点", "期望工作城市", "工作地点偏好", "desiredworklocation", "preferredworklocation", "preferredlocations", "locationpreference"], values: [basics.preferredLocations] },
     { key: "basics.phone", section: "basic", aliases: ["手机", "手机号", "联系电话", "电话", "mobile", "mobilephone", "phonenumber", "telephone", "tel"], values: [basics.phone], types: ["tel"] },
     { key: "basics.email", section: "basic", aliases: ["邮箱", "电子邮箱", "邮件地址", "email", "emailaddress"], values: [basics.email], types: ["email"] },
-    { key: "basics.city", section: "basic", aliases: ["所在城市", "当前城市", "居住城市", "现居地", "城市", "currentcity", "city", "location"], values: [basics.city] },
+    { key: "basics.city", section: "basic", aliases: ["所在城市", "所在地点", "所在地", "当前城市", "当前所在地", "居住城市", "现居地", "城市", "currentcity", "currentlocation", "city", "location"], values: [basics.city] },
     { key: "basics.linkedin", section: "basic", aliases: ["领英", "linkedin", "linkedinurl", "linkedinprofile"], values: [basics.linkedin], types: ["url"] },
     { key: "basics.github", section: "basic", aliases: ["github", "githuburl", "githubprofile", "代码仓库"], values: [basics.github], types: ["url"] },
-    { key: "basics.website", section: "basic", aliases: ["个人网站", "作品集", "portfolio", "personalwebsite", "websiteurl"], values: [basics.website], types: ["url"] },
+    { key: "basics.website", section: "basic", aliases: ["个人网站", "作品集", "作品链接", "作品网址", "portfolio", "portfoliolink", "personalwebsite", "websiteurl"], values: [basics.website], types: ["url"] },
     { key: "basics.targetRole", section: "basic", aliases: ["目标岗位", "求职意向", "应聘职位", "申请职位", "targetrole", "desiredposition", "positionapplied"], values: [basics.targetRole || resume.targetRole] },
 
     { key: "education.school", section: "education", aliases: ["学校", "学校名称", "院校", "毕业院校", "大学", "school", "schoolname", "university", "college", "institution"], values: education.map((item) => item.school) },
@@ -52,16 +83,18 @@
     { key: "education.honors", section: "education", aliases: ["在校荣誉", "教育荣誉", "奖学金", "honors", "academichonors"], values: education.map((item) => item.honors) },
     { key: "education.description", section: "education", aliases: ["教育经历描述", "教育描述", "经历描述", "教育背景描述", "educationdescription", "academicdescription"], values: education.map((item) => [item.courses, item.honors].filter(Boolean).join("\n")), multiline: true },
 
-    { key: "work.company", section: "work", aliases: ["公司", "公司名称", "单位名称", "雇主", "company", "companyname", "employer", "organization"], values: work.map((item) => item.company) },
-    { key: "work.title", section: "work", aliases: ["职位", "岗位", "岗位名称", "职务", "职位名称", "jobtitle", "position", "role", "title"], values: work.map((item) => item.title) },
-    { key: "work.location", section: "work", aliases: ["工作地点", "实习地点", "公司地点", "worklocation", "joblocation", "companylocation"], values: work.map((item) => item.location) },
-    { key: "work.startDate", section: "work", aliases: ["开始日期", "开始时间", "工作开始日期", "工作开始时间", "实习开始时间", "任职开始时间", "workstartdate", "employmentstartdate", "startdate"], values: work.map((item) => item.startDate), date: true },
-    { key: "work.endDate", section: "work", aliases: ["结束日期", "结束时间", "工作结束日期", "工作结束时间", "实习结束时间", "离职时间", "workenddate", "employmentenddate", "enddate"], values: work.map((item) => item.endDate), date: true },
-    { key: "work.current", section: "work", aliases: ["至今", "仍在职", "当前任职", "currentlyworkhere", "currentposition", "present"], values: work.map((item) => Boolean(item.current)), checkbox: true },
-    { key: "work.description", section: "work", aliases: ["经历描述", "工作描述", "工作内容", "工作职责", "职责描述", "工作职责描述", "岗位职责", "岗位描述", "实习描述", "实习内容", "主要职责", "主要工作", "主要工作内容", "工作业绩", "工作成果", "职责及业绩", "描述", "workdescription", "jobdescription", "responsibilities", "responsibility", "duties", "duty", "achievements", "description"], values: work.map((item) => joinBullets(item.bullets)), multiline: true },
+    { key: "work.none", section: "work", aliases: ["没有工作经历", "无工作经历", "暂无工作经历", "noworkexperience", "noemploymenthistory"], values: [employmentWork.length === 0], checkbox: true, localExact: true, localDerived: true, repeatable: false },
+    { key: "work.company", section: "work", aliases: ["公司", "公司名称", "单位名称", "雇主", "company", "companyname", "employer", "organization"], values: workValues("company").default, valuesByScope: workValues("company") },
+    { key: "work.title", section: "work", aliases: ["职位", "岗位", "岗位名称", "职务", "职位名称", "jobtitle", "position", "role", "title"], values: workValues("title").default, valuesByScope: workValues("title") },
+    { key: "work.location", section: "work", aliases: ["工作地点", "实习地点", "公司地点", "worklocation", "joblocation", "companylocation"], values: workValues("location").default, valuesByScope: workValues("location") },
+    { key: "work.startDate", section: "work", aliases: ["开始日期", "开始时间", "工作开始日期", "工作开始时间", "实习开始时间", "任职开始时间", "workstartdate", "employmentstartdate", "startdate"], values: workValues("startDate").default, valuesByScope: workValues("startDate"), date: true },
+    { key: "work.endDate", section: "work", aliases: ["结束日期", "结束时间", "工作结束日期", "工作结束时间", "实习结束时间", "离职时间", "workenddate", "employmentenddate", "enddate"], values: workValues("endDate").default, valuesByScope: workValues("endDate"), date: true },
+    { key: "work.current", section: "work", aliases: ["至今", "仍在职", "当前任职", "currentlyworkhere", "currentposition", "present"], values: workValues("current", (value) => Boolean(value)).default, valuesByScope: workValues("current", (value) => Boolean(value)), checkbox: true },
+    { key: "work.description", section: "work", aliases: ["经历描述", "工作描述", "工作内容", "工作职责", "职责描述", "工作职责描述", "岗位职责", "岗位描述", "实习描述", "实习内容", "主要职责", "主要工作", "主要工作内容", "工作业绩", "工作成果", "职责及业绩", "描述", "workdescription", "jobdescription", "responsibilities", "responsibility", "duties", "duty", "achievements", "description"], values: workValues("bullets", (value) => joinBullets(value)).default, valuesByScope: workValues("bullets", (value) => joinBullets(value)), multiline: true },
 
     { key: "project.name", section: "project", aliases: ["项目名称", "项目名", "projectname", "projecttitle"], values: projects.map((item) => item.name) },
     { key: "project.role", section: "project", aliases: ["项目角色", "担任角色", "项目职务", "projectrole", "roleinproject"], values: projects.map((item) => item.role) },
+    { key: "project.url", section: "project", aliases: ["项目链接", "项目网址", "projectlink", "projecturl"], values: projects.map((item) => item.url), types: ["url"] },
     { key: "project.startDate", section: "project", aliases: ["项目开始时间", "项目开始日期", "projectstartdate", "startdate"], values: projects.map((item) => item.startDate), date: true },
     { key: "project.endDate", section: "project", aliases: ["项目结束时间", "项目结束日期", "projectenddate", "enddate"], values: projects.map((item) => item.endDate), date: true },
     { key: "project.description", section: "project", aliases: ["项目描述", "项目内容", "项目职责", "项目成果", "项目业绩", "项目详情", "项目介绍", "项目经历", "项目经历描述", "负责内容", "主要内容", "个人贡献", "职责描述", "经历描述", "描述", "projectdescription", "projectdetails", "projectresponsibilities", "projectduties", "projectachievements", "responsibilities", "responsibility", "duties", "duty", "achievements", "contribution", "description"], values: projects.map((item) => joinBullets(item.bullets)), multiline: true },
@@ -69,13 +102,17 @@
 
     { key: "skills", section: "skills", aliases: ["技能", "专业技能", "技能特长", "skills", "technicalskills", "competencies"], values: [(content.skills || []).flatMap((group) => group.skills || []).filter(Boolean).join("、")], multiline: true },
     { key: "campus.title", section: "campus", aliases: ["校园经历名称", "学生工作名称", "社团名称", "活动名称", "campustitle", "activityname"], values: campus.map((item) => item.title) },
+    { key: "campus.role", section: "campus", aliases: ["校园角色", "担任职务", "社团职务", "活动角色", "campusrole", "activityrole"], values: campus.map((item) => item.role) },
+    { key: "campus.date", section: "campus", aliases: ["校园经历时间", "活动时间", "任职时间", "campusdate", "activitydate"], values: campus.map((item) => item.date), date: true },
     { key: "campus.description", section: "campus", aliases: ["校园经历描述", "学生工作描述", "社团描述", "活动描述", "经历描述", "描述", "campusdescription", "activitydescription"], values: campus.map((item) => joinBullets(item.bullets)), multiline: true },
     { key: "awards.title", section: "awards", aliases: ["获奖名称", "奖项名称", "荣誉名称", "奖项", "获奖经历", "awardname", "awardtitle", "honortitle"], values: awards.map((item) => item.title) },
+    { key: "awards.date", section: "awards", aliases: ["获奖时间", "奖项时间", "获奖日期", "awarddate", "awardyear"], values: awards.map((item) => item.date), date: true },
     { key: "awards.description", section: "awards", aliases: ["获奖描述", "奖项描述", "荣誉描述", "描述", "awarddescription", "honordescription"], values: awards.map((item) => joinBullets(item.bullets)), multiline: true },
     { key: "certifications.title", section: "certifications", aliases: ["证书", "证书名称", "资格证书", "认证名称", "certification", "certificationname", "license"], values: certifications.map((item) => item.title) },
+    { key: "certifications.date", section: "certifications", aliases: ["获证时间", "证书时间", "认证时间", "certificationdate", "licensedate"], values: certifications.map((item) => item.date), date: true },
     { key: "certifications.details", section: "certifications", aliases: ["证书描述", "认证描述", "成绩", "分数", "等级", "certificationdetails", "score", "grade"], values: certifications.map((item) => joinBullets(item.bullets)) },
-    { key: "languages.title", section: "languages", aliases: ["语言名称", "外语名称", "语种", "languagename"], values: languages.map((item) => item.title) },
-    { key: "languages.details", section: "languages", aliases: ["语言能力", "外语能力", "语言水平", "熟练程度", "languageproficiency"], values: languages.map((item) => joinBullets(item.bullets)), multiline: true },
+    { key: "languages.title", section: "languages", aliases: ["语言", "语言名称", "外语名称", "语种", "languagename"], values: languages.map((item) => item.title) },
+    { key: "languages.details", section: "languages", aliases: ["语言能力", "外语能力", "语言水平", "精通程度", "熟练程度", "languageproficiency"], values: languages.map((item) => [item.role, joinBullets(item.bullets)].filter(Boolean).join("；")), multiline: true },
   ];
 
   const sectionAliases = {
@@ -88,7 +125,7 @@
     certifications: ["证书", "认证", "certification", "license"],
     languages: ["语言", "外语", "language"],
   };
-  const sensitiveTerms = ["身份证", "身份证号", "idcard", "nationalid", "护照", "passport", "性别", "gender", "出生地", "birthplace", "年龄", "婚姻", "marital", "民族", "ethnicity", "国籍", "nationality", "户籍", "残疾", "disability", "退伍", "veteran", "薪资", "salary", "期望薪资", "政治面貌", "宗教", "religion", "家庭成员", "验证码", "captcha", "密码", "password", "安全问题", "securityquestion"];
+  const sensitiveTerms = ["身份证", "身份证号", "idcard", "nationalid", "护照", "passport", "出生地", "birthplace", "婚姻", "marital", "民族", "ethnicity", "户籍", "残疾", "disability", "退伍", "veteran", "薪资", "salary", "期望薪资", "政治面貌", "宗教", "religion", "家庭成员", "验证码", "captcha", "密码", "password", "安全问题", "securityquestion"];
   const birthDateTerms = ["出生日期", "出生年月", "生日", "birthdate", "dateofbirth"];
   const blockedChoiceTerms = ["同意", "协议", "声明", "承诺", "consent", "privacy", "terms"];
   const autocompleteMap = {
@@ -142,7 +179,7 @@
     },
     project: {
       name: "name", projectname: "name", title: "name", projecttitle: "name",
-      role: "role", projectrole: "role", startdate: "startDate", enddate: "endDate",
+      role: "role", projectrole: "role", url: "url", projecturl: "url", projectlink: "url", startdate: "startDate", enddate: "endDate",
       description: "description", projectdescription: "description", keywords: "keywords",
     },
     campus: { title: "title", role: "role", date: "date", description: "description" },
@@ -252,6 +289,29 @@
       if (controlCount > 28) continue;
       const hint = detectSectionFromText((container.innerText || "").slice(0, 1_600));
       if (hint) return hint;
+    }
+    return null;
+  }
+
+  function inferWorkScope(element, sectionHint, contextText) {
+    if (sectionHint !== "work") return null;
+    const detect = (value) => {
+      const text = normalize(value);
+      if (/实习经历|实习经验|internshipexperience|internexperience/.test(text)) return "internship";
+      if (/正式工作|全职工作|任职经历|职业经历|fulltimeexperience|employmenthistory/.test(text)) return "employment";
+      return null;
+    };
+    const direct = detect(contextText);
+    if (direct) return direct;
+    let container = element.parentElement;
+    for (let depth = 0; container && depth < 9; depth += 1, container = container.parentElement) {
+      const explicit = container.getAttribute("data-experience-type") || container.getAttribute("data-work-type") || "";
+      const heading = Array.from(container.children)
+        .filter((child) => child.matches("legend, h1, h2, h3, h4, h5, [role='heading'], .section-title, .form-section-title"))
+        .map((child) => child.textContent || "")
+        .join(" ");
+      const scope = detect(`${explicit} ${heading}`);
+      if (scope) return scope;
     }
     return null;
   }
@@ -656,8 +716,8 @@
   async function fillElement(element, rawValue, definition) {
     const value = definition.date ? formatDate(rawValue, element) : asText(rawValue);
     if (definition.checkbox && element instanceof HTMLInputElement && element.type === "checkbox") {
-      if (!rawValue) return false;
-      element.checked = Boolean(rawValue);
+      if (rawValue === undefined || rawValue === null || rawValue === "") return false;
+      element.checked = rawValue === true || /^(true|1|yes|y|是|至今|仍在职)$/i.test(String(rawValue));
       dispatchEvents(element);
       return true;
     }
@@ -673,11 +733,22 @@
     }
 
     if (element instanceof HTMLSelectElement) {
-      const target = normalize(value);
-      const option = Array.from(element.options).find((item) => normalize(item.value) === target || normalize(item.textContent) === target)
-        || Array.from(element.options).find((item) => normalize(item.textContent).includes(target) || target.includes(normalize(item.textContent)));
-      if (!option) return false;
-      element.value = option.value;
+      const rawTargets = element.multiple
+        ? value.split(/[、,，;；|]/).map((item) => item.trim()).filter(Boolean)
+        : [value];
+      const options = Array.from(element.options);
+      const matched = rawTargets.map((rawTarget) => {
+        const target = normalize(rawTarget);
+        return options.find((item) => normalize(item.value) === target || normalize(item.textContent) === target)
+          || options.find((item) => normalize(item.textContent).includes(target) || target.includes(normalize(item.textContent)));
+      }).filter(Boolean);
+      if (!matched.length) return false;
+      if (element.multiple) {
+        const selected = new Set(matched);
+        options.forEach((option) => { option.selected = selected.has(option); });
+      } else {
+        element.value = matched[0].value;
+      }
       dispatchEvents(element);
       return true;
     }
@@ -771,8 +842,12 @@
     return index;
   }
 
-  function isUsableRecordIndex(index, definition) {
-    return Number.isInteger(index) && index >= 0 && index < definition.values.length;
+  function getDefinitionValues(definition, recordScope = null) {
+    return definition?.valuesByScope?.[recordScope || "default"] || definition?.values || [];
+  }
+
+  function isUsableRecordIndex(index, definition, recordScope = null) {
+    return Number.isInteger(index) && index >= 0 && index < getDefinitionValues(definition, recordScope).length;
   }
 
   function assignRecordIndices(plans, fields) {
@@ -787,33 +862,37 @@
       languages: "languages.title",
     };
     for (const section of sections) {
-      const sectionPlans = plans.filter((plan) => plan.matchedDefinition?.section === section);
-      const containers = [];
-      for (const plan of sectionPlans) {
-        const hasAnchor = plan.recordContainer && sectionPlans.some((candidate) => candidate.recordContainer === plan.recordContainer
-          && candidate.matchedDefinition?.key === anchorKeys[section]);
-        if (hasAnchor && !containers.includes(plan.recordContainer)) containers.push(plan.recordContainer);
-      }
-      const containerMap = new Map(containers.map((container, index) => [container, index]));
-      const explicitNumbers = [...new Set(sectionPlans
-        .map((plan) => plan.explicitRecordNumber)
-        .filter((value) => Number.isInteger(value)))]
-        .sort((left, right) => left - right);
-      const explicitMap = new Map(explicitNumbers.map((number, index) => [number, index]));
-      const fallbackOccurrences = new Map();
-
-      for (const plan of sectionPlans) {
-        let recordIndex = plan.structuredContract?.recordIndex;
-        if (!Number.isInteger(recordIndex)) recordIndex = containerMap.get(plan.recordContainer);
-        if (!Number.isInteger(recordIndex)) recordIndex = explicitMap.get(plan.explicitRecordNumber);
-        if (!Number.isInteger(recordIndex)) {
-          const occurrenceKey = plan.matchedDefinition.key;
-          recordIndex = fallbackOccurrences.get(occurrenceKey) || 0;
-          fallbackOccurrences.set(occurrenceKey, recordIndex + 1);
+      const sectionPlans = plans.filter((plan) => plan.matchedDefinition?.section === section && plan.matchedDefinition.repeatable !== false);
+      const scopes = [...new Set(sectionPlans.map((plan) => plan.recordScope || "default"))];
+      for (const scope of scopes) {
+        const scopedPlans = sectionPlans.filter((plan) => (plan.recordScope || "default") === scope);
+        const containers = [];
+        for (const plan of scopedPlans) {
+          const hasAnchor = plan.recordContainer && scopedPlans.some((candidate) => candidate.recordContainer === plan.recordContainer
+            && candidate.matchedDefinition?.key === anchorKeys[section]);
+          if (hasAnchor && !containers.includes(plan.recordContainer)) containers.push(plan.recordContainer);
         }
-        plan.recordIndex = recordIndex;
-        const field = fields.find((item) => item.fieldKey === plan.fieldKey);
-        if (field) field.recordIndex = recordIndex;
+        const containerMap = new Map(containers.map((container, index) => [container, index]));
+        const explicitNumbers = [...new Set(scopedPlans
+          .map((plan) => plan.explicitRecordNumber)
+          .filter((value) => Number.isInteger(value)))]
+          .sort((left, right) => left - right);
+        const explicitMap = new Map(explicitNumbers.map((number, index) => [number, index]));
+        const fallbackOccurrences = new Map();
+
+        for (const plan of scopedPlans) {
+          let recordIndex = plan.structuredContract?.recordIndex;
+          if (!Number.isInteger(recordIndex)) recordIndex = containerMap.get(plan.recordContainer);
+          if (!Number.isInteger(recordIndex)) recordIndex = explicitMap.get(plan.explicitRecordNumber);
+          if (!Number.isInteger(recordIndex)) {
+            const occurrenceKey = plan.matchedDefinition.key;
+            recordIndex = fallbackOccurrences.get(occurrenceKey) || 0;
+            fallbackOccurrences.set(occurrenceKey, recordIndex + 1);
+          }
+          plan.recordIndex = recordIndex;
+          const field = fields.find((item) => item.fieldKey === plan.fieldKey);
+          if (field) field.recordIndex = recordIndex;
+        }
       }
     }
   }
@@ -828,15 +907,21 @@
       deterministicKey: field.deterministicKey,
       deterministicConfidence: field.deterministicConfidence,
       recordIndex: Number.isInteger(field.recordIndex) ? field.recordIndex : null,
+      recordScope: field.recordScope || null,
       options: field.options,
     };
   }
 
   function getExactStructuredValue(plan) {
-    if (!plan.structuredContract || !plan.matchedDefinition || plan.bestScore < 1) return undefined;
-    if (!/\.(?:startDate|endDate|description)$/.test(plan.matchedDefinition.key)) return undefined;
-    if (!isUsableRecordIndex(plan.recordIndex, plan.matchedDefinition)) return undefined;
-    const value = plan.matchedDefinition.values[plan.recordIndex];
+    if (!plan.matchedDefinition) return undefined;
+    const locallyExact = plan.matchedDefinition.localExact === true && plan.bestScore >= 0.9;
+    const structuredExact = plan.structuredContract && plan.bestScore >= 1
+      && /\.(?:startDate|endDate|date|description|url)$/.test(plan.matchedDefinition.key);
+    if (!locallyExact && !structuredExact) return undefined;
+    const values = getDefinitionValues(plan.matchedDefinition, plan.recordScope);
+    const recordIndex = locallyExact || plan.matchedDefinition.repeatable === false ? 0 : plan.recordIndex;
+    if (!isUsableRecordIndex(recordIndex, plan.matchedDefinition, plan.recordScope)) return undefined;
+    const value = values[recordIndex];
     if (value === undefined || value === null || value === "" || (Array.isArray(value) && value.length === 0)) return undefined;
     return value;
   }
@@ -855,7 +940,7 @@
     .filter((element) => {
       if (!(element instanceof HTMLElement) || !isVisible(element)) return false;
       if (element instanceof HTMLInputElement) {
-        if (["hidden", "password", "submit", "button", "reset", "image"].includes(element.type)) return false;
+        if (["hidden", "password", "submit", "button", "reset", "image", "file"].includes(element.type)) return false;
         if (element.type === "radio") {
           if (requestedFillMode !== "ai" && !aiAutofillOnly) return false;
           if (getRadioGroupElements(element)[0] !== element) return false;
@@ -875,6 +960,7 @@
     const contextText = [choiceQuestion, getContextText(element)].filter(Boolean).join(" ");
     const structuredContract = inferStructuredFieldContract(element);
     const sectionHint = structuredContract?.section || inferSectionHint(element, signals, contextText);
+    const recordScope = inferWorkScope(element, sectionHint, contextText);
     const recordContainer = findRecordContainer(element, sectionHint);
     const pairedDateKey = inferPairedDateKey(element, sectionHint);
     const normalizedSignals = normalize(`${labelText} ${contextText}`);
@@ -884,11 +970,9 @@
       && blockedChoiceTerms.some((term) => normalize(labelText).includes(normalize(term)));
     const birthDateField = birthDateTerms.some((term) => normalizedSignals.includes(normalize(term)))
       || /(?:^|[^a-z])dob(?:[^a-z]|$)/i.test(`${labelText} ${contextText}`);
-    const ageField = /(?:^|[^a-z])age(?:[^a-z]|$)/i.test(`${labelText} ${contextText}`);
     const sensitive = !labelText
       || blockedCheckbox
       || sensitiveTerms.some((term) => normalizedSignals.includes(normalize(term)))
-      || ageField
       || (birthDateField && !asText(basics.birthDate));
 
     let matchedDefinition = null;
@@ -928,6 +1012,7 @@
       deterministicKey: matchedDefinition && bestScore >= 0.74 ? matchedDefinition.key : null,
       deterministicConfidence: Number(bestScore.toFixed(2)),
       recordIndex: structuredContract?.recordIndex ?? null,
+      recordScope,
       options: getChoiceOptions(element),
       sensitive,
     });
@@ -940,6 +1025,7 @@
       sensitive,
       sectionHint,
       structuredContract,
+      recordScope,
       recordContainer,
       pairedDateKey,
       explicitRecordNumber: getExplicitRecordNumber(element, signals, contextText),
@@ -970,10 +1056,11 @@
     certifications: "certifications.title",
     languages: "languages.title",
   };
+  const planGroupKey = (plan) => `${plan.matchedDefinition?.section || ""}:${plan.recordScope || "default"}`;
   const sectionsWithAnchors = new Set(
     plans
       .filter((plan) => plan.matchedDefinition && anchorKeys[plan.matchedDefinition.section] === plan.matchedDefinition.key)
-      .map((plan) => plan.matchedDefinition.section),
+      .map(planGroupKey),
   );
   const currentRecordBySection = new Map();
   const nextRecordBySection = new Map();
@@ -982,19 +1069,24 @@
   const recordContainerMaps = new Map();
 
   for (const section of repeatableSections) {
-    const containers = [];
-    for (const plan of plans) {
-      if (plan.matchedDefinition?.section === section && plan.recordContainer && !containers.includes(plan.recordContainer)) {
-        containers.push(plan.recordContainer);
+    const sectionScopes = [...new Set(plans
+      .filter((plan) => plan.matchedDefinition?.section === section)
+      .map((plan) => plan.recordScope || "default"))];
+    for (const scope of sectionScopes) {
+      const groupKey = `${section}:${scope}`;
+      const groupPlans = plans.filter((plan) => plan.matchedDefinition?.section === section && (plan.recordScope || "default") === scope);
+      const containers = [];
+      for (const plan of groupPlans) {
+        if (plan.recordContainer && !containers.includes(plan.recordContainer)) containers.push(plan.recordContainer);
       }
-    }
-    if (containers.length) recordContainerMaps.set(section, new Map(containers.map((container, index) => [container, index])));
+      if (containers.length) recordContainerMaps.set(groupKey, new Map(containers.map((container, index) => [container, index])));
 
-    const recordNumbers = [...new Set(plans
-      .filter((plan) => plan.matchedDefinition?.section === section && Number.isInteger(plan.explicitRecordNumber))
-      .map((plan) => plan.explicitRecordNumber))]
-      .sort((left, right) => left - right);
-    if (recordNumbers.length) recordNumberMaps.set(section, new Map(recordNumbers.map((number, index) => [number, index])));
+      const recordNumbers = [...new Set(groupPlans
+        .filter((plan) => Number.isInteger(plan.explicitRecordNumber))
+        .map((plan) => plan.explicitRecordNumber))]
+        .sort((left, right) => left - right);
+      if (recordNumbers.length) recordNumberMaps.set(groupKey, new Map(recordNumbers.map((number, index) => [number, index])));
+    }
   }
   const unmatchedLabels = [];
   let filled = 0;
@@ -1103,15 +1195,16 @@
       const value = exactStructuredValue === undefined
         ? typeof mapping.value === "string" ? mapping.value.trim() : ""
         : exactStructuredValue;
-      if (!value) {
+      const isCheckbox = element instanceof HTMLInputElement && element.type === "checkbox";
+      if (!value && !(isCheckbox && value === false)) {
         empty += 1;
         manual += 1;
         rememberUnmatched(signals);
         continue;
       }
-      const isDerived = exactStructuredValue === undefined && mapping.basis === "derived";
+      const isDerived = matchedDefinition?.localDerived === true
+        || (exactStructuredValue === undefined && mapping.basis === "derived");
       if (exactStructuredValue !== undefined) structured += 1;
-      const isCheckbox = element instanceof HTMLInputElement && element.type === "checkbox";
       const checkboxValue = /^(true|1|yes|y|是|至今|仍在职)$/i.test(String(value));
       if (matchedDefinition?.date) plan.expectedDateValue = value;
       if (await fillElementSafely(element, isCheckbox ? checkboxValue : value, {
@@ -1137,45 +1230,47 @@
       continue;
     }
 
-    const repeatable = repeatableSections.has(matchedDefinition.section);
+    const repeatable = repeatableSections.has(matchedDefinition.section) && matchedDefinition.repeatable !== false;
+    const groupKey = planGroupKey(plan);
+    const values = getDefinitionValues(matchedDefinition, plan.recordScope);
     const plannedRecordIndex = plan.recordIndex;
-    const containerRecordIndex = recordContainerMaps.get(matchedDefinition.section)?.get(recordContainer);
-    const normalizedRecordIndex = recordNumberMaps.get(matchedDefinition.section)?.get(explicitRecordNumber);
+    const containerRecordIndex = recordContainerMaps.get(groupKey)?.get(recordContainer);
+    const normalizedRecordIndex = recordNumberMaps.get(groupKey)?.get(explicitRecordNumber);
     let index;
-    if (repeatable && isUsableRecordIndex(plannedRecordIndex, matchedDefinition)) {
+    if (repeatable && isUsableRecordIndex(plannedRecordIndex, matchedDefinition, plan.recordScope)) {
       index = plannedRecordIndex;
-      currentRecordBySection.set(matchedDefinition.section, index);
-      nextRecordBySection.set(matchedDefinition.section, Math.max(nextRecordBySection.get(matchedDefinition.section) || 0, index + 1));
-    } else if (repeatable && isUsableRecordIndex(containerRecordIndex, matchedDefinition)) {
+      currentRecordBySection.set(groupKey, index);
+      nextRecordBySection.set(groupKey, Math.max(nextRecordBySection.get(groupKey) || 0, index + 1));
+    } else if (repeatable && isUsableRecordIndex(containerRecordIndex, matchedDefinition, plan.recordScope)) {
       index = containerRecordIndex;
-      currentRecordBySection.set(matchedDefinition.section, index);
-      nextRecordBySection.set(matchedDefinition.section, Math.max(nextRecordBySection.get(matchedDefinition.section) || 0, index + 1));
-    } else if (repeatable && isUsableRecordIndex(normalizedRecordIndex, matchedDefinition)) {
+      currentRecordBySection.set(groupKey, index);
+      nextRecordBySection.set(groupKey, Math.max(nextRecordBySection.get(groupKey) || 0, index + 1));
+    } else if (repeatable && isUsableRecordIndex(normalizedRecordIndex, matchedDefinition, plan.recordScope)) {
       index = normalizedRecordIndex;
-      currentRecordBySection.set(matchedDefinition.section, index);
-      nextRecordBySection.set(matchedDefinition.section, Math.max(nextRecordBySection.get(matchedDefinition.section) || 0, index + 1));
-    } else if (repeatable && sectionsWithAnchors.has(matchedDefinition.section)
+      currentRecordBySection.set(groupKey, index);
+      nextRecordBySection.set(groupKey, Math.max(nextRecordBySection.get(groupKey) || 0, index + 1));
+    } else if (repeatable && sectionsWithAnchors.has(groupKey)
       && anchorKeys[matchedDefinition.section] === matchedDefinition.key) {
-      const duplicateAdjacentAnchor = lastMatchedKeyBySection.get(matchedDefinition.section) === matchedDefinition.key;
+      const duplicateAdjacentAnchor = lastMatchedKeyBySection.get(groupKey) === matchedDefinition.key;
       index = duplicateAdjacentAnchor
-        ? currentRecordBySection.get(matchedDefinition.section) ?? 0
-        : nextRecordBySection.get(matchedDefinition.section) || 0;
-      if (!duplicateAdjacentAnchor) nextRecordBySection.set(matchedDefinition.section, index + 1);
-      currentRecordBySection.set(matchedDefinition.section, index);
+        ? currentRecordBySection.get(groupKey) ?? 0
+        : nextRecordBySection.get(groupKey) || 0;
+      if (!duplicateAdjacentAnchor) nextRecordBySection.set(groupKey, index + 1);
+      currentRecordBySection.set(groupKey, index);
     } else if (repeatable) {
       index = takeNextOccurrenceIndex(occurrence, getRepeatableOccurrenceKey(matchedDefinition, signals));
-      currentRecordBySection.set(matchedDefinition.section, index);
+      currentRecordBySection.set(groupKey, index);
     } else {
       index = takeNextOccurrenceIndex(occurrence, matchedDefinition.key);
     }
-    if (repeatable) lastMatchedKeyBySection.set(matchedDefinition.section, matchedDefinition.key);
+    if (repeatable) lastMatchedKeyBySection.set(groupKey, matchedDefinition.key);
     matched += 1;
     if (fillMode === "merge" && currentValue(element)) {
       preserved += 1;
       continue;
     }
 
-    const value = repeatable ? matchedDefinition.values[index] : matchedDefinition.values[index] ?? matchedDefinition.values[0];
+    const value = repeatable ? values[index] : values[index] ?? values[0];
     if (value === undefined || value === null || value === "" || (Array.isArray(value) && value.length === 0)) {
       empty += 1;
       manual += 1;

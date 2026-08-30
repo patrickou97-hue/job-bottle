@@ -17,6 +17,9 @@ const basicsSchema = z.object({
   englishName: text(120),
   photoDataUrl: z.string().max(2_500_000),
   birthDate: text(40).optional().default(""),
+  gender: text(40).optional().default(""),
+  nationality: text(120).optional().default(""),
+  preferredLocations: text(300).optional().default(""),
   phone: text(40),
   email: text(160),
   city: text(80),
@@ -40,6 +43,7 @@ const educationSchema = z.object({
 
 const experienceSchema = z.object({
   id: itemId,
+  experienceType: z.enum(["internship", "employment", "other"]).optional().default("other"),
   company: text(160),
   title: text(160),
   location: text(100),
@@ -53,6 +57,7 @@ const projectSchema = z.object({
   id: itemId,
   name: text(200),
   role: text(160),
+  url: text(500).optional().default(""),
   startDate: text(40),
   endDate: text(40),
   bullets,

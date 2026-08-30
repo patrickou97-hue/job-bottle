@@ -11,10 +11,10 @@ import {
 } from "@phosphor-icons/react";
 
 const CHANNEL = "starjob-resume-assistant";
-const DOWNLOAD_URL = "/downloads/starjob-resume-assistant-v0.2.6.zip";
+const DOWNLOAD_URL = "/downloads/starjob-resume-assistant-v0.2.7.zip";
 const LEGACY_COMPATIBLE_VERSIONS = new Set(["0.1.7", "0.1.8", "0.1.9"]);
 const SHORT_TIMEOUT_AI_VERSIONS = new Set(["0.2.0"]);
-const PREVIOUS_AI_VERSIONS = new Set(["0.2.1", "0.2.2", "0.2.3", "0.2.4", "0.2.5"]);
+const PREVIOUS_AI_VERSIONS = new Set(["0.2.1", "0.2.2", "0.2.3", "0.2.4", "0.2.5", "0.2.6"]);
 
 type SyncState = "idle" | "checking" | "syncing" | "success" | "missing" | "auth" | "empty" | "error";
 
@@ -41,11 +41,11 @@ export function ExtensionHubClient() {
         setExtensionVersion(detectedVersion);
         setSyncState("idle");
         setMessage(detectedVersion && LEGACY_COMPATIBLE_VERSIONS.has(detectedVersion)
-          ? `${detectedVersion} 可继续同步与原有填写；AI 智能填写需要升级到 0.2.6。`
+          ? `${detectedVersion} 可继续同步与原有填写；AI 智能填写需要升级到 0.2.7。`
           : detectedVersion && SHORT_TIMEOUT_AI_VERSIONS.has(detectedVersion)
-            ? `${detectedVersion} 的 AI 填写仍可使用；建议升级到 0.2.6，获得真实进度、取消操作与并行分析。`
+            ? `${detectedVersion} 的 AI 填写仍可使用；建议升级到 0.2.7，获得完整字段分析和新填写策略。`
             : detectedVersion && PREVIOUS_AI_VERSIONS.has(detectedVersion)
-              ? `${detectedVersion} 仍可继续使用；升级到 0.2.6 后会隔离不同页面框架的字段，并准确提示局部写入失败。`
+              ? `${detectedVersion} 仍可继续使用；升级到 0.2.7 后会区分实习与正式工作，并补全常见字段策略。`
               : "网申助手已安装，可同步当前账户的云端简历。");
       }
       if (payload.type === "SYNC_COMPLETE") {
@@ -158,14 +158,14 @@ export function ExtensionHubClient() {
               <ArrowRightIcon aria-hidden="true" className="size-4" />
             </Link>
           </div>
-          <p className="mt-4 text-xs leading-6 text-ink-muted">最新版本 0.2.6，适用于 Chrome、Edge 及其他 Chromium 浏览器，安装包由拾星官网直接提供。AI 智能填写会展示真实批次进度与已用时；不同页面框架的字段分别处理，局部失败也会明确提示。</p>
+          <p className="mt-4 text-xs leading-6 text-ink-muted">最新版本 0.2.7，适用于 Chrome、Edge 及其他 Chromium 浏览器，安装包由拾星官网直接提供。新增显式实习 / 正式工作分组，以及性别、国籍 / 地区、期望地点、项目链接、获奖时间和语言熟练度等常见字段策略；没有在简历中保存的内容不会猜测。</p>
         </div>
 
-        <div className="extension-product-visual mx-auto w-full max-w-[350px]" aria-label="拾星网申助手 0.2.6 产品图">
+        <div className="extension-product-visual mx-auto w-full max-w-[350px]" aria-label="拾星网申助手 0.2.7 产品图">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/assets/extension/starjob-resume-assistant-popup-v026.png"
-            alt="拾星网申助手 0.2.6 真实扩展面板，展示三种填写方式、填写结果和处理进度"
+            alt="拾星网申助手 0.2.7 真实扩展面板，展示三种填写方式、填写结果和处理进度"
             width={760}
             height={1680}
             className="h-auto w-full"

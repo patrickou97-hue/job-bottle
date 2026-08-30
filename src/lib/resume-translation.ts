@@ -15,6 +15,9 @@ export type ResumeTranslationDraft = {
   basics: {
     name: string;
     englishName: string;
+    gender: string;
+    nationality: string;
+    preferredLocations: string;
     city: string;
     targetRole: string;
   };
@@ -29,6 +32,7 @@ export type ResumeTranslationDraft = {
     honors: string;
   }>;
   work: Array<{
+    experienceType: "internship" | "employment" | "other";
     company: string;
     title: string;
     location: string;
@@ -40,6 +44,7 @@ export type ResumeTranslationDraft = {
   projects: Array<{
     name: string;
     role: string;
+    url: string;
     startDate: string;
     endDate: string;
     bullets: string[];
@@ -73,6 +78,9 @@ export function createResumeTranslationSource(resume: ResumeDocument): ResumeTra
     basics: {
       name: resume.content.basics.name,
       englishName: resume.content.basics.englishName,
+      gender: resume.content.basics.gender,
+      nationality: resume.content.basics.nationality,
+      preferredLocations: resume.content.basics.preferredLocations,
       city: resume.content.basics.city,
       targetRole: resume.content.basics.targetRole,
     },

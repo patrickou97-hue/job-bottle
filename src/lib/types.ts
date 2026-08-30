@@ -71,6 +71,7 @@ export type UserApplication = {
   interview_round?: number | null;
   note?: string | null;
   progress_note: string | null;
+  applied_position?: string | null;
   saved_at?: string | null;
   applied_at: string | null;
   application_channel?: string | null;
@@ -539,6 +540,7 @@ export type Database = {
           interview_round?: number | null;
           note?: string | null;
           progress_note?: string | null;
+          applied_position?: string | null;
           saved_at?: string;
           applied_at?: string | null;
           application_channel?: string | null;
@@ -560,6 +562,7 @@ export type Database = {
           interview_round?: number | null;
           note?: string | null;
           progress_note?: string | null;
+          applied_position?: string | null;
           saved_at?: string;
           applied_at?: string | null;
           application_channel?: string | null;

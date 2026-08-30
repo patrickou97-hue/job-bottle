@@ -1,4 +1,6 @@
-import { getCompactCompanyLabelStyle, getCompanyInitials } from "@/lib/utils";
+"use client";
+
+import { useState } from "react";
 
 export function CompanyBadge({
   companyName,
@@ -9,31 +11,25 @@ export function CompanyBadge({
   logoUrl?: string | null;
   size?: "sm" | "md" | "lg";
 }) {
+  const [failedLogoUrl, setFailedLogoUrl] = useState<string | null>(null);
   const sizeClass = size === "sm" ? "size-9" : size === "lg" ? "size-16" : "size-12";
   const sizePx = size === "sm" ? 36 : size === "lg" ? 64 : 48;
-  const label = getCompanyInitials(companyName);
-  const labelStyle = getCompactCompanyLabelStyle(label, sizePx, {
-    minFontSize: 6,
-    maxFontSize: size === "lg" ? 14 : 12,
-    widthRatio: 0.68,
-    heightRatio: 0.58,
-  });
+
+  if (!logoUrl || failedLogoUrl === logoUrl) return null;
 
   return (
     <div
-      className={`${sizeClass} company-badge relative flex shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-semibold`}
+      className={`${sizeClass} relative flex shrink-0 items-center justify-center overflow-hidden rounded-xl bg-transparent p-1`}
     >
-      {logoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={logoUrl} alt={`${companyName} 标识`} width={sizePx} height={sizePx} className="size-full object-cover" />
-      ) : (
-        <span
-          className="flex min-w-0 items-center justify-center overflow-hidden text-center"
-          style={labelStyle}
-        >
-          {label}
-        </span>
-      )}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={logoUrl}
+        alt={`${companyName} 标识`}
+        width={sizePx}
+        height={sizePx}
+        className="size-full object-contain"
+        onError={() => setFailedLogoUrl(logoUrl)}
+      />
     </div>
   );
 }

@@ -22,6 +22,9 @@ const bullets = z.array(translatedText(1_000)).max(12);
 const basicsSchema = z.object({
   name: translatedText(100),
   englishName: translatedText(120),
+  gender: boundedText(40),
+  nationality: translatedText(120),
+  preferredLocations: translatedText(300),
   city: translatedText(120),
   targetRole: translatedText(180),
 }).strict();
@@ -36,6 +39,7 @@ const educationSchema = z.object({
   honors: translatedText(800),
 }).strict();
 const experienceSchema = z.object({
+  experienceType: z.enum(["internship", "employment", "other"]),
   company: translatedText(180),
   title: translatedText(180),
   location: translatedText(120),
@@ -47,6 +51,7 @@ const experienceSchema = z.object({
 const projectSchema = z.object({
   name: translatedText(180),
   role: translatedText(180),
+  url: boundedText(500),
   startDate: boundedText(40),
   endDate: boundedText(40),
   bullets,

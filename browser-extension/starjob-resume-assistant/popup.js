@@ -315,7 +315,7 @@ function sanitizeResumeForAi(resume, fields) {
   const includeBirthDate = Array.isArray(fields) && fields.some((field) => {
     const descriptor = normalizeDescriptor(`${field?.label || ""} ${field?.attributes || ""} ${field?.context || ""}`);
     const rawDescriptor = `${field?.label || ""} ${field?.attributes || ""} ${field?.context || ""}`;
-    return ["出生日期", "出生年月", "生日", "birthdate", "dateofbirth"].some((term) => descriptor.includes(normalizeDescriptor(term)))
+    return ["出生日期", "出生年月", "生日", "birthdate", "dateofbirth", "年龄", "周岁", "age"].some((term) => descriptor.includes(normalizeDescriptor(term)))
       || /(?:^|[^a-z])dob(?:[^a-z]|$)/i.test(rawDescriptor);
   });
 
@@ -329,6 +329,9 @@ function sanitizeResumeForAi(resume, fields) {
         name: text(basics.name),
         englishName: text(basics.englishName),
         birthDate: includeBirthDate ? text(basics.birthDate) : "",
+        gender: text(basics.gender),
+        nationality: text(basics.nationality),
+        preferredLocations: text(basics.preferredLocations),
         phone: text(basics.phone),
         email: text(basics.email),
         city: text(basics.city),
@@ -343,12 +346,13 @@ function sanitizeResumeForAi(resume, fields) {
         courses: text(item.courses), honors: text(item.honors),
       })),
       work: mapEntries(content.work, (item = {}) => ({
+        experienceType: ["internship", "employment", "other"].includes(item.experienceType) ? item.experienceType : "other",
         company: text(item.company), title: text(item.title), location: text(item.location),
         startDate: text(item.startDate), endDate: text(item.endDate), current: item.current === true,
         bullets: bullets(item.bullets),
       })),
       projects: mapEntries(content.projects, (item = {}) => ({
-        name: text(item.name), role: text(item.role), startDate: text(item.startDate),
+        name: text(item.name), role: text(item.role), url: text(item.url), startDate: text(item.startDate),
         endDate: text(item.endDate), bullets: bullets(item.bullets), keywords: text(item.keywords),
       })),
       skills: mapEntries(content.skills, (item = {}) => ({

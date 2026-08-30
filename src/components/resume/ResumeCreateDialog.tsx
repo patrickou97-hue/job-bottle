@@ -94,8 +94,8 @@ function LanguageOption({
       className={cn(
         "pressable flex min-h-20 items-center gap-4 rounded-lg border px-4 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--star-apricot)]",
         active
-          ? "border-[color:var(--aurora)] bg-[color:var(--surface-raised)] text-ink-primary"
-          : "border-[color:var(--line-ghost)] text-ink-secondary hover:border-[color:var(--line-soft)]",
+          ? "border-[color:var(--aurora)] bg-[color:var(--surface-read-bg)] text-ink-primary"
+          : "border-[color:var(--line-ghost)] text-ink-secondary hover:border-[color:var(--line-strong)]",
       )}
       onClick={onClick}
     >

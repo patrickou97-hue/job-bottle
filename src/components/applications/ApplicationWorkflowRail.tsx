@@ -95,7 +95,7 @@ export function ApplicationWorkflowEditor({
             <div>
               <h2 id="application-workflow-editor-title" className="text-xl font-semibold text-ink-primary">编辑 {companyName} 的投递流程</h2>
               <p id="application-workflow-editor-description" className="mt-2 max-w-2xl text-sm leading-6 text-ink-muted">
-                这套节点只影响这家公司。节点名称和顺序由你决定，同时归入标准阶段以便筛选和记录历史。
+                这套节点只影响当前这条岗位投递记录。节点名称和顺序由你决定，同时归入标准阶段以便筛选和记录历史。
               </p>
             </div>
             <button type="button" className="inline-flex size-10 shrink-0 items-center justify-center rounded-lg text-ink-muted hover:bg-[color:var(--surface-hover-bg)]" onClick={onClose} aria-label="关闭星轨编辑">

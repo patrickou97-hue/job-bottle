@@ -76,3 +76,25 @@ test("AI 智能填写完整处理 750 字段并在超限时先于模型调用停
   assert.ok(limitCheckIndex < modelCallIndex, "750 字段检查必须早于模型调用");
   assert.ok(allBatchesIndex >= 0 && allBatchesIndex < writeIndex, "必须等待全部模型批次成功后才写入页面");
 });
+
+test("常见网申字段按实习范围和安全边界处理", () => {
+  assert.match(fill, /key: "basics\.age"[\s\S]*localExact: true/);
+  assert.match(fill, /key: "basics\.gender"/);
+  assert.match(fill, /key: "basics\.nationality"/);
+  assert.match(fill, /key: "basics\.preferredLocations"/);
+  assert.match(fill, /key: "project\.url"/);
+  assert.match(fill, /item\?\.experienceType === "internship"/);
+  assert.match(fill, /key: "work\.none"[\s\S]*employmentWork\.length === 0/);
+  assert.match(fill, /element\.multiple/);
+  assert.match(fill, /recordScope: field\.recordScope \|\| null/);
+  assert.match(fill, /"file"\]\.includes\(element\.type\)/);
+  assert.doesNotMatch(fill, /manualOnlyTerms/);
+  assert.match(popup, /"年龄", "周岁", "age"/);
+  assert.match(popup, /preferredLocations/);
+  assert.match(popup, /experienceType/);
+  assert.match(popup, /url: text\(item\.url/);
+  assert.match(route, /recordScope: z\.enum\(\["internship", "employment"\]\)/);
+  assert.match(route, /getSectionEntries\(resume, section, field\.recordScope\)/);
+  assert.match(route, /function deriveAgeValue/);
+  assert.match(route, /recordScope=internship/);
+});

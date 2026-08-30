@@ -230,7 +230,7 @@ export function Navbar({ appearance = "work" }: { appearance?: "scene" | "work" 
           >
             反馈
           </Link>
-          <span aria-hidden="true" className="h-3 w-px bg-[color:var(--line-soft)]" />
+          <span aria-hidden="true" className="h-3 w-px bg-[color:var(--line-ghost)]" />
           <Link
             href={profile ? "/profile" : "/login"}
             className={cn("transition", pathname.startsWith("/profile") ? "text-ink-primary" : "text-ink-secondary")}

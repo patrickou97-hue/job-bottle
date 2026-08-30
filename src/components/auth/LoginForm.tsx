@@ -181,7 +181,7 @@ export function LoginForm() {
             type="button"
             className={cn(
               "min-h-10 rounded-lg px-3 text-sm font-medium transition",
-              loginMethod === "email" ? "bg-[color:var(--surface-strong-bg)] text-ink-primary shadow-sm" : "text-ink-muted",
+              loginMethod === "email" ? "bg-[color:var(--surface-read-bg-strong)] text-ink-primary shadow-sm" : "text-ink-muted",
             )}
             onClick={() => { setLoginMethod("email"); setMessage(""); }}
           >
@@ -191,7 +191,7 @@ export function LoginForm() {
             type="button"
             className={cn(
               "min-h-10 rounded-lg px-3 text-sm font-medium transition",
-              loginMethod === "wechat" ? "bg-[color:var(--surface-strong-bg)] text-ink-primary shadow-sm" : "text-ink-muted",
+              loginMethod === "wechat" ? "bg-[color:var(--surface-read-bg-strong)] text-ink-primary shadow-sm" : "text-ink-muted",
             )}
             onClick={() => { setLoginMethod("wechat"); setMessage(""); }}
           >
@@ -386,7 +386,7 @@ function LoginOptionGrid({
             className={cn(
               "pressable rounded-lg px-3 py-1.5 text-xs font-medium transition",
               active
-                ? "bg-[#7E7CB5] text-[#F1EFFF]"
+                ? "bg-[color:var(--aurora)] text-[color:var(--text-inverse)]"
                 : "status-pill text-ink-secondary hover:text-ink-primary",
             )}
             aria-pressed={active}

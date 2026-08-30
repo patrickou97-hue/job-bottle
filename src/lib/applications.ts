@@ -11,6 +11,7 @@ const APPLICATION_REQUEST_TIMEOUT_MS = 12_000;
 
 const LEGACY_UPDATE_KEYS = ["status", "progress_note", "note", "interview_round", "applied_at"] as const;
 const WORKFLOW_UPDATE_KEYS = [
+  "applied_position",
   "candidate_stage",
   "priority",
   "application_channel",
@@ -164,7 +165,7 @@ export function isMissingApplicationWorkflowColumnsError(error: unknown) {
     : typeof error === "object" && error && "message" in error
       ? String(error.message)
       : String(error ?? "");
-  return /candidate_stage|priority|saved_at|application_channel|application_account|contact_name|next_action|resume_id|custom_stage_label|workflow_node_id|workflow_nodes|review_note/i.test(message)
+  return /applied_position|candidate_stage|priority|saved_at|application_channel|application_account|contact_name|next_action|resume_id|custom_stage_label|workflow_node_id|workflow_nodes|review_note/i.test(message)
     && /column|schema cache|does not exist|could not find/i.test(message);
 }
 

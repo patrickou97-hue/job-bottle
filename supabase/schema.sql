@@ -39,6 +39,7 @@ create table if not exists public.user_applications (
   job_id uuid not null references public.jobs(id) on delete cascade,
   status text not null default 'opened',
   progress_note text,
+  applied_position text,
   applied_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique(user_id, job_id),

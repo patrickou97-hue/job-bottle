@@ -3,21 +3,17 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, RefreshCw, Search, Settings2, SlidersHorizontal } from "lucide-react";
+import { ArrowRight, ChevronDown, ExternalLink, RefreshCw, Search, Settings2, SlidersHorizontal } from "lucide-react";
 import { motion } from "motion/react";
 import { APPLICATION_PRIORITY_LABELS } from "@/lib/constants";
 import { fetchMyApplications, updateApplication } from "@/lib/applications";
 import { getNextAction } from "@/lib/career-workspace";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
-import { formatDateTime } from "@/lib/utils";
+import { formatDateTime, isValidHttpUrl, sanitizeApplicationUrl } from "@/lib/utils";
 import { ProgressDrawer } from "@/components/applications/ProgressDrawer";
 import { StatusPill } from "@/components/applications/StatusPill";
-import {
-  ApplicationStageSelect,
-  ApplicationWorkflowEditor,
-  type ApplicationStageChange,
-} from "@/components/applications/ApplicationWorkflowRail";
+import { ApplicationWorkflowEditor } from "@/components/applications/ApplicationWorkflowRail";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
@@ -49,7 +45,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
   const [freshness, setFreshness] = useState<FreshnessFilter>("");
   const [sort, setSort] = useState<ApplicationSort>("attention");
   const [workflowSaving, setWorkflowSaving] = useState(false);
-  const [stageSavingId, setStageSavingId] = useState("");
+  const [endedExpanded, setEndedExpanded] = useState(false);
   const [workspaceMessage, setWorkspaceMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
@@ -112,6 +108,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
         const workflow = getApplicationWorkflow(application);
         const matchesKeyword = !key || [
           application.job.company_name,
+          application.applied_position ?? "",
           application.job.job_titles ?? "",
           application.job.job_categories.join("、"),
           getApplicationWorkflowLabel(application, workflow),
@@ -123,6 +120,15 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
       .sort((a, b) => compareApplications(a, b, sort));
   }, [applications, freshness, keyword, sort, stageGroup]);
 
+  const activeApplications = useMemo(
+    () => filtered.filter((application) => isActive(application)),
+    [filtered],
+  );
+  const endedApplications = useMemo(
+    () => filtered.filter((application) => !isActive(application)),
+    [filtered],
+  );
+
   function handleApplicationChanged(nextApplication: ApplicationWithJob) {
     setApplications((current) => current.map((application) => application.id === nextApplication.id ? nextApplication : application));
     setDrawerApplication((current) => current?.id === nextApplication.id ? nextApplication : current);
@@ -133,37 +139,6 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
     setApplications((current) => current.filter((application) => application.id !== applicationId));
     setDrawerApplication((current) => current?.id === applicationId ? null : current);
     setWorkflowEditorApplication((current) => current?.id === applicationId ? null : current);
-  }
-
-  async function handleStageChange(application: ApplicationWithJob, change: ApplicationStageChange) {
-    if (stageSavingId) return;
-    const previous = application;
-    const optimistic: ApplicationWithJob = {
-      ...application,
-      status: change.status,
-      workflow_node_id: change.workflowNodeId,
-      custom_stage_label: change.customStageLabel,
-      updated_at: new Date().toISOString(),
-    };
-    setStageSavingId(application.id);
-    setWorkspaceMessage("");
-    handleApplicationChanged(optimistic);
-    try {
-      const updated = await updateApplication(createClient(), application.id, {
-        status: change.status,
-        custom_stage_label: change.customStageLabel,
-        ...(application.workflow_nodes != null || application.workflow_node_id != null || change.workflowNodeId != null
-          ? { workflow_node_id: change.workflowNodeId }
-          : {}),
-      });
-      handleApplicationChanged({ ...optimistic, ...updated, job: application.job });
-      setWorkspaceMessage(`已将 ${application.job.company_name} 更新为 ${change.label}。`);
-    } catch (error) {
-      handleApplicationChanged(previous);
-      setWorkspaceMessage(error instanceof Error ? error.message : "状态更新失败，请稍后重试。");
-    } finally {
-      setStageSavingId("");
-    }
   }
 
   function openWorkflowEditor(application: ApplicationWithJob) {
@@ -199,10 +174,10 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
       });
       handleApplicationChanged({ ...optimistic, ...updated, job: application.job });
       setWorkflowEditorApplication(null);
-      setWorkspaceMessage(`${application.job.company_name} 的独立投递流程已保存。`);
+      setWorkspaceMessage(`${application.job.company_name} · ${getApplicationJobLabel(application)} 的独立投递流程已保存。`);
     } catch (error) {
       handleApplicationChanged(application);
-      setWorkspaceMessage(error instanceof Error ? error.message : "公司流程保存失败，请稍后重试。");
+      setWorkspaceMessage(error instanceof Error ? error.message : "岗位流程保存失败，请稍后重试。");
     } finally {
       setWorkflowSaving(false);
     }
@@ -216,6 +191,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
   }
 
   const filtersActive = Boolean(keyword || stageGroup || freshness || sort !== "attention");
+  const endedOpen = endedExpanded || stageGroup === "ended";
 
   return (
     <div className="observatory-page space-y-7">
@@ -223,10 +199,10 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
         <div>
           <p className="page-kicker">投递总览</p>
           <h1 className="page-title">投递管理</h1>
-          <p className="page-description">一张清单管理所有公司，每家公司使用自己的投递流程。</p>
+          <p className="page-description">一条投递对应一家公司与一个岗位，进度和跟进信息独立保存。</p>
         </div>
         <div className="progress-summary grid grid-cols-2 gap-x-6 gap-y-5 px-4 py-3 md:grid-cols-4 md:px-5">
-          <StatBlock value={applications.length} label="全部公司" />
+          <StatBlock value={applications.length} label="全部岗位" />
           <StatBlock value={stageCounts.interview} label="笔试 / 面试" />
           <StatBlock value={stageCounts.offer} label="收到 Offer" />
           <StatBlock value={staleCount} label="7 天以上无进展" urgent={staleCount > 0} />
@@ -241,7 +217,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
         </section>
       ) : applications.length === 0 ? (
         <section className="empty-state border-y border-[color:var(--line-ghost)]">
-          <div><h2>还没有投递记录</h2><p>先从岗位坐标收录一个岗位，再在这里管理每家公司的独立流程。</p><Link href="/explore" className="gold-button mt-5 inline-flex rounded-lg px-4 py-2 text-sm font-medium">去岗位坐标</Link></div>
+          <div><h2>还没有投递记录</h2><p>先从岗位坐标收录一个岗位，再在这里补充实际投递岗位并管理进度。</p><Link href="/explore" className="gold-button mt-5 inline-flex rounded-lg px-4 py-2 text-sm font-medium">去岗位坐标</Link></div>
         </section>
       ) : (
         <>
@@ -292,25 +268,62 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
           </section>
 
           {filtered.length === 0 ? (
-            <div className="empty-state border-y border-[color:var(--line-ghost)]"><div><h3>没有符合条件的公司</h3><p>调整进程、更新时间或搜索条件后再试。</p><Button variant="secondary" className="mt-4" onClick={clearFilters}>清除筛选</Button></div></div>
+            <div className="empty-state border-y border-[color:var(--line-ghost)]"><div><h3>没有符合条件的投递</h3><p>调整进程、更新时间或搜索条件后再试。</p><Button variant="secondary" className="mt-4" onClick={clearFilters}>清除筛选</Button></div></div>
           ) : (
-            <section aria-label="投递公司清单">
-              <div className="hidden grid-cols-[minmax(190px,1.1fr)_minmax(170px,0.8fr)_150px_minmax(180px,0.9fr)_auto] gap-4 border-b border-[color:var(--line)] px-4 pb-3 text-[11px] font-medium text-ink-muted lg:grid">
-                <span>公司与岗位</span><span>当前进程</span><span>最近进展</span><span>下一步</span><span className="text-right">操作</span>
-              </div>
-              <div className="divide-y divide-[color:var(--line-ghost)] border-b border-[color:var(--line-ghost)]">
-                {filtered.map((application) => (
-                  <motion.div key={application.id} layout="position" transition={layoutTransition}>
-                    <ApplicationListRow
-                      application={application}
-                      saving={stageSavingId === application.id}
-                      onOpen={() => setDrawerApplication(application)}
-                      onEditWorkflow={() => openWorkflowEditor(application)}
-                      onStageChange={(change) => void handleStageChange(application, change)}
-                    />
-                  </motion.div>
-                ))}
-              </div>
+            <section aria-label="投递岗位清单" className="space-y-7">
+              {activeApplications.length > 0 ? (
+                <div>
+                  <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-[color:var(--line-ghost)] pb-3">
+                    <div>
+                      <h2 className="section-title">进行中的投递</h2>
+                      <p className="mt-1 text-xs text-ink-muted">每一行就是一条投递，可单独记录实际岗位与进度。</p>
+                    </div>
+                    <span className="text-xs tabular-nums text-ink-muted">{activeApplications.length} 条投递</span>
+                  </div>
+                  <div className="mt-4 divide-y divide-[color:var(--line-ghost)] border-y border-[color:var(--line-ghost)]">
+                    {activeApplications.map((application) => (
+                      <motion.div key={application.id} layout="position" transition={layoutTransition}>
+                        <ApplicationListRow
+                          application={application}
+                          onOpen={() => setDrawerApplication(application)}
+                          onEditWorkflow={() => openWorkflowEditor(application)}
+                        />
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {endedApplications.length > 0 ? (
+                <section className="border-y border-[color:var(--line-ghost)]" aria-label="已结束的投递">
+                  <button
+                    type="button"
+                    className="flex min-h-14 w-full items-center justify-between gap-4 px-1 py-3 text-left"
+                    aria-expanded={endedOpen}
+                    onClick={() => setEndedExpanded((expanded) => !expanded)}
+                  >
+                    <span>
+                      <span className="block text-sm font-semibold text-ink-primary">已结束</span>
+                      <span className="mt-1 block text-xs text-ink-muted">{endedApplications.length} 条投递 · 默认收起，按需查看</span>
+                    </span>
+                    <ChevronDown aria-hidden="true" className={`size-5 shrink-0 text-ink-muted transition-transform ${endedOpen ? "rotate-180" : ""}`} />
+                  </button>
+                  {endedOpen ? (
+                    <div className="divide-y divide-[color:var(--line-ghost)] border-t border-[color:var(--line-ghost)]">
+                      {endedApplications.map((application) => (
+                        <motion.div key={application.id} layout="position" transition={layoutTransition}>
+                          <ApplicationListRow
+                            application={application}
+                            ended
+                            onOpen={() => setDrawerApplication(application)}
+                            onEditWorkflow={() => openWorkflowEditor(application)}
+                          />
+                        </motion.div>
+                      ))}
+                    </div>
+                  ) : null}
+                </section>
+              ) : null}
             </section>
           )}
         </>
@@ -328,7 +341,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
       {workflowEditorApplication ? (
         <ApplicationWorkflowEditor
           open
-          companyName={workflowEditorApplication.job.company_name}
+          companyName={`${workflowEditorApplication.job.company_name} · ${getApplicationJobLabel(workflowEditorApplication)}`}
           nodes={getApplicationWorkflow(workflowEditorApplication)}
           saving={workflowSaving}
           onClose={() => setWorkflowEditorApplication(null)}
@@ -339,50 +352,59 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
   );
 }
 
-function ApplicationListRow({ application, saving, onOpen, onEditWorkflow, onStageChange }: {
+function ApplicationListRow({ application, ended = false, onOpen, onEditWorkflow }: {
   application: ApplicationWithJob;
-  saving: boolean;
+  ended?: boolean;
   onOpen: () => void;
   onEditWorkflow: () => void;
-  onStageChange: (change: ApplicationStageChange) => void;
 }) {
   const workflow = getApplicationWorkflow(application);
   const nextAction = getNextAction(application);
   const recency = getRecencyInfo(application);
   const priorityKey = (application.priority ?? 0) as keyof typeof APPLICATION_PRIORITY_LABELS;
   const priorityLabel = APPLICATION_PRIORITY_LABELS[priorityKey] ?? APPLICATION_PRIORITY_LABELS[0];
+  const jobMeta = [application.job.locations, application.job.industry, application.job.batch_type].filter(Boolean).join(" · ");
+  const jobTitle = getApplicationJobLabel(application);
+  const officialUrl = isValidHttpUrl(application.job.apply_url) ? sanitizeApplicationUrl(application.job.apply_url) : undefined;
   return (
-    <article className="data-row grid gap-4 px-3 py-5 lg:grid-cols-[minmax(190px,1.1fr)_minmax(170px,0.8fr)_150px_minmax(180px,0.9fr)_auto] lg:items-center lg:px-4">
+    <article className={`data-row grid gap-4 px-3 py-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(250px,1fr)_minmax(215px,0.75fr)] lg:items-center lg:px-4 ${ended ? "opacity-80" : ""}`}>
       <button type="button" className="min-w-0 text-left" onClick={onOpen}>
-        <span className="block truncate text-sm font-semibold text-ink-primary">{application.job.company_name}</span>
-        <span className="mt-1 block truncate text-xs text-ink-secondary">{application.job.job_titles || application.job.job_categories.join("、") || "岗位待补充"}</span>
+        <span className="block truncate text-lg font-semibold leading-6 tracking-tight text-ink-primary">{application.job.company_name}</span>
+        <span className="mt-0.5 block truncate text-sm font-normal leading-5 text-ink-secondary">{jobTitle}</span>
+        <span className="mt-1 block truncate text-xs text-ink-secondary">{jobMeta || application.job.job_categories.join("、") || "岗位信息待补充"}</span>
       </button>
 
-      <div className="min-w-0">
-        <div className="mb-2 flex items-center gap-2">
-          <StatusPill status={application.status} label={getApplicationWorkflowLabel(application, workflow)} custom={isApplicationCustomStage(application, workflow)} className="px-2 py-1 text-[11px]" />
-          <span className="text-[10px] text-ink-muted">{workflow.length} 节点</span>
-        </div>
-        <ApplicationStageSelect application={application} nodes={workflow} compact disabled={saving} onChange={onStageChange} />
+      <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+        <button type="button" className="min-w-0 text-left" onClick={onOpen}>
+          <div className="flex items-center gap-2">
+            <StatusPill status={application.status} label={getApplicationWorkflowLabel(application, workflow)} custom={isApplicationCustomStage(application, workflow)} className="px-2 py-1 text-[11px]" />
+            <span className="text-[10px] text-ink-muted">{workflow.length} 节点</span>
+          </div>
+          <span className={recency.urgent ? "mt-2 block text-xs font-medium text-[color:var(--text-danger)]" : "mt-2 block text-xs font-medium text-ink-secondary"}>{recency.label}</span>
+          <span className="mt-1 block text-[10px] text-ink-muted">{formatDateTime(application.updated_at)}</span>
+        </button>
+
+        <button type="button" className="min-w-0 text-left" onClick={onOpen}>
+          <span className="block text-[10px] font-medium uppercase tracking-[0.12em] text-ink-muted">下一步</span>
+          <span className="mt-1 block truncate text-xs font-medium text-ink-secondary">{nextAction.title}</span>
+          <span className="mt-1 block truncate text-[10px] text-ink-muted">{application.next_action_at ? `计划 ${formatDateTime(application.next_action_at)}` : nextAction.detail}</span>
+          {priorityLabel !== "未设置" ? <span className="mt-1 block text-[10px] text-ink-muted">{priorityLabel}</span> : null}
+        </button>
       </div>
 
-      <button type="button" className="text-left" onClick={onOpen}>
-        <span className={recency.urgent ? "block text-sm font-medium text-[color:var(--text-danger)]" : "block text-sm font-medium text-ink-secondary"}>{recency.label}</span>
-        <span className="mt-1 block text-[10px] text-ink-muted">{formatDateTime(application.updated_at)}</span>
-      </button>
-
-      <button type="button" className="min-w-0 text-left" onClick={onOpen}>
-        <span className="block truncate text-xs font-medium text-ink-secondary">{nextAction.title}</span>
-        <span className="mt-1 block truncate text-[11px] text-ink-muted">{application.next_action_at ? `计划 ${formatDateTime(application.next_action_at)}` : nextAction.detail}</span>
-        {priorityLabel !== "未设置" ? <span className="mt-1 block text-[10px] text-ink-muted">{priorityLabel}</span> : null}
-      </button>
-
-      <div className="flex items-center justify-end gap-1">
-        <button type="button" className="inline-flex min-h-9 items-center gap-1.5 rounded-md px-2.5 text-xs text-ink-secondary hover:bg-[color:var(--surface-hover-bg)] hover:text-ink-primary" onClick={onEditWorkflow}>
-          <Settings2 aria-hidden="true" className="size-3.5" />编辑流程
+      <div className="grid grid-cols-2 items-center gap-x-3 gap-y-1 lg:justify-items-end">
+        {officialUrl ? (
+          <a href={officialUrl} target="_blank" rel="noreferrer" className="gold-button inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-semibold">
+            <ExternalLink aria-hidden="true" className="size-3.5" />打开官网
+          </a>
+        ) : (
+          <span className="inline-flex min-h-9 items-center justify-center rounded-lg bg-[color:var(--surface-subtle-bg)] px-3 text-center text-[10px] text-ink-muted">官网链接待补充</span>
+        )}
+        <button type="button" className="text-action inline-flex min-h-9 justify-center gap-1.5 rounded-lg px-2 text-xs" onClick={onOpen} aria-label={`查看 ${application.job.company_name} ${jobTitle} 详情`}>
+          查看详情<ArrowRight aria-hidden="true" className="size-3.5" />
         </button>
-        <button type="button" className="inline-flex size-9 items-center justify-center rounded-md text-ink-muted hover:bg-[color:var(--surface-hover-bg)] hover:text-ink-primary" onClick={onOpen} aria-label={`查看 ${application.job.company_name} 详情`}>
-          <ArrowRight aria-hidden="true" className="size-4" />
+        <button type="button" className="text-action col-span-2 justify-self-end px-2 text-[11px]" onClick={onEditWorkflow}>
+          <Settings2 aria-hidden="true" className="size-3.5" />编辑当前岗位流程
         </button>
       </div>
     </article>
@@ -391,14 +413,18 @@ function ApplicationListRow({ application, saving, onOpen, onEditWorkflow, onSta
 
 function StageFilterButton({ label, count, active, onClick }: { label: string; count: number; active: boolean; onClick: () => void }) {
   return (
-    <button type="button" className={active ? "inline-flex min-h-9 shrink-0 items-center gap-2 rounded-md bg-[#12294e] px-3 text-xs text-white" : "inline-flex min-h-9 shrink-0 items-center gap-2 rounded-md px-3 text-xs text-ink-secondary hover:bg-[color:var(--surface-hover-bg)]"} aria-pressed={active} onClick={onClick}>
-      {label}<span className={active ? "tabular-nums text-white/65" : "tabular-nums text-ink-muted"}>{count}</span>
+    <button type="button" className={active ? "inline-flex min-h-9 shrink-0 items-center gap-2 rounded-md bg-[color:var(--aurora)] px-3 text-xs text-[color:var(--text-inverse)]" : "inline-flex min-h-9 shrink-0 items-center gap-2 rounded-md px-3 text-xs text-ink-secondary hover:bg-[color:var(--surface-hover-bg)]"} aria-pressed={active} onClick={onClick}>
+      {label}<span className={active ? "tabular-nums opacity-65" : "tabular-nums text-ink-muted"}>{count}</span>
     </button>
   );
 }
 
 function StatBlock({ value, label, urgent = false }: { value: number; label: string; urgent?: boolean }) {
   return <div><div className={urgent ? "font-display text-2xl font-semibold leading-none tabular-nums text-[color:var(--text-danger)] md:text-3xl" : "font-display text-2xl font-semibold leading-none tabular-nums text-ink-primary md:text-3xl"}>{value}</div><div className="mt-2 whitespace-nowrap text-xs text-ink-muted">{label}</div></div>;
+}
+
+function getApplicationJobLabel(application: ApplicationWithJob) {
+  return application.applied_position?.trim() || application.job.job_titles?.trim() || application.job.job_categories.join("、") || "岗位待补充";
 }
 
 function matchesStageGroup(application: ApplicationWithJob, group: StageGroup) {

@@ -87,8 +87,8 @@ export function FeedbackClient() {
                 className={cn(
                   "pressable min-h-11 rounded-lg border px-3 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--star-apricot)]",
                   selected
-                    ? "border-[color:var(--aurora)] bg-[color:var(--surface-raised)] text-ink-primary"
-                    : "border-[color:var(--line-ghost)] text-ink-secondary hover:border-[color:var(--line-soft)] hover:text-ink-primary",
+                    ? "border-[color:var(--aurora)] bg-[color:var(--surface-read-bg)] text-ink-primary"
+                    : "border-[color:var(--line-ghost)] text-ink-secondary hover:border-[color:var(--line-strong)] hover:text-ink-primary",
                 )}
                 aria-pressed={selected}
                 onClick={() => setFeedbackType(type)}

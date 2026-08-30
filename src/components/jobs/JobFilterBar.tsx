@@ -1,6 +1,6 @@
 "use client";
 
-import { Search } from "lucide-react";
+import { ChevronDown, Search } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { EMPTY_JOB_FILTERS } from "@/lib/constants";
@@ -13,7 +13,6 @@ import {
 } from "@/lib/locations";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
-import { Button } from "@/components/ui/Button";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { cn } from "@/lib/utils";
 import type { JobDiscoveryScope, JobFilters } from "@/lib/types";
@@ -51,6 +50,7 @@ export function JobFilterBar({
   const initialLocation = getLocationFilterLabel(filters.location);
   const [locationLevel, setLocationLevel] = useState<LocationFilterLevel>(() => getLocationFilterLevel(filters.location));
   const [cityProvince, setCityProvince] = useState(() => getProvinceForCity(initialLocation, locationGroups));
+  const [filterOpen, setFilterOpen] = useState(false);
   const internalBlankLocationChangeRef = useRef(false);
   const previousResetVersionRef = useRef(resetVersion);
 
@@ -104,21 +104,52 @@ export function JobFilterBar({
     onChange(EMPTY_JOB_FILTERS);
   }
 
+  const activeFilterCount = [
+    filters.keyword.trim(),
+    filters.industry,
+    filters.batchType,
+    filters.location,
+    ...filters.categories,
+    ...filters.tags,
+    discoveryScope !== "all" ? discoveryScope : "",
+  ].filter(Boolean).length;
+
   return (
-    <aside className="relative self-start border-r border-[color:var(--line-ghost)] pr-5 xl:sticky xl:top-24">
-      <div className="mb-5 flex items-center justify-between gap-3">
-        <h2 className="section-title text-base">筛选</h2>
+    <aside className="filter-rail relative self-start border-b border-r-0 border-[color:var(--line-ghost)] pb-0 xl:sticky xl:top-24 xl:border-b-0 xl:border-r xl:pr-5">
+      <div className="filter-disclosure" data-open={filterOpen}>
         <button
           type="button"
-          className="text-action pressable px-1 py-1 text-xs"
-          aria-label="清空所有岗位筛选"
-          onClick={clearFilters}
+          className="filter-disclosure__summary"
+          aria-expanded={filterOpen}
+          aria-controls="job-filter-content"
+          onClick={() => setFilterOpen((current) => !current)}
         >
-          清空筛选
+          <span>
+            <span className="block text-sm font-semibold text-ink-primary">筛选岗位</span>
+            <span className="mt-1 block text-xs text-ink-muted">
+              {activeFilterCount > 0 ? `已启用 ${activeFilterCount} 项条件` : "按你的目标缩小范围"}
+            </span>
+          </span>
+          <span className="filter-disclosure__summary-end">
+            {activeFilterCount > 0 ? <span className="filter-count">{activeFilterCount}</span> : null}
+            <ChevronDown aria-hidden="true" className="filter-disclosure__chevron size-4" />
+          </span>
         </button>
-      </div>
 
-      <div className="space-y-5">
+        <div id="job-filter-content" className={cn("filter-disclosure__content", !filterOpen && "hidden xl:block")}>
+          <div className="mb-5 flex items-center justify-between gap-3">
+            <h2 className="section-title text-base">筛选</h2>
+            <button
+              type="button"
+              className="text-action pressable px-1 py-1 text-xs"
+              aria-label="清空所有岗位筛选"
+              onClick={clearFilters}
+            >
+              清空筛选
+            </button>
+          </div>
+
+          <div className="space-y-5">
         <div>
           <label htmlFor="job-discovery-scope" className="mb-2 block text-sm text-ink-secondary">
             快捷查看
@@ -251,13 +282,8 @@ export function JobFilterBar({
           </div>
         </div>
 
-        <Button
-          variant="secondary"
-          className="w-full"
-          onClick={clearFilters}
-        >
-          清空筛选
-        </Button>
+          </div>
+        </div>
       </div>
     </aside>
   );
@@ -294,8 +320,8 @@ function LocationFilter({
   ];
 
   return (
-    <div>
-      <span className="mb-2 block text-sm text-ink-secondary">工作地点</span>
+    <fieldset>
+      <legend className="mb-2 block text-sm text-ink-secondary">工作地点</legend>
       <SegmentedControl
         ariaLabel="地点层级"
         className="liquid-slider w-full"
@@ -333,6 +359,6 @@ function LocationFilter({
           </label>
         </div>
       ) : null}
-    </div>
+    </fieldset>
   );
 }

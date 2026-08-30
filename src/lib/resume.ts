@@ -15,6 +15,9 @@ export type ResumeBasics = {
   englishName: string;
   photoDataUrl: string;
   birthDate: string;
+  gender: string;
+  nationality: string;
+  preferredLocations: string;
   phone: string;
   email: string;
   city: string;
@@ -38,6 +41,7 @@ export type ResumeEducation = {
 
 export type ResumeExperience = {
   id: string;
+  experienceType: "internship" | "employment" | "other";
   company: string;
   title: string;
   location: string;
@@ -51,6 +55,7 @@ export type ResumeProject = {
   id: string;
   name: string;
   role: string;
+  url: string;
   startDate: string;
   endDate: string;
   bullets: string[];
@@ -229,6 +234,9 @@ export function createEmptyResume(language: ResumeLanguage = "zh-CN"): ResumeDoc
         englishName: "",
         photoDataUrl: "",
         birthDate: "",
+        gender: "",
+        nationality: "",
+        preferredLocations: "",
         phone: "",
         email: "",
         city: "",
@@ -268,6 +276,9 @@ export function createSampleResume(): ResumeDocument {
         englishName: "Stella Wang",
         photoDataUrl: "",
         birthDate: "",
+        gender: "",
+        nationality: "",
+        preferredLocations: "",
         phone: "138 0000 0000",
         email: "stella@example.com",
         city: "上海",
@@ -293,6 +304,7 @@ export function createSampleResume(): ResumeDocument {
       work: [
         {
           id: createId("work"),
+          experienceType: "internship",
           company: "欧莱雅中国",
           title: "产品实习生",
           location: "上海",
@@ -310,6 +322,7 @@ export function createSampleResume(): ResumeDocument {
           id: createId("project"),
           name: "欧莱雅 Brandstorm 商业创新挑战赛",
           role: "团队产品负责人",
+          url: "",
           startDate: "2025.10",
           endDate: "2026.01",
           keywords: "用户研究、品牌策略、商业分析、原型设计",
@@ -466,6 +479,7 @@ export function createBlankEducation(): ResumeEducation {
 export function createBlankExperience(): ResumeExperience {
   return {
     id: createId("work"),
+    experienceType: "internship",
     company: "",
     title: "",
     location: "",
@@ -481,6 +495,7 @@ export function createBlankProject(): ResumeProject {
     id: createId("project"),
     name: "",
     role: "",
+    url: "",
     startDate: "",
     endDate: "",
     bullets: [""],
@@ -543,11 +558,24 @@ function normalizeResumeDocument(value: unknown): ResumeDocument | null {
       basics: {
         ...fallback.content.basics,
         ...basics,
+        gender: typeof basics.gender === "string" ? basics.gender : "",
+        nationality: typeof basics.nationality === "string" ? basics.nationality : "",
+        preferredLocations: typeof basics.preferredLocations === "string" ? basics.preferredLocations : "",
       },
       sectionOrder: normalizeResumeSectionOrder(content.sectionOrder),
       education: Array.isArray(content.education) ? content.education : [],
-      work: Array.isArray(content.work) ? content.work : [],
-      projects: Array.isArray(content.projects) ? content.projects : [],
+      work: Array.isArray(content.work) ? content.work.map((item) => ({
+        ...item,
+        experienceType: item?.experienceType === "internship" || item?.experienceType === "employment" || item?.experienceType === "other"
+          ? item.experienceType
+          : /实习|intern(?:ship)?|trainee|暑期|summer analyst|off[- ]?cycle/i.test(`${item?.title ?? ""}`)
+            ? "internship"
+            : "other",
+      })) : [],
+      projects: Array.isArray(content.projects) ? content.projects.map((item) => ({
+        ...item,
+        url: typeof item?.url === "string" ? item.url : "",
+      })) : [],
       skills: Array.isArray(content.skills) ? content.skills : [],
       campus: Array.isArray(content.campus) ? content.campus : [],
       awards: Array.isArray(content.awards) ? content.awards : [],

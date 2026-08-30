@@ -13,12 +13,14 @@ export function Drawer({
   children,
   onClose,
   showHelpLink = true,
+  size = "default",
 }: {
   open: boolean;
   title: string;
   children: ReactNode;
   onClose: () => void;
   showHelpLink?: boolean;
+  size?: "default" | "wide";
 }) {
   const panelRef = useRef<HTMLElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -66,7 +68,7 @@ export function Drawer({
             role="dialog"
             aria-modal="true"
             aria-labelledby="drawer-title"
-            className="apple-sheet absolute inset-x-0 bottom-0 flex max-h-[88svh] w-full flex-col overflow-hidden md:bottom-4 md:left-auto md:right-4 md:top-4 md:h-[calc(100svh-2rem)] md:max-h-[calc(100svh-2rem)] md:max-w-xl"
+            className={`apple-sheet absolute inset-x-0 bottom-0 flex max-h-[88svh] w-full flex-col overflow-hidden md:bottom-4 md:left-auto md:right-4 md:top-4 md:h-[calc(100svh-2rem)] md:max-h-[calc(100svh-2rem)] ${size === "wide" ? "md:max-w-3xl xl:max-w-4xl" : "md:max-w-xl"}`}
             initial={{ y: reducedMotion ? 0 : "100%", x: 0, opacity: reducedMotion ? 0 : 1 }}
             animate={{ y: 0, x: 0 }}
             exit={{ y: reducedMotion ? 0 : "100%", x: 0, opacity: reducedMotion ? 0 : 1 }}
@@ -87,7 +89,7 @@ export function Drawer({
             </div>
             <div
               data-drawer-scroll
-              className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-5 pb-[var(--app-safe-content-bottom)] [-webkit-overflow-scrolling:touch] md:px-7 md:pb-7"
+              className={`min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-5 pb-[var(--app-safe-content-bottom)] [-webkit-overflow-scrolling:touch] ${size === "wide" ? "md:px-9 md:pb-9" : "md:px-7 md:pb-7"}`}
             >
               {children}
               {showHelpLink ? (

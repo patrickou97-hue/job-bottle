@@ -14,6 +14,9 @@ const basicsSchema = z.object({
   name: text(100),
   englishName: text(120),
   birthDate: text(40),
+  gender: text(40),
+  nationality: text(120),
+  preferredLocations: text(300),
   phone: text(80),
   email: text(160),
   city: text(120),
@@ -33,6 +36,7 @@ const educationSchema = z.object({
   honors: text(800),
 }).strict();
 const experienceSchema = z.object({
+  experienceType: z.enum(["internship", "employment", "other"]),
   company: text(180),
   title: text(180),
   location: text(120),
@@ -44,6 +48,7 @@ const experienceSchema = z.object({
 const projectSchema = z.object({
   name: text(180),
   role: text(180),
+  url: text(500),
   startDate: text(40),
   endDate: text(40),
   bullets,
@@ -410,7 +415,7 @@ function mapUpstreamError(error: unknown) {
   return NextResponse.json({ error: getUpstreamErrorMessage(error) }, { status });
 }
 
-const FULL_RESULT_SHAPE = `只返回一个完整严格 JSON，不要省略任何键：{"summary":"string","warnings":["string"],"draft":{"language":"zh-CN|en-US","title":"string","targetRole":"string","basics":{"name":"string","englishName":"string","birthDate":"仅原文明确标注时返回 YYYY-MM-DD，否则空字符串","phone":"string","email":"string","city":"string","linkedin":"string","github":"string","website":"string","targetRole":"string"},"education":[{"school":"string","degree":"string","major":"string","startDate":"string","endDate":"string","gpa":"string","courses":"string","honors":"string"}],"work":[{"company":"string","title":"string","location":"string","startDate":"string","endDate":"string","current":false,"bullets":["string"]}],"projects":[{"name":"string","role":"string","startDate":"string","endDate":"string","bullets":["string"],"keywords":"string"}],"skills":[{"category":"string","skills":["string"]}],"campus":[{"title":"string","role":"string","date":"string","bullets":["string"]}],"awards":[{"title":"string","role":"string","date":"string","bullets":["string"]}],"certifications":[{"title":"string","role":"string","date":"string","bullets":["string"]}],"languages":[{"title":"string","role":"string","date":"string","bullets":["string"]}],"customSections":[{"title":"string","role":"string","date":"string","bullets":["string"]}]}}`;
+const FULL_RESULT_SHAPE = `只返回一个完整严格 JSON，不要省略任何键：{"summary":"string","warnings":["string"],"draft":{"language":"zh-CN|en-US","title":"string","targetRole":"string","basics":{"name":"string","englishName":"string","birthDate":"仅原文明确标注时返回 YYYY-MM-DD，否则空字符串","gender":"string","nationality":"string","preferredLocations":"string","phone":"string","email":"string","city":"string","linkedin":"string","github":"string","website":"string","targetRole":"string"},"education":[{"school":"string","degree":"string","major":"string","startDate":"string","endDate":"string","gpa":"string","courses":"string","honors":"string"}],"work":[{"experienceType":"internship|employment|other","company":"string","title":"string","location":"string","startDate":"string","endDate":"string","current":false,"bullets":["string"]}],"projects":[{"name":"string","role":"string","url":"string","startDate":"string","endDate":"string","bullets":["string"],"keywords":"string"}],"skills":[{"category":"string","skills":["string"]}],"campus":[{"title":"string","role":"string","date":"string","bullets":["string"]}],"awards":[{"title":"string","role":"string","date":"string","bullets":["string"]}],"certifications":[{"title":"string","role":"string","date":"string","bullets":["string"]}],"languages":[{"title":"string","role":"string","date":"string","bullets":["string"]}],"customSections":[{"title":"string","role":"string","date":"string","bullets":["string"]}]}}`;
 
 const SYSTEM_PROMPT = `你是拾星简历智能整理器。你必须先通读用户整份简历，理解标题、版面顺序和每段经历的语义边界，再把原文一次性映射为完整的拾星简历结构；不能把任务拆成彼此不知道上下文的局部猜测。
 规则：
@@ -422,6 +427,8 @@ const SYSTEM_PROMPT = `你是拾星简历智能整理器。你必须先通读用
 6. 可以规范日期格式和去除项目符号，可以把同一段连续文字拆成 bullet；不得润色事实、增加结果或升级责任等级。
 7. 无法确认的字段返回空字符串；不确定的映射写入 warnings。不要把简历页眉页脚、页码或联系方式误当经历。
 8. birthDate 只有原文以出生日期、生日、date of birth 或 DOB 明确标注时才填写并规范为 YYYY-MM-DD；不得根据年龄、教育日期或证件号码推断。
-9. title 使用文件名或“姓名 · 目标岗位”；targetRole 只有原文明确写出求职意向时才填写。
-10. language 必须根据原文主要叙述语言返回 zh-CN 或 en-US；中英混合时按经历描述、项目描述等正文占比判断。
-11. 必须返回全部区块的完整严格 JSON；没有内容的数组返回 []，不要 Markdown、注释、省略号或额外解释。`;
+9. gender、nationality、preferredLocations 仅在原文明确写出时填写；不得根据姓名、学校、城市或语言推断。项目 url 仅在链接明确属于该项目时填写。
+10. experienceType 只能依据区块标题或原文措辞判断：实习为 internship，明确正式全职为 employment，不能确认为 other；不得只看岗位名称猜测。
+11. title 使用文件名或“姓名 · 目标岗位”；targetRole 只有原文明确写出求职意向时才填写。
+12. language 必须根据原文主要叙述语言返回 zh-CN 或 en-US；中英混合时按经历描述、项目描述等正文占比判断。
+13. 必须返回全部区块的完整严格 JSON；没有内容的数组返回 []，不要 Markdown、注释、省略号或额外解释。`;

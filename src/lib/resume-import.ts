@@ -13,6 +13,9 @@ export type ImportedResumeBasics = {
   name: string;
   englishName: string;
   birthDate: string;
+  gender: string;
+  nationality: string;
+  preferredLocations: string;
   phone: string;
   email: string;
   city: string;
@@ -38,6 +41,7 @@ export type ImportedResumeDraft = {
     honors: string;
   }>;
   work: Array<{
+    experienceType: "internship" | "employment" | "other";
     company: string;
     title: string;
     location: string;
@@ -49,6 +53,7 @@ export type ImportedResumeDraft = {
   projects: Array<{
     name: string;
     role: string;
+    url: string;
     startDate: string;
     endDate: string;
     bullets: string[];
@@ -186,6 +191,9 @@ export function createEmptyImportedDraft(title = "导入简历"): ImportedResume
       name: "",
       englishName: "",
       birthDate: "",
+      gender: "",
+      nationality: "",
+      preferredLocations: "",
       phone: "",
       email: "",
       city: "",
@@ -276,6 +284,7 @@ function parseExperienceSection(lines: string[]): ImportedResumeDraft["work"] {
     const [startDate, endDate] = extractDateRange(text);
     const parts = header.replace(dateRangePattern(), "").split(/[|｜·•]/).map((part) => part.trim()).filter(Boolean);
     return {
+      experienceType: inferExperienceType(text),
       company: parts[0] ?? "",
       title: parts[1] ?? "",
       location: parts[2] ?? "",
@@ -296,6 +305,7 @@ function parseProjectSection(lines: string[]): ImportedResumeDraft["projects"] {
     return {
       name: parts[0] ?? "",
       role: parts[1] ?? "",
+      url: Array.from(text.matchAll(/(?:https?:\/\/|www\.)[^\s，。；;]+/gi), (match) => trimUrl(match[0]))[0] ?? "",
       startDate,
       endDate,
       bullets: cleanList(group.slice(1).length > 0 ? group.slice(1) : [header]),
@@ -369,6 +379,12 @@ function firstMatch(text: string, pattern: RegExp) {
 
 function cleanBasics(basics: ImportedResumeBasics) {
   return Object.fromEntries(Object.entries(basics).map(([key, value]) => [key, value.trim()])) as ImportedResumeBasics;
+}
+
+function inferExperienceType(value: string): ImportedResumeDraft["work"][number]["experienceType"] {
+  if (/实习|intern(?:ship)?|trainee|暑期|summer analyst|off[- ]?cycle/i.test(value)) return "internship";
+  if (/全职|正式员工|full[- ]?time|permanent|工作经历|work experience/i.test(value)) return "employment";
+  return "other";
 }
 
 function cleanList(values: string[]) {
