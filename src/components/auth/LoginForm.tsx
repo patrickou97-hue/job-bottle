@@ -163,24 +163,25 @@ export function LoginForm() {
   const selectedRoles = splitProfileInput(useWatch({ control, name: "targetRoles" }));
 
   return (
-    <div className="mx-auto w-full max-w-md py-4 sm:py-8 lg:py-10">
-      <h1 className="text-center text-3xl font-semibold tracking-[-0.02em] text-ink-primary">
-        登录拾星
+    <div className="login-form mx-auto w-full max-w-md py-4 sm:py-8 lg:py-10">
+      <h1 className="login-form__title text-center text-3xl font-semibold tracking-[-0.02em] text-ink-primary">
+        {isRegister ? "创建拾星账号" : "欢迎回来"}
       </h1>
-      <p className="mt-3 text-center text-sm leading-6 text-ink-secondary">
+      <p className="login-form__subtitle mt-3 text-center text-sm leading-6 text-ink-secondary">
         {searchParams.get("reason") === "resume-download"
           ? "当前简历已保存在本浏览器。完成注册或登录后，将自动返回下载页面。"
           : isRegister
           ? "注册后，保存岗位、简历与投递记录。"
-          : "登录后，继续查看与整理投递进展。"}
+          : "登录拾星，继续查看与整理投递进展。"}
       </p>
 
       {!isRegister ? (
-        <div className="mt-7 grid grid-cols-2 rounded-xl bg-[color:var(--surface-hover-bg)] p-1">
+        <div className="login-form__method-switch mt-7 grid grid-cols-2 rounded-xl bg-[color:var(--surface-hover-bg)] p-1">
           <button
             type="button"
+            aria-pressed={loginMethod === "email"}
             className={cn(
-              "min-h-10 rounded-lg px-3 text-sm font-medium transition",
+              "login-form__method min-h-10 rounded-lg px-3 text-sm font-medium transition",
               loginMethod === "email" ? "bg-[color:var(--surface-read-bg-strong)] text-ink-primary shadow-sm" : "text-ink-muted",
             )}
             onClick={() => { setLoginMethod("email"); setMessage(""); }}
@@ -189,8 +190,9 @@ export function LoginForm() {
           </button>
           <button
             type="button"
+            aria-pressed={loginMethod === "wechat"}
             className={cn(
-              "min-h-10 rounded-lg px-3 text-sm font-medium transition",
+              "login-form__method min-h-10 rounded-lg px-3 text-sm font-medium transition",
               loginMethod === "wechat" ? "bg-[color:var(--surface-read-bg-strong)] text-ink-primary shadow-sm" : "text-ink-muted",
             )}
             onClick={() => { setLoginMethod("wechat"); setMessage(""); }}

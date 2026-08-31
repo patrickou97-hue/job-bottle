@@ -108,7 +108,7 @@ export function WelcomeNotice() {
       await resolveUserNotice(user);
     }
 
-    void resolveNotice();
+    const initialResolveTimer = window.setTimeout(() => void resolveNotice(), 220);
     const supabase = isSupabaseConfigured() ? createClient() : null;
     const { data: authListener } = supabase?.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT") {
@@ -122,6 +122,7 @@ export function WelcomeNotice() {
     }) ?? { data: { subscription: null } };
     return () => {
       mounted = false;
+      window.clearTimeout(initialResolveTimer);
       authListener.subscription?.unsubscribe();
     };
   }, []);

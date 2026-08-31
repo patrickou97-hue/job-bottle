@@ -46,6 +46,7 @@ next-env.d.ts
 tmp
 dist
 tsconfig.tsbuildinfo
+/backups
 
 # explicit env files
 .env

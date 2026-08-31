@@ -1,9 +1,11 @@
 'use client'
 
+import type { CSSProperties } from 'react'
 import { motion } from 'motion/react'
 import { BookOpen, Briefcase, FileText, LogIn, ScrollText, Shield, Sparkles } from 'lucide-react'
 import type { PlanetRoute } from '@/lib/galaxy-routes'
 import { OrbMaterial, type OrbMaterialVariant } from '@/components/visual/OrbMaterial'
+import { cn } from '@/lib/utils'
 
 type FloatingPlanetProps = {
   planet: PlanetRoute
@@ -51,35 +53,23 @@ export function FloatingPlanet({
 }: FloatingPlanetProps) {
   const orbitRadius = planet.orbitRadius * orbitScale
   const planetSize = planet.size * planetScale
+  const orbitStyle = {
+    '--planet-angle': `${planet.initialAngle}deg`,
+    '--planet-counter-angle': `${-planet.initialAngle}deg`,
+    '--planet-orbit-radius': `${orbitRadius}px`,
+    '--planet-orbit-duration': `${planet.orbitDuration}s`,
+    '--planet-size': `${planetSize}px`,
+  } as CSSProperties
 
   return (
-    <motion.div
-      className="absolute left-1/2 top-1/2 size-0"
-      initial={{ rotate: planet.initialAngle }}
-      animate={
-        shouldOrbit
-          ? { rotate: [planet.initialAngle, planet.initialAngle + 360] }
-          : { rotate: planet.initialAngle }
-      }
-      transition={shouldOrbit ? { duration: planet.orbitDuration, repeat: Infinity, ease: 'linear' } : { duration: 0.2, ease: 'easeOut' }}
+    <div
+      className={cn(
+        'home-orbit absolute left-1/2 top-1/2 size-0',
+        !shouldOrbit && 'home-orbit--paused',
+      )}
+      style={orbitStyle}
     >
-      <motion.div
-        className="absolute"
-        style={{
-          width: planetSize,
-          height: planetSize,
-          marginLeft: -planetSize / 2,
-          marginTop: -planetSize / 2,
-          x: orbitRadius,
-        }}
-        initial={{ rotate: -planet.initialAngle }}
-        animate={
-          shouldOrbit
-            ? { rotate: [-planet.initialAngle, -planet.initialAngle - 360] }
-            : { rotate: -planet.initialAngle }
-        }
-        transition={shouldOrbit ? { duration: planet.orbitDuration, repeat: Infinity, ease: 'linear' } : { duration: 0.2, ease: 'easeOut' }}
-      >
+      <div className="home-orbit__planet absolute">
         <motion.button
           type="button"
           aria-label={planet.label}
@@ -89,33 +79,33 @@ export function FloatingPlanet({
           onMouseLeave={() => onHover(null)}
           onFocus={() => onHover(planet)}
           onBlur={() => onHover(null)}
-	          className="relative flex size-full items-center justify-center rounded-full outline-none"
-	          whileTap={disabled ? undefined : { scale: 0.975 }}
-	          animate={{
-	            scale: entering ? 0.86 : hovered ? 1.04 : 1,
-	            opacity: entering ? 0 : 1,
-	          }}
-	          transition={{ duration: entering ? 0.42 : 0.24, ease: 'easeOut' }}
-	        >
-	          <OrbMaterial
-	            size="100%"
-	            variant={getOrbVariant(planet)}
-	            active={hovered}
-	            icon={<PlanetGlyph planet={planet} />}
-	          />
-	        </motion.button>
-	        <motion.span
-	          className="pointer-events-none absolute left-1/2 top-full mt-2 -translate-x-1/2 whitespace-nowrap text-xs font-medium"
-	          style={{
+          className="relative flex size-full items-center justify-center rounded-full outline-none"
+          whileTap={disabled ? undefined : { scale: 0.975 }}
+          animate={{
+            scale: entering ? 0.86 : hovered ? 1.04 : 1,
+            opacity: entering ? 0 : 1,
+          }}
+          transition={{ duration: entering ? 0.42 : 0.24, ease: 'easeOut' }}
+        >
+          <OrbMaterial
+            size="100%"
+            variant={getOrbVariant(planet)}
+            active={hovered}
+            icon={<PlanetGlyph planet={planet} />}
+          />
+        </motion.button>
+        <motion.span
+          className="pointer-events-none absolute left-1/2 top-full mt-2 -translate-x-1/2 whitespace-nowrap text-xs font-medium"
+          style={{
             color: hovered ? 'rgba(241,239,255,0.94)' : 'rgba(201,197,228,0.74)',
             textShadow: hovered ? '0 0 18px rgba(126,124,181,0.26)' : 'none',
-	          }}
-	          animate={{ opacity: entering ? 0 : 1, y: hovered ? 1 : 0 }}
-	          transition={{ duration: 0.2 }}
-	        >
+          }}
+          animate={{ opacity: entering ? 0 : 1, y: hovered ? 1 : 0 }}
+          transition={{ duration: 0.2 }}
+        >
           {planet.label}
         </motion.span>
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   )
 }

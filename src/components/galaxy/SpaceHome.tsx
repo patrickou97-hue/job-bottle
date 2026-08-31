@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -46,23 +46,25 @@ export function SpaceHome() {
   const [hovered, setHovered] = useState<PlanetRoute | null>(null)
   const [planetTransition, setPlanetTransition] = useState<{ planet: PlanetRoute; rect: DOMRect } | null>(null)
   const [user, setUser] = useState<{ id: string } | null>(null)
-  const [authResolved, setAuthResolved] = useState(() => !isSupabaseConfigured())
   const [isAdmin, setIsAdmin] = useState(false)
   const [viewportWidth, setViewportWidth] = useState(1200)
   const [viewportHeight, setViewportHeight] = useState(900)
+  const resizeFrame = useRef<number | null>(null)
 
   useEffect(() => {
-    const onResize = () => {
+    const updateViewport = () => {
       setViewportWidth(window.innerWidth)
       setViewportHeight(window.innerHeight)
+      resizeFrame.current = null
     }
-    const frame = window.requestAnimationFrame(() => {
-      setViewportWidth(window.innerWidth)
-      setViewportHeight(window.innerHeight)
-    })
+    const onResize = () => {
+      if (resizeFrame.current !== null) return
+      resizeFrame.current = window.requestAnimationFrame(updateViewport)
+    }
+    resizeFrame.current = window.requestAnimationFrame(updateViewport)
     window.addEventListener('resize', onResize)
     return () => {
-      window.cancelAnimationFrame(frame)
+      if (resizeFrame.current !== null) window.cancelAnimationFrame(resizeFrame.current)
       window.removeEventListener('resize', onResize)
     }
   }, [])
@@ -76,7 +78,6 @@ export function SpaceHome() {
       const currentUser = await getCurrentUserOrNull(supabase)
       if (!mounted) return
       setUser(currentUser ?? null)
-      setAuthResolved(true)
       if (!currentUser) {
         setIsAdmin(false)
         return
@@ -85,7 +86,7 @@ export function SpaceHome() {
       if (mounted) setIsAdmin((data as { role?: string } | null)?.role === 'admin')
     }
 
-    load()
+    void load()
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(() => load())
@@ -165,10 +166,6 @@ export function SpaceHome() {
     0.92,
     Math.max(0.78, Math.min((viewportWidth - 90) / (mobileMaxOrbitRadius * 2), (viewportHeight - 300) / (mobileMaxOrbitRadius * 2))),
   )
-
-  if (!authResolved) {
-    return <main className="grid min-h-[100svh] place-items-center bg-[#000001] text-sm text-ink-muted"><span className="loading-line">正在进入拾星</span></main>
-  }
 
   return (
     <main

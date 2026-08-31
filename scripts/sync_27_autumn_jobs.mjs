@@ -1,4 +1,5 @@
 import { inflateSync } from "node:zlib";
+import { pathToFileURL } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import {
   SOURCE_DOCUMENT_ID,
@@ -21,7 +22,11 @@ const DATABASE_PAGE_SIZE = 1000;
 const UPSERT_BATCH_SIZE = 100;
 const APPLY_CHANGES = process.argv.includes("--apply");
 
-await main();
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  await main();
+}
+
+export { fetchLiveSmartSheet };
 
 async function main() {
   validateSourceUrl(SOURCE_URL);

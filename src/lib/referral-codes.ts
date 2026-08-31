@@ -1,11 +1,26 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database, ReferralCode } from "@/lib/types";
+import type { Database, ReferralCode } from "./types";
+import { deriveTencentReferralCodes } from "./referral-source.mjs";
+
+type TencentReferralSourceJob = {
+  id: string;
+  company_name: string;
+  batch_type: string | null;
+  job_titles: string | null;
+  apply_url: string | null;
+  is_active?: boolean;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
 
 export type ReferralCodeListItem = Pick<ReferralCode,
   "id" | "company_name" | "job_id" | "applicable_roles" | "code" | "usage_note" |
   "expires_at" | "created_at" | "updated_at"
 > & {
   isPreview?: boolean;
+  source_type?: "tencent_job_link";
+  source_job_ids?: string[];
+  source_urls?: string[];
 };
 
 export type ReferralCodeInput = {
@@ -26,6 +41,7 @@ const PUBLIC_REFERRAL_COLUMNS = "id,company_name,job_id,applicable_roles,code,us
 const LOCAL_REFERRAL_STORAGE_KEY = "starjob-local-referral-codes-v1";
 const LOCAL_REPORTED_STORAGE_KEY = "starjob-local-reported-referral-codes-v1";
 const REFERRAL_READ_TIMEOUT_MS = 3500;
+const REMOTE_SOURCE_TIMEOUT_MS = 6000;
 const PROHIBITED_REFERRAL_CONTENT = /(https?:\/\/|www\.|微信|v信|qq|收费|付费|转账|红包|验证码|密码|身份证|银行卡)/i;
 const REFERRAL_CODE_PATTERN = /^[A-Za-z0-9_-]{2,64}$/;
 
@@ -59,6 +75,7 @@ const LOCAL_PREVIEW_CODES: ReferralCodeListItem[] = [
 export async function fetchReferralCodes(
   supabase: SupabaseClient<Database>,
   companyName?: string,
+  sourceJobs?: TencentReferralSourceJob[],
 ) {
   let query = supabase
     .from("referral_codes")
@@ -70,14 +87,17 @@ export async function fetchReferralCodes(
     result = await withReferralReadTimeout(query);
   } catch (error) {
     if (isReferralReadTimeoutError(error) && canUseLocalPreview()) {
-      return getLocalPreviewCodes().filter((item) => !companyName || item.company_name === companyName);
+      return mergeSourceReferralCodes(getLocalPreviewCodes(), sourceJobs, companyName);
     }
     throw error;
   }
   const { data, error } = result;
-  if (!error) return (data ?? []) as unknown as ReferralCodeListItem[];
+  if (!error) {
+    const remoteSources = await fetchRemoteSourceReferralCodes(companyName);
+    return mergeSourceReferralCodes((data ?? []) as unknown as ReferralCodeListItem[], sourceJobs, companyName, remoteSources);
+  }
   if (isMissingReferralTableError(error) && canUseLocalPreview()) {
-    return getLocalPreviewCodes().filter((item) => !companyName || item.company_name === companyName);
+    return mergeSourceReferralCodes(getLocalPreviewCodes(), sourceJobs, companyName);
   }
   throw error;
 }
@@ -265,5 +285,44 @@ function saveLocalReport(referralCodeId: string) {
     window.localStorage.setItem(LOCAL_REPORTED_STORAGE_KEY, JSON.stringify([...ids]));
   } catch {
     // Local preview reporting is best-effort and never affects production data.
+  }
+}
+
+function mergeSourceReferralCodes(
+  persisted: ReferralCodeListItem[],
+  sourceJobs: TencentReferralSourceJob[] | undefined,
+  companyName: string | undefined,
+  remoteSources: ReferralCodeListItem[] = [],
+) {
+  const filtered = persisted.filter((item) => !companyName || item.company_name === companyName);
+  const remote = remoteSources.filter((item) => !companyName || item.company_name === companyName);
+  if (!sourceJobs && remote.length === 0) return filtered;
+  const sourceItems = deriveTencentReferralCodes(sourceJobs)
+    .filter((item) => !companyName || item.company_name === companyName) as ReferralCodeListItem[];
+  sourceItems.push(...remote);
+  const existingKeys = new Set(filtered.map((item) => `${item.company_name.toLocaleLowerCase("zh-CN")}\u0000${item.code.toLocaleLowerCase("en-US")}`));
+  const uniqueSources = sourceItems.filter((item) => {
+    const key = `${item.company_name.toLocaleLowerCase("zh-CN")}\u0000${item.code.toLocaleLowerCase("en-US")}`;
+    if (existingKeys.has(key)) return false;
+    existingKeys.add(key);
+    return true;
+  });
+  return [...uniqueSources, ...filtered];
+}
+
+async function fetchRemoteSourceReferralCodes(companyName?: string) {
+  if (typeof window === "undefined") return [] as ReferralCodeListItem[];
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), REMOTE_SOURCE_TIMEOUT_MS);
+  try {
+    const query = companyName ? `?company=${encodeURIComponent(companyName)}` : "";
+    const response = await fetch(`/api/referrals/source${query}`, { cache: "no-store", signal: controller.signal });
+    if (!response.ok) return [];
+    const body = await response.json().catch(() => null) as { rows?: ReferralCodeListItem[] } | null;
+    return Array.isArray(body?.rows) ? body.rows : [];
+  } catch {
+    return [];
+  } finally {
+    window.clearTimeout(timeoutId);
   }
 }

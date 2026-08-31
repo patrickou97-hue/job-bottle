@@ -2,13 +2,18 @@ import type { ReactNode } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { SpaceShell } from "@/components/layout/SpaceShell";
 import { RouteContentTransition } from "@/components/layout/RouteContentTransition";
+import { SiteFooter } from "@/components/layout/SiteFooter";
 
 export function UserShell({
   children,
   variant = "work",
+  navigation = "default",
+  contentClassName,
 }: {
   children: ReactNode;
   variant?: "scene" | "work";
+  navigation?: "default" | "minimal";
+  contentClassName?: string;
 }) {
   const content = (
     <>
@@ -18,8 +23,9 @@ export function UserShell({
       >
         跳到主要内容
       </a>
-      <Navbar appearance={variant} />
-      <RouteContentTransition>{children}</RouteContentTransition>
+      {navigation === "default" ? <Navbar appearance={variant} /> : null}
+      <RouteContentTransition className={contentClassName}>{children}</RouteContentTransition>
+      <SiteFooter />
     </>
   );
 

@@ -7,6 +7,7 @@ import type { Database, Job, JobFilters, JobFormValues, Profile } from "@/lib/ty
 
 const DEFAULT_JOBS_TIMEOUT_MS = 7000;
 export const RECENT_JOB_WINDOW_DAYS = 7;
+const PUBLIC_JOB_LIST_COLUMNS = "id,company_name,start_date,industry,batch_type,job_titles,job_categories,locations,apply_url,logo_url,tags,is_active,opens_at,closes_at,created_at,updated_at";
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string) {
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
@@ -22,7 +23,7 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string)
 export async function fetchActiveJobs(supabase: SupabaseClient<Database>) {
   const query = supabase
     .from("jobs")
-    .select("*")
+    .select(PUBLIC_JOB_LIST_COLUMNS)
     .eq("is_active", true)
     .order("updated_at", { ascending: false });
   const { data, error } = await withTimeout(
@@ -59,9 +60,9 @@ export async function fetchRelatedJobs(
   const [sameCompanyResult, sameIndustryResult] = await Promise.all([
     withTimeout(
       Promise.resolve(
-        supabase
-          .from("jobs")
-          .select("*")
+          supabase
+            .from("jobs")
+            .select(PUBLIC_JOB_LIST_COLUMNS)
           .eq("is_active", true)
           .eq("company_name", job.company_name)
           .neq("id", job.id)
@@ -76,7 +77,7 @@ export async function fetchRelatedJobs(
           Promise.resolve(
             supabase
               .from("jobs")
-              .select("*")
+              .select(PUBLIC_JOB_LIST_COLUMNS)
               .eq("is_active", true)
               .neq("id", job.id)
               .ilike("industry", `%${job.industry.split(",")[0].trim()}%`)

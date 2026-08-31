@@ -213,9 +213,15 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/galaxy/SpaceHome.tsx",
-    mustInclude: ["MOBILE_PLANET_LAYOUT", "OrbitLines", "PlanetTransitionOverlay", "router.prefetch(href)", "window.setTimeout", "markSceneDeparture(href)", "encodeURIComponent(planet.href)", "/brand/shi-xing-wordmark.png", "desktopOrbitScale", "mobileOrbitScale", "planetScale={0.82}", "<CorePlanet compact />", "href: user ? '/profile' : '/login'", "authResolved", "返回拾星主页"],
-    mustNotInclude: ["router.push(planet.href)", "href: user ? '/my' : '/login'", "href: user ? '/my-applications' : '/login'", "HomeWorkspace", "bg-white", "rounded-2xl", "<PlanetLabel", "blur(3px)"],
+    mustInclude: ["MOBILE_PLANET_LAYOUT", "OrbitLines", "PlanetTransitionOverlay", "router.prefetch(href)", "window.setTimeout", "markSceneDeparture(href)", "encodeURIComponent(planet.href)", "/brand/shi-xing-wordmark.png", "desktopOrbitScale", "mobileOrbitScale", "planetScale={0.82}", "<CorePlanet compact />", "href: user ? '/profile' : '/login'", "requestAnimationFrame(updateViewport)", "返回拾星主页"],
+    mustNotInclude: ["router.push(planet.href)", "href: user ? '/my' : '/login'", "href: user ? '/my-applications' : '/login'", "HomeWorkspace", "bg-white", "rounded-2xl", "<PlanetLabel", "blur(3px)", "if (!authResolved)", "rotate: ["],
     label: "所有用户主页均保留拾星字标、运行星系和行星进入转场",
+  },
+  {
+    file: "src/components/galaxy/FloatingPlanet.tsx",
+    mustInclude: ["home-orbit", "--planet-orbit-duration", "motion.button"],
+    mustNotInclude: ["rotate: ["],
+    label: "主页行星持续运动由 CSS 承载，交互反馈仍由 Motion 处理",
   },
   {
     file: "src/components/galaxy/SpaceBackground.tsx",
@@ -429,7 +435,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/login/page.tsx",
-    mustInclude: ["拾星 · StarJob", "把明日的坐标，收进星瓶。", "让岗位、简历与每一步进展，都有迹可循。"],
+    mustInclude: ["拾星 · StarJob", "把明日的", "收进星瓶", "让岗位、简历与每一步进展，都有迹可循。"],
     mustNotInclude: ["Job Bottle", "Starjob"],
     label: "登录页统一使用 StarJob 品牌名与新版秋招文案",
   },

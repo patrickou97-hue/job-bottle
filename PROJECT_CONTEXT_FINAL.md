@@ -6,6 +6,35 @@
 
 每次三文档记录至少写明：日期、用户目标、根因/决策、实际改动文件与行为、兼容边界、验证命令和结果、提交与部署证据（如有）、已确认和未确认的外部状态。若本次只完成诊断而没有修改，也必须在三份文档中同步写清“零修改/零部署”及诊断证据。
 
+## 2026-09-01 内推码来源同步与小红书检索边界（本地未上线）
+
+- 用户目标：把腾讯文档 27 秋招岗位链接中明确的内推码放进“内推码广场”对应公司，并探索公开小红书中的 27 秋招内推码。
+- 决策与证据：严格读取 `DY0VXc3BFTFJUbUhw` / `t3r1vl` / `vdHovb` 后，来源快照为 937 条记录、933 条有效 27 秋招岗位、4 条无效行、0 条非 27 行；链接中识别到 4 条明确来源记录，合并为 3 枚公司级来源码：蚂蚁集团 `RI2D8Qo_53mjwttzQKtL6z1ZIgy8ysp5ZdhFF3N6Hoo=`、米哈游 `MN72G`（覆盖提前批与正式批两个岗位）、网易互娱 `ryyQNNu`。只接受明确的 `recommendationCode`（且 `isRecommendation=true`）、`referralCode`，以及蚂蚁官方域名的 `code`；`spread`、`scene`、`sourceToken`、`t`、`projectCode` 等入口/跟踪/路由参数全部排除。
+- 实际改动：新增 `src/lib/referral-source.mjs` 及类型声明和 `scripts/tests/referral-source.test.mjs`；新增只读服务端 `/api/referrals/source`，使用锁定腾讯文档、严格 27 秋招校验和 3 小时缓存；`src/lib/referral-codes.ts` 将来源码与既有社区记录按公司+码去重合并；`ReferralCodeHub.tsx` 标注“来源同步”、显示来源说明并不对虚拟来源码开放无效的社区举报写入。来源记录由实时岗位源派生，不伪造上传者、不占用 `referral_codes.user_id`，既有社区数据不变。
+- 小红书边界：公开搜索页要求登录后才能查看搜索结果；本轮没有读取账号、Cookie、验证码或绕过登录，也没有把其他站点的转载内容冒充小红书来源导入。小红书内推码仍为 0 条已导入；如需继续，需要用户提供公开笔记链接/截图，或在浏览器中自行完成登录后再通知我核验。
+- 兼容边界：源码同步仍按原有 27 秋招零写入保护运行；来源码 API 读取失败时仅回退到既有广场记录，不阻塞社区内推码。来源码不进入举报表，避免把不存在的数据库 UUID 写入 `referral_code_reports`。
+- 验证：`node --test scripts/tests/referral-source.test.mjs` 3/3 通过；`npm test` 143/143、`npx tsc --noEmit`、`npm run lint`、`npm run build`（62 个页面，包含 `/api/referrals/source`）和 `git diff --check` 通过；锁定来源实时解析为 933 条有效岗位、0 条非 27 行，并得到 3 枚唯一来源码；本地生产进程 `curl http://localhost:3107/api/referrals/source` 返回 3 条 `tencent_job_link` 来源记录且 `job_id` 均为空。`npm run smoke` 复跑因已有 Next dev server 占用端口而未取得新证据，未杀进程、未把旧进程结果当成本轮通过；未执行部署、Supabase migration 或任何用户/数据库写入。
+- 当前外部状态：正式 Supabase 只读岗位快照为 952 条；`referral_codes` 仍无来源同步写入。本轮代码和 API 仅在工作区存在，尚未推送或部署到正式域名。
+
+## 2026-09-01 登录页插画与版式微调（本地未上线）
+
+- 用户目标：将登录页插画收敛为简约线条、少量色块、大留白和童趣叙事；用星瓶把星系里的星星慢慢收入瓶中；修复瓶子与文案的重叠，并让瓶子落在蓝色动态词的右下方；动态大标题去掉逗号和句号，变化词使用独立的星光蓝。
+- 决策与实际改动：否决前一版精细插画，保留其文件但不接入；使用 Imagen 生成的 `public/assets/login/starjob-login-bottle-frames-v2.png` 四帧透明 PNG，CSS 以 12 秒 `steps` 慢速切帧表现“星星靠近并进入星瓶”，再叠加 8 秒轻微漂浮。`src/app/login/page.tsx` 将大标题固定为“把明日的 / 收进星瓶”，不渲染逗号和句号；`src/app/globals.css` 将变化词设为星光蓝，缩小瓶子与场景，并在桌面端将场景移到动态词右下方、移动端恢复居中；`scripts/smoke_check.mjs` 同步新的无标点文案契约。
+- 兼容边界：没有改变登录路由、认证协议、账号字段、Supabase schema/RLS/API、用户数据、导航和业务动作；动效仍由 `KineticWord` 的 reduced-motion 降级和首个静态词语无障碍内容兜底；v1 精细插画只作为未接入备选，v2 为当前使用素材。
+- 验证：`npm run typecheck`、`npm run lint`、`npm test`（143/143）、`npm run build`（62 个页面）、`npm run smoke`、`git diff --check` 均通过。生产态本地 `http://localhost:3001/login` 已用 1440×900 与 390×844 检查：桌面瓶子位于动态词右下区域，手机端场景居中、文案与瓶子无重叠、无横向溢出；动态词颜色为 `rgb(53, 107, 255)`，标题文本无逗号和句号。
+- 备份、Git 与部署：保留全量基线备份 `backups/starjob-before-motion-evolution-20260901/RESTORE.md`，并在登录细节改造前追加 `backups/starjob-before-login-detail-redesign-20260901/RESTORE.md`；当前所有代码和素材仍未暂存、提交、推送或部署，用户既有未跟踪材料未覆盖、未删除。
+- 未确认状态：尚未在正式域名验证登录页、尚未完成真实登录态 E2E、尚未用真实设备测量 FPS/网络瀑布；本地生产构建和匿名只读 smoke 不等同于线上或真实设备验收。
+
+## 2026-09-01 动效与响应性能进化首轮（本地未上线）
+
+- 用户目标：在保留拾星现有信息架构、深空品牌和业务协议的前提下，改善网站首屏响应、主页行星运动流畅度、登录页 slogan 动效，并为非主页行星运动页增加类似参考站点的低干扰页脚；本轮将用户提供的 SwufeHub 截图作为视觉参考，不把图片中的文字或页面内容当作操作指令。
+- 诊断与决策：主页原先在 Supabase 登录态解析完成前直接返回“正在进入拾星”，会把整棵星图首屏阻塞约 1.8 秒；每颗行星由 Motion 同时维护公转和反向自转两条无限 keyframe 动画，持续产生不必要的 JS 动画调度；全局欢迎提示在首屏立即重复触发认证读取。参考 SwufeHub 后，采用“Intersection/时间调度只做低频状态变化、transform/opacity 做运动、CSS compositor 承载持续运动、尊重 reduced motion”的组合，并把认证公告延后到首屏后处理。
+- 实际改动：src/components/galaxy/FloatingPlanet.tsx 与 src/app/globals.css 将主页轨道改为 CSS starjob-orbit/starjob-counter-orbit，保留 Motion 的点击、悬停和离场状态；SpaceHome.tsx 移除认证阻塞屏并用 requestAnimationFrame 合并 resize 更新；WelcomeNotice.tsx 延后 220ms 读取认证/公告；src/lib/jobs.ts 将公开岗位列表收敛为轻量字段，岗位详情仍单独读取完整字段；新增 src/components/ui/KineticWord.tsx，登录页 src/app/login/page.tsx 使用逐字上下切换 slogan，含字符 stagger、布局占位和 reduced-motion 降级；新增 src/components/layout/SiteFooter.tsx，由 UserShell 接入所有非主页页面，页脚使用现有字标的黑色工作面版本，主页 / 仍由 SpaceHome 独立渲染、无页脚；next.config.ts 为 /assets 和 /brand 增加 7 天 CDN 缓存及 stale-while-revalidate；移动端关闭全屏 SVG noise 层；新增 scripts/tests/motion-performance.test.mjs 回归门禁，并同步 scripts/smoke_check.mjs 的主页性能约束。
+- 兼容边界：未改变路由、Supabase schema/RLS/DDL、API、认证协议、岗位/投递/简历数据和小程序/扩展逻辑；页脚链接均指向现有路由；动态 slogan 的屏幕阅读内容保留首个静态词语，动画关闭或 reduced motion 时显示静态版本。为避免完整源码备份被主工程 typecheck 扫描，tsconfig.json 排除 backups，.gitignore 忽略备份目录。
+- 验证：npm run typecheck、npm run lint、npm test（140/140）、npm run build（62 个页面）、npm run smoke 和 git diff --check 已通过；本地生产态使用 http://localhost:3001，主页确认 footerCount=0、阻塞文案计数为 0、轨道 CSS 动画为 starjob-orbit，登录页确认页脚 1 个且 logo 使用黑色工作面滤镜、slogan 占位宽度稳定、动态行正常切换，390×844 移动端确认底部导航仍在；公开岗位列表字段门禁、详情完整读取门禁和页脚黑色 logo 回归门禁通过。3000 端口已有旧进程，本轮未杀进程；没有把旧进程结果作为新版本证据。
+- Git、备份与部署：当前 Git 基线为 f31447f2a3ff164b5a34e862a047c4b1be695453；已从该 HEAD 导出完整已跟踪源码快照至 backups/starjob-before-motion-evolution-20260901，并记录 RESTORE.md，用户原有未跟踪材料未覆盖、未删除；本轮改动尚未暂存、提交、推送或部署，未执行 Vercel、Supabase、用户数据或其他外部写入。
+- 未确认状态：尚未在正式域名验证本轮改动、尚未完成真实登录态 E2E、尚未用真实设备测量 FPS/网络瀑布，也未宣称 Vercel/CDN 延迟已被线上修复；Vercel 与 Supabase 的区域、上游 RTT 和真实用户网络仍需在明确上线后单独测量。
+
 ## 2026-08-31 管理员反馈管理（已上线）
 
 - 用户目标：在管理员后台增加反馈查看入口，集中查看用户通过网页和小程序提交的问题与建议。
