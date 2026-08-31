@@ -6,6 +6,24 @@
 
 每次三文档记录至少写明：日期、用户目标、根因/决策、实际改动文件与行为、兼容边界、验证命令和结果、提交与部署证据（如有）、已确认和未确认的外部状态。若本次只完成诊断而没有修改，也必须在三份文档中同步写清“零修改/零部署”及诊断证据。
 
+## 2026-08-31 管理员反馈管理（发布准备完成，待上线）
+
+- 用户目标：在管理员后台增加反馈查看入口，集中查看用户通过网页和小程序提交的问题与建议。
+- 决策：新增 `/admin/feedback` 与受保护的只读 `GET /api/admin/feedback`。页面提供全部、待处理、已处理和近 7 天统计，支持反馈内容/类型/邮箱搜索、网页/小程序来源筛选、处理状态筛选、分页和展开详情；本轮不加入标记已处理等写操作。
+- 实际改动：新增 `src/components/admin/AdminFeedbackClient.tsx`、`src/lib/admin-feedback.ts`、`src/app/admin/feedback/page.tsx` 和 `src/app/api/admin/feedback/route.ts`；`AdminShell.tsx` 增加反馈管理导航，`src/app/admin/page.tsx` 增加反馈管理入口。服务端使用 `requireAdminAccess` 和 server-only `createAdminClient` 读取现有 `feedback_submissions` 表，返回平台、分类、原文、联系邮箱、提交时间、处理时间和统计计数；查询支持边界分页，并对搜索通配符进行转义。
+- 兼容边界：没有新增 migration、RLS/DDL、环境变量、依赖或任何用户/数据库写入；不改变网页/小程序反馈提交接口，匿名和非管理员请求不会获得反馈数据。
+- 验证：定向 ESLint、`npm run typecheck`、全量 `npm run lint`、`npm test`（136/136）、`npm run build`（62 个页面，包含 `/admin/feedback` 和 `/api/admin/feedback`）、`git diff --check` 已通过；本地生产模式 `/admin/feedback` 返回 200，匿名 `GET /api/admin/feedback?page=1&pageSize=25&status=all&platform=all` 返回 401，浏览器导航与未登录保护检查已通过。综合 `npm run check` 的类型检查、lint 和 Node 测试通过，但在既有 `npm run test:extension` 阶段因本机 Chrome 未输出页面内容而中断；独立 `npm run verify:extension-package` 和小程序 `npm --prefix starjob-miniprogram run check` 均通过。未使用真实管理员登录态，因此尚未声明真实反馈数据展示、管理员登录浏览器 E2E 或标记处理流程验收；`npm run smoke` 延续本轮已记录的 Next 16 Turbopack 本地持久化数据库阻断，未再次运行。
+- Git 与部署（发布前）：当前只保留在工作区，尚未暂存、提交、推送或部署；本次未修改 `.codex-artifacts/`、五份未跟踪 PRD、浏览器测试夹具和其他用户工作区材料。
+
+## 2026-08-31 管理员数据分析总览（发布准备完成，待上线）
+
+- 用户目标：新增独立的管理员数据分析界面，参考 Vercel 后台的信息密度，集中查看用户增长、活跃、功能使用、简历、投递链路、岗位热度和运营风险；普通用户不可见。
+- 决策：新增 `/admin/analytics` 与受保护的 `GET /api/admin/analytics`。页面沿用现有 `AdminShell`、浅色工作主题和拾星管理后台导航，提供近 7/14/30/90 天切换、每日趋势、用户活跃分层、使用链路、投递状态、目标岗位/地区、投递热度、功能事件和内推/反馈提醒，并支持导出趋势 CSV。
+- 实际改动：新增 `src/components/admin/AdminAnalyticsClient.tsx`、`src/lib/admin-analytics.ts`、`src/app/admin/analytics/page.tsx` 和 `src/app/api/admin/analytics/route.ts`；`AdminShell.tsx` 增加数据分析导航，`src/app/admin/page.tsx` 增加入口。服务端使用 `requireAdminAccess` 复核当前会话和 `is_admin`，再由 server-only `createAdminClient` 读取 Auth 用户及最小化聚合数据；service role key 不进入浏览器。事件、用户画像、简历、投递、岗位、内推、反馈和微信身份读取均按页处理，避免单次 PostgREST 行数上限；可选数据源失败时只显示明确的部分数据提示，不伪造数字。
+- 兼容边界：没有新增 migration、RLS/DDL、环境变量、依赖或任何用户/数据库写入；不改变现有用户管理、岗位管理、内推码和计费流程。管理员页面继续使用现有客户端保护壳，数据接口单独服务端拒绝匿名和非管理员请求。
+- 验证：`npm run typecheck`、全量 `npm run lint`、`npm test`（136/136）、`npm run build`（62 个页面，包含 `/admin/analytics`、`/api/admin/analytics`、`/admin/feedback` 和 `/api/admin/feedback`）和 `git diff --check` 已通过；本地生产模式 `/admin/analytics` 返回 200，匿名 `GET /api/admin/analytics?range=30` 返回 401，浏览器未登录保护检查和 1280px 无横向溢出检查已通过。综合 `npm run check` 的类型检查、lint 和 Node 测试通过，但在既有 `npm run test:extension` 阶段因本机 Chrome 未输出页面内容而中断；独立扩展安装包一致性和小程序校验均通过。`npm run smoke` 的源码约束、资源和数据探针已通过，但其本地 Next 16 Turbopack 开发服务器因持久化数据库报 `Failed to open database / invalid digit found in string` 而未完成页面检查；没有管理员真实登录态，因此尚未声明真实数据加载、管理员浏览器 E2E 或视觉验收通过。
+- Git 与部署（发布前）：当前只保留在工作区，尚未暂存、提交、推送或部署；`.codex-artifacts/`、五份未跟踪 PRD、浏览器测试夹具和用户其他工作区材料未修改、未纳入本次改动。
+
 ## 2026-08-31 投递管理默认排序修复（已上线）
 
 - 用户目标：修复投递管理中“刚调整岗位状态后反而排到下面”的排序痛点；默认应把最近更新的投递放在最上方，保留其他排序方式供用户手动选择。本轮只修已有逻辑，不新增产品功能。

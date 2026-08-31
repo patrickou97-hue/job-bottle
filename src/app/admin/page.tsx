@@ -1,8 +1,20 @@
 import Link from "next/link";
-import { Coins, Database, KeyRound, Rows3, Users } from "lucide-react";
+import { Activity, Coins, Database, KeyRound, MessageSquareText, Rows3, Users } from "lucide-react";
 import { AdminShell } from "@/components/layout/AdminShell";
 
 const adminActions = [
+  {
+    href: "/admin/analytics",
+    title: "数据分析",
+    body: "查看用户增长、功能使用、投递链路和运营信号。",
+    icon: Activity,
+  },
+  {
+    href: "/admin/feedback",
+    title: "反馈管理",
+    body: "查看用户问题和建议，按状态与来源快速筛选。",
+    icon: MessageSquareText,
+  },
   {
     href: "/admin/jobs",
     title: "岗位管理",
