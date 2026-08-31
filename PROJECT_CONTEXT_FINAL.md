@@ -6,6 +6,14 @@
 
 每次三文档记录至少写明：日期、用户目标、根因/决策、实际改动文件与行为、兼容边界、验证命令和结果、提交与部署证据（如有）、已确认和未确认的外部状态。若本次只完成诊断而没有修改，也必须在三份文档中同步写清“零修改/零部署”及诊断证据。
 
+## 2026-09-01 动效、登录与来源同步发布（已上线）
+
+- 用户目标：将当前工作区已经完成并验证的动效、响应性能、登录页、非主页页脚、来源同步接口和交接文档统一发布到正式站点。
+- 发布范围：功能提交 `e81d75b3198955dfb0f753bf81a24426d31bdd01`（`feat: publish motion and login evolution`）已包含 28 个网站文件，覆盖 CSS compositor 轨道、登录页 split layout、简约线条星瓶四帧素材、动态 slogan、黑色页脚 logo、公开岗位轻量读取和来源同步接口；用户既有 PRD、浏览器测试夹具、`.codex-artifacts/` 与未接入的 v1 精细插画未纳入。
+- 部署证据：提交已推送到 `origin/main`，GitHub 对应 Vercel check 返回 `success / Deployment has completed`；Vercel deployment 为 `5Z85nt3pNedJbkAAt8hYRNH7d6Zu`，地址为 `https://vercel.com/job-bottle/job-bottle/5Z85nt3pNedJbkAAt8hYRNH7d6Zu`。正式 `https://www.starjob.space/login` HTML 已检出无标点新版标语“把明日的坐标收进星瓶”和 `starjob-login-bottle-frames-v2`；正式 v2 素材返回 HTTP 200，`/api/referrals/source` 返回 HTTP 200。
+- 验证与边界：发布前 `npm run typecheck`、`npm run lint`、`npm test`（143/143）、`npm run build`（62 个页面）、`npm run smoke` 和 `git diff --check` 均通过；本地 1440×900 与 390×844 登录页检查通过。没有执行 Supabase migration、RLS/DDL、用户数据写入或认证协议变化；正式站点 HTTP 200、匿名只读接口和 Vercel success 不替代真实登录态 E2E、真实设备 FPS/网络瀑布和数据库字段兼容验收。
+- 回滚准备：全量基线备份为 `backups/starjob-before-motion-evolution-20260901/RESTORE.md`，登录细节改造前备份为 `backups/starjob-before-login-detail-redesign-20260901/RESTORE.md`；提交仍可通过 Git 回退，用户原有未跟踪材料未覆盖、未删除。
+
 ## 2026-09-01 内推码来源同步与小红书检索边界（本地未上线）
 
 - 用户目标：把腾讯文档 27 秋招岗位链接中明确的内推码放进“内推码广场”对应公司，并探索公开小红书中的 27 秋招内推码。
