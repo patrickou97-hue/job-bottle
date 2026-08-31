@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const applicationsModulePath = "../src/lib/applications." + "ts";
@@ -81,4 +82,14 @@ test("does not claim an applied position was saved when it is the only unsupport
     /migration/,
   );
   assert.equal(updates.length, 1);
+});
+
+test("defaults the application list to the most recently updated records", () => {
+  const source = readFileSync(new URL("../src/components/applications/MyApplicationsClient.tsx", import.meta.url), "utf8");
+
+  assert.match(source, /useState<ApplicationSort>\("recent"\)/);
+  assert.match(source, /setSort\("recent"\)/);
+  assert.match(source, /sort !== "recent"/);
+  assert.match(source, /if \(sort === "recent"\) return new Date\(b\.updated_at\)\.getTime\(\) - new Date\(a\.updated_at\)\.getTime\(\)/);
+  assert.match(source, /<option value="recent">最近更新优先（默认）<\/option>/);
 });

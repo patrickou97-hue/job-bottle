@@ -43,7 +43,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
   const [keyword, setKeyword] = useState("");
   const [stageGroup, setStageGroup] = useState<StageGroup>("");
   const [freshness, setFreshness] = useState<FreshnessFilter>("");
-  const [sort, setSort] = useState<ApplicationSort>("attention");
+  const [sort, setSort] = useState<ApplicationSort>("recent");
   const [workflowSaving, setWorkflowSaving] = useState(false);
   const [endedExpanded, setEndedExpanded] = useState(false);
   const [workspaceMessage, setWorkspaceMessage] = useState("");
@@ -187,10 +187,10 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
     setKeyword("");
     setStageGroup("");
     setFreshness("");
-    setSort("attention");
+    setSort("recent");
   }
 
-  const filtersActive = Boolean(keyword || stageGroup || freshness || sort !== "attention");
+  const filtersActive = Boolean(keyword || stageGroup || freshness || sort !== "recent");
   const endedOpen = endedExpanded || stageGroup === "ended";
 
   return (
@@ -256,8 +256,8 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
                 <option value="overdueAction">下一步已逾期</option>
               </Select>
               <Select value={sort} onChange={(event) => setSort(event.target.value as ApplicationSort)} aria-label="投递记录排序">
+                <option value="recent">最近更新优先（默认）</option>
                 <option value="attention">需要关注优先</option>
-                <option value="recent">最近更新优先</option>
                 <option value="company">按公司名称</option>
               </Select>
               <div className="flex gap-2">
