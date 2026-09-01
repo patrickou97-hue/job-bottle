@@ -2073,3 +2073,13 @@ The smoke test (`npm run smoke`) checks these source code invariants:
 ---
 
 *End of PROJECT_CONTEXT.md*
+
+## 2026-09-01 路由刷新、品牌锁定与工作页控件细化（本地未上线）
+
+- 本轮目标是让页面刷新后保留当前页面、统一中英文品牌标识的关系，并参考 SwufeHub 的克制边框、间距、筛选和分段控件处理工作页视觉；不复制其代码或资源。
+- 当前代码包含 `/explore`、`/my`、`/resume`、`/forum`、`/profile` 等独立 App Router 页面；未发现会把任意页面统一重定向到 `/` 的 catch-all 逻辑。`/jobs`、`/my-applications`、`/my-bottle` 是明确的历史别名跳转，退出登录和删除账号回首页是有意行为。
+- 当前本地硬刷新核验中，`/explore`、`/resume` 保留原页面标识；此前线上直达探针中 `/explore`、`/my`、`/resume`、`/forum`、`/profile` 均返回对应页面。若用户仍遇到刷新回首页，应保留完整 URL、浏览器、是否 PWA/旧标签页和发生时间，继续区分客户端缓存、旧部署态与实际路由问题。
+- 本轮仅修改登录页、页脚和管理员标识的布局 CSS，使中文 logo 与双色 StarJob 英文 logo 并排且底部对齐；同时细化工作页输入框、筛选折叠标题、岗位类别 chip 和桌面筛选栏分隔线，保留既有筛选逻辑与 reduced-motion 兼容。
+- 本轮前安全备份位于 `backups/starjob-before-route-and-control-polish-20260901/`，包含本轮相关组件、样式和配置快照；未修改数据库。
+- 验证：`npm run typecheck` 通过；`npm run lint` 通过但保留既有 `scripts/seed_official_referral_sources.mjs:44` 未使用变量 warning；`npm test` 通过，149/149；`npm run build -- --webpack` 通过；构建后的 `next start` 对 `/explore`、`/my`、`/resume`、`/forum`、`/profile` 均返回 200，逐页硬刷新后页面标识保持。`npm run smoke` 未通过既有 token 约束，提示 `src/styles/tokens.css` 缺少 `--night-3: #564A71`，本轮没有修改该文件。默认 Turbopack 构建在临时工作树因 `node_modules` 符号链接指向工作区外而失败，属于环境边界，Webpack 构建已完成生产复核。
+- 当前状态：本轮仅在独立工作树本地完成，尚未提交、推送或发布；线上仍为此前已确认的版本。
