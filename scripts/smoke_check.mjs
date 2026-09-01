@@ -436,8 +436,8 @@ const SOURCE_INVARIANTS = [
   {
     file: "src/app/login/page.tsx",
     mustInclude: ["拾星 · StarJob", "把明日的", "收进星瓶", "让岗位、简历与每一步进展，都有迹可循。"],
-    mustNotInclude: ["Job Bottle", "Starjob"],
-    label: "登录页统一使用 StarJob 品牌名与新版秋招文案",
+    mustNotInclude: ["Job Bottle", "Starjob", "求职工作台", "欢迎回来"],
+    label: "登录页使用 StarJob 品牌名与减法后的新版文案",
   },
   {
     file: "src/app/api/auth/wechat-code/route.ts",

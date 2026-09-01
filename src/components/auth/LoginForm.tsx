@@ -164,15 +164,18 @@ export function LoginForm() {
 
   return (
     <div className="login-form mx-auto w-full max-w-md py-4 sm:py-8 lg:py-10">
-      <h1 className="login-form__title text-center text-3xl font-semibold tracking-[-0.02em] text-ink-primary">
-        {isRegister ? "创建拾星账号" : "欢迎回来"}
+      <h1 className={cn(
+        "login-form__title text-center text-3xl font-semibold tracking-[-0.02em] text-ink-primary",
+        !isRegister && "sr-only",
+      )}>
+        {isRegister ? "创建拾星账号" : "登录拾星"}
       </h1>
       <p className="login-form__subtitle mt-3 text-center text-sm leading-6 text-ink-secondary">
         {searchParams.get("reason") === "resume-download"
           ? "当前简历已保存在本浏览器。完成注册或登录后，将自动返回下载页面。"
           : isRegister
           ? "注册后，保存岗位、简历与投递记录。"
-          : "登录拾星，继续查看与整理投递进展。"}
+          : "继续整理你的岗位、简历与投递进展。"}
       </p>
 
       {!isRegister ? (

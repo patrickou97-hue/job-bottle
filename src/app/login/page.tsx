@@ -29,7 +29,6 @@ export default function LoginPage() {
                 className="login-page__wordmark brand-wordmark"
               />
             </Link>
-            <span>求职工作台</span>
           </header>
 
           <div className="login-page__story-copy">
@@ -62,7 +61,7 @@ export default function LoginPage() {
         <section className="login-page__form-side" aria-label="登录表单">
           <div className="login-page__form-light" aria-hidden="true" />
           <div className="login-page__form-content">
-            <p className="login-page__form-kicker">STARJOB WORKSPACE</p>
+            <p className="login-page__form-kicker">登录拾星</p>
             <Suspense
               fallback={
                 <div className="empty-state login-page__loading">
@@ -71,9 +70,8 @@ export default function LoginPage() {
               }
             >
               <LoginForm />
-            </Suspense>
+              </Suspense>
           </div>
-          <p className="login-page__form-note">登录后，继续把每一个值得奔赴的机会收进星瓶。</p>
         </section>
       </div>
     </PageShell>

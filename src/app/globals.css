@@ -1537,17 +1537,16 @@ textarea:focus-visible {
   z-index: 2;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 1rem;
 }
 
 .login-page__wordmark {
-  width: clamp(7rem, 12vw, 9.5rem);
+  width: clamp(6.75rem, 10vw, 8.5rem);
   height: auto;
   object-fit: contain;
 }
 
-.login-page__story-header > span,
 .login-page__form-kicker {
   color: rgba(18, 41, 78, 0.55);
   font-size: 0.67rem;
@@ -1560,24 +1559,24 @@ textarea:focus-visible {
   position: relative;
   z-index: 2;
   max-width: 36rem;
-  margin-top: clamp(3.5rem, 11vh, 8rem);
+  margin-top: clamp(2.75rem, 8vh, 5.25rem);
 }
 
 .login-page__eyebrow {
   color: rgba(18, 41, 78, 0.62);
-  font-size: 0.82rem;
+  font-size: 0.72rem;
   font-weight: 650;
   letter-spacing: 0.08em;
 }
 
 .login-page__story-copy h2 {
   max-width: none;
-  margin-top: 1.25rem;
+  margin-top: 1.1rem;
   color: #1d1d1f;
-  font-size: clamp(2.45rem, 4.2vw, 4.6rem);
+  font-size: clamp(2.15rem, 3.25vw, 3.5rem);
   font-weight: 680;
   letter-spacing: -0.065em;
-  line-height: 1.04;
+  line-height: 1.08;
 }
 
 .login-page__story-word-group {
@@ -1590,11 +1589,11 @@ textarea:focus-visible {
 }
 
 .login-page__story-copy > p:last-child {
-  max-width: 22rem;
-  margin-top: 1.5rem;
+  max-width: 20rem;
+  margin-top: 1.15rem;
   color: #6e6e73;
-  font-size: 0.94rem;
-  line-height: 1.8;
+  font-size: 0.84rem;
+  line-height: 1.75;
 }
 
 .login-page__bottle-scene {
@@ -1606,9 +1605,9 @@ textarea:focus-visible {
   aspect-ratio: 1;
   display: grid;
   place-items: center;
-  max-width: 30rem;
+  max-width: 26rem;
   margin-inline: auto;
-  transform: translateX(10.25rem);
+  transform: translateX(7.75rem);
 }
 
 .login-page__bottle-halo {
@@ -1658,13 +1657,13 @@ textarea:focus-visible {
   position: relative;
   z-index: 2;
   display: block;
-  width: 64%;
+  width: 58%;
   aspect-ratio: 3 / 4;
   background-image: url("/assets/login/starjob-login-bottle-frames-v2.png");
   background-position: 0 0;
   background-repeat: no-repeat;
   background-size: 400% 100%;
-  animation: login-bottle-frames 12s steps(1, end) infinite, login-bottle-float 8s ease-in-out infinite;
+  animation: login-bottle-frames 10s steps(1, end) infinite, login-bottle-float 8s ease-in-out infinite;
 }
 
 .login-page__story-footer {
@@ -1674,7 +1673,7 @@ textarea:focus-visible {
   gap: 1.5rem;
   margin-top: auto;
   color: rgba(18, 41, 78, 0.6);
-  font-size: 0.76rem;
+  font-size: 0.72rem;
 }
 
 .login-page__story-footer a,
@@ -1691,7 +1690,7 @@ textarea:focus-visible {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: clamp(2rem, 7vw, 7rem) clamp(1.5rem, 7vw, 7rem);
+  padding: clamp(2rem, 6vw, 5.5rem) clamp(1.5rem, 6vw, 6rem);
   background:
     radial-gradient(55% 46% at 82% 16%, rgba(126, 124, 181, 0.18), transparent 72%),
     radial-gradient(80% 52% at 22% 92%, rgba(18, 41, 78, 0.4), transparent 75%),
@@ -1717,6 +1716,7 @@ textarea:focus-visible {
   border: 1px solid rgba(241, 239, 255, 0.08);
   border-radius: 50%;
   transform: rotate(24deg) scaleY(0.52);
+  opacity: 0.7;
   pointer-events: none;
 }
 
@@ -1737,51 +1737,46 @@ textarea:focus-visible {
 .login-page__form-content {
   position: relative;
   z-index: 1;
-  width: min(100%, 31rem);
+  width: min(100%, 29rem);
   margin-inline: auto;
 }
 
 .login-page__form-kicker {
   color: rgba(201, 197, 228, 0.66);
-}
-
-.login-page__form-note {
-  position: relative;
-  z-index: 1;
-  max-width: 31rem;
-  margin: 2.5rem auto 0;
-  color: rgba(201, 197, 228, 0.46);
-  font-size: 0.73rem;
-  line-height: 1.7;
+  font-size: 0.63rem;
+  letter-spacing: 0.2em;
 }
 
 .login-page .login-form {
   max-width: none;
-  padding-block: 1.35rem 0;
+  padding-block: 0.95rem 0;
 }
 
 .login-page .login-form__title {
   color: #f1efff;
-  font-size: clamp(2.4rem, 4vw, 3.9rem);
+  font-size: clamp(1.6rem, 2.4vw, 2.25rem);
   font-weight: 680;
-  letter-spacing: -0.065em;
+  letter-spacing: -0.04em;
   line-height: 1.02;
 }
 
 .login-page .login-form__subtitle {
-  max-width: 28rem;
+  max-width: 24rem;
   margin-inline: auto;
   color: rgba(201, 197, 228, 0.66);
+  font-size: 0.8rem;
+  line-height: 1.7;
 }
 
 .login-page .login-form__method-switch {
+  margin-top: 1.5rem;
   border: 1px solid rgba(241, 239, 255, 0.1);
   border-radius: 999px;
   background: rgba(241, 239, 255, 0.06);
 }
 
 .login-page .login-form__method {
-  min-height: 3rem;
+  min-height: 2.75rem;
   border-radius: 999px;
   color: rgba(201, 197, 228, 0.58);
 }
@@ -1793,15 +1788,17 @@ textarea:focus-visible {
 }
 
 .login-page .login-form > form {
-  margin-top: 2.25rem;
+  margin-top: 1.75rem;
 }
 
 .login-page .login-form label > span {
   color: rgba(241, 239, 255, 0.78);
+  font-size: 0.76rem;
+  line-height: 1.5;
 }
 
 .login-page .field-shell {
-  min-height: 3.5rem;
+  min-height: 3.25rem;
   border-color: rgba(241, 239, 255, 0.18);
   border-radius: 999px;
   background: rgba(5, 8, 14, 0.38);
@@ -1826,7 +1823,7 @@ textarea:focus-visible {
 }
 
 .login-page .gold-button {
-  min-height: 3.5rem;
+  min-height: 3.25rem;
   border-color: #f1efff;
   border-radius: 999px;
   background: #f1efff;
@@ -1848,6 +1845,11 @@ textarea:focus-visible {
 
 .login-page .text-action:hover {
   color: #f1efff;
+}
+
+.login-page .login-form > .text-action {
+  margin-top: 1.15rem;
+  font-size: 0.78rem;
 }
 
 .login-page .info-banner {
@@ -1909,11 +1911,11 @@ textarea:focus-visible {
   }
 
   .login-page__story-copy {
-    margin-top: 3.2rem;
+    margin-top: 2.8rem;
   }
 
   .login-page__story-copy h2 {
-    font-size: clamp(2.35rem, 8vw, 3.6rem);
+    font-size: clamp(2.05rem, 7vw, 3.1rem);
   }
 
   .login-page__bottle-scene {
@@ -1927,7 +1929,7 @@ textarea:focus-visible {
   }
 
   .login-page__bottle-frames {
-    width: 64%;
+    width: 60%;
   }
 
   .login-page__story-footer {
@@ -1939,9 +1941,8 @@ textarea:focus-visible {
     padding: 4rem 1.25rem 4.5rem;
   }
 
-  .login-page__form-content,
-  .login-page__form-note {
-    width: min(100%, 31rem);
+  .login-page__form-content {
+    width: min(100%, 29rem);
   }
 }
 
@@ -1956,7 +1957,7 @@ textarea:focus-visible {
 
   .login-page__story-copy h2 {
     margin-top: 0.9rem;
-    font-size: 2.25rem;
+    font-size: 2rem;
   }
 
   .login-page__story-copy > p:last-child {
@@ -1968,12 +1969,12 @@ textarea:focus-visible {
     right: auto;
     bottom: auto;
     left: auto;
-    width: min(100% - 3rem, 17rem);
-    margin: 1.1rem auto 0.25rem;
+    width: min(100% - 3rem, 15.5rem);
+    margin: 0.9rem auto 0.25rem;
   }
 
   .login-page__bottle-frames {
-    width: 64%;
+    width: 60%;
   }
 
   .login-page__story-footer {
@@ -1986,7 +1987,7 @@ textarea:focus-visible {
   }
 
   .login-page .login-form {
-    padding-top: 1rem;
+    padding-top: 0.75rem;
   }
 }
 
