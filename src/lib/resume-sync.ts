@@ -10,6 +10,7 @@ import type { Database, ResumeRow } from "@/lib/types";
 
 type ResumeClient = SupabaseClient<Database>;
 const TEMPLATE_META_KEY = "__job_bottle_template_id";
+const SAMPLE_META_KEY = "__job_bottle_sample";
 const CLOUD_RETRY_DELAYS_MS = [450, 1_200] as const;
 const CLOUD_OPERATION_TIMEOUT_MS = 8_000;
 
@@ -86,10 +87,17 @@ function getStoredTemplateId(value: unknown) {
   return typeof templateId === "string" ? templateId : null;
 }
 
-function contentForStorage(content: ResumeContent, templateId: ResumeTemplateId) {
+function getStoredSampleFlag(value: unknown) {
+  if (!value || typeof value !== "object") return undefined;
+  const flag = (value as Record<string, unknown>)[SAMPLE_META_KEY];
+  return typeof flag === "boolean" ? flag : undefined;
+}
+
+function contentForStorage(content: ResumeContent, templateId: ResumeTemplateId, isSample?: boolean) {
   return {
     ...content,
     [TEMPLATE_META_KEY]: templateId,
+    [SAMPLE_META_KEY]: isSample,
   };
 }
 
@@ -148,6 +156,7 @@ export function getResumeSyncErrorMessage(error: unknown) {
 }
 
 export function resumeRowToDocument(row: ResumeRow): ResumeDocument {
+  const isSample = getStoredSampleFlag(row.content_json);
   return {
     id: row.id,
     title: row.title,
@@ -158,6 +167,7 @@ export function resumeRowToDocument(row: ResumeRow): ResumeDocument {
     content: normalizeContent(row.content_json),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    ...(isSample === undefined ? {} : { isSample }),
   };
 }
 
@@ -187,7 +197,7 @@ export async function upsertMyResume(
     job_target: resume.jobTarget || null,
     linked_job_id: resume.linkedJobId,
     template_id: resume.templateId,
-    content_json: contentForStorage(resume.content, resume.templateId),
+    content_json: contentForStorage(resume.content, resume.templateId, resume.isSample),
     created_at: resume.createdAt,
     updated_at: resume.updatedAt || now,
   };

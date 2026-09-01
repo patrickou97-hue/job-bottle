@@ -23,6 +23,7 @@ import {
   getResumeTemplateMeta,
   getResumeTargetLine,
   getResumeLanguage,
+  isSampleResume,
   loadLocalResumes,
   saveLocalResumes,
   touchResume,
@@ -234,7 +235,8 @@ export function ResumeBuilderClient({
   useEffect(() => {
     if (!loaded) return;
     if (!authResolved && isSupabaseConfigured()) return;
-    const savedLocally = saveLocalResumes(resumes, userId);
+    const persistableResumes = resumes.filter((resume) => !isSampleResume(resume));
+    const savedLocally = saveLocalResumes(persistableResumes, userId);
 
     if (storageMode !== "cloud" || !userId || !isSupabaseConfigured()) {
       const timer = window.setTimeout(
@@ -244,7 +246,7 @@ export function ResumeBuilderClient({
       return () => window.clearTimeout(timer);
     }
 
-    const dirtyResumes = resumes.filter(
+    const dirtyResumes = persistableResumes.filter(
       (resume) => cloudFingerprintsRef.current.get(resume.id) !== JSON.stringify(resume),
     );
     if (dirtyResumes.length === 0) {
@@ -285,7 +287,7 @@ export function ResumeBuilderClient({
       ]);
 
       try {
-        const cloudResumes = await fetchMyResumes(supabase);
+        const cloudResumes = (await fetchMyResumes(supabase)).filter((resume) => !isSampleResume(resume));
         if (!mounted) return;
         const mergedResumes = adoptLocalResumesForUser(user.id, cloudResumes);
         cloudFingerprintsRef.current = new Map(
@@ -500,7 +502,7 @@ export function ResumeBuilderClient({
 
     const now = new Date().toISOString();
     const primaryRole = targetJob.role.split(/[,，、]/)[0]?.trim() || "目标岗位";
-    const next: ResumeDocument = {
+    const next: ResumeDocument = touchResume({
       ...selectedResume,
       id: createEmptyResume().id,
       title: `${targetJob.company} · ${primaryRole}`,
@@ -516,7 +518,7 @@ export function ResumeBuilderClient({
       },
       createdAt: now,
       updatedAt: now,
-    };
+    });
     setResumes((current) => [next, ...current]);
     setSelectedId(next.id);
     setActiveSection("target");
@@ -525,13 +527,13 @@ export function ResumeBuilderClient({
 
   function duplicateResume(resume: ResumeDocument) {
     const now = new Date().toISOString();
-    const copy: ResumeDocument = {
+    const copy: ResumeDocument = touchResume({
       ...resume,
       id: createEmptyResume().id,
       title: `${resume.title} 副本`,
       createdAt: now,
       updatedAt: now,
-    };
+    });
     setResumes((current) => [copy, ...current]);
     setSelectedId(copy.id);
   }

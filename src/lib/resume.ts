@@ -115,6 +115,8 @@ export type ResumeDocument = {
   content: ResumeContent;
   createdAt: string;
   updatedAt: string;
+  /** Preview-only sample resumes are never synchronized until the user edits them. */
+  isSample?: boolean;
 };
 
 const LEGACY_STORAGE_KEY = "job_bottle_resumes_v1";
@@ -365,7 +367,27 @@ export function createSampleResume(): ResumeDocument {
     },
     createdAt: now,
     updatedAt: now,
+    isSample: true,
   };
+}
+
+function isLegacySampleResume(resume: ResumeDocument) {
+  const basics = resume.content.basics;
+  return resume.title === "示例简历"
+    && resume.targetRole === "产品经理实习生"
+    && resume.jobTarget === "互联网产品方向"
+    && resume.templateId === "compact"
+    && basics.name === "王小星"
+    && basics.englishName === "Stella Wang"
+    && basics.email === "stella@example.com"
+    && resume.content.education.some((item) => item.school === "复旦大学")
+    && resume.content.work.some((item) => item.company === "欧莱雅中国" && item.title === "产品实习生")
+    && resume.content.projects.some((item) => item.name.includes("Brandstorm"));
+}
+
+export function isSampleResume(resume: ResumeDocument) {
+  return resume.isSample === true
+    || (resume.isSample !== false && isLegacySampleResume(resume));
 }
 
 function getResumeStorageKey(userId?: string | null) {
@@ -407,10 +429,11 @@ export function adoptLocalResumesForUser(
 ) {
   if (typeof window === "undefined") return cloudResumes;
 
-  const userResumes = loadLocalResumes(userId);
-  const guestResumes = loadLocalResumes();
+  const userResumes = loadLocalResumes(userId).filter((resume) => !isSampleResume(resume));
+  const guestResumes = loadLocalResumes().filter((resume) => !isSampleResume(resume));
+  const accountResumes = cloudResumes.filter((resume) => !isSampleResume(resume));
   const knownIds = new Set([
-    ...cloudResumes.map((resume) => resume.id),
+    ...accountResumes.map((resume) => resume.id),
     ...userResumes.map((resume) => resume.id),
   ]);
   const now = new Date().toISOString();
@@ -427,7 +450,7 @@ export function adoptLocalResumesForUser(
   });
   const merged = mergeResumeCollections(
     [...userResumes, ...adoptedGuests],
-    cloudResumes,
+    accountResumes,
   );
 
   if (saveLocalResumes(merged, userId)) {
@@ -458,6 +481,7 @@ export function mergeResumeCollections(
 export function touchResume(resume: ResumeDocument): ResumeDocument {
   return {
     ...resume,
+    isSample: false,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -543,7 +567,7 @@ function normalizeResumeDocument(value: unknown): ResumeDocument | null {
   const content = resume.content && typeof resume.content === "object" ? resume.content : fallback.content;
   const basics = content.basics && typeof content.basics === "object" ? content.basics : fallback.content.basics;
 
-  return {
+  const normalized: ResumeDocument = {
     ...fallback,
     ...resume,
     id: typeof resume.id === "string" && isResumeId(resume.id) ? resume.id : fallback.id,
@@ -584,6 +608,10 @@ function normalizeResumeDocument(value: unknown): ResumeDocument | null {
       customSections: Array.isArray(content.customSections) ? content.customSections : [],
     },
   };
+
+  if (typeof resume.isSample === "boolean") normalized.isSample = resume.isSample;
+  else if (isLegacySampleResume(normalized)) normalized.isSample = true;
+  return normalized;
 }
 
 function normalizeTemplateId(value: unknown): ResumeTemplateId {
