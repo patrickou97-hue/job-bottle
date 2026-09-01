@@ -79,7 +79,7 @@ export function ChinaJobMap({
             const selected = selectedProvince === province.name;
             const ratio = Math.sqrt(province.count / maxCount);
             const fill = selected
-              ? "#12294e"
+              ? "#F3C64D"
               : province.count > 0
                 ? `rgba(18, 41, 78, ${0.16 + ratio * 0.62})`
                 : "#dfe2e7";
@@ -88,13 +88,13 @@ export function ChinaJobMap({
                 key={province.name}
                 d={province.path}
                 fill={fill}
-                stroke="#f6f7f9"
+                stroke="#F8FAFC"
                 strokeWidth={selected ? 2 : 1}
                 role="button"
                 tabIndex={0}
                 aria-label={`${province.name}，${province.count} 个岗位`}
                 aria-pressed={selected}
-                className="cursor-pointer outline-none transition-opacity hover:opacity-80 focus-visible:stroke-[#12294e] focus-visible:stroke-[3]"
+                className="cursor-pointer outline-none transition-opacity hover:opacity-80 focus-visible:stroke-[#F3C64D] focus-visible:stroke-[3]"
                 onClick={() => selectProvince(province.name)}
                 onKeyDown={(event) => {
                   if (event.key !== "Enter" && event.key !== " ") return;
@@ -128,12 +128,12 @@ export function ChinaJobMap({
                 <polyline
                   points={`${province.centroid[0]},${province.centroid[1]} ${elbowX},${label.y - 6} ${label.x - 8},${label.y - 6}`}
                   fill="none"
-                  stroke={selected ? "#12294e" : "#6e7888"}
+                  stroke={selected ? "#F3C64D" : "#6e7888"}
                   strokeWidth={selected ? 2 : 1.25}
                   vectorEffect="non-scaling-stroke"
                   pointerEvents="none"
                 />
-                <circle cx={province.centroid[0]} cy={province.centroid[1]} r={selected ? 4 : 3} fill="#12294e" pointerEvents="none" />
+                <circle cx={province.centroid[0]} cy={province.centroid[1]} r={selected ? 4 : 3} fill="#F3C64D" pointerEvents="none" />
                 <rect x={label.x - 8} y={label.y - 23} width="82" height="30" fill="transparent" />
                 <text
                   x={label.x}

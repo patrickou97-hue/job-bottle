@@ -97,8 +97,8 @@ export function FloatingPlanet({
         <motion.span
           className="pointer-events-none absolute left-1/2 top-full mt-2 -translate-x-1/2 whitespace-nowrap text-xs font-medium"
           style={{
-            color: hovered ? 'rgba(241,239,255,0.94)' : 'rgba(201,197,228,0.74)',
-            textShadow: hovered ? '0 0 18px rgba(126,124,181,0.26)' : 'none',
+            color: hovered ? 'rgba(255,249,227,0.96)' : 'rgba(216,225,239,0.76)',
+            textShadow: hovered ? '0 0 18px rgba(243,198,77,0.28)' : 'none',
           }}
           animate={{ opacity: entering ? 0 : 1, y: hovered ? 1 : 0 }}
           transition={{ duration: 0.2 }}

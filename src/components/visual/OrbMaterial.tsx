@@ -17,60 +17,60 @@ const ORB_PALETTE: Record<
   }
 > = {
   blue: {
-    light: "rgba(231,226,255,0.84)",
-    main: "rgba(126,124,181,0.72)",
-    dark: "rgba(18,41,78,0.94)",
-    glow: "rgba(126,124,181,0.24)",
-    icon: "rgba(241,239,255,0.8)",
+    light: "rgba(255,249,227,0.84)",
+    main: "rgba(243,198,77,0.72)",
+    dark: "rgba(16,38,74,0.96)",
+    glow: "rgba(243,198,77,0.24)",
+    icon: "rgba(255,249,227,0.84)",
   },
   violet: {
-    light: "rgba(231,226,255,0.76)",
-    main: "rgba(86,74,113,0.76)",
-    dark: "rgba(18,41,78,0.94)",
-    glow: "rgba(86,74,113,0.24)",
-    icon: "rgba(241,239,255,0.78)",
+    light: "rgba(237,242,248,0.82)",
+    main: "rgba(30,59,102,0.84)",
+    dark: "rgba(6,19,40,0.96)",
+    glow: "rgba(30,59,102,0.28)",
+    icon: "rgba(247,249,252,0.8)",
   },
   cyan: {
-    light: "rgba(221,247,247,0.88)",
-    main: "rgba(91,164,178,0.78)",
-    dark: "rgba(18,41,78,0.94)",
-    glow: "rgba(91,164,178,0.28)",
-    icon: "rgba(235,252,252,0.86)",
+    light: "rgba(255,249,227,0.9)",
+    main: "rgba(216,166,47,0.8)",
+    dark: "rgba(16,38,74,0.96)",
+    glow: "rgba(243,198,77,0.3)",
+    icon: "rgba(255,249,227,0.88)",
   },
   gold: {
     light: "rgba(255,244,198,0.96)",
-    main: "rgba(201,151,60,0.9)",
+    main: "rgba(216,166,47,0.92)",
     dark: "rgba(91,58,22,0.96)",
-    glow: "rgba(201,151,60,0.38)",
+    glow: "rgba(243,198,77,0.42)",
     icon: "rgba(255,248,220,0.92)",
   },
   rose: {
-    light: "rgba(242,222,233,0.78)",
-    main: "rgba(127,85,104,0.7)",
-    dark: "rgba(86,74,113,0.94)",
-    glow: "rgba(127,85,104,0.22)",
-    icon: "rgba(242,222,233,0.8)",
+    light: "rgba(255,249,227,0.84)",
+    main: "rgba(216,166,47,0.76)",
+    dark: "rgba(16,38,74,0.96)",
+    glow: "rgba(243,198,77,0.26)",
+    icon: "rgba(255,249,227,0.84)",
   },
   apricot: {
-    light: "rgba(255,231,210,0.9)",
-    main: "rgba(181,122,91,0.78)",
-    dark: "rgba(86,74,113,0.94)",
-    glow: "rgba(181,122,91,0.28)",
-    icon: "rgba(255,239,225,0.86)",
+    light: "rgba(255,249,227,0.9)",
+    main: "rgba(216,166,47,0.8)",
+    dark: "rgba(16,38,74,0.96)",
+    glow: "rgba(243,198,77,0.3)",
+    icon: "rgba(255,249,227,0.88)",
   },
   cream: {
-    light: "rgba(241,239,255,0.9)",
-    main: "rgba(201,197,228,0.62)",
-    dark: "rgba(18,41,78,0.94)",
-    glow: "rgba(201,197,228,0.2)",
-    icon: "rgba(241,239,255,0.82)",
+    light: "rgba(247,249,252,0.9)",
+    main: "rgba(216,225,239,0.68)",
+    dark: "rgba(16,38,74,0.96)",
+    glow: "rgba(216,225,239,0.22)",
+    icon: "rgba(247,249,252,0.84)",
   },
   muted: {
-    light: "rgba(201,197,228,0.5)",
-    main: "rgba(86,74,113,0.62)",
-    dark: "rgba(0,0,1,0.96)",
-    glow: "rgba(145,140,174,0.14)",
-    icon: "rgba(201,197,228,0.64)",
+    light: "rgba(216,225,239,0.54)",
+    main: "rgba(74,98,131,0.68)",
+    dark: "rgba(6,19,40,0.96)",
+    glow: "rgba(155,170,192,0.16)",
+    icon: "rgba(216,225,239,0.68)",
   },
 };
 
@@ -96,8 +96,8 @@ export function OrbMaterial({
       "radial-gradient(circle at 76% 78%, rgba(0,0,0,0.55) 0 36%, transparent 60%)",
     ].join(", "),
     boxShadow: active
-      ? `0 0 34px ${palette.glow}, inset -12px -16px 28px rgba(0,0,0,0.56), inset 8px 7px 18px rgba(231,226,255,0.08)`
-      : `0 0 18px ${palette.glow}, inset -10px -14px 24px rgba(0,0,0,0.58), inset 7px 6px 16px rgba(231,226,255,0.06)`,
+      ? `0 0 34px ${palette.glow}, inset -12px -16px 28px rgba(0,0,0,0.56), inset 8px 7px 18px rgba(255,249,227,0.08)`
+      : `0 0 18px ${palette.glow}, inset -10px -14px 24px rgba(0,0,0,0.58), inset 7px 6px 16px rgba(255,249,227,0.06)`,
   };
 
   return (
@@ -121,7 +121,7 @@ export function OrbMaterial({
         aria-hidden="true"
         className="absolute inset-[1px] rounded-full"
         style={{
-          background: "conic-gradient(from 300deg, rgba(231,226,255,0.42) 0deg 40deg, transparent 52deg 360deg)",
+          background: "conic-gradient(from 300deg, rgba(255,249,227,0.46) 0deg 40deg, transparent 52deg 360deg)",
           maskImage: "radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1px))",
           WebkitMaskImage: "radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1px))",
         }}
@@ -132,8 +132,8 @@ export function OrbMaterial({
         style={{
           width: "clamp(2px, 8%, 3px)",
           height: "clamp(2px, 8%, 3px)",
-          background: "rgba(231,226,255,0.78)",
-          boxShadow: "0 0 8px rgba(231,226,255,0.36)",
+          background: "rgba(255,249,227,0.82)",
+          boxShadow: "0 0 8px rgba(255,249,227,0.38)",
         }}
       />
       {icon ? (

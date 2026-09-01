@@ -90,7 +90,7 @@ export function ResumeEditor({
   return (
     <div className="space-y-5">
       {undo ? (
-        <div className="flex items-center justify-between gap-3 border-l-2 border-[color:var(--aurora)] bg-[#eef2f7] px-4 py-3 text-sm text-ink-secondary">
+        <div className="flex items-center justify-between gap-3 border-l-2 border-[color:var(--aurora)] bg-[#FFF8DE] px-4 py-3 text-sm text-ink-secondary">
           <span>{undo.label}已应用</span>
           <button type="button" className="text-action inline-flex items-center gap-2" onClick={() => { undo.run(); setUndo(null); }}>
             <RotateCcw aria-hidden="true" className="size-4" />撤销
@@ -694,7 +694,7 @@ function PolishableItem({ children, onPolish }: { children: React.ReactNode; onP
       <div className="flex justify-end">
         <button
           type="button"
-          className="pressable inline-flex h-9 items-center gap-2 rounded-lg border border-[#12294e] bg-[#12294e] px-4 text-xs font-semibold text-white transition-colors hover:bg-[#24375c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#12294e]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+          className="pressable inline-flex h-9 items-center gap-2 rounded-lg border border-[#D8A62F] bg-[#F3C64D] px-4 text-xs font-semibold text-[#152A55] transition-colors hover:bg-[#F7D773] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D8A62F]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
           onClick={onPolish}
         >
           <Sparkles aria-hidden="true" className="size-3.5 text-white" />

@@ -252,7 +252,7 @@ export function PostCard({
                   <Pencil aria-hidden="true" className="size-3.5" />
                   编辑内容
                 </button>
-                <button type="button" onClick={handleDeletePost} disabled={actionBusy} className="pressable inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-[color:var(--text-danger)] transition hover:bg-[rgba(127,85,104,0.12)]">
+                <button type="button" onClick={handleDeletePost} disabled={actionBusy} className="pressable inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-[color:var(--text-danger)] transition hover:bg-[rgba(177,75,87,0.12)]">
                   <Trash2 aria-hidden="true" className="size-3.5" />
                   删除内容
                 </button>

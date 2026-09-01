@@ -131,11 +131,13 @@ export function AdminShell({ children }: { children: ReactNode }) {
       <header className="admin-shell__header app-navbar sticky top-0 z-40 border-b">
         <div className="admin-shell__header-inner">
           <Link href="/admin" className="admin-shell__brand" aria-label="进入管理后台">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/shi-xing-wordmark.png" alt={SITE_NAME} width={1216} height={542} className="admin-shell__brand-cn brand-wordmark" />
+            <span className="admin-shell__brand-mark">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/brand/shi-xing-wordmark.png" alt={SITE_NAME} width={1216} height={542} className="admin-shell__brand-cn brand-wordmark" />
+              <StarJobWordmark className="admin-shell__brand-en" />
+            </span>
             <span aria-hidden="true" className="admin-shell__brand-divider" />
             <span className="admin-shell__brand-section">管理空间</span>
-            <StarJobWordmark className="admin-shell__brand-en" />
           </Link>
 
           <div className="admin-shell__account nav-account">

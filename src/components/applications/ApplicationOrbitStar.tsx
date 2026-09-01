@@ -23,9 +23,9 @@ export function ApplicationOrbitStar({
   const momentum = momentumTier(application);
   const stayedDays = daysSince(application.updated_at);
   const momentumStyle = {
-    blue: "bg-[#7E7CB5] shadow-[0_0_10px_rgba(126,124,181,0.26)]",
-    neutral: "bg-[color:var(--light-ice)] shadow-[0_0_8px_rgba(201,197,228,0.16)]",
-    red: "bg-[#7F5568] shadow-[0_0_8px_rgba(127,85,104,0.16)]",
+    blue: "bg-[#F3C64D] shadow-[0_0_10px_rgba(243,198,77,0.28)]",
+    neutral: "bg-[color:var(--light-ice)] shadow-[0_0_8px_rgba(216,225,239,0.18)]",
+    red: "bg-[#B14B57] shadow-[0_0_8px_rgba(177,75,87,0.18)]",
   }[momentum];
 
   return (
@@ -58,11 +58,11 @@ export function ApplicationOrbitStar({
       <span className="absolute left-1/2 top-[50px] max-w-20 -translate-x-1/2 whitespace-nowrap text-center text-[11px] leading-4 text-ink-secondary group-hover:text-ink-primary">
         {shortLabel}
       </span>
-      <span className="pointer-events-none absolute left-1/2 top-[72px] z-30 hidden w-44 -translate-x-1/2 rotate-0 bg-[#12294E]/58 px-3 py-2 text-left text-xs leading-5 text-ink-secondary shadow-[0_18px_48px_rgba(0,0,0,0.32)] backdrop-blur-xl group-hover:block group-focus:block">
+      <span className="pointer-events-none absolute left-1/2 top-[72px] z-30 hidden w-44 -translate-x-1/2 rotate-0 bg-[#10264A]/72 px-3 py-2 text-left text-xs leading-5 text-ink-secondary shadow-[0_18px_48px_rgba(0,0,0,0.32)] backdrop-blur-xl group-hover:block group-focus:block">
         <span className="block truncate text-nebula-silver">{application.job.company_name}</span>
         <span className="block truncate text-ink-muted">{application.job.job_titles || "岗位待补充"}</span>
         {momentum === "red" ? (
-          <span className="block truncate text-[#C9A7B8]">已停留 {stayedDays} 天 · 跟进一下？</span>
+          <span className="block truncate text-[#E89DA4]">已停留 {stayedDays} 天 · 跟进一下？</span>
         ) : null}
       </span>
     </button>
@@ -72,10 +72,10 @@ export function ApplicationOrbitStar({
 function getApplicationOrbVariant(status: ApplicationStatus): OrbMaterialVariant {
   if (status === "opened") return "blue";
   if (status === "applied") return "violet";
-  if (status === "written_test") return "cyan";
-  if (status === "first_round") return "rose";
-  if (status === "second_round") return "apricot";
-  if (status === "final_round") return "cream";
+  if (status === "written_test") return "gold";
+  if (status === "first_round") return "gold";
+  if (status === "second_round") return "gold";
+  if (status === "final_round") return "gold";
   if (status === "offer") return "gold";
   return "muted";
 }

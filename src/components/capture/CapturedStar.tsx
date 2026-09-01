@@ -16,8 +16,8 @@ export function CapturedStar({ application }: { application: ApplicationWithJob 
       title={`${application.job.company_name} · ${application.job.job_titles ?? "岗位"}`}
       style={{
         background:
-          "radial-gradient(circle at 35% 28%, rgba(241,239,255,0.72), rgba(126,124,181,0.48) 28%, rgba(18,41,78,0.88) 72%)",
-        boxShadow: "0 0 18px rgba(126,124,181,0.24), inset -6px -8px 14px rgba(0,0,0,0.45)",
+          "radial-gradient(circle at 35% 28%, rgba(255,249,227,0.76), rgba(243,198,77,0.54) 28%, rgba(16,38,74,0.9) 72%)",
+        boxShadow: "0 0 18px rgba(243,198,77,0.26), inset -6px -8px 14px rgba(0,0,0,0.45)",
       }}
     >
       <span

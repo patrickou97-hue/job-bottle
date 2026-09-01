@@ -342,10 +342,10 @@ export function HomeClient() {
       applyWindow.opener = null;
       applyWindow.document.title = "正在前往投递官网";
       applyWindow.document.body.style.margin = "0";
-      applyWindow.document.body.style.background = "#000001";
-      applyWindow.document.body.style.color = "#F1EFFF";
+      applyWindow.document.body.style.background = "#061328";
+      applyWindow.document.body.style.color = "#FFF9E3";
       applyWindow.document.body.style.fontFamily = '-apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif';
-      applyWindow.document.body.innerHTML = '<main style="min-height:100vh;display:grid;place-items:center;text-align:center;"><div><p style="font-size:15px;">正在前往投递官网</p><p style="font-size:12px;color:#918CAE;">返回后确认投递结果</p></div></main>';
+      applyWindow.document.body.innerHTML = '<main style="min-height:100vh;display:grid;place-items:center;text-align:center;"><div><p style="font-size:15px;">正在前往投递官网</p><p style="font-size:12px;color:#9BAAC0;">返回后确认投递结果</p></div></main>';
       applyWindow.location.href = sanitizeApplicationUrl(job.apply_url);
       return true;
     }
@@ -806,7 +806,7 @@ function JobRadarHeader({
                 className={cn(
                   "pressable rounded-md px-3 py-1.5 text-xs transition",
                   jobView === mode.value
-                    ? "bg-[#e8edf4] text-[#12294e]"
+                    ? "bg-[#FFF3C8] text-[#152A55]"
                     : "text-ink-muted hover:text-ink-secondary",
                 )}
                 aria-pressed={jobView === mode.value}

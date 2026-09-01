@@ -34,8 +34,8 @@ export async function downloadBottleShareCard({
         width: 260,
         margin: 1,
         color: {
-          dark: "#12294E",
-          light: "#E7E2FF",
+          dark: "#10264A",
+          light: "#FFF9E3",
         },
       }),
     ),
@@ -66,20 +66,20 @@ export async function downloadBottleShareCard({
 
 function drawShareBackground(context: CanvasRenderingContext2D) {
   const background = context.createLinearGradient(0, 0, CARD_WIDTH, CARD_HEIGHT);
-  background.addColorStop(0, "#000001");
-  background.addColorStop(0.42, "#12294E");
-  background.addColorStop(1, "#564A71");
+  background.addColorStop(0, "#061328");
+  background.addColorStop(0.42, "#10264A");
+  background.addColorStop(1, "#1E3B66");
   context.fillStyle = background;
   context.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
 
   const paperGlow = context.createRadialGradient(820, 640, 80, 820, 640, 760);
-  paperGlow.addColorStop(0, "rgba(126,124,181,0.18)");
-  paperGlow.addColorStop(0.48, "rgba(127,85,104,0.1)");
-  paperGlow.addColorStop(1, "rgba(0,0,1,0)");
+  paperGlow.addColorStop(0, "rgba(243,198,77,0.18)");
+  paperGlow.addColorStop(0.48, "rgba(216,166,47,0.1)");
+  paperGlow.addColorStop(1, "rgba(6,19,40,0)");
   context.fillStyle = paperGlow;
   context.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
 
-  context.strokeStyle = "rgba(231,226,255,0.1)";
+  context.strokeStyle = "rgba(237,242,248,0.1)";
   context.lineWidth = 1.2;
   context.beginPath();
   context.moveTo(80, 1030);
@@ -87,7 +87,7 @@ function drawShareBackground(context: CanvasRenderingContext2D) {
   context.bezierCurveTo(920, 390, 1035, 310, 1140, 285);
   context.stroke();
 
-  context.strokeStyle = "rgba(126,124,181,0.3)";
+  context.strokeStyle = "rgba(243,198,77,0.3)";
   context.lineWidth = 2.2;
   context.beginPath();
   context.moveTo(110, 1035);
@@ -99,13 +99,13 @@ function drawShareBackground(context: CanvasRenderingContext2D) {
     const x = (index * 181.9 + (index % 6) * 17) % CARD_WIDTH;
     const y = (index * 263.1 + (index % 9) * 13) % CARD_HEIGHT;
     const alpha = 0.07 + ((index * 11) % 24) / 100;
-    context.fillStyle = `rgba(231,226,255,${alpha})`;
+    context.fillStyle = `rgba(255,249,227,${alpha})`;
     context.beginPath();
     context.arc(x, y, index % 17 === 0 ? 2 : 0.9, 0, Math.PI * 2);
     context.fill();
   }
 
-  context.strokeStyle = "rgba(201,197,228,0.22)";
+  context.strokeStyle = "rgba(216,225,239,0.22)";
   context.lineWidth = 1;
   context.strokeRect(44, 44, CARD_WIDTH - 88, CARD_HEIGHT - 88);
 }
@@ -114,12 +114,12 @@ function drawShareHeader(context: CanvasRenderingContext2D, logoImage: HTMLImage
   if (logoImage) {
     context.drawImage(logoImage, CARD_PADDING, 74, 134, 46);
   } else {
-    context.fillStyle = "#E7E2FF";
+    context.fillStyle = "#FFF9E3";
     context.font = "800 34px sans-serif";
     context.fillText("拾星", CARD_PADDING, 112);
   }
 
-  context.fillStyle = "#F1EFFF";
+  context.fillStyle = "#FFF9E3";
   context.font = "800 82px sans-serif";
   context.fillText("我的秋招星瓶", CARD_PADDING, 208);
 }
@@ -137,13 +137,13 @@ function drawBottleSnapshot(
   const height = 780;
 
   const glow = context.createRadialGradient(x + width * 0.5, y + height * 0.58, 20, x + width * 0.5, y + height * 0.58, 360);
-  glow.addColorStop(0, "rgba(126,124,181,0.2)");
-  glow.addColorStop(0.42, "rgba(127,85,104,0.12)");
-  glow.addColorStop(1, "rgba(0,0,1,0)");
+  glow.addColorStop(0, "rgba(243,198,77,0.2)");
+  glow.addColorStop(0.42, "rgba(216,166,47,0.12)");
+  glow.addColorStop(1, "rgba(6,19,40,0)");
   context.fillStyle = glow;
   context.fillRect(x - 80, y - 80, width + 160, height + 160);
 
-  context.strokeStyle = "rgba(201,197,228,0.2)";
+  context.strokeStyle = "rgba(216,225,239,0.2)";
   context.lineWidth = 1;
   context.beginPath();
   context.ellipse(x + width * 0.5, y + height * 0.55, 245, 395, -0.12, 0, Math.PI * 2);
@@ -179,10 +179,10 @@ function drawBottleSnapshot(
   context.drawImage(bottleImage, x, y, width, height);
   context.restore();
 
-  context.fillStyle = "rgba(241,239,255,0.76)";
+  context.fillStyle = "rgba(247,249,252,0.78)";
   context.font = "700 28px sans-serif";
   context.fillText("星瓶", x + 42, y + height + 54);
-  context.fillStyle = "rgba(201,197,228,0.5)";
+  context.fillStyle = "rgba(216,225,239,0.52)";
   context.font = "500 20px sans-serif";
   context.fillText("把明日的坐标收进星瓶", x + 42, y + height + 88);
 }
@@ -206,7 +206,7 @@ function drawShareStory(context: CanvasRenderingContext2D, applications: Applica
     ["first_round", "second_round", "final_round"].includes(application.status),
   ).length;
 
-  context.fillStyle = "rgba(201,197,228,0.8)";
+  context.fillStyle = "rgba(255,249,227,0.86)";
   context.font = "700 30px sans-serif";
   context.fillText("本季足迹", x, y);
 
@@ -214,12 +214,12 @@ function drawShareStory(context: CanvasRenderingContext2D, applications: Applica
   drawShareMetric(context, x, y + 174, "已投递", `${appliedCount} 份`);
   drawShareMetric(context, x, y + 256, "已进面", `${interviewCount} 次`);
 
-  context.fillStyle = "rgba(201,197,228,0.8)";
+  context.fillStyle = "rgba(255,249,227,0.86)";
   context.font = "700 28px sans-serif";
   context.fillText("涉及企业", x, y + 396);
 
   if (companies.length === 0) {
-    context.fillStyle = "rgba(201,197,228,0.6)";
+    context.fillStyle = "rgba(216,225,239,0.6)";
     context.font = "600 23px sans-serif";
     context.fillText("星瓶里还没有岗位星", x, y + 468);
     return;
@@ -228,13 +228,13 @@ function drawShareStory(context: CanvasRenderingContext2D, applications: Applica
   companies.slice(0, 5).forEach((application, index) => {
     const top = y + 456 + index * 48;
     drawShareStar(context, x + 14, top - 8, 16, application.status);
-    context.fillStyle = "rgba(241,239,255,0.86)";
+    context.fillStyle = "rgba(247,249,252,0.88)";
     context.font = "600 22px sans-serif";
     context.fillText(truncateText(context, application.job.company_name, width - 42), x + 38, top);
   });
 
   if (companies.length > 5) {
-    context.fillStyle = "rgba(126,124,181,0.82)";
+    context.fillStyle = "rgba(243,198,77,0.86)";
     context.font = "700 30px sans-serif";
     context.fillText("……", x + 38, y + 456 + 5 * 48);
   }
@@ -247,17 +247,17 @@ function drawShareMetric(
   label: string,
   value: string,
 ) {
-  context.strokeStyle = "rgba(201,197,228,0.18)";
+  context.strokeStyle = "rgba(216,225,239,0.2)";
   context.lineWidth = 1;
   context.beginPath();
   context.moveTo(x, y + 22);
   context.lineTo(x + 408, y + 22);
   context.stroke();
 
-  context.fillStyle = "rgba(201,197,228,0.48)";
+  context.fillStyle = "rgba(216,225,239,0.52)";
   context.font = "500 18px sans-serif";
   context.fillText(label, x, y);
-  context.fillStyle = "#F1EFFF";
+  context.fillStyle = "#FFF9E3";
   context.font = "700 25px sans-serif";
   context.fillText(truncateText(context, value, 330), x + 120, y);
 }
@@ -267,21 +267,21 @@ function drawShareFooter(context: CanvasRenderingContext2D, qrImage: HTMLImageEl
   const qrX = CARD_WIDTH - CARD_PADDING - qrSize - 28;
   const qrY = 1300;
 
-  context.fillStyle = "rgba(231,226,255,0.94)";
+  context.fillStyle = "rgba(255,249,227,0.94)";
   roundedRect(context, CARD_PADDING, qrY - 36, CARD_WIDTH - CARD_PADDING * 2, qrSize + 66, 28);
   context.fill();
 
-  context.fillStyle = "#12294E";
+  context.fillStyle = "#10264A";
   context.font = "800 33px sans-serif";
   context.fillText("扫码开启你的秋招星瓶", CARD_PADDING + 32, qrY + 44);
 
-  context.fillStyle = "rgba(18,41,78,0.68)";
+  context.fillStyle = "rgba(16,38,74,0.72)";
   context.font = "600 21px sans-serif";
   context.fillText("www.starjob.space", CARD_PADDING + 32, qrY + 88);
   context.font = "700 21px sans-serif";
   context.fillText("拾星", CARD_PADDING + 32, qrY + 146);
 
-  context.fillStyle = "#E7E2FF";
+  context.fillStyle = "#EDF2F8";
   roundedRect(context, qrX - 12, qrY - 12, qrSize + 24, qrSize + 24, 22);
   context.fill();
   context.drawImage(qrImage, qrX, qrY, qrSize, qrSize);
@@ -321,15 +321,15 @@ function getShareColor(status: ApplicationStatus) {
     halo: string;
     stroke: string;
   }> = {
-    opened: { fill: "#12294E", light: "#C9C5E4", halo: "rgba(18,41,78,0.38)", stroke: "rgba(201,197,228,0.64)" },
-    applied: { fill: "#564A71", light: "#C9C5E4", halo: "rgba(86,74,113,0.36)", stroke: "rgba(201,197,228,0.66)" },
-    written_test: { fill: "#7E7CB5", light: "#E7E2FF", halo: "rgba(126,124,181,0.38)", stroke: "rgba(231,226,255,0.7)" },
-    first_round: { fill: "#7F5568", light: "#E6C9D6", halo: "rgba(127,85,104,0.38)", stroke: "rgba(242,222,233,0.7)" },
-    second_round: { fill: "#7E7CB5", light: "#E7E2FF", halo: "rgba(126,124,181,0.42)", stroke: "rgba(231,226,255,0.74)" },
-    final_round: { fill: "#7F5568", light: "#F1EFFF", halo: "rgba(127,85,104,0.44)", stroke: "rgba(241,239,255,0.76)" },
-    offer: { fill: "#7E7CB5", light: "#F1EFFF", halo: "rgba(126,124,181,0.56)", stroke: "rgba(241,239,255,0.82)" },
-    rejected: { fill: "#564A71", light: "#918CAE", halo: "rgba(86,74,113,0.2)", stroke: "rgba(145,140,174,0.42)" },
-    withdrawn: { fill: "#12294E", light: "#918CAE", halo: "rgba(18,41,78,0.18)", stroke: "rgba(145,140,174,0.38)" },
+    opened: { fill: "#10264A", light: "#D8E1EF", halo: "rgba(16,38,74,0.38)", stroke: "rgba(216,225,239,0.66)" },
+    applied: { fill: "#1E3B66", light: "#D8E1EF", halo: "rgba(30,59,102,0.36)", stroke: "rgba(216,225,239,0.68)" },
+    written_test: { fill: "#D8A62F", light: "#FFF9E3", halo: "rgba(243,198,77,0.38)", stroke: "rgba(255,249,227,0.72)" },
+    first_round: { fill: "#E7B631", light: "#FFF9E3", halo: "rgba(243,198,77,0.4)", stroke: "rgba(255,249,227,0.72)" },
+    second_round: { fill: "#E7B631", light: "#FFF9E3", halo: "rgba(243,198,77,0.44)", stroke: "rgba(255,249,227,0.76)" },
+    final_round: { fill: "#F3C64D", light: "#FFF9E3", halo: "rgba(243,198,77,0.48)", stroke: "rgba(255,249,227,0.78)" },
+    offer: { fill: "#F3C64D", light: "#FFF9E3", halo: "rgba(243,198,77,0.58)", stroke: "rgba(255,249,227,0.84)" },
+    rejected: { fill: "#4A6283", light: "#9BAAC0", halo: "rgba(74,98,131,0.2)", stroke: "rgba(155,170,192,0.44)" },
+    withdrawn: { fill: "#10264A", light: "#9BAAC0", halo: "rgba(16,38,74,0.18)", stroke: "rgba(155,170,192,0.4)" },
   };
   return colors[status];
 }

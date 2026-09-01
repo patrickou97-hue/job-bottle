@@ -181,7 +181,7 @@ export function ResumeImportDialog({
             onClick={() => inputRef.current?.click()}
           >
             <span className="flex min-w-0 items-center gap-4">
-              <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-[#12294e] text-white">
+              <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-[#152A55] text-[#F3C64D]">
                 {stage === "reading" ? <LoaderCircle aria-hidden="true" className="size-5 animate-spin" /> : <FileUp aria-hidden="true" className="size-5" />}
               </span>
               <span className="min-w-0">

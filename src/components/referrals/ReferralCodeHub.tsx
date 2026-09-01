@@ -336,7 +336,7 @@ export function ReferralUploadDialog({
             <div className="sm:col-span-2"><FormField label="使用说明" helper="最多 500 字；不得包含联系方式、外链或交易信息"><Textarea value={usageNote} maxLength={500} onChange={(event) => setUsageNote(event.target.value)} placeholder="说明在官方投递页的填写位置或注意事项" /></FormField></div>
           </div>
           <label className="mt-5 flex cursor-pointer items-start gap-3 border-y border-[color:var(--line-ghost)] py-4 text-xs leading-5 text-ink-secondary">
-            <input type="checkbox" className="mt-0.5 size-4 accent-[#12294e]" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} />
+            <input type="checkbox" className="mt-0.5 size-4 accent-[#D8A62F]" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} />
             <span>我确认此内推码来源真实、可以公开分享，未收取费用，也不会要求使用者提供验证码、密码、身份证或转账。</span>
           </label>
           {error ? <p className="mt-4 text-sm text-[color:var(--text-danger)]" role="alert">{error}</p> : null}
@@ -467,7 +467,7 @@ function ReferralReportDialog({ item, currentUserId, onClose, onReported }: { it
         {!currentUserId ? (
           <div className="mt-5"><p className="text-sm text-ink-secondary">请先登录，再提交举报。</p><Link href={`/login?next=${encodeURIComponent("/referrals")}`} className="gold-button mt-4 inline-flex min-h-10 items-center rounded-lg px-4 text-sm font-medium">前往登录</Link></div>
         ) : (
-          <div className="mt-5 space-y-2">{reasons.map((itemReason) => <button key={itemReason} type="button" className={reason === itemReason ? "flex w-full items-center gap-3 rounded-lg bg-[#e8edf4] px-3 py-3 text-left text-sm text-[#12294e]" : "flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm text-ink-secondary hover:bg-[color:var(--surface-hover-bg)]"} onClick={() => setReason(itemReason)}><AlertTriangle aria-hidden="true" className="size-4 shrink-0" />{itemReason}</button>)}</div>
+          <div className="mt-5 space-y-2">{reasons.map((itemReason) => <button key={itemReason} type="button" className={reason === itemReason ? "flex w-full items-center gap-3 rounded-lg bg-[#FFF3C8] px-3 py-3 text-left text-sm text-[#152A55]" : "flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm text-ink-secondary hover:bg-[color:var(--surface-hover-bg)]"} onClick={() => setReason(itemReason)}><AlertTriangle aria-hidden="true" className="size-4 shrink-0" />{itemReason}</button>)}</div>
         )}
         {error ? <p className="mt-4 text-sm text-[color:var(--text-danger)]" role="alert">{error}</p> : null}
         <div className="mt-6 flex justify-end gap-3"><Button variant="secondary" onClick={onClose}>取消</Button>{currentUserId ? <Button variant="danger" disabled={!reason || saving} onClick={() => void submit()}>{saving ? "提交中" : "提交举报"}</Button> : null}</div>
