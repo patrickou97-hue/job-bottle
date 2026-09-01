@@ -5,13 +5,13 @@
 **死命令：任何代码、组件、样式、路由、API、类型、脚本、migration / RLS / DDL、数据库或外部数据写入、数据源或导入规则、环境变量、自动化、依赖、产品或视觉决策、测试、Git、部署、回滚、风险边界或验证证据只要发生变化，都必须在同一工作会话内同时、等量更新 `PROJECT_CONTEXT_FINAL.md`、`PROJECT_CONTEXT.md`、`PROJECT_CONTEXT_AUDIT.md`。三份任一漏写、内容不一致或缺少证据时，禁止暂存、提交、推送、部署、宣称完成或交接。后续代理无权跳过、弱化、延期、改成单文档记录，也不得用聊天记录、代码注释、提交信息或其他文档替代。**
 
 每次三文档记录至少写明：日期、用户目标、根因/决策、实际改动文件与行为、兼容边界、验证命令和结果、提交与部署证据（如有）、已确认和未确认的外部状态。若本次只完成诊断而没有修改，也必须在三份文档中同步写清“零修改/零部署”及诊断证据。
-## 2026-09-01 星瓶动效提速与管理员界面发布（待发布）
+## 2026-09-01 星瓶动效提速与管理员界面发布（已上线）
 
 - 用户目标：将星瓶变化动画调整到约 2 秒，并把上一轮管理员工作台深度重构、移动端优化、可折叠诘星计费和双色 StarJob 标识一起上线。
-- 决策与实际改动：src/app/globals.css 将登录页 login-bottle-frames 逐帧切换从 8 秒改为 2 秒，保留 8 秒轻微漂浮和 reduced-motion 降级；scripts/tests/motion-performance.test.mjs 增加 2 秒节奏回归断言。双色英文标识改用 Imagen 生成的 public/brand/starjob-wordmark-v1.png，再去除棋盘格并裁去透明留白，最终为 2104×327、RGBA、真实透明背景，并在字母 O 内加入一颗小型蓝色四芒十字星；src/components/brand/StarJobWordmark.tsx 通过图片组件接入。管理员重构保留原权限和业务行为：src/components/layout/AdminShell.tsx 分层导航并折叠“更多工具”，src/app/admin/page.tsx 重做高频入口和低频工具区，src/components/admin/AdminJobTable.tsx 增加移动端岗位卡片，src/app/login/page.tsx、src/components/layout/SiteFooter.tsx 和管理员壳层并置双色英文标识，scripts/smoke_check.mjs 同步新管理员壳层源码契约。
+- 决策与实际改动：src/app/globals.css 将登录页 login-bottle-frames 逐帧切换从 8 秒改为 2 秒，保留 8 秒轻微漂浮和 reduced-motion 降级；scripts/tests/motion-performance.test.mjs 增加 2 秒节奏回归断言。双色英文标识改用 Imagen 生成的 public/brand/starjob-wordmark-v1.png，再去除棋盘格并裁去透明留白，最终为 2104×327、RGBA、真实透明背景，Star 使用暖黄色、Job 使用原本的深蓝色，并在字母 O 内加入一颗小型黄色四芒十字星；src/components/brand/StarJobWordmark.tsx 通过图片组件接入。管理员重构保留原权限和业务行为：src/components/layout/AdminShell.tsx 分层导航并折叠“更多工具”，src/app/admin/page.tsx 重做高频入口和低频工具区，src/components/admin/AdminJobTable.tsx 增加移动端岗位卡片，src/app/login/page.tsx、src/components/layout/SiteFooter.tsx 和管理员壳层将英文标识定位到拾星中文标识右下角，并统一登录、页脚、管理员及主要业务视觉为深蓝、黄色和中性灰配色；scripts/smoke_check.mjs 同步新管理员壳层源码契约。
 - 兼容边界：未改变登录协议、管理员角色校验、任何管理员路由、按钮动作、API、计费数据读写、Supabase schema/RLS/DDL、migration、环境变量或依赖；仅改变登录星瓶切帧节奏、品牌资产呈现和管理员导航/响应式展示层。图片生成使用现有拾星中文字标作为风格参考，不复制中文字符，不新增第三方运行时。
 - 备份与验证：回退备份位于 backups/starjob-before-admin-refactor-20260901/RESTORE.md，包含管理员壳层、管理员首页、岗位表、登录页、页脚和全局样式快照；新增图片 Logo 的回退方式已记录。当前独立干净 main 工作树已通过 npm run typecheck、npm run lint（0 错误，保留既有 seed 脚本 1 个 warning）、node --test scripts/tests/motion-performance.test.mjs（4/4）、npm test（147/147）、npm run build -- --webpack（62 个路由）、git diff --check 和 node --check scripts/smoke_check.mjs。npm run smoke 的只读岗位、资源和源码约束通过，但页面阶段因独立工作树的 node_modules 跨文件系统 symlink 被 Next 16 Turbopack 拒绝，未将页面冒烟记为通过。
-- 当前状态与未确认项：本次代码尚未提交、推送或部署，待本条记录完成后直接发布；正式站点尚未包含 2 秒动画、O 内十字星 Logo 或管理员界面变化。没有管理员真实登录态，因此尚未宣称真实管理员数据展示、移动端真实触控和 FPS 验收通过；当前用户工作区原有未完成 cherry-pick、登录页/全局样式修改、未跟踪 PRD、测试夹具和 .codex-artifacts/ 均未覆盖、未删除，也没有数据库或外部数据写入。
+- 当前状态与未确认项：提交 8ec5a09（feat: unify StarJob palette and brand lockup）已推送 origin/main；正式站点资源探针已确认登录页 HTTP 200、HTML 引用新 Logo、线上 CSS 命中星瓶逐帧动效规则，/brand/starjob-wordmark-v1.png 返回 HTTP 200、image/png、269459 bytes，/admin 页面壳返回 HTTP 200。该版本未修改数据库、API、认证协议或计费数据。没有管理员真实登录态，因此尚未宣称真实管理员数据展示、移动端真实触控和 FPS 验收通过；当前用户工作区原有未完成 cherry-pick、登录页/全局样式修改、未跟踪 PRD、测试夹具和 .codex-artifacts/ 均未覆盖、未删除。回退到 52c6b26 可恢复本次配色与 Logo 调整前的已发布版本。
 
 ## 2026-09-01 登录页星瓶动效修正（已上线）
 
