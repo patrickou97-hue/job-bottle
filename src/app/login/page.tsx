@@ -48,7 +48,6 @@ export default function LoginPage() {
             <span className="login-page__bottle-halo" />
             <span className="login-page__orbit login-page__orbit--outer" />
             <span className="login-page__orbit login-page__orbit--inner" />
-            <span className="login-page__orbit-beacon" />
             <span className="login-page__bottle-frames" />
           </div>
 
