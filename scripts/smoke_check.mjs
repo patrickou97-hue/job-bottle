@@ -291,9 +291,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/layout/AdminShell.tsx",
-    mustInclude: ["theme-work", "md:grid-cols-[210px_minmax(0,1fr)]", "管理导航", "nav-account", "返回首页"],
+    mustInclude: ["theme-work", "admin-shell__mobile-nav", "admin-shell__nav-group-toggle", "管理导航", "nav-account", "返回首页", "StarJobWordmark"],
     mustNotInclude: ["StarFieldBackground", "rounded-[28px]", "rounded-full"],
-    label: "管理页使用收紧工具栏而非嵌套圆角浮层",
+    label: "管理页使用分层导航、可折叠工具组和轻量工作区壳层",
   },
   {
     file: "src/components/layout/SpaceBackground.tsx",

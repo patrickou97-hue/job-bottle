@@ -3,7 +3,20 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Activity, ArrowLeft, Coins, Database, KeyRound, LogOut, MessageSquareText, Rows3, Settings, Users } from "lucide-react";
+import {
+  Activity,
+  ArrowLeft,
+  ChevronDown,
+  Coins,
+  Database,
+  KeyRound,
+  LogOut,
+  MessageSquareText,
+  Rows3,
+  Settings,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { getCurrentUserOrNull } from "@/lib/auth";
@@ -11,15 +24,25 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { SITE_NAME } from "@/lib/constants";
 import { feedbackVariants, motionDuration, motionEase } from "@/lib/motion";
 import { cn } from "@/lib/utils";
+import { StarJobWordmark } from "@/components/brand/StarJobWordmark";
 
-const adminNavItems = [
-  { href: "/admin", label: "管理后台", icon: Settings },
+type AdminNavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+};
+
+const primaryNavItems: AdminNavItem[] = [
+  { href: "/admin", label: "总览", icon: Settings },
   { href: "/admin/analytics", label: "数据分析", icon: Activity },
   { href: "/admin/feedback", label: "反馈管理", icon: MessageSquareText },
   { href: "/admin/jobs", label: "岗位管理", icon: Rows3 },
-  { href: "/admin/import", label: "批量导入", icon: Database },
   { href: "/admin/referrals", label: "内推码", icon: KeyRound },
   { href: "/admin/users", label: "用户管理", icon: Users },
+];
+
+const utilityNavItems: AdminNavItem[] = [
+  { href: "/admin/import", label: "批量导入", icon: Database },
   { href: "/admin/billing", label: "诘星计费", icon: Coins },
 ];
 
@@ -29,6 +52,9 @@ export function AdminShell({ children }: { children: ReactNode }) {
   const [allowed, setAllowed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const isUtilityRoute = utilityNavItems.some((item) => isNavActive(pathname, item.href));
+  const [utilityOpen, setUtilityOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -79,87 +105,138 @@ export function AdminShell({ children }: { children: ReactNode }) {
     router.refresh();
   }
 
-  function navClass(itemHref: string) {
-    const active = itemHref === "/admin" ? pathname === "/admin" : pathname.startsWith(itemHref);
-    return cn(
-      "pressable inline-flex h-10 items-center gap-2 border-b-2 px-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--aurora)] md:border-b-0 md:border-l-2 md:px-3",
-      active
-        ? "border-[color:var(--aurora)] text-ink-primary"
-        : "border-transparent text-ink-secondary hover:border-[color:var(--line)] hover:text-ink-primary",
+  const activeItem = [...primaryNavItems, ...utilityNavItems].find((item) => isNavActive(pathname, item.href)) ?? primaryNavItems[0];
+  const utilityExpanded = utilityOpen || isUtilityRoute;
+
+  function renderNavLink(item: AdminNavItem, mobile = false) {
+    const Icon = item.icon;
+    const active = isNavActive(pathname, item.href);
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        className={cn("admin-shell__nav-link", active && "admin-shell__nav-link--active")}
+        aria-current={active ? "page" : undefined}
+        onClick={mobile ? () => setMobileNavOpen(false) : undefined}
+      >
+        <Icon aria-hidden="true" className="admin-shell__nav-icon" />
+        <span>{item.label}</span>
+        {active ? <span aria-hidden="true" className="admin-shell__nav-dot" /> : null}
+      </Link>
     );
   }
 
   return (
-    <div className="theme-work min-h-screen bg-[color:var(--background)] text-ink-primary">
-      <header className="app-navbar sticky top-0 z-40 border-b">
-        <div className="mx-auto flex min-h-15 w-full max-w-[1380px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2 sm:px-6 lg:px-8">
-          <Link href="/admin" className="flex min-w-0 shrink-0 items-center gap-3" aria-label="管理">
+    <div className="admin-shell theme-work min-h-screen bg-[color:var(--background)] text-ink-primary">
+      <header className="admin-shell__header app-navbar sticky top-0 z-40 border-b">
+        <div className="admin-shell__header-inner">
+          <Link href="/admin" className="admin-shell__brand" aria-label="进入管理后台">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/shi-xing-wordmark.png" alt={SITE_NAME} width={1216} height={542} className="brand-wordmark h-7 w-auto shrink-0 object-contain" />
-            <span className="text-sm font-semibold text-ink-primary">管理</span>
+            <img src="/brand/shi-xing-wordmark.png" alt={SITE_NAME} width={1216} height={542} className="admin-shell__brand-cn brand-wordmark" />
+            <span aria-hidden="true" className="admin-shell__brand-divider" />
+            <span className="admin-shell__brand-section">管理空间</span>
+            <StarJobWordmark className="admin-shell__brand-en" />
           </Link>
 
-          <div className="nav-account ml-auto flex shrink-0 items-center gap-1 border-l pl-3">
-            <Link href="/" className="text-action h-9 px-2.5 text-sm">
+          <div className="admin-shell__account nav-account">
+            <Link href="/" className="text-action admin-shell__account-action">
               <ArrowLeft aria-hidden="true" className="size-4" />
-              返回首页
+              <span className="admin-shell__account-label">返回首页</span>
             </Link>
-            <button type="button" className="text-action h-9 px-2.5 text-sm" onClick={handleLogout}>
+            <button type="button" className="text-action admin-shell__account-action" onClick={handleLogout}>
               <LogOut aria-hidden="true" className="size-4" />
-              退出
+              <span className="admin-shell__account-label">退出</span>
             </button>
           </div>
         </div>
       </header>
-      <div className="mx-auto grid w-full max-w-[1440px] md:grid-cols-[210px_minmax(0,1fr)]">
-        <aside className="hidden border-r border-[color:var(--line-ghost)] px-4 py-8 md:block">
-          <nav className="sticky top-24 flex flex-col gap-1" aria-label="管理导航">
-            {adminNavItems.map((item) => {
-              const Icon = item.icon;
-              return <Link key={item.href} href={item.href} className={navClass(item.href)}><Icon aria-hidden="true" className="size-4" />{item.label}</Link>;
-            })}
+
+      <div className="admin-shell__layout">
+        <aside className="admin-shell__sidebar">
+          <div className="admin-shell__sidebar-intro">
+            <span>StarJob Admin</span>
+            <strong>管理工作台</strong>
+          </div>
+          <nav className="admin-shell__nav" aria-label="管理导航">
+            <span className="admin-shell__nav-label">工作台</span>
+            {primaryNavItems.map((item) => renderNavLink(item))}
+            <span className="admin-shell__nav-divider" />
+            <button
+              type="button"
+              className={cn("admin-shell__nav-group-toggle", utilityExpanded && "admin-shell__nav-group-toggle--open")}
+              aria-expanded={utilityExpanded}
+              aria-controls="admin-utility-nav"
+              onClick={() => setUtilityOpen((current) => !current)}
+            >
+              <span>更多工具</span>
+              <ChevronDown aria-hidden="true" className="admin-shell__nav-chevron" />
+            </button>
+            {utilityExpanded ? <div id="admin-utility-nav" className="admin-shell__nav-group">{utilityNavItems.map((item) => renderNavLink(item))}</div> : null}
           </nav>
         </aside>
-        <div className="border-b border-[color:var(--line-ghost)] px-4 md:hidden">
-          <nav className="flex items-center gap-1 overflow-x-auto" aria-label="管理导航">
-            {adminNavItems.map((item) => {
-              const Icon = item.icon;
-              return <Link key={item.href} href={item.href} className={navClass(item.href)}><Icon aria-hidden="true" className="size-4" />{item.label}</Link>;
-            })}
-          </nav>
-        </div>
-      <main className="min-w-0 px-4 py-8 sm:px-6 lg:px-10 lg:py-10">
-        <AnimatePresence initial={false} mode="wait">
-          <motion.div
-            key={loading ? "loading" : allowed ? pathname : "denied"}
-            variants={feedbackVariants}
-            initial="initial"
-            animate="enter"
-            exit="exit"
-            transition={{ duration: motionDuration.fast, ease: motionEase.enter }}
+
+        <div key={pathname} className="admin-shell__mobile-nav">
+          <button
+            type="button"
+            className="admin-shell__mobile-trigger"
+            aria-expanded={mobileNavOpen}
+            aria-controls="admin-mobile-nav"
+            onClick={() => setMobileNavOpen((current) => !current)}
           >
-            {loading ? (
-              <div className="empty-state text-sm text-ink-secondary">
-                <span className="loading-line">正在确认管理员权限</span>
-              </div>
-            ) : allowed ? (
-              children
-            ) : (
-              <div className="form-section py-6">
-                <h1 className="text-2xl font-semibold text-ink-primary">管理后台</h1>
-                <p className="mt-3 text-sm text-ink-secondary">{message}</p>
-                <Link
-                  href="/login?next=%2Fadmin"
-                  className="gold-button mt-5 inline-flex h-10 items-center rounded-lg px-4 text-sm font-medium"
-                >
-                  登录管理员账号
-                </Link>
-              </div>
-            )}
-          </motion.div>
-        </AnimatePresence>
-      </main>
+            <span>
+              <small>当前模块</small>
+              <strong>{activeItem?.label ?? "总览"}</strong>
+            </span>
+            <ChevronDown aria-hidden="true" className={cn("admin-shell__mobile-chevron", mobileNavOpen && "rotate-180")} />
+          </button>
+          {mobileNavOpen ? (
+            <nav id="admin-mobile-nav" className="admin-shell__mobile-panel" aria-label="管理导航">
+              <span className="admin-shell__nav-label">工作台</span>
+              {primaryNavItems.map((item) => renderNavLink(item, true))}
+              <span className="admin-shell__nav-label admin-shell__nav-label--tools">更多工具</span>
+              {utilityNavItems.map((item) => renderNavLink(item, true))}
+            </nav>
+          ) : null}
+        </div>
+
+        <main className="admin-shell__main">
+          <AnimatePresence initial={false} mode="wait">
+            <motion.div
+              key={loading ? "loading" : allowed ? pathname : "denied"}
+              className="admin-shell__page-transition"
+              variants={feedbackVariants}
+              initial="initial"
+              animate="enter"
+              exit="exit"
+              transition={{ duration: motionDuration.fast, ease: motionEase.enter }}
+            >
+              {loading ? (
+                <div className="empty-state admin-shell__permission-state text-sm text-ink-secondary">
+                  <span className="loading-line">正在确认管理员权限</span>
+                </div>
+              ) : allowed ? (
+                children
+              ) : (
+                <div className="form-section admin-shell__permission-state py-6">
+                  <p className="page-kicker">权限提示</p>
+                  <h1 className="mt-2 text-2xl font-semibold text-ink-primary">管理后台</h1>
+                  <p className="mt-3 text-sm text-ink-secondary">{message}</p>
+                  <Link
+                    href="/login?next=%2Fadmin"
+                    className="gold-button mt-5 inline-flex h-10 items-center rounded-lg px-4 text-sm font-medium"
+                  >
+                    登录管理员账号
+                  </Link>
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </main>
       </div>
     </div>
   );
+}
+
+function isNavActive(pathname: string, href: string) {
+  return href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
 }

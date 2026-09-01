@@ -29,9 +29,10 @@ export function AdminJobTable({
   }
 
   return (
-    <div className="table-surface">
-      <div className="overflow-x-auto">
-        <table className="min-w-[1100px] w-full text-left text-sm">
+    <>
+      <div className="admin-job-table__desktop table-surface">
+        <div className="overflow-x-auto">
+          <table className="min-w-[1100px] w-full text-left text-sm">
           <thead className="bg-[#eef0f3] text-ink-muted">
             <tr>
               <th className="px-4 py-3 font-medium">公司</th>
@@ -106,8 +107,64 @@ export function AdminJobTable({
               </tr>
             ))}
           </tbody>
-        </table>
+          </table>
+        </div>
       </div>
-    </div>
+
+      <div className="admin-job-table__mobile" aria-label="岗位列表">
+        {jobs.map((job) => (
+          <article key={job.id} className="admin-job-card">
+            <div className="admin-job-card__heading">
+              <div>
+                <p className="admin-job-card__company">{job.company_name}</p>
+                <h2>{job.job_titles || "暂无岗位名称"}</h2>
+              </div>
+              <span className={`status-pill admin-job-card__status ${job.is_active ? "admin-job-card__status--active" : ""}`}>
+                {job.is_active ? "上架中" : "已下架"}
+              </span>
+            </div>
+
+            <dl className="admin-job-card__meta">
+              <div>
+                <dt>行业</dt>
+                <dd>{job.industry || "暂无"}</dd>
+              </div>
+              <div>
+                <dt>批次</dt>
+                <dd>{job.batch_type || "暂无"}</dd>
+              </div>
+              <div>
+                <dt>地点</dt>
+                <dd>{job.locations || "暂无"}</dd>
+              </div>
+            </dl>
+
+            {duplicateJobIds?.has(job.id) ? <p className="admin-job-card__duplicate">疑似重复岗位，请优先核对。</p> : null}
+
+            <div className="admin-job-card__actions">
+              <Button variant="secondary" className="h-9 gap-1" onClick={() => onEdit(job)}>
+                <Pencil aria-hidden="true" className="size-4" />
+                编辑
+              </Button>
+              <Button variant="secondary" className="h-9" onClick={() => onToggleActive(job)}>
+                {job.is_active ? "下架" : "上架"}
+              </Button>
+              <Button
+                variant="danger"
+                className="h-9 gap-1"
+                onClick={() => {
+                  if (window.confirm(`确认删除「${job.company_name}」吗？`)) {
+                    void onDelete(job);
+                  }
+                }}
+              >
+                <Trash2 aria-hidden="true" className="size-4" />
+                删除
+              </Button>
+            </div>
+          </article>
+        ))}
+      </div>
+    </>
   );
 }

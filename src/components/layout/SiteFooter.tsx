@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { StarJobWordmark } from "@/components/brand/StarJobWordmark";
 
 const FOOTER_GROUPS = [
   {
@@ -34,15 +35,18 @@ export function SiteFooter() {
       <div className="site-footer__inner">
         <div className="site-footer__grid">
           <div className="site-footer__brand">
-            <Link href="/" aria-label="返回拾星主页" className="inline-flex">
-              <Image
-                src="/brand/shi-xing-wordmark.png"
-                alt="拾星 StarJob"
-                width={176}
-                height={78}
-                className="site-footer__logo brand-wordmark"
-              />
-            </Link>
+            <div className="site-footer__brand-lockup">
+              <Link href="/" aria-label="返回拾星主页" className="inline-flex">
+                <Image
+                  src="/brand/shi-xing-wordmark.png"
+                  alt="拾星 StarJob"
+                  width={176}
+                  height={78}
+                  className="site-footer__logo brand-wordmark"
+                />
+              </Link>
+              <StarJobWordmark className="site-footer__english" />
+            </div>
             <p>把岗位、简历与每一步进展，收进一个清晰的求职工作台。</p>
           </div>
 

@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { StarJobWordmark } from "@/components/brand/StarJobWordmark";
 import { PageShell } from "@/components/layout/PageShell";
 import { KineticWord } from "@/components/ui/KineticWord";
 
@@ -19,16 +20,19 @@ export default function LoginPage() {
       <div className="login-page">
         <section className="login-page__story" aria-labelledby="login-story-title">
           <header className="login-page__story-header">
-            <Link href="/" aria-label="返回拾星主页" className="inline-flex">
-              <Image
-                src="/brand/shi-xing-wordmark.png"
-                alt="拾星 StarJob"
-                width={1216}
-                height={542}
-                priority
-                className="login-page__wordmark brand-wordmark"
-              />
-            </Link>
+            <div className="login-page__brand-lockup">
+              <Link href="/" aria-label="返回拾星主页" className="inline-flex">
+                <Image
+                  src="/brand/shi-xing-wordmark.png"
+                  alt="拾星 StarJob"
+                  width={1216}
+                  height={542}
+                  priority
+                  className="login-page__wordmark brand-wordmark"
+                />
+              </Link>
+              <StarJobWordmark className="login-page__brand-en" />
+            </div>
           </header>
 
           <div className="login-page__story-copy">

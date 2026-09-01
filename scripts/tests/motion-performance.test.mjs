@@ -45,6 +45,7 @@ test("非主页共享页脚接入且登录 slogan 保持动效降级入口", asy
   assert.doesNotMatch(login, /欢迎回来/);
   assert.match(login, /登录拾星/);
   assert.match(styles, /starjob-login-bottle-frames-v2\.png/);
+  assert.match(styles, /login-bottle-frames 2s steps\(1, end\) infinite/);
   assert.match(kineticWord, /useReducedMotion/);
   assert.match(kineticWord, /clearTimeout/);
 });
