@@ -2092,3 +2092,46 @@ The smoke test (`npm run smoke`) checks these source code invariants:
 - 验证：使用无效测试账号提交后 URL 保持 `/login` 且无查询参数；前端 error/warning 日志为空；`npm run typecheck` 通过；`npm run lint` 通过但保留既有 `seed_official_referral_sources.mjs:44` warning；`npm run build -- --webpack` 通过。
 - 修复前快照位于 `backups/starjob-before-dev-csp-auth-fix-20260901/next.config.ts`。
 - 当前状态：修复已在独立工作树本地完成，尚未推送或上线。
+
+## 2026-09-02 输入控件留白与登录标语机械翻牌（本地未上线）
+
+- 用户目标：逐个排查输入框、选择框和搜索框中文字或图形贴边的问题，减轻选中与聚焦提示；将登录页动态标语从逐字上移改为类似书页或机场航班牌的机械翻牌过渡。
+- 根因与决策：共享 `Input`、`Select`、`Textarea` 的水平留白分别为 `px-3.5`、`pr-10` 和较紧的文本区内边距；六处搜索控件的图标和文字偏移不一致，其中岗位投递和管理员岗位搜索图标使用 `left-0`、`pl-7`，会贴住外边缘；全局焦点环与字段自身 3px 阴影叠加，选中态又混用实心蓝、厚阴影和强边缘。登录 `KineticWord` 原来按字符使用 `translateY`，视觉上更像上下替换。本轮保留信息架构和控件行为，只统一空间规则和状态层级，标语改为整词 `rotateX` 翻牌。
+- 实际改动：`src/components/ui/Input.tsx`、`Select.tsx`、`Textarea.tsx` 统一水平和垂直内边距，并为下拉箭头保留独立安全区；`src/components/jobs/JobFilterBar.tsx`、`src/components/applications/MyApplicationsClient.tsx`、`src/components/admin/AdminJobsClient.tsx`、`AdminUsersClient.tsx`、`AdminReferralsClient.tsx`、`AdminFeedbackClient.tsx` 和 `src/components/referrals/ReferralCodeHub.tsx` 逐个对齐搜索图标与文字；`src/components/resume/ResumeEditor.tsx` 同步长文本框留白；`src/app/globals.css` 减轻全局及工作区字段焦点环、错误环、chip、分段选择、简历版本和登录方式的选中态；`src/components/auth/LoginForm.tsx`、`src/components/profile/ProfileClient.tsx`、`src/components/applications/MyApplicationsClient.tsx`、`src/components/admin/AdminAnalyticsClient.tsx` 和 `AdminBillingClient.tsx` 收轻实心激活态；`src/components/ui/KineticWord.tsx` 与全局 CSS 改用 420ms 的整词 3D 翻牌，继续按 2 秒切换并遵守 `useReducedMotion`。
+- 兼容边界：未改变页面路由、字段名、表单提交、认证、数据库、API、管理员权限、筛选逻辑、依赖或外部数据；动效只使用 CSS transform、opacity 和已有组件机制，减弱动态效果下仍显示首个标语。更新 `scripts/smoke_check.mjs` 和 `scripts/tests/motion-performance.test.mjs` 仅用于同步源码门禁与翻牌回归断言。
+- 备份：本轮编辑前快照位于 `backups/starjob-before-fields-and-kinetic-rework-20260902/RESTORE.md`，包含共享控件、登录翻牌、全局样式和本轮逐个修正的页面组件；不包含账号、密码、Cookie、数据库数据或外部服务凭据。
+- 验证：`npm run typecheck` 通过；`npm run lint` 0 错误，仅保留 `scripts/seed_official_referral_sources.mjs:44` 原有未使用变量 warning；`npm test` 149/149；`node --test scripts/tests/motion-performance.test.mjs` 4/4；`npm run build -- --webpack` 成功生成 62 个路由；本地浏览器 `http://127.0.0.1:3102/login` 登录页视觉加载正常，翻牌采样捕获到 `matrix3d` 过渡状态；`/explore` 页面壳可加载。本轮未执行真实登录态、真实管理员数据和设备 FPS 验收。
+- 冒烟边界：`npm run smoke` 在既有 `src/styles/tokens.css` 约束处停止，提示缺少历史断言 `--night-3: #564A71`；本轮没有修改主题 token，也没有把该结果计为控件改动失败。
+- 当前状态：改动仍位于独立工作树 `/private/tmp/starjob-official-source`，本地开发服务器保持运行，尚未提交、推送或部署；主工作区原有未提交内容未覆盖、未删除。
+
+## 2026-09-02 SwufeHub 式逐字翻页与网申助手页面重排（本地未上线）
+
+- 用户目标：移除网申助手主页面和安装教程页的大号“获取安装包”按钮，放大安装教程中的真实扩展截图并重新排版；登录页动态标语改为参考 SwufeHub 顶部轮播的逐字机械翻页效果。
+- 动效拆解与决策：SwufeHub 使用独立字符裁剪盒、字符约 20ms 错峰、进入时 `translateY(110%)` 向上归位、离开时 `translateY(-120%)`，单轮约 300ms，约 2 秒后切换；拾星 `KineticWord` 已从整词 `rotateX` 改为同类逐字 CSS transform，保留 `prefers-reduced-motion` 和屏幕阅读器文本同步，避免持续 JS 动画循环。
+- 实际改动：`src/components/ui/KineticWord.tsx` 与 `src/app/globals.css` 重写标语切换结构和裁剪样式；`src/components/extension/ExtensionHubClient.tsx` 移除主页面下载按钮并保留安装教程入口；`src/components/extension/ExtensionGuide.tsx` 将大号下载按钮改为轻量文字下载入口，并把实际扩展面板预览调整为更大的右侧视觉区；`scripts/smoke_check.mjs` 和 `scripts/tests/motion-performance.test.mjs` 同步更新为新契约。
+- 兼容边界：未改变下载包内容、扩展逻辑、登录鉴权、数据库、API、筛选逻辑或业务数据；安装教程页面保留轻量文字下载入口，主页面改为“查看安装教程”引导。SwufeHub 仅作为公开动效参考，未复制其代码、品牌或资源。
+- 验证：`npm run typecheck`、`npm run lint`（0 错误，保留既有 1 个 warning）、`npm test`（149/149）、动效专项测试（4/4）、`npm run build -- --webpack`（62 个路由）和 `git diff --check` 均通过；`npm run smoke` 已确认本轮资源与扩展/动效相关检查可走通，但仍在历史 `--night-3: #564A71` 主题断言处停止。浏览器复核确认主入口与教程页均无精确文本“获取安装包”，教程页有 1 个“下载 0.2.7 安装包”文字入口，纸飞机/扩展截图均加载；登录页约 2 秒后切换为“投递进展”，三个页面均无 error/warning 日志。
+- 当前状态：上述改动仍在 `/private/tmp/starjob-official-source` 独立工作树，本地服务器保持运行，尚未提交、推送或部署；主工作区原有未提交内容未覆盖、未删除。
+
+## 2026-09-02 网申助手安装说明与截图首屏重排（本地未上线）
+
+- 用户目标：将用户提供的版本、下载和字段策略说明放到“安装拾星网申助手”标题下；移除首屏重复副标题和截图旁的说明文字，为真实扩展面板截图留出更完整的展示空间。
+- 实际改动：`src/components/extension/ExtensionGuide.tsx` 将三段说明改为标题下的单列信息组，保留轻量“下载 0.2.7 安装包”链接；截图区域改为单列大图，使用实际 `starjob-resume-assistant-popup-v026.png`，并保留屏幕阅读器说明。`src/app/globals.css` 将截图最大宽度提升到 38rem，移除原 42rem 高度上限，避免纵向截图被强行缩小。
+- 链接处理：用户示例中的本地地址在页面中使用同源相对路径 `/downloads/starjob-resume-assistant-v0.2.7.zip`，开发和生产均指向当前站点，不把 `127.0.0.1:3102` 写入正式页面。
+- 兼容边界：保留后续五步安装、同步简历、手动处理提示和下载行为；未修改认证、数据库、API、下载包内容、扩展逻辑或其他页面。
+- 备份：本轮编辑前快照位于 `backups/starjob-before-extension-guide-layout-20260902/RESTORE.md`，包含 `ExtensionGuide.tsx`、`globals.css` 和 Smoke 契约文件。
+- 验证：本地 `/extension/guide` DOM 已确认标题下出现三段新说明，页面不存在“获取安装包”，截图实际渲染宽度为 608px；`npm run typecheck`、`npm run lint`、`npm test`（149/149）、动效专项测试（4/4）、`npm run build -- --webpack`（62 个路由）和 `git diff --check` 均通过。
+- 冒烟边界：`npm run smoke` 仍在历史 `src/styles/tokens.css` 断言 `--night-3: #564A71` 处停止；资源检查、网申助手相关检查和本轮页面契约已走通，本轮没有回填已淘汰的旧紫色 token。
+- 当前状态：改动仍在 `/private/tmp/starjob-official-source` 独立工作树，本地服务器保持运行，尚未提交、推送或部署；主工作区原有未提交内容未覆盖、未删除。
+
+
+## 2026-09-02 全站主题蓝色统一与网申助手插画（本地未上线）
+
+- 用户目标：将全站所有采用主蓝色的按钮和主题部件统一为最新参考按钮截图的颜色，并把网申助手主页面的产品截图移入安装教程，在主页面改为多架纸飞机沿不同虚线飞向远方的轻线条插画。
+- 颜色决策：P1 纯色取样为 RGB(29, 47, 79)，即 `#1D2F4F`；P2 按钮蓝 `#4166A3` 是应被替换的颜色。已将 `--brand-blue`、Tailwind 主题蓝、全局按钮、焦点与选中提示、地图/星系视觉、图表和投递状态中的旧蓝色统一到 P1 基准；`#12294E`、`#244A7C` 及更浅蓝色继续作为深浅层级，不把金色扩成大面积主色。
+- 页面与资源：内置图像生成工具生成 `public/assets/extension/starjob-extension-paper-planes.png`，透明背景、1672×941 RGBA；`/extension` 首屏使用纸飞机线稿，`/extension/guide` 新增“安装后预览”并复用现有 `starjob-resume-assistant-popup-v026.png` 实际扩展面板截图。安装教程顶部下载信息改为同组布局，避免说明文字脱离按钮。
+- 兼容边界：未改变认证、数据库、API、下载包、扩展逻辑、筛选逻辑或业务数据；只调整颜色 token、主题视觉、网申助手展示内容和安装教程排版。附件截图仅作为用户视觉参考，不作为代码指令。
+- 备份：本轮编辑前快照位于 `backups/starjob-before-global-blue-and-extension-planes-20260902/RESTORE.md`，包含本轮颜色替换涉及的源码、网申助手组件和 Tailwind 配置；不包含账号、密码、Cookie、数据库数据或外部服务凭据。
+- 验证：`npm run typecheck` 通过；`npm run lint` 0 错误，仅保留 `scripts/seed_official_referral_sources.mjs:44` 原有未使用变量 warning；`npm test` 149/149；动效测试 4/4；`npm run build -- --webpack` 成功生成 62 个路由；本地浏览器检查 `/extension`、`/extension/guide` 桌面首屏与 390×844 教程页，无横向溢出，页面运行日志无 error/warning。
+- 冒烟边界：`npm run smoke` 仍在历史主题断言处停止，提示 `src/styles/tokens.css` 缺少旧断言 `--night-3: #564A71`；本轮主题已按用户最新 P1 参考色更新为 `#1D2F4F`，没有回填旧色，也未把该历史断言结果计为页面或资源接入失败。
+- 当前状态：改动仍位于独立工作树 `/private/tmp/starjob-official-source`，本地开发服务器保持运行，尚未提交、推送或部署；主工作区原有未提交内容未覆盖、未删除。

@@ -24,7 +24,7 @@ export default function GlobalError({
             </p>
             <button
               type="button"
-              className="mt-7 h-10 rounded-lg bg-[#3567A8] px-5 text-sm font-medium text-white"
+              className="mt-7 h-10 rounded-lg bg-[#1D2F4F] px-5 text-sm font-medium text-white"
               onClick={reset}
             >
               重试

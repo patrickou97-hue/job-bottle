@@ -23,9 +23,9 @@ const STAR_TONE: Record<
     text: "#F7F9FC",
   },
   written_test: {
-    core: "#3567A8",
+    core: "#1D2F4F",
     edge: "#E7EEF7",
-    glow: "rgba(53, 103, 168, 0.34)",
+    glow: "rgba(29, 47, 79, 0.34)",
     text: "#F7F9FC",
   },
   first_round: {
@@ -101,7 +101,7 @@ export function StackedStar({
       type="button"
       className={cn(
         "group relative flex items-center justify-center font-semibold leading-none transition outline-none",
-        selected && "drop-shadow-[0_0_14px_rgba(53,103,168,0.44)]",
+        selected && "drop-shadow-[0_0_14px_rgba(29, 47, 79,0.44)]",
         className,
       )}
       style={{

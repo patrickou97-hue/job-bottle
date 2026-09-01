@@ -591,12 +591,12 @@ export function AdminUsersClient() {
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-7">
           <label className="relative block sm:col-span-2 xl:col-span-2">
             <span className="mb-1.5 block text-xs font-medium text-ink-muted">关键词</span>
-            <Search aria-hidden="true" className="pointer-events-none absolute bottom-3.5 left-3 size-4 text-ink-muted" />
+            <Search aria-hidden="true" className="pointer-events-none absolute bottom-3.5 left-4 size-4 text-ink-muted" />
             <Input
               value={query}
               onChange={(event) => { setQuery(event.target.value); setPage(1); }}
               placeholder="邮箱、姓名、学校、方向或 ID"
-              className="pl-9"
+              className="pl-10"
             />
           </label>
           <label>

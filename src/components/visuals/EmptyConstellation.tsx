@@ -9,13 +9,13 @@ export function EmptyConstellation() {
         <linearGradient id="emptyLine" x1="36" x2="364" y1="142" y2="32">
           <stop stopColor="#C9D6E8" stopOpacity="0.1" />
           <stop offset="0.5" stopColor="#F1EFFF" stopOpacity="0.5" />
-          <stop offset="1" stopColor="#3567A8" stopOpacity="0.2" />
+          <stop offset="1" stopColor="#1D2F4F" stopOpacity="0.2" />
         </linearGradient>
       </defs>
       <path
         d="M52 132C116 40 242 32 366 74"
         fill="none"
-        stroke="#3567A8"
+        stroke="#1D2F4F"
         strokeOpacity="0.11"
         strokeWidth="1.2"
       />
@@ -37,7 +37,7 @@ export function EmptyConstellation() {
         <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={r} fill="#FFF9E3" opacity="0.68" />
       ))}
       <circle cx="326" cy="40" r="2" fill="#F4C542" opacity="0.42" />
-      <circle cx="112" cy="38" r="1.6" fill="#3567A8" opacity="0.54" />
+      <circle cx="112" cy="38" r="1.6" fill="#1D2F4F" opacity="0.54" />
     </svg>
   );
 }

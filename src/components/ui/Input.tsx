@@ -6,7 +6,7 @@ export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElem
     <input
       data-slot="input"
       className={cn(
-        "field-shell field-input h-11 w-full min-w-0 px-3.5 text-sm placeholder:text-ink-muted",
+        "field-shell field-input h-11 w-full min-w-0 px-4 text-sm placeholder:text-ink-muted",
         className,
       )}
       {...props}

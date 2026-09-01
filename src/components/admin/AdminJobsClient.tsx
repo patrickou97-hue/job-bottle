@@ -194,10 +194,10 @@ export function AdminJobsClient() {
             <div className="relative">
               <Search
                 aria-hidden="true"
-                className="absolute left-0 top-1/2 size-4 -translate-y-1/2 text-nebula-blue/70"
+                className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-nebula-blue/70"
               />
               <Input
-                className="pl-7"
+                className="pl-11"
                 value={keyword}
                 onChange={(event) => setKeyword(event.target.value)}
                 placeholder="搜索公司、岗位、行业或地点"

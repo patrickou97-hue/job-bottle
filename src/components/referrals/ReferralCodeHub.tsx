@@ -298,7 +298,7 @@ export function ReferralUploadDialog({
           </div>
           <div className="mt-6 grid gap-5 sm:grid-cols-2">
             <FormField label="公司" required>
-              {fixedCompanyName ? <div className="field-shell flex h-11 items-center px-3.5 text-sm text-ink-primary">{fixedCompanyName}</div> : (
+              {fixedCompanyName ? <div className="field-shell flex h-11 items-center px-4 text-sm text-ink-primary">{fixedCompanyName}</div> : (
                 <CompanySearchCombobox
                   query={companyQuery}
                   selectedCompany={companyName}
@@ -336,7 +336,7 @@ export function ReferralUploadDialog({
             <div className="sm:col-span-2"><FormField label="使用说明" helper="最多 500 字；不得包含联系方式、外链或交易信息"><Textarea value={usageNote} maxLength={500} onChange={(event) => setUsageNote(event.target.value)} placeholder="说明在官方投递页的填写位置或注意事项" /></FormField></div>
           </div>
           <label className="mt-5 flex cursor-pointer items-start gap-3 border-y border-[color:var(--line-ghost)] py-4 text-xs leading-5 text-ink-secondary">
-            <input type="checkbox" className="mt-0.5 size-4 accent-[#3567A8]" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} />
+            <input type="checkbox" className="mt-0.5 size-4 accent-[#1D2F4F]" checked={agreed} onChange={(event) => setAgreed(event.target.checked)} />
             <span>我确认此内推码来源真实、可以公开分享，未收取费用，也不会要求使用者提供验证码、密码、身份证或转账。</span>
           </label>
           {error ? <p className="mt-4 text-sm text-[color:var(--text-danger)]" role="alert">{error}</p> : null}
@@ -374,7 +374,7 @@ function CompanySearchCombobox({
   return (
     <div className="relative isolate">
       <div className="relative">
-        <Search aria-hidden="true" className="pointer-events-none absolute left-3.5 top-1/2 z-10 size-4 -translate-y-1/2 text-ink-muted" />
+        <Search aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 z-10 size-4 -translate-y-1/2 text-ink-muted" />
         <Input
           role="combobox"
           aria-label="搜索并选择公司"
@@ -383,7 +383,7 @@ function CompanySearchCombobox({
           aria-expanded={showResults}
           aria-activedescendant={showResults && matches[activeIndex] ? `${listId}-${activeIndex}` : undefined}
           autoComplete="off"
-          className="pl-10 pr-10"
+          className="pl-11 pr-11"
           value={query}
           placeholder="输入公司名称搜索"
           onFocus={() => onOpenChange(true)}
@@ -408,7 +408,7 @@ function CompanySearchCombobox({
             }
           }}
         />
-        {selectedCompany ? <Check aria-hidden="true" className="pointer-events-none absolute right-3.5 top-1/2 size-4 -translate-y-1/2 text-[#39725b]" /> : null}
+        {selectedCompany ? <Check aria-hidden="true" className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-[#39725b]" /> : null}
       </div>
       {showResults ? (
         <div id={listId} role="listbox" aria-label="公司匹配结果" className="absolute inset-x-0 top-[calc(100%+0.375rem)] z-50 max-h-52 overflow-y-auto overscroll-contain rounded-lg border border-[color:var(--line)] bg-[color:var(--surface-read-bg-strong)] p-1.5 shadow-[0_18px_44px_rgba(15,35,65,0.2)]">

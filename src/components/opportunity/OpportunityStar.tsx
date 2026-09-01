@@ -8,7 +8,7 @@ const STATUS_STYLE: Partial<Record<ApplicationStatus, string>> = {
   applied: "shadow-[0_0_22px_rgba(36,74,124,0.32)]",
   written_test: "ring-1 ring-nebula-blue/28",
   first_round: "ring-2 ring-nebula-blue/24",
-  second_round: "ring-2 ring-nebula-silver/28 shadow-[0_0_24px_rgba(53,103,168,0.3)]",
+  second_round: "ring-2 ring-nebula-silver/28 shadow-[0_0_24px_rgba(29, 47, 79,0.3)]",
   final_round: "animate-pulse ring-2 ring-nebula-silver/34",
   offer: "shadow-[0_0_30px_rgba(244,197,66,0.38)]",
   rejected: "opacity-45 grayscale",
@@ -65,7 +65,7 @@ export function OpportunityStar({
           selected ? "ring-2 ring-nebula-silver/35" : "",
           highlighted ? "ring-1 ring-nebula-blue/30" : "",
           batchRing,
-          status ? STATUS_STYLE[status] : "shadow-[0_0_14px_rgba(53,103,168,0.18)]",
+          status ? STATUS_STYLE[status] : "shadow-[0_0_14px_rgba(29, 47, 79,0.18)]",
         )}
         style={{
           width: starSize,
@@ -74,7 +74,7 @@ export function OpportunityStar({
             status === "offer"
               ? "radial-gradient(circle at 35% 28%, rgba(255,244,198,0.94), rgba(244,197,66,0.68) 30%, rgba(36,74,124,0.9) 74%)"
               : captured
-                ? "radial-gradient(circle at 35% 28%, rgba(231,226,255,0.8), rgba(53,103,168,0.56) 30%, rgba(18,41,78,0.92) 74%)"
+                ? "radial-gradient(circle at 35% 28%, rgba(231,226,255,0.8), rgba(29, 47, 79,0.56) 30%, rgba(18,41,78,0.92) 74%)"
                 : "radial-gradient(circle at 35% 28%, rgba(201,214,232,0.52), rgba(36,74,124,0.46) 32%, rgba(0,0,1,0.94) 76%)",
         }}
         onClick={() => onSelect(job)}

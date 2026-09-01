@@ -73,7 +73,7 @@ function drawShareBackground(context: CanvasRenderingContext2D) {
   context.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
 
   const paperGlow = context.createRadialGradient(820, 640, 80, 820, 640, 760);
-  paperGlow.addColorStop(0, "rgba(53,103,168,0.18)");
+  paperGlow.addColorStop(0, "rgba(29, 47, 79,0.18)");
   paperGlow.addColorStop(0.48, "rgba(36,74,124,0.1)");
   paperGlow.addColorStop(1, "rgba(0,0,1,0)");
   context.fillStyle = paperGlow;
@@ -87,7 +87,7 @@ function drawShareBackground(context: CanvasRenderingContext2D) {
   context.bezierCurveTo(920, 390, 1035, 310, 1140, 285);
   context.stroke();
 
-  context.strokeStyle = "rgba(53,103,168,0.3)";
+  context.strokeStyle = "rgba(29, 47, 79,0.3)";
   context.lineWidth = 2.2;
   context.beginPath();
   context.moveTo(110, 1035);
@@ -137,7 +137,7 @@ function drawBottleSnapshot(
   const height = 780;
 
   const glow = context.createRadialGradient(x + width * 0.5, y + height * 0.58, 20, x + width * 0.5, y + height * 0.58, 360);
-  glow.addColorStop(0, "rgba(53,103,168,0.2)");
+  glow.addColorStop(0, "rgba(29, 47, 79,0.2)");
   glow.addColorStop(0.42, "rgba(36,74,124,0.12)");
   glow.addColorStop(1, "rgba(0,0,1,0)");
   context.fillStyle = glow;
@@ -234,7 +234,7 @@ function drawShareStory(context: CanvasRenderingContext2D, applications: Applica
   });
 
   if (companies.length > 5) {
-    context.fillStyle = "rgba(53,103,168,0.86)";
+    context.fillStyle = "rgba(29, 47, 79,0.86)";
     context.font = "700 30px sans-serif";
     context.fillText("……", x + 38, y + 456 + 5 * 48);
   }
@@ -323,7 +323,7 @@ function getShareColor(status: ApplicationStatus) {
   }> = {
     opened: { fill: "#12294E", light: "#C9D6E8", halo: "rgba(18,41,78,0.38)", stroke: "rgba(201,214,232,0.66)" },
     applied: { fill: "#244A7C", light: "#C9D6E8", halo: "rgba(36,74,124,0.36)", stroke: "rgba(201,214,232,0.68)" },
-    written_test: { fill: "#3567A8", light: "#E7EEF7", halo: "rgba(53,103,168,0.38)", stroke: "rgba(231,238,247,0.72)" },
+    written_test: { fill: "#1D2F4F", light: "#E7EEF7", halo: "rgba(29, 47, 79,0.38)", stroke: "rgba(231,238,247,0.72)" },
     first_round: { fill: "#4C78B5", light: "#E7EEF7", halo: "rgba(76,120,181,0.4)", stroke: "rgba(231,238,247,0.72)" },
     second_round: { fill: "#5F8FCB", light: "#E7EEF7", halo: "rgba(95,143,203,0.44)", stroke: "rgba(231,238,247,0.76)" },
     final_round: { fill: "#6F9DD2", light: "#E7EEF7", halo: "rgba(111,157,210,0.48)", stroke: "rgba(231,238,247,0.78)" },

@@ -185,8 +185,8 @@ function OrbitTrackLayer({ activeBand, scale }: { activeBand: OrbitBand | null; 
               height: radius * 2,
               marginLeft: -radius,
               marginTop: -radius,
-              borderColor: active ? "rgba(53,103,168,0.48)" : `rgba(201,214,232,${0.08 + config.opacity * 0.2})`,
-              boxShadow: active ? "0 0 28px rgba(53,103,168,0.18)" : "inset 0 0 18px rgba(18,41,78,0.03)",
+              borderColor: active ? "rgba(29, 47, 79,0.48)" : `rgba(201,214,232,${0.08 + config.opacity * 0.2})`,
+              boxShadow: active ? "0 0 28px rgba(29, 47, 79,0.18)" : "inset 0 0 18px rgba(18,41,78,0.03)",
             }}
           />
         );

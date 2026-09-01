@@ -18,9 +18,9 @@ const ORB_PALETTE: Record<
 > = {
   blue: {
     light: "rgba(241,239,255,0.84)",
-    main: "rgba(53,103,168,0.72)",
+    main: "rgba(29, 47, 79,0.72)",
     dark: "rgba(18,41,78,0.96)",
-    glow: "rgba(53,103,168,0.24)",
+    glow: "rgba(29, 47, 79,0.24)",
     icon: "rgba(241,239,255,0.84)",
   },
   violet: {
@@ -32,9 +32,9 @@ const ORB_PALETTE: Record<
   },
   cyan: {
     light: "rgba(231,238,247,0.9)",
-    main: "rgba(53,103,168,0.8)",
+    main: "rgba(29, 47, 79,0.8)",
     dark: "rgba(18,41,78,0.96)",
-    glow: "rgba(53,103,168,0.3)",
+    glow: "rgba(29, 47, 79,0.3)",
     icon: "rgba(241,239,255,0.88)",
   },
   gold: {
@@ -48,14 +48,14 @@ const ORB_PALETTE: Record<
     light: "rgba(231,226,255,0.84)",
     main: "rgba(36,74,124,0.76)",
     dark: "rgba(18,41,78,0.96)",
-    glow: "rgba(53,103,168,0.26)",
+    glow: "rgba(29, 47, 79,0.26)",
     icon: "rgba(241,239,255,0.84)",
   },
   apricot: {
     light: "rgba(231,238,247,0.9)",
-    main: "rgba(53,103,168,0.8)",
+    main: "rgba(29, 47, 79,0.8)",
     dark: "rgba(18,41,78,0.96)",
-    glow: "rgba(53,103,168,0.3)",
+    glow: "rgba(29, 47, 79,0.3)",
     icon: "rgba(241,239,255,0.88)",
   },
   cream: {
@@ -67,7 +67,7 @@ const ORB_PALETTE: Record<
   },
   muted: {
     light: "rgba(201,214,232,0.54)",
-    main: "rgba(53,103,168,0.48)",
+    main: "rgba(29, 47, 79,0.48)",
     dark: "rgba(0,0,1,0.96)",
     glow: "rgba(143,161,185,0.16)",
     icon: "rgba(201,214,232,0.68)",

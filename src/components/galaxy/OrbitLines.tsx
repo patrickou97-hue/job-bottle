@@ -26,8 +26,8 @@ export function OrbitLines({
             style={{
               width: radius * 2,
               height: radius * 2,
-              border: `1px solid ${active ? 'rgba(241,239,255,0.24)' : `rgba(53,103,168,${opacity})`}`,
-              boxShadow: active ? '0 0 28px rgba(53,103,168,0.14)' : 'none',
+              border: `1px solid ${active ? 'rgba(241,239,255,0.24)' : `rgba(29, 47, 79,${opacity})`}`,
+              boxShadow: active ? '0 0 28px rgba(29, 47, 79,0.14)' : 'none',
               opacity: active ? 1 : 0.82,
               transition: 'opacity 220ms ease, border-color 220ms ease, box-shadow 220ms ease',
             }}

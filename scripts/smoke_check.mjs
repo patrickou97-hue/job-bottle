@@ -93,7 +93,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/ui/Select.tsx",
-    mustInclude: ["ChevronDown", "data-slot=\"select-wrapper\"", "data-slot=\"select\"", "field-shell field-select", "appearance-none", "pr-10"],
+    mustInclude: ["ChevronDown", "data-slot=\"select-wrapper\"", "data-slot=\"select\"", "field-shell field-select", "appearance-none", "pr-11"],
     mustNotInclude: [],
     label: "全站选择框使用统一材质与独立下拉箭头",
   },
@@ -811,7 +811,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/jobs/JobFilterBar.tsx",
-    mustInclude: ["start_date_desc", "最新开放", "最近更新", "最早开放", "岗位类别", "toggleCategory", "地点层级", "不限", "全国", "省级", "市级", "选择省级地区", "请选择城市", "buildLocationGroups", "left-3", "pl-10", "清空所有岗位筛选"],
+    mustInclude: ["start_date_desc", "最新开放", "最近更新", "最早开放", "岗位类别", "toggleCategory", "地点层级", "不限", "全国", "省级", "市级", "选择省级地区", "请选择城市", "buildLocationGroups", "left-4", "pl-11", "清空所有岗位筛选"],
     mustNotInclude: ["deadline_asc", "downloadDeadlineDigest", "digest_generate", "岗位标签", "toggleTag"],
     label: "探索筛选默认最新开启且不再提供下线日期入口",
   },
@@ -1278,14 +1278,14 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/extension/ExtensionHubClient.tsx",
-    mustInclude: ["<span className=\"block\">一份简历，</span>", "<span className=\"block\">抵达更多坐标</span>", "把拾星简历同步到浏览器，在网申页面填写常用字段；你负责核对与提交。", "starjob-resume-assistant-popup-v026.png", "展示三种填写方式、填写结果和处理进度", "获取安装包", "安装后重新检测", "window.location.reload()", "LEGACY_COMPATIBLE_VERSIONS", "SHORT_TIMEOUT_AI_VERSIONS", "PREVIOUS_AI_VERSIONS", "new Set([\"0.1.7\", \"0.1.8\", \"0.1.9\"])", "new Set([\"0.2.0\"])", "new Set([\"0.2.1\", \"0.2.2\", \"0.2.3\", \"0.2.4\", \"0.2.5\", \"0.2.6\"])", "AI 智能填写需要升级到 0.2.7", "最新版本 0.2.7", "/downloads/starjob-resume-assistant-v0.2.7.zip"],
-    mustNotInclude: ["一份简历，投向更多可能", "常见网申字段按页面顺序填入", "你只需检查，再决定提交", "简历写一次，网申少重复", "请升级到 0.1.8", "extensionVersion !==", "starjob-resume-assistant-popup.png", "https://pan.baidu.com/s/1q9gVenToSLL5x5tXZzYLig?pwd=SXZS", "https://pan.baidu.com/s/13sk2UUdep9S1zoJdEk_sSA?pwd=SXZS", "https://pan.baidu.com/s/1jl_OHVc_HxXbUrI1-IS56g?pwd=SXZS"],
-    label: "网申助手首屏使用更克制的价值表达与带灵动岛的设备实机展示",
+    mustInclude: ["<span className=\"block\">一份简历，</span>", "<span className=\"block\">抵达更多坐标</span>", "把拾星简历同步到浏览器，在网申页面填写常用字段；你负责核对与提交。", "starjob-extension-paper-planes.png", "多架纸飞机沿不同虚线轨迹飞向远方", "查看安装教程", "安装后重新检测", "window.location.reload()", "LEGACY_COMPATIBLE_VERSIONS", "SHORT_TIMEOUT_AI_VERSIONS", "PREVIOUS_AI_VERSIONS", "new Set([\"0.1.7\", \"0.1.8\", \"0.1.9\"])", "new Set([\"0.2.0\"])", "new Set([\"0.2.1\", \"0.2.2\", \"0.2.3\", \"0.2.4\", \"0.2.5\", \"0.2.6\"])", "AI 智能填写需要升级到 0.2.7", "最新版本 0.2.7"],
+    mustNotInclude: ["获取安装包", "DOWNLOAD_URL", "/downloads/starjob-resume-assistant-v0.2.7.zip", "一份简历，投向更多可能", "常见网申字段按页面顺序填入", "你只需检查，再决定提交", "简历写一次，网申少重复", "请升级到 0.1.8", "extensionVersion !==", "starjob-resume-assistant-popup.png", "https://pan.baidu.com/s/1q9gVenToSLL5x5tXZzYLig?pwd=SXZS", "https://pan.baidu.com/s/13sk2UUdep9S1zoJdEk_sSA?pwd=SXZS", "https://pan.baidu.com/s/1jl_OHVc_HxXbUrI1-IS56g?pwd=SXZS"],
+    label: "网申助手首屏使用更克制的价值表达与纸飞机线稿引导",
   },
   {
     file: "src/components/extension/ExtensionGuide.tsx",
-    mustInclude: ["/downloads/starjob-resume-assistant-v0.2.7.zip", "安装包由拾星官网直接提供", "最新版本 0.2.7", "显式实习 / 正式工作分组", "只填写你在拾星简历中明确保存的内容", "返回拾星并同步简历", "安装后刷新检测", "步骤 {String(index + 1).padStart(2, \"0\")}"],
-    mustNotInclude: ["pan.baidu.com", "百度网盘提取码", "最新版本 0.1.9"],
+    mustInclude: ["/downloads/starjob-resume-assistant-v0.2.7.zip", "下载 0.2.7 安装包", "当前版本 0.2.7", "下载后请完整解压", "显式实习 / 正式工作分组", "只填写你在拾星简历中明确保存的内容", "starjob-resume-assistant-popup-v026.png", "安装后刷新检测", "步骤 {String(index + 1).padStart(2, \"0\")}"],
+    mustNotInclude: ["获取安装包", "pan.baidu.com", "百度网盘提取码", "最新版本 0.1.9"],
     label: "网申助手下载页与安装教程共用 0.2.7 官网安装包",
   },
   {
@@ -1384,6 +1384,7 @@ const REQUIRED_FILES = [
   "public/assets/extension/starjob-resume-assistant-popup.png",
   "public/assets/extension/starjob-resume-assistant-iphone17pm.png",
   "public/assets/extension/starjob-resume-assistant-popup-v026.png",
+  "public/assets/extension/starjob-extension-paper-planes.png",
   "public/downloads/starjob-resume-assistant-v0.1.7.zip",
   "public/downloads/starjob-resume-assistant-v0.1.8.zip",
   "public/downloads/starjob-resume-assistant-v0.1.9.zip",
@@ -1446,7 +1447,7 @@ const REQUIRED_TEXT = {
   "/jobs": ["岗位坐标", "正在整理岗位"],
   "/login": ["正在为你打开拾星"],
   "/forum": ["拾星指南"],
-  "/extension": ["一份简历，", "抵达更多坐标", "把拾星简历同步到浏览器", "获取安装包", "正在检测网申助手"],
+  "/extension": ["一份简历，", "抵达更多坐标", "把拾星简历同步到浏览器", "查看安装教程", "正在检测网申助手"],
   "/extension/guide": ["安装拾星网申助手", "加载已解压的扩展", "同步简历"],
   "/admin": ["管理后台"],
 };

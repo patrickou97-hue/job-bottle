@@ -9,7 +9,7 @@ export function Textarea({
     <textarea
       data-slot="textarea"
       className={cn(
-        "field-shell field-textarea min-h-28 w-full px-3.5 py-3 text-sm leading-6 placeholder:text-ink-muted",
+        "field-shell field-textarea min-h-28 w-full px-4 py-3.5 text-sm leading-6 placeholder:text-ink-muted",
         className,
       )}
       {...props}

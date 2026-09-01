@@ -8,7 +8,7 @@ const config: Config = {
           950: "#000001",
           900: "#12294E",
           850: "#24375C",
-          800: "#3567A8",
+          800: "#1D2F4F",
           700: "#244A7C",
         },
         nebula: {
@@ -33,14 +33,14 @@ const config: Config = {
           950: "#000001",
           900: "#12294E",
           850: "#24375C",
-          800: "#3567A8",
+          800: "#1D2F4F",
           700: "#244A7C",
         },
         star: {
           100: "#F7F9FC",
           200: "#E7EEF7",
           300: "#C9D6E8",
-          400: "#3567A8",
+          400: "#1D2F4F",
           500: "#244A7C",
           600: "#12294E",
         },
@@ -52,9 +52,9 @@ const config: Config = {
         },
       },
       boxShadow: {
-        "star-sm": "0 0 12px rgba(53, 103, 168, 0.08)",
-        "star-md": "0 0 24px rgba(53, 103, 168, 0.1)",
-        "star-lg": "0 0 48px rgba(53, 103, 168, 0.13)",
+        "star-sm": "0 0 12px rgba(29, 47, 79, 0.08)",
+        "star-md": "0 0 24px rgba(29, 47, 79, 0.1)",
+        "star-lg": "0 0 48px rgba(29, 47, 79, 0.13)",
         glass: "0 24px 80px rgba(0, 0, 0, 0.42)",
       },
       keyframes: {
@@ -68,10 +68,10 @@ const config: Config = {
         },
         pulseGold: {
           "0%, 100%": {
-            boxShadow: "0 0 8px rgba(53, 103, 168, 0.12)",
+            boxShadow: "0 0 8px rgba(29, 47, 79, 0.12)",
           },
           "50%": {
-            boxShadow: "0 0 18px rgba(53, 103, 168, 0.22)",
+            boxShadow: "0 0 18px rgba(29, 47, 79, 0.22)",
           },
         },
       },

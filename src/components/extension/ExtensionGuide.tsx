@@ -43,16 +43,32 @@ export function ExtensionGuide() {
   return (
     <div className="observatory-page extension-guide space-y-14">
       <section className="page-hero border-b border-[color:var(--line-ghost)] pb-8">
-        <div>
+        <div className="max-w-4xl">
           <h1 className="page-title">安装拾星网申助手</h1>
-          <p className="page-subtitle mt-4">完成一次安装和简历同步，之后在网申页打开扩展即可填写。</p>
+          <div className="mt-5 max-w-3xl space-y-2 text-sm leading-7 text-ink-secondary">
+            <p>当前版本 0.2.7，适用于 Chrome、Edge 及其他 Chromium 浏览器。</p>
+            <p>
+              <a href="/downloads/starjob-resume-assistant-v0.2.7.zip" download className="text-action pressable h-8 font-semibold">
+                下载 0.2.7 安装包
+                <ArrowDownIcon aria-hidden="true" className="size-4" />
+              </a>
+            </p>
+            <p>下载后请完整解压。新增显式实习 / 正式工作分组，以及性别、国籍 / 地区、期望地点、项目链接、获奖时间和语言熟练度等常见字段策略；只填写你在拾星简历中明确保存的内容。</p>
+          </div>
         </div>
-        <a href="/downloads/starjob-resume-assistant-v0.2.7.zip" download className="gold-button pressable inline-flex h-11 w-fit items-center gap-2 rounded-lg px-4 text-sm font-semibold">
-          <ArrowDownIcon aria-hidden="true" className="size-4" />
-          获取安装包
-        </a>
-        <p className="mt-3 text-xs leading-6 text-ink-muted">安装包由拾星官网直接提供，下载后请完整解压。</p>
-        <p className="mt-1 text-xs leading-6 text-ink-muted">最新版本 0.2.7。新增显式实习 / 正式工作分组，以及性别、国籍 / 地区、期望地点、项目链接、获奖时间和语言熟练度等常见字段策略；只填写你在拾星简历中明确保存的内容。</p>
+      </section>
+
+      <section className="extension-guide__preview border-b border-[color:var(--line-ghost)] pb-12">
+        <figure className="extension-product-visual mx-auto w-full max-w-[620px]" aria-label="拾星网申助手扩展面板预览">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/assets/extension/starjob-resume-assistant-popup-v026.png"
+            alt="拾星网申助手扩展面板，展示填写方式、填写结果和处理进度"
+            width={760}
+            height={1680}
+          />
+          <figcaption className="sr-only">安装后预览：拾星网申助手扩展面板</figcaption>
+        </figure>
       </section>
 
       <section className="grid gap-x-10 gap-y-8 md:grid-cols-2">

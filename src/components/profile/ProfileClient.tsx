@@ -548,13 +548,13 @@ function OptionGrid({
             key={option}
             type="button"
             className={cn(
-              "pressable min-h-9 rounded-lg px-3 py-1.5 text-xs font-medium transition",
+              "pressable min-h-9 rounded-lg border border-transparent px-3 py-1.5 text-xs font-medium transition",
               dark
                 ? active
                   ? "bg-[#12294E] text-[#F4C542]"
                   : "bg-[#111827]/8 text-[#111827]/62 hover:bg-[#111827]/14"
                 : active
-                  ? "bg-[#3567A8] text-white"
+                  ? "border-[#1D2F4F]/25 bg-[#E8EDF4] text-[#12294E]"
                   : "status-pill text-ink-secondary hover:text-ink-primary",
             )}
             aria-pressed={active}

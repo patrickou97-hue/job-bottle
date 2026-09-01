@@ -15,7 +15,7 @@ export function GalaxyGateway() {
           title="地区星系"
           description="从城市出发，查看北京、上海、深圳等地的校招机会，适合已经明确工作地点的你。"
           imageSrc="/assets/nebula/nebula-region.png"
-          tone="rgba(53,103,168,0.34)"
+          tone="rgba(29, 47, 79,0.34)"
         />
         <GalaxyChoice
           href="/galaxy/industry"

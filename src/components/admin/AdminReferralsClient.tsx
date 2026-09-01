@@ -57,7 +57,7 @@ export function AdminReferralsClient() {
       </section>
 
       <section className="grid gap-3 border-y border-[color:var(--line-ghost)] py-4 sm:grid-cols-[minmax(240px,1fr)_220px]">
-        <div className="relative"><Search aria-hidden="true" className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-ink-muted" /><Input className="pl-10" type="search" value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder="搜索公司、内推码或说明" /></div>
+        <div className="relative"><Search aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-ink-muted" /><Input className="pl-11" type="search" value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder="搜索公司、内推码或说明" /></div>
         <Select value={status} onChange={(event) => setStatus(event.target.value as StatusFilter)} aria-label="筛选审核状态">
           <option value="all">全部记录</option><option value="active">当前公开</option><option value="removed">已下架</option><option value="queued">等待审核</option><option value="reviewing">审核中</option><option value="approved">智能审核通过</option><option value="rejected">智能审核下架</option><option value="error">转人工复核</option>
         </Select>

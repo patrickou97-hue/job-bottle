@@ -389,9 +389,9 @@ function LoginOptionGrid({
             key={option}
             type="button"
             className={cn(
-              "pressable rounded-lg px-3 py-1.5 text-xs font-medium transition",
-              active
-                ? "bg-[color:var(--aurora)] text-[color:var(--text-inverse)]"
+              "pressable rounded-lg border border-transparent px-3 py-1.5 text-xs font-medium transition",
+                active
+                ? "border border-[color:var(--aurora)]/25 bg-[color:var(--surface-selected-bg)] text-ink-primary"
                 : "status-pill text-ink-secondary hover:text-ink-primary",
             )}
             aria-pressed={active}

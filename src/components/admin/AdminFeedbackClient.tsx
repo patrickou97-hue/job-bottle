@@ -99,8 +99,8 @@ export function AdminFeedbackClient() {
 
       <section className="grid gap-3 border-y border-[color:var(--line-ghost)] py-4 sm:grid-cols-[minmax(240px,1fr)_170px_170px_auto]">
         <div className="relative">
-          <Search aria-hidden="true" className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-ink-muted" />
-          <Input className="pl-10" type="search" value={query} onChange={(event) => updateQuery(event.target.value)} placeholder="搜索反馈内容、类型或邮箱" />
+          <Search aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-ink-muted" />
+          <Input className="pl-11" type="search" value={query} onChange={(event) => updateQuery(event.target.value)} placeholder="搜索反馈内容、类型或邮箱" />
         </div>
         <Select value={status} onChange={(event) => updateStatus(event.target.value as AdminFeedbackStatus)} aria-label="筛选处理状态">
           <option value="all">全部状态</option>

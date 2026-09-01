@@ -12,7 +12,7 @@ export function Select({
       <select
         data-slot="select"
         className={cn(
-          "field-shell field-select peer h-11 w-full min-w-0 appearance-none px-3.5 pr-10 text-sm placeholder:text-ink-muted",
+          "field-shell field-select peer h-11 w-full min-w-0 appearance-none px-4 pr-11 text-sm placeholder:text-ink-muted",
           className,
         )}
         {...props}
@@ -21,7 +21,7 @@ export function Select({
       </select>
       <ChevronDown
         aria-hidden="true"
-        className="pointer-events-none absolute right-3.5 top-1/2 size-4 -translate-y-1/2 text-ink-muted transition-opacity peer-disabled:opacity-40"
+        className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-ink-muted transition-opacity peer-disabled:opacity-40"
         strokeWidth={1.8}
       />
     </div>

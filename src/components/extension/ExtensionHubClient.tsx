@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ArrowDownIcon,
   ArrowRightIcon,
   LockKeyIcon,
   PuzzlePieceIcon,
@@ -11,7 +10,6 @@ import {
 } from "@phosphor-icons/react";
 
 const CHANNEL = "starjob-resume-assistant";
-const DOWNLOAD_URL = "/downloads/starjob-resume-assistant-v0.2.7.zip";
 const LEGACY_COMPATIBLE_VERSIONS = new Set(["0.1.7", "0.1.8", "0.1.9"]);
 const SHORT_TIMEOUT_AI_VERSIONS = new Set(["0.2.0"]);
 const PREVIOUS_AI_VERSIONS = new Set(["0.2.1", "0.2.2", "0.2.3", "0.2.4", "0.2.5", "0.2.6"]);
@@ -149,25 +147,21 @@ export function ExtensionHubClient() {
             把拾星简历同步到浏览器，在网申页面填写常用字段；你负责核对与提交。
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
-            <a href={DOWNLOAD_URL} download className="gold-button pressable inline-flex h-11 items-center gap-2 rounded-lg px-4 text-sm font-semibold">
-              <ArrowDownIcon aria-hidden="true" className="size-4" />
-              获取安装包
-            </a>
             <Link href="/extension/guide" className="text-action pressable h-11 px-2 text-sm font-semibold">
               查看安装教程
               <ArrowRightIcon aria-hidden="true" className="size-4" />
             </Link>
           </div>
-          <p className="mt-4 text-xs leading-6 text-ink-muted">最新版本 0.2.7，适用于 Chrome、Edge 及其他 Chromium 浏览器，安装包由拾星官网直接提供。新增显式实习 / 正式工作分组，以及性别、国籍 / 地区、期望地点、项目链接、获奖时间和语言熟练度等常见字段策略；没有在简历中保存的内容不会猜测。</p>
+          <p className="mt-4 text-xs leading-6 text-ink-muted">适用于 Chrome、Edge 及其他 Chromium 浏览器。请先查看安装教程，再回到此页检测扩展并同步简历；没有在简历中保存的内容不会猜测。</p>
         </div>
 
-        <div className="extension-product-visual mx-auto w-full max-w-[350px]" aria-label="拾星网申助手 0.2.7 产品图">
+        <div className="extension-flight-visual mx-auto w-full max-w-[620px]" aria-label="多架纸飞机沿不同虚线轨迹飞向远方">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/assets/extension/starjob-resume-assistant-popup-v026.png"
-            alt="拾星网申助手 0.2.7 真实扩展面板，展示三种填写方式、填写结果和处理进度"
-            width={760}
-            height={1680}
+            src="/assets/extension/starjob-extension-paper-planes.png"
+            alt="多架纸飞机沿不同虚线轨迹飞向远方"
+            width={1672}
+            height={941}
             className="h-auto w-full"
           />
         </div>

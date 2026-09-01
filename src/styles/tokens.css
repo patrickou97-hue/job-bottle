@@ -1,13 +1,13 @@
 :root {
   /* Calm blue structure; yellow is reserved for the StarJob brand accent. */
   --brand-blue-deep: #12294E;
-  --brand-blue: #3567A8;
+  --brand-blue: #1D2F4F;
   --brand-blue-mid: #244A7C;
   --brand-blue-soft: #E8EDF4;
   --night-0: #000001;
   --night-1: #12294E;
   --night-2: #24375C;
-  --night-3: #3567A8;
+  --night-3: #1D2F4F;
   --dusk: #244A7C;
   --aurora: var(--brand-blue);
   --ink-hi: #F7F9FC;
@@ -28,8 +28,8 @@
   --line: rgba(201, 214, 232, 0.15);
   --line-strong: rgba(201, 214, 232, 0.28);
   --line-ghost: rgba(232, 237, 244, 0.07);
-  --filigree: rgba(53, 103, 168, 0.24);
-  --bottle-glass: rgba(53, 103, 168, 0.11);
+  --filigree: rgba(29, 47, 79, 0.24);
+  --bottle-glass: rgba(29, 47, 79, 0.11);
   --sediment: #24375C;
 
   --space-void: var(--night-0);
@@ -42,8 +42,8 @@
   --light-muted: var(--ink-low);
   --light-ice: var(--ink-hi);
   --star-white: var(--star-core);
-  --glow-cold: rgba(53, 103, 168, 0.16);
-  --glow-cold-hi: rgba(53, 103, 168, 0.26);
+  --glow-cold: rgba(29, 47, 79, 0.16);
+  --glow-cold-hi: rgba(29, 47, 79, 0.26);
 
   --gold-base: var(--star-gold);
   --gold-muted: rgba(213, 166, 42, 0.7);
@@ -64,9 +64,9 @@
   --surface-read-bg-strong: rgba(18, 41, 78, 0.62);
   --surface-read-border: var(--line);
   --surface-read-shadow: 0 24px 64px -32px rgba(0, 0, 0, 0.66);
-  --surface-hover-bg: rgba(53, 103, 168, 0.1);
-  --surface-selected-bg: rgba(53, 103, 168, 0.15);
-  --surface-selected-edge: inset 2px 0 0 rgba(53, 103, 168, 0.56);
+  --surface-hover-bg: rgba(29, 47, 79, 0.1);
+  --surface-selected-bg: rgba(29, 47, 79, 0.15);
+  --surface-selected-edge: inset 2px 0 0 rgba(29, 47, 79, 0.56);
   --surface-admin-bg: var(--night-1);
   --surface-admin-border: var(--line);
   --surface-bezel: rgba(231, 226, 255, 0.045);
@@ -172,9 +172,9 @@
   --line: rgba(201, 214, 232, 0.15);
   --line-strong: rgba(201, 214, 232, 0.28);
   --line-ghost: rgba(231, 226, 255, 0.07);
-  --surface-hover-bg: rgba(53, 103, 168, 0.1);
-  --surface-selected-bg: rgba(53, 103, 168, 0.15);
-  --surface-selected-edge: inset 2px 0 0 rgba(53, 103, 168, 0.56);
+  --surface-hover-bg: rgba(29, 47, 79, 0.1);
+  --surface-selected-bg: rgba(29, 47, 79, 0.15);
+  --surface-selected-edge: inset 2px 0 0 rgba(29, 47, 79, 0.56);
   --apple-glass-bg: rgba(13, 29, 57, 0.72);
   --apple-glass-bg-strong: rgba(13, 27, 52, 0.9);
   --apple-glass-border: rgba(231, 226, 255, 0.16);

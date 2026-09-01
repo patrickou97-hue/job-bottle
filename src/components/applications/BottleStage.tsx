@@ -188,7 +188,7 @@ export function BottleStage({
                 top: `${position.yPct}%`,
                 width: Math.max(position.size + 14, 32),
                 height: Math.max(position.size + 14, 32),
-                border: selectedId === application.id ? "1px solid rgba(53,103,168,.64)" : "1px solid transparent",
+                border: selectedId === application.id ? "1px solid rgba(29, 47, 79,.64)" : "1px solid transparent",
               }}
               aria-label={`查看 ${application.job.company_name} 的投递进度`}
               onClick={() => onSelect(application)}
@@ -220,7 +220,7 @@ function clamp(value: number, min: number, max: number) {
 
 function drawBottleAtmosphere(context: CanvasRenderingContext2D, width: number, height: number) {
   const glow = context.createRadialGradient(width * 0.5, height * 0.62, 8, width * 0.5, height * 0.62, width * 0.24);
-  glow.addColorStop(0, "rgba(53,103,168,0.1)");
+  glow.addColorStop(0, "rgba(29, 47, 79,0.1)");
   glow.addColorStop(0.48, "rgba(30,59,102,0.06)");
   glow.addColorStop(1, "rgba(0,0,1,0)");
   context.fillStyle = glow;
@@ -333,10 +333,10 @@ function getStarPalette(status: ApplicationStatus) {
       alpha: 0.88,
       haloScale: 0.8,
       haloInner: "rgba(255,249,227,0.46)",
-      haloMid: "rgba(53,103,168,0.28)",
-      haloOuter: "rgba(53,103,168,0)",
+      haloMid: "rgba(29, 47, 79,0.28)",
+      haloOuter: "rgba(29, 47, 79,0)",
       fillStart: "#E7EEF7",
-      fillMid: "#3567A8",
+      fillMid: "#1D2F4F",
       fillEnd: "#244A7C",
       stroke: "rgba(231,238,247,0.62)",
     },

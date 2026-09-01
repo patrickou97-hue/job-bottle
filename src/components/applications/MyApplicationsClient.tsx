@@ -244,8 +244,8 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
             <div className="grid gap-3 py-4 md:grid-cols-[minmax(220px,1fr)_210px_180px_auto]">
               <div className="relative">
                 <label htmlFor="application-search" className="sr-only">搜索公司、岗位或自定义进程</label>
-                <Search aria-hidden="true" className="absolute left-0 top-1/2 size-4 -translate-y-1/2 text-nebula-blue/70" />
-                <Input id="application-search" type="search" autoComplete="off" className="pl-7" value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder="搜索公司、岗位或进程" />
+                <Search aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-nebula-blue/70" />
+                <Input id="application-search" type="search" autoComplete="off" className="pl-11" value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder="搜索公司、岗位或进程" />
               </div>
               <Select value={freshness} onChange={(event) => setFreshness(event.target.value as FreshnessFilter)} aria-label="按最近进展筛选">
                 <option value="">全部更新时间</option>
@@ -413,7 +413,7 @@ function ApplicationListRow({ application, ended = false, onOpen, onEditWorkflow
 
 function StageFilterButton({ label, count, active, onClick }: { label: string; count: number; active: boolean; onClick: () => void }) {
   return (
-    <button type="button" className={active ? "inline-flex min-h-9 shrink-0 items-center gap-2 rounded-md bg-[color:var(--aurora)] px-3 text-xs text-[color:var(--text-inverse)]" : "inline-flex min-h-9 shrink-0 items-center gap-2 rounded-md px-3 text-xs text-ink-secondary hover:bg-[color:var(--surface-hover-bg)]"} aria-pressed={active} onClick={onClick}>
+    <button type="button" className={active ? "inline-flex min-h-9 shrink-0 items-center gap-2 rounded-md border border-[color:var(--aurora)]/20 bg-[color:var(--surface-selected-bg)] px-3 text-xs text-ink-primary" : "inline-flex min-h-9 shrink-0 items-center gap-2 rounded-md border border-transparent px-3 text-xs text-ink-secondary hover:bg-[color:var(--surface-hover-bg)]"} aria-pressed={active} onClick={onClick}>
       {label}<span className={active ? "tabular-nums opacity-65" : "tabular-nums text-ink-muted"}>{count}</span>
     </button>
   );

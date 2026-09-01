@@ -188,10 +188,10 @@ export function JobFilterBar({
           <div className="relative">
             <Search
               aria-hidden="true"
-              className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-nebula-blue/70"
+              className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-nebula-blue/70"
             />
             <Input
-              className="pl-10"
+              className="pl-11"
               value={filters.keyword}
               onChange={(event) => setFilter({ keyword: event.target.value })}
               placeholder="搜索公司或岗位名称"

@@ -16,7 +16,7 @@ const statusGlow: Record<
 > = {
   opened:       { color: "#12294E", opacity: 0.35, grayscale: false },
   applied:      { color: "#244A7C", opacity: 0.4, grayscale: false },
-  written_test: { color: "#3567A8", opacity: 0.45, grayscale: false },
+  written_test: { color: "#1D2F4F", opacity: 0.45, grayscale: false },
   first_round:  { color: "#4C78B5", opacity: 0.5, grayscale: false },
   second_round: { color: "#5F8FCB", opacity: 0.55, grayscale: false },
   final_round:  { color: "#6F9DD2", opacity: 0.6, grayscale: false },

@@ -48,6 +48,16 @@ test("非主页共享页脚接入且登录 slogan 保持动效降级入口", asy
   assert.match(styles, /login-bottle-frames 2s steps\(1, end\) infinite/);
   assert.match(kineticWord, /useReducedMotion/);
   assert.match(kineticWord, /clearTimeout/);
+  assert.match(kineticWord, /FLIP_TRANSITION_MS/);
+  assert.match(kineticWord, /CHAR_STAGGER_MS = 20/);
+  assert.match(kineticWord, /FLIP_TRANSITION_MS = 300/);
+  assert.match(kineticWord, /transitionDelay/);
+  assert.match(styles, /kinetic-word__line--in \.kinetic-word__char/);
+  assert.match(styles, /kinetic-word__line--out \.kinetic-word__char/);
+  assert.match(styles, /transform: translateY\(110%\)/);
+  assert.match(styles, /transform: translateY\(-120%\)/);
+  assert.doesNotMatch(styles, /perspective: 16rem/);
+  assert.doesNotMatch(styles, /rotateX\(84deg\)/);
 });
 
 test("公开岗位列表不下载详情长文本，岗位详情仍可单独读取完整记录", async () => {

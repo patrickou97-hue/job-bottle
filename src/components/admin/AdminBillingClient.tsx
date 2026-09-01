@@ -644,9 +644,9 @@ function SearchEmpty() {
 
 function modeButtonClass(active: boolean) {
   return cn(
-    "pressable inline-flex min-h-10 items-center gap-2 whitespace-nowrap rounded-lg px-3.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--aurora)]",
+    "pressable inline-flex min-h-10 items-center gap-2 whitespace-nowrap rounded-lg px-3.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--aurora)]/25",
     active
-      ? "bg-[color:var(--background)] text-ink-primary shadow-[0_1px_2px_rgba(16,31,54,0.08)]"
+      ? "bg-[color:var(--surface-read-bg)] text-ink-primary ring-1 ring-[color:var(--aurora)]/10"
       : "text-ink-muted hover:text-ink-primary",
   );
 }

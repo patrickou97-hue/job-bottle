@@ -23,7 +23,7 @@ export function ApplicationOrbitStar({
   const momentum = momentumTier(application);
   const stayedDays = daysSince(application.updated_at);
   const momentumStyle = {
-    blue: "bg-[color:var(--brand-blue)] shadow-[0_0_10px_rgba(53,103,168,0.28)]",
+    blue: "bg-[color:var(--brand-blue)] shadow-[0_0_10px_rgba(29, 47, 79,0.28)]",
     neutral: "bg-[color:var(--light-ice)] shadow-[0_0_8px_rgba(201,214,232,0.18)]",
     red: "bg-[#B14B57] shadow-[0_0_8px_rgba(177,75,87,0.18)]",
   }[momentum];

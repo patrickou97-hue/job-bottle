@@ -9,17 +9,17 @@ export function HeroConstellation() {
         <defs>
           <radialGradient id="heroGlow" cx="50%" cy="42%" r="58%">
             <stop offset="0%" stopColor="#FFF9E3" stopOpacity="0.24" />
-            <stop offset="48%" stopColor="#3567A8" stopOpacity="0.1" />
+            <stop offset="48%" stopColor="#1D2F4F" stopOpacity="0.1" />
             <stop offset="100%" stopColor="#000001" stopOpacity="0" />
           </radialGradient>
           <linearGradient id="bottleLine" x1="115" x2="343" y1="108" y2="382">
             <stop stopColor="#FFF9E3" stopOpacity="0.82" />
-            <stop offset="0.55" stopColor="#3567A8" stopOpacity="0.42" />
+            <stop offset="0.55" stopColor="#1D2F4F" stopOpacity="0.42" />
             <stop offset="1" stopColor="#244A7C" stopOpacity="0.22" />
           </linearGradient>
           <linearGradient id="orbitLine" x1="28" x2="420" y1="52" y2="344">
             <stop stopColor="#D8E1EF" stopOpacity="0" />
-            <stop offset="0.5" stopColor="#3567A8" stopOpacity="0.44" />
+            <stop offset="0.5" stopColor="#1D2F4F" stopOpacity="0.44" />
             <stop offset="1" stopColor="#244A7C" stopOpacity="0.1" />
           </linearGradient>
         </defs>
@@ -53,7 +53,7 @@ export function HeroConstellation() {
         <path
           d="M154 109L187 257M231 144L251 197M301 95L331 224"
           fill="none"
-          stroke="#3567A8"
+          stroke="#1D2F4F"
           strokeOpacity="0.2"
           strokeWidth="1"
         />
@@ -65,7 +65,7 @@ export function HeroConstellation() {
             [231, 144, 4, "#C9D6E8"],
             [301, 95, 6, "#FFF9E3"],
             [372, 143, 4.5, "#C9D6E8"],
-            [331, 224, 5, "#3567A8"],
+            [331, 224, 5, "#1D2F4F"],
             [251, 197, 3.8, "#FFF9E3"],
             [187, 257, 4.2, "#C9D6E8"],
             [121, 222, 3.8, "#FFF9E3"],
@@ -97,7 +97,7 @@ export function HeroConstellation() {
         <path
           d="M178 298C217 280 261 282 312 309"
           fill="none"
-          stroke="#3567A8"
+          stroke="#1D2F4F"
           strokeOpacity="0.16"
           strokeWidth="1.2"
         />
@@ -118,7 +118,7 @@ export function HeroConstellation() {
           strokeOpacity="0.28"
           strokeWidth="1.4"
         />
-        <circle cx="258" cy="299" r="5.5" fill="#3567A8" opacity="0.78" />
+        <circle cx="258" cy="299" r="5.5" fill="#1D2F4F" opacity="0.78" />
         <circle cx="226" cy="327" r="3.5" fill="#F4C542" opacity="0.75" />
         <circle cx="291" cy="340" r="3" fill="#FFF9E3" opacity="0.68" />
         <circle cx="320" cy="279" r="2.8" fill="#D8E1EF" opacity="0.74" />

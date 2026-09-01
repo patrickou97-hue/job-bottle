@@ -694,7 +694,7 @@ function PolishableItem({ children, onPolish }: { children: React.ReactNode; onP
       <div className="flex justify-end">
         <button
           type="button"
-          className="pressable inline-flex h-9 items-center gap-2 rounded-lg border border-[#3567A8] bg-[#3567A8] px-4 text-xs font-semibold text-white transition-colors hover:bg-[#244A7C] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3567A8]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+          className="pressable inline-flex h-9 items-center gap-2 rounded-lg border border-[#1D2F4F] bg-[#1D2F4F] px-4 text-xs font-semibold text-white transition-colors hover:bg-[#12294E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D2F4F]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
           onClick={onPolish}
         >
           <Sparkles aria-hidden="true" className="size-3.5 text-white" />
@@ -756,7 +756,7 @@ function BulletEditor({
               value={bullet}
               rows={4}
               aria-label={`${label}第 ${index + 1} 条`}
-              className="field-shell min-h-28 w-full resize-y px-3.5 py-3 text-sm leading-6 placeholder:text-ink-muted"
+              className="field-shell min-h-28 w-full resize-y px-4 py-3.5 text-sm leading-6 placeholder:text-ink-muted"
               placeholder="说明你做了什么、如何推进，以及取得了什么结果"
               onChange={(event) => update(index, event.target.value)}
             />
