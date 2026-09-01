@@ -181,6 +181,7 @@ function ReferralCodeRow({ item, currentUserId, onReport }: { item: ReferralCode
   const [copied, setCopied] = useState(false);
   const expired = isReferralCodeExpired(item);
   const seededPreview = item.id.startsWith("local-preview-");
+  const sourceItem = item.source_type === "tencent_job_link" || item.source_type === "public_post";
 
   async function copyCode() {
     if (expired || seededPreview) return;
@@ -196,15 +197,16 @@ function ReferralCodeRow({ item, currentUserId, onReport }: { item: ReferralCode
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-mono text-lg font-semibold tracking-[0.08em] text-ink-primary">{item.code}</span>
             {seededPreview ? <span className="rounded-sm bg-[#fbf4df] px-1.5 py-0.5 text-[10px] font-medium text-[#7d5a1f]">本地演示</span> : null}
-            {item.source_type === "tencent_job_link" ? <span className="rounded-sm bg-[#e8edf4] px-1.5 py-0.5 text-[10px] font-medium text-[#31557f]">来源同步</span> : null}
+            {sourceItem ? <span className="rounded-sm bg-[#e8edf4] px-1.5 py-0.5 text-[10px] font-medium text-[#31557f]">来源同步</span> : null}
             {expired ? <span className="text-[10px] font-medium text-[color:var(--text-danger)]">已过期</span> : null}
           </div>
           <p className="mt-2 text-sm leading-6 text-ink-secondary">{item.applicable_roles || "适用范围未说明，请在官方投递页确认"}</p>
           {item.usage_note ? <p className="mt-1 text-xs leading-5 text-ink-muted">{item.usage_note}</p> : null}
           <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-ink-muted">
-            <span>{item.source_type === "tencent_job_link" ? "腾讯文档岗位链接" : "匿名分享"}</span>
+            <span>{item.source_type === "tencent_job_link" ? "腾讯文档岗位链接" : item.source_platform ? `${item.source_platform}公开帖子` : "匿名分享"}</span>
             <span>{item.expires_at ? `有效期至 ${item.expires_at}` : "未填写有效期"}</span>
             <span>发布于 {formatDateTime(item.created_at)}</span>
+            {item.source_url ? <a href={item.source_url} target="_blank" rel="noreferrer" className="text-action hover:underline">查看来源</a> : null}
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1">
@@ -217,7 +219,7 @@ function ReferralCodeRow({ item, currentUserId, onReport }: { item: ReferralCode
             {copied ? <Check aria-hidden="true" className="size-3.5 text-[#39725b]" /> : <Clipboard aria-hidden="true" className="size-3.5" />}
             {copied ? "已复制" : seededPreview ? "演示码" : "复制"}
           </button>
-          {item.source_type === "tencent_job_link" ? null : <button type="button" className="inline-flex size-9 items-center justify-center rounded-md text-ink-muted hover:bg-[color:var(--surface-hover-bg)] hover:text-[color:var(--text-danger)]" onClick={onReport} aria-label={currentUserId ? `举报内推码 ${item.code}` : "登录后举报"}>
+          {sourceItem ? null : <button type="button" className="inline-flex size-9 items-center justify-center rounded-md text-ink-muted hover:bg-[color:var(--surface-hover-bg)] hover:text-[color:var(--text-danger)]" onClick={onReport} aria-label={currentUserId ? `举报内推码 ${item.code}` : "登录后举报"}>
             <Flag aria-hidden="true" className="size-3.5" />
           </button>}
         </div>

@@ -18,9 +18,13 @@ export type ReferralCodeListItem = Pick<ReferralCode,
   "expires_at" | "created_at" | "updated_at"
 > & {
   isPreview?: boolean;
-  source_type?: "tencent_job_link";
+  source_type?: "tencent_job_link" | "public_post";
   source_job_ids?: string[];
   source_urls?: string[];
+  source_platform?: "小红书" | "牛客" | "力扣";
+  source_url?: string;
+  published_at?: string | null;
+  source_verified_at?: string;
 };
 
 export type ReferralCodeInput = {

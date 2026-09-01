@@ -6,6 +6,15 @@
 
 每次三文档记录至少写明：日期、用户目标、根因/决策、实际改动文件与行为、兼容边界、验证命令和结果、提交与部署证据（如有）、已确认和未确认的外部状态。若本次只完成诊断而没有修改，也必须在三份文档中同步写清“零修改/零部署”及诊断证据。
 
+## 2026-09-01 公开内推码导入扩展（本地未上线）
+
+- 用户目标：在已登录的小红书 Safari 会话中核验 27 秋招公开内推码，并补充牛客、力扣等可信公开来源，放入内推码广场对应公司；同时保持 27 批次隔离、来源可追溯和历史数据不被重复写入。
+- 检索边界：只使用公开帖子中同时明确出现“27/2027 秋招或校招”和可复制内推码的记录。Safari 读取仅限可见页面、标题、正文、海报和公开链接；没有读取 Cookie、账号凭据、验证码、浏览器存储，也没有绕过登录、验证码或私信限制。二维码-only、无法读出明确代码、要求私聊/付费或仅实习/26 秋招的内容全部排除。
+- 当前核验清单：新增 43 条外部公开来源记录，其中小红书 7 条、牛客 34 条、力扣 2 条；覆盖腾讯 OOP3FB5J、立信 EVKM3J/EVKM3S/EVVM3H、网易互娱 shqAig、三一集团 EVVM20/ESVMBJ，以及搜狐畅游、鹰角、九号、拼多多、波克/4399、元戎启行、卓驭、蔚来、天翼云、基恩士、大疆、网易互娱、米哈游、小马智行、小米、腾讯和腾讯音乐等公开来源码。每条记录均保留原始帖子链接、平台、适用岗位说明和 2026-09-01 核验时间；部分来源未公开发布时间，使用前仍需在官方投递页确认有效期。
+- 实际改动：新增 `src/lib/referral-external-sources.ts` 与 `tests/referral-external-sources.test.ts`，维护可审计的公开来源清单；`src/app/api/referrals/source/route.ts` 在严格读取腾讯文档 27 秋招源后，按当前实时岗位公司名过滤外部记录，将其作为 `public_post` 虚拟来源行合并并按“公司 + 内推码”去重；`src/lib/referral-codes.ts` 扩展来源字段；`ReferralCodeHub.tsx` 显示平台、来源链接和“来源同步”标记，并隐藏虚拟来源行的无效举报入口。外部来源不写入 `referral_codes`，不伪造用户或数据库 UUID。
+- 兼容边界：腾讯文档仍严格锁定 `DY0VXc3BFTFJUbUhw` / `t3r1vl` / `vdHovb`，只接受 27 秋招候选，批次、字段结构、空数据、凭据和同源身份保护任一失败即停止；接口缓存 3 小时。外部码只有在公司仍出现在实时 27 秋招岗位源时才展示，源接口失败不会把外部清单写入数据库。
+- 验证：实时腾讯源读取 933 条有效 27 秋招、0 条非 27 行；`npm test` 146/146、`npm run typecheck`、`npm run lint`、`npm run build`（62 routes）和 `git diff --check` 均通过；本地生产 `GET /api/referrals/source` 返回 HTTP 200、46 行（3 条 `tencent_job_link` + 43 条 `public_post`），外部来源字段和去重结果可见。没有执行 Supabase 写入、migration、提交、推送或部署；当前正式站点不会自动出现这些新增码，需明确上线后才会发布。
+
 ## 2026-09-01 动效、登录与来源同步发布（已上线）
 
 - 用户目标：将当前工作区已经完成并验证的动效、响应性能、登录页、非主页页脚、来源同步接口和交接文档统一发布到正式站点。
@@ -14,12 +23,12 @@
 - 验证与边界：发布前 `npm run typecheck`、`npm run lint`、`npm test`（143/143）、`npm run build`（62 个页面）、`npm run smoke` 和 `git diff --check` 均通过；本地 1440×900 与 390×844 登录页检查通过。没有执行 Supabase migration、RLS/DDL、用户数据写入或认证协议变化；正式站点 HTTP 200、匿名只读接口和 Vercel success 不替代真实登录态 E2E、真实设备 FPS/网络瀑布和数据库字段兼容验收。
 - 回滚准备：全量基线备份为 `backups/starjob-before-motion-evolution-20260901/RESTORE.md`，登录细节改造前备份为 `backups/starjob-before-login-detail-redesign-20260901/RESTORE.md`；提交仍可通过 Git 回退，用户原有未跟踪材料未覆盖、未删除。
 
-## 2026-09-01 内推码来源同步与小红书检索边界（本地未上线）
+## 2026-09-01 内推码来源同步与小红书检索边界（历史快照，已由上方扩展记录取代）
 
 - 用户目标：把腾讯文档 27 秋招岗位链接中明确的内推码放进“内推码广场”对应公司，并探索公开小红书中的 27 秋招内推码。
 - 决策与证据：严格读取 `DY0VXc3BFTFJUbUhw` / `t3r1vl` / `vdHovb` 后，来源快照为 937 条记录、933 条有效 27 秋招岗位、4 条无效行、0 条非 27 行；链接中识别到 4 条明确来源记录，合并为 3 枚公司级来源码：蚂蚁集团 `RI2D8Qo_53mjwttzQKtL6z1ZIgy8ysp5ZdhFF3N6Hoo=`、米哈游 `MN72G`（覆盖提前批与正式批两个岗位）、网易互娱 `ryyQNNu`。只接受明确的 `recommendationCode`（且 `isRecommendation=true`）、`referralCode`，以及蚂蚁官方域名的 `code`；`spread`、`scene`、`sourceToken`、`t`、`projectCode` 等入口/跟踪/路由参数全部排除。
 - 实际改动：新增 `src/lib/referral-source.mjs` 及类型声明和 `scripts/tests/referral-source.test.mjs`；新增只读服务端 `/api/referrals/source`，使用锁定腾讯文档、严格 27 秋招校验和 3 小时缓存；`src/lib/referral-codes.ts` 将来源码与既有社区记录按公司+码去重合并；`ReferralCodeHub.tsx` 标注“来源同步”、显示来源说明并不对虚拟来源码开放无效的社区举报写入。来源记录由实时岗位源派生，不伪造上传者、不占用 `referral_codes.user_id`，既有社区数据不变。
-- 小红书边界：公开搜索页要求登录后才能查看搜索结果；本轮没有读取账号、Cookie、验证码或绕过登录，也没有把其他站点的转载内容冒充小红书来源导入。小红书内推码仍为 0 条已导入；如需继续，需要用户提供公开笔记链接/截图，或在浏览器中自行完成登录后再通知我核验。
+- 小红书边界（初次扫描）：公开搜索页要求登录后才能查看搜索结果；当时没有读取账号、Cookie、验证码或绕过登录，也没有把其他站点的转载内容冒充小红书来源导入。后续用户已授权 Safari 可见页面核验，最新结果以文档上方“公开内推码导入扩展”记录为准。
 - 兼容边界：源码同步仍按原有 27 秋招零写入保护运行；来源码 API 读取失败时仅回退到既有广场记录，不阻塞社区内推码。来源码不进入举报表，避免把不存在的数据库 UUID 写入 `referral_code_reports`。
 - 验证：`node --test scripts/tests/referral-source.test.mjs` 3/3 通过；`npm test` 143/143、`npx tsc --noEmit`、`npm run lint`、`npm run build`（62 个页面，包含 `/api/referrals/source`）和 `git diff --check` 通过；锁定来源实时解析为 933 条有效岗位、0 条非 27 行，并得到 3 枚唯一来源码；本地生产进程 `curl http://localhost:3107/api/referrals/source` 返回 3 条 `tencent_job_link` 来源记录且 `job_id` 均为空。`npm run smoke` 复跑因已有 Next dev server 占用端口而未取得新证据，未杀进程、未把旧进程结果当成本轮通过；未执行部署、Supabase migration 或任何用户/数据库写入。
 - 当前外部状态：正式 Supabase 只读岗位快照为 952 条；`referral_codes` 仍无来源同步写入。本轮代码和 API 仅在工作区存在，尚未推送或部署到正式域名。

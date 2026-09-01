@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { deriveTencentReferralCodes } from "@/lib/referral-source.mjs";
+import { buildExternalReferralRows } from "@/lib/referral-external-sources";
 import {
   SOURCE_DOCUMENT_ID,
   SOURCE_TAB_ID,
@@ -14,7 +15,8 @@ export const dynamic = "force-dynamic";
 
 const CACHE_TTL_MS = 3 * 60 * 60 * 1000;
 const SOURCE_URL = `https://docs.qq.com/smartsheet/${SOURCE_DOCUMENT_ID}?tab=${SOURCE_TAB_ID}&viewId=${SOURCE_VIEW_ID}`;
-let cache: { expiresAt: number; rows: ReturnType<typeof deriveTencentReferralCodes> } | null = null;
+type SourceReferralRow = ReturnType<typeof deriveTencentReferralCodes>[number] | ReturnType<typeof buildExternalReferralRows>[number];
+let cache: { expiresAt: number; rows: SourceReferralRow[] } | null = null;
 
 export async function GET(request: Request) {
   const companyName = new URL(request.url).searchParams.get("company")?.trim() || "";
@@ -26,11 +28,15 @@ export async function GET(request: Request) {
       if (parsed.wrongSeasonRows.length > 0) throw new Error("wrong-season");
       if (parsed.candidates.length === 0) throw new Error("empty-source");
       const fetchedAt = new Date().toISOString();
-      const rows = deriveTencentReferralCodes(parsed.candidates.map(({ payload }) => ({
+      const sourceJobs = parsed.candidates.map(({ payload }) => ({
         ...payload,
         created_at: fetchedAt,
         updated_at: fetchedAt,
-      }))).map((row) => ({ ...row, job_id: null }));
+      }));
+      const tencentRows = deriveTencentReferralCodes(sourceJobs).map((row) => ({ ...row, job_id: null }));
+      const activeCompanies = new Set(sourceJobs.map((job) => job.company_name));
+      const externalRows = buildExternalReferralRows(activeCompanies, fetchedAt);
+      const rows = dedupeRows([...tencentRows, ...externalRows]);
       cache = { expiresAt: now + CACHE_TTL_MS, rows };
     } catch {
       return NextResponse.json(
@@ -47,4 +53,20 @@ export async function GET(request: Request) {
     { rows },
     { headers: { "Cache-Control": "public, max-age=300, stale-while-revalidate=600" } },
   );
+}
+
+function dedupeRows<T extends { company_name: string; code: string; source_urls?: string[] }>(rows: T[]) {
+  const seen = new Map<string, T>();
+  for (const row of rows) {
+    const key = `${row.company_name.toLocaleLowerCase("zh-CN")}\u0000${row.code.toLocaleLowerCase("en-US")}`;
+    const existing = seen.get(key);
+    if (!existing) {
+      seen.set(key, row);
+      continue;
+    }
+    if (row.source_urls?.length && existing.source_urls) {
+      seen.set(key, { ...existing, source_urls: [...new Set([...existing.source_urls, ...row.source_urls])] });
+    }
+  }
+  return [...seen.values()];
 }
