@@ -6,13 +6,13 @@
 
 每次三文档记录至少写明：日期、用户目标、根因/决策、实际改动文件与行为、兼容边界、验证命令和结果、提交与部署证据（如有）、已确认和未确认的外部状态。若本次只完成诊断而没有修改，也必须在三份文档中同步写清“零修改/零部署”及诊断证据。
 
-## 2026-09-01 官方来源落库与发布准备（已完成迁移，待代码发布）
+## 2026-09-01 官方来源落库与发布（已上线）
 
 - 用户目标：将已经核验的 27 秋招公开内推码以“拾星小助手整理”官方发布者写入内推码广场，并上线展示；不冒用管理员或普通用户的 `user_id`。
 - 根因与决策：既有 `referral_codes.user_id` 强制引用 `auth.users`，且社区记录的审核/举报链路不适合伪造官方身份；因此新增独立 `official_referral_sources` 表，用固定 `publisher_name`、原始平台链接和稳定 `source_key` 表达官方整理来源，API 仅将其映射为可追溯的公开来源行。
 - 实际改动：新增 `supabase/migrations/20260901100000_official_referral_sources.sql`（表、唯一来源键、27 批次安全文本、平台/HTTPS/代码格式约束、RLS 公开只读与 service_role 写权限）；新增 `scripts/seed_official_referral_sources.mjs`（严格读取 `DY0VXc3BFTFJUbUhw`/`t3r1vl`/`vdHovb`、只接受实时 27 秋招公司、按 `source_key` 幂等插入/更新）；`/api/referrals/source` 优先读取该表并在表暂不可用时保持已有静态来源回退；内推码广场显示“拾星小助手整理”。
 - 兼容边界：不写入 `referral_codes`、不创建虚拟认证用户、不改变社区上传/审核/举报；实时腾讯源仍遇到非 27、空数据、字段/身份变化或无效凭据即零写入；来源码必须有公开 HTTPS 链接并明确包含 27/2027 批次。
-- 验证与外部状态：定向来源测试 7/7、全量 `npm test` 147/147、`npm run typecheck`、`npm run lint` 和 Webpack 生产构建（62 routes）通过，`git diff --check` 通过；Supabase dry-run 确认待应用两项迁移，随后已成功应用 `20260830120000_application_position.sql` 与 `20260901100000_official_referral_sources.sql`。官方来源 dry-run 读取严格锁定的实时源得到 961 条源记录、957 条有效 27 秋招岗位、4 条无效行、0 条非 27 行；首次幂等导入新增 43 条，复跑 dry-run 为 existing 43、inserts 0、updates 0、unchanged 43。代码尚未提交、推送或部署，待发布后补充线上接口证据。
+- 验证与外部状态：定向来源测试 10/10、全量 `npm test` 147/147、`npm run typecheck`、`npm run lint` 和 Webpack 生产构建（62 routes）通过，`git diff --check` 通过；Supabase dry-run 确认待应用两项迁移，随后已成功应用 `20260830120000_application_position.sql` 与 `20260901100000_official_referral_sources.sql`。官方来源 dry-run 读取严格锁定的实时源得到 961 条源记录、957 条有效 27 秋招岗位、4 条无效行、0 条非 27 行；首次幂等导入新增 43 条，复跑 dry-run 为 existing 43、inserts 0、updates 0、unchanged 43。提交 `82d7f4d` 已推送 `origin/main` 并触发正式部署；缓存穿透后的线上 `GET https://www.starjob.space/api/referrals/source?probe=82d7f4d` 返回 46 条（3 条腾讯文档来源 + 43 条官方公开来源），官方发布者字段均为“拾星小助手整理”；Supabase 匿名只读核验返回 43 条、20 家公司、43 个唯一公司+代码组合。普通无参数接口可能受 300 秒 CDN 缓存影响，缓存刷新后即为同一版本。
 
 ## 2026-09-01 登录页减法重排（本地未上线）
 
