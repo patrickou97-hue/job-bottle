@@ -6,6 +6,15 @@
 
 每次三文档记录至少写明：日期、用户目标、根因/决策、实际改动文件与行为、兼容边界、验证命令和结果、提交与部署证据（如有）、已确认和未确认的外部状态。若本次只完成诊断而没有修改，也必须在三份文档中同步写清“零修改/零部署”及诊断证据。
 
+## 2026-09-01 登录页星瓶动效修正（已上线）
+
+- 用户目标：让星瓶四帧动画再快一点，并移除插画右侧无法理解的紫色悬浮点。
+- 根因与决策：该点是登录页额外渲染的 `login-page__orbit-beacon` 脉冲装饰，不属于星瓶线稿本体；删除该独立装饰及其 keyframes，仅将星瓶切帧由 10 秒调整为 8 秒，保留 8 秒的轻微漂浮，避免增加新的视觉噪音或运行时逻辑。
+- 实际改动：`src/app/login/page.tsx` 删除 `.login-page__orbit-beacon` 节点；`src/app/globals.css` 删除对应样式与 `login-beacon-pulse`，将 `.login-page__bottle-frames` 的 `login-bottle-frames` 时长改为 `8s`。未修改官方来源功能、认证流程、数据库、API、其他页面或用户材料。
+- 兼容边界：不改变登录路由、表单字段、认证协议、动态 slogan、reduced-motion 降级、星瓶素材和页脚；未执行数据库写入或 migration。
+- 验证与外部状态：`git diff --check` 通过；定向动效回归 4/4 通过；`npm run typecheck` 通过；`npm run lint` 0 errors、保留项目既有的 1 条未使用变量 warning；Webpack 生产构建（62 routes）通过；正式 `https://www.starjob.space/login?release_check=06a8439` 返回 HTTP 200，登录页主体不含“欢迎回来”“求职工作台”和 beacon 标记，线上 CSS 命中 `login-bottle-frames` 8 秒且不含 beacon 规则；星瓶素材与 `/api/referrals/source` 均返回 HTTP 200。
+- Git、部署与回滚：提交 `06a8439`（`fix: refine login bottle motion`）已推送 `origin/main`，正式站已由 Vercel 自动发布并通过上述缓存穿透探针；回退到 `31ddd36` 可恢复本次调整前的已发布版本，登录页完整基线备份仍保留在 `backups/starjob-before-login-declutter-20260901/RESTORE.md`。
+
 ## 2026-09-01 官方来源落库与发布（已上线）
 
 - 用户目标：将已经核验的 27 秋招公开内推码以“拾星小助手整理”官方发布者写入内推码广场，并上线展示；不冒用管理员或普通用户的 `user_id`。
