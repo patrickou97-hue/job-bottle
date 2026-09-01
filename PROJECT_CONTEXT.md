@@ -2083,3 +2083,12 @@ The smoke test (`npm run smoke`) checks these source code invariants:
 - 本轮前安全备份位于 `backups/starjob-before-route-and-control-polish-20260901/`，包含本轮相关组件、样式和配置快照；未修改数据库。
 - 验证：`npm run typecheck` 通过；`npm run lint` 通过但保留既有 `scripts/seed_official_referral_sources.mjs:44` 未使用变量 warning；`npm test` 通过，149/149；`npm run build -- --webpack` 通过；构建后的 `next start` 对 `/explore`、`/my`、`/resume`、`/forum`、`/profile` 均返回 200，逐页硬刷新后页面标识保持。`npm run smoke` 未通过既有 token 约束，提示 `src/styles/tokens.css` 缺少 `--night-3: #564A71`，本轮没有修改该文件。默认 Turbopack 构建在临时工作树因 `node_modules` 符号链接指向工作区外而失败，属于环境边界，Webpack 构建已完成生产复核。
 - 当前状态：本轮仅在独立工作树本地完成，尚未提交、推送或发布；线上仍为此前已确认的版本。
+
+## 2026-09-01 本地开发登录 CSP 修复（未上线）
+
+- 问题原因：开发环境的 CSP `script-src` 缺少 Webpack HMR 所需的 `unsafe-eval`，Next 前端刷新脚本报错，React 没有接管登录表单，浏览器退回原生 GET 提交。
+- 安全影响：原生 GET 会把输入字段拼进本地 URL；本轮诊断时已观察到该现象。不要继续使用已经暴露过的密码，并在真实账号侧立即修改该密码；本记录不保存具体凭据。
+- 修复方式：`next.config.ts` 只在 `NODE_ENV=development` 时追加 `unsafe-eval`，生产环境 CSP 仍不允许该指令。
+- 验证：使用无效测试账号提交后 URL 保持 `/login` 且无查询参数；前端 error/warning 日志为空；`npm run typecheck` 通过；`npm run lint` 通过但保留既有 `seed_official_referral_sources.mjs:44` warning；`npm run build -- --webpack` 通过。
+- 修复前快照位于 `backups/starjob-before-dev-csp-auth-fix-20260901/next.config.ts`。
+- 当前状态：修复已在独立工作树本地完成，尚未推送或上线。
