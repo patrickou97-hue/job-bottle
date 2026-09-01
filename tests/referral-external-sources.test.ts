@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 const modulePath = "../src/lib/referral-external-sources." + "ts";
-const { EXTERNAL_REFERRAL_SOURCES, buildExternalReferralRows } = await import(modulePath);
+const { EXTERNAL_REFERRAL_SOURCES, buildExternalReferralRows, buildOfficialReferralSourceRows } = await import(modulePath);
 
 type ExternalRow = {
   company_name: string;
@@ -38,4 +38,18 @@ test("同一公司不同来源码可并列，代码自身不因大小写而被�
   assert.ok(codes.includes("XVZ8LnR"));
   assert.equal(codes.find((code) => code === "HPyu1u"), "HPyu1u");
   assert.ok(!codes.includes("HPYU1U"));
+});
+
+test("官方来源写入行使用固定发布者和稳定来源键", () => {
+  const rows = buildOfficialReferralSourceRows(["腾讯", "小米"], "2026-09-01T00:00:00.000Z") as Array<{
+    publisher_name: string;
+    source_key: string;
+    source_verified_at: string;
+    source_url: string;
+  }>;
+  assert.ok(rows.length > 1);
+  assert.ok(rows.every((row) => row.publisher_name === "拾星小助手整理"));
+  assert.ok(rows.every((row) => /^starjob-official:.+/.test(row.source_key)));
+  assert.ok(rows.every((row) => row.source_verified_at === "2026-09-01T00:00:00.000Z"));
+  assert.ok(rows.every((row) => row.source_url.startsWith("https://")));
 });

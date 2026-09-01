@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { deriveTencentReferralCodes } from "@/lib/referral-source.mjs";
 import { buildExternalReferralRows } from "@/lib/referral-external-sources";
+import { createAdminClient } from "@/lib/supabase/admin";
+import type { OfficialReferralSource } from "@/lib/types";
 import {
   SOURCE_DOCUMENT_ID,
   SOURCE_TAB_ID,
@@ -35,7 +37,10 @@ export async function GET(request: Request) {
       }));
       const tencentRows = deriveTencentReferralCodes(sourceJobs).map((row) => ({ ...row, job_id: null }));
       const activeCompanies = new Set(sourceJobs.map((job) => job.company_name));
-      const externalRows = buildExternalReferralRows(activeCompanies, fetchedAt);
+      const persistedOfficialRows = await fetchOfficialReferralSources(activeCompanies);
+      const externalRows = persistedOfficialRows.length > 0
+        ? persistedOfficialRows.map((row) => toExternalReferralRow(row))
+        : buildExternalReferralRows(activeCompanies, fetchedAt);
       const rows = dedupeRows([...tencentRows, ...externalRows]);
       cache = { expiresAt: now + CACHE_TTL_MS, rows };
     } catch {
@@ -53,6 +58,43 @@ export async function GET(request: Request) {
     { rows },
     { headers: { "Cache-Control": "public, max-age=300, stale-while-revalidate=600" } },
   );
+}
+
+async function fetchOfficialReferralSources(activeCompanies: Set<string>): Promise<OfficialReferralSource[]> {
+  try {
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from("official_referral_sources")
+      .select("id,publisher_name,company_name,job_id,applicable_roles,code,usage_note,source_platform,source_url,published_at,source_verified_at,is_active,created_at,updated_at,source_key")
+      .eq("is_active", true)
+      .order("source_verified_at", { ascending: false });
+    if (error || !data) return [];
+    return (data as OfficialReferralSource[]).filter((row) => activeCompanies.has(row.company_name));
+  } catch {
+    return [];
+  }
+}
+
+function toExternalReferralRow(record: OfficialReferralSource) {
+  return {
+    id: `external-referral-${record.source_key}`,
+    publisher_name: record.publisher_name,
+    company_name: record.company_name,
+    job_id: record.job_id,
+    applicable_roles: record.applicable_roles,
+    code: record.code,
+    usage_note: record.usage_note ?? "使用前请在官方投递页确认有效性。",
+    expires_at: null,
+    created_at: record.created_at,
+    updated_at: record.updated_at,
+    source_type: "public_post" as const,
+    source_job_ids: [] as string[],
+    source_urls: [record.source_url],
+    source_platform: record.source_platform,
+    source_url: record.source_url,
+    published_at: record.published_at,
+    source_verified_at: record.source_verified_at,
+  };
 }
 
 function dedupeRows<T extends { company_name: string; code: string; source_urls?: string[] }>(rows: T[]) {

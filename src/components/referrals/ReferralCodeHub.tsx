@@ -203,7 +203,7 @@ function ReferralCodeRow({ item, currentUserId, onReport }: { item: ReferralCode
           <p className="mt-2 text-sm leading-6 text-ink-secondary">{item.applicable_roles || "适用范围未说明，请在官方投递页确认"}</p>
           {item.usage_note ? <p className="mt-1 text-xs leading-5 text-ink-muted">{item.usage_note}</p> : null}
           <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-ink-muted">
-            <span>{item.source_type === "tencent_job_link" ? "腾讯文档岗位链接" : item.source_platform ? `${item.source_platform}公开帖子` : "匿名分享"}</span>
+            <span>{item.publisher_name || (item.source_type === "tencent_job_link" ? "腾讯文档岗位链接" : item.source_platform ? `${item.source_platform}公开帖子` : "匿名分享")}</span>
             <span>{item.expires_at ? `有效期至 ${item.expires_at}` : "未填写有效期"}</span>
             <span>发布于 {formatDateTime(item.created_at)}</span>
             {item.source_url ? <a href={item.source_url} target="_blank" rel="noreferrer" className="text-action hover:underline">查看来源</a> : null}

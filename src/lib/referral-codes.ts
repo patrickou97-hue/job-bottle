@@ -19,6 +19,7 @@ export type ReferralCodeListItem = Pick<ReferralCode,
 > & {
   isPreview?: boolean;
   source_type?: "tencent_job_link" | "public_post";
+  publisher_name?: "拾星小助手整理";
   source_job_ids?: string[];
   source_urls?: string[];
   source_platform?: "小红书" | "牛客" | "力扣";

@@ -226,6 +226,24 @@ export type ReferralCode = {
   updated_at: string;
 };
 
+export type OfficialReferralSource = {
+  id: string;
+  publisher_name: "拾星小助手整理";
+  company_name: string;
+  job_id: string | null;
+  applicable_roles: string | null;
+  code: string;
+  usage_note: string | null;
+  source_platform: "小红书" | "牛客" | "力扣";
+  source_url: string;
+  published_at: string | null;
+  source_verified_at: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  source_key: string;
+};
+
 export type AdminReferralCode = Pick<ReferralCode,
   "id" | "company_name" | "applicable_roles" | "code" | "usage_note" | "expires_at" |
   "is_active" | "review_status" | "review_due_at" | "reviewed_at" | "review_category" |
@@ -510,6 +528,42 @@ export type Database = {
           deactivated_by?: string | null;
           deactivation_reason?: string | null;
           updated_at?: string;
+        };
+        Relationships: [];
+      };
+      official_referral_sources: {
+        Row: OfficialReferralSource;
+        Insert: {
+          id?: string;
+          publisher_name?: "拾星小助手整理";
+          company_name: string;
+          job_id?: string | null;
+          applicable_roles?: string | null;
+          code: string;
+          usage_note?: string | null;
+          source_platform: "小红书" | "牛客" | "力扣";
+          source_url: string;
+          published_at?: string | null;
+          source_verified_at?: string;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+          source_key: string;
+        };
+        Update: {
+          publisher_name?: "拾星小助手整理";
+          company_name?: string;
+          job_id?: string | null;
+          applicable_roles?: string | null;
+          code?: string;
+          usage_note?: string | null;
+          source_platform?: "小红书" | "牛客" | "力扣";
+          source_url?: string;
+          published_at?: string | null;
+          source_verified_at?: string;
+          is_active?: boolean;
+          updated_at?: string;
+          source_key?: string;
         };
         Relationships: [];
       };

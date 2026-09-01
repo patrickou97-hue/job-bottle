@@ -457,26 +457,46 @@ export const EXTERNAL_REFERRAL_SOURCES: ExternalReferralSourceRecord[] = [
   }),
 ];
 
-export function buildExternalReferralRows(companyNames: Iterable<string>, verifiedAt = VERIFIED_AT) {
+export function buildOfficialReferralSourceRows(companyNames: Iterable<string>, verifiedAt = VERIFIED_AT) {
   const allowed = new Set([...companyNames].map((name) => String(name).trim()).filter(Boolean));
   return EXTERNAL_REFERRAL_SOURCES
     .filter((record) => allowed.has(record.company_name))
     .map((record) => ({
-      id: `external-referral-${record.id}`,
+      source_key: `starjob-official:${record.id}`,
+      publisher_name: "拾星小助手整理" as const,
       company_name: record.company_name,
       job_id: null,
       applicable_roles: record.applicable_roles,
       code: record.code,
-      usage_note: `${record.usage_note} 来源：${record.source_platform}，核验于 ${verifiedAt.slice(0, 10)}。`,
-      expires_at: null,
-      created_at: record.published_at ? `${record.published_at}T00:00:00.000Z` : verifiedAt,
-      updated_at: verifiedAt,
-      source_type: "public_post" as const,
-      source_job_ids: [] as string[],
-      source_urls: [record.source_url],
       source_platform: record.source_platform,
       source_url: record.source_url,
       published_at: record.published_at,
       source_verified_at: verifiedAt,
+      usage_note: `${record.usage_note} 来源：${record.source_platform}，核验于 ${verifiedAt.slice(0, 10)}。`,
+      is_active: true,
+      created_at: record.published_at ? `${record.published_at}T00:00:00.000Z` : verifiedAt,
+      updated_at: verifiedAt,
     }));
+}
+
+export function buildExternalReferralRows(companyNames: Iterable<string>, verifiedAt = VERIFIED_AT) {
+  return buildOfficialReferralSourceRows(companyNames, verifiedAt).map((record) => ({
+    id: `external-referral-${record.source_key.slice("starjob-official:".length)}`,
+    publisher_name: record.publisher_name,
+    company_name: record.company_name,
+    job_id: record.job_id,
+    applicable_roles: record.applicable_roles,
+    code: record.code,
+    usage_note: record.usage_note,
+    expires_at: null,
+    created_at: record.created_at,
+    updated_at: record.updated_at,
+    source_type: "public_post" as const,
+    source_job_ids: [] as string[],
+    source_urls: [record.source_url],
+    source_platform: record.source_platform,
+    source_url: record.source_url,
+    published_at: record.published_at,
+    source_verified_at: record.source_verified_at,
+  }));
 }
