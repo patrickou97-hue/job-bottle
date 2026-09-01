@@ -17,25 +17,25 @@ const ORB_PALETTE: Record<
   }
 > = {
   blue: {
-    light: "rgba(255,249,227,0.84)",
-    main: "rgba(243,198,77,0.72)",
-    dark: "rgba(16,38,74,0.96)",
-    glow: "rgba(243,198,77,0.24)",
-    icon: "rgba(255,249,227,0.84)",
+    light: "rgba(241,239,255,0.84)",
+    main: "rgba(53,103,168,0.72)",
+    dark: "rgba(18,41,78,0.96)",
+    glow: "rgba(53,103,168,0.24)",
+    icon: "rgba(241,239,255,0.84)",
   },
   violet: {
-    light: "rgba(237,242,248,0.82)",
-    main: "rgba(30,59,102,0.84)",
-    dark: "rgba(6,19,40,0.96)",
-    glow: "rgba(30,59,102,0.28)",
-    icon: "rgba(247,249,252,0.8)",
+    light: "rgba(231,226,255,0.82)",
+    main: "rgba(36,74,124,0.84)",
+    dark: "rgba(0,0,1,0.96)",
+    glow: "rgba(36,74,124,0.28)",
+    icon: "rgba(241,239,255,0.8)",
   },
   cyan: {
-    light: "rgba(255,249,227,0.9)",
-    main: "rgba(216,166,47,0.8)",
-    dark: "rgba(16,38,74,0.96)",
-    glow: "rgba(243,198,77,0.3)",
-    icon: "rgba(255,249,227,0.88)",
+    light: "rgba(231,238,247,0.9)",
+    main: "rgba(53,103,168,0.8)",
+    dark: "rgba(18,41,78,0.96)",
+    glow: "rgba(53,103,168,0.3)",
+    icon: "rgba(241,239,255,0.88)",
   },
   gold: {
     light: "rgba(255,244,198,0.96)",
@@ -45,32 +45,32 @@ const ORB_PALETTE: Record<
     icon: "rgba(255,248,220,0.92)",
   },
   rose: {
-    light: "rgba(255,249,227,0.84)",
-    main: "rgba(216,166,47,0.76)",
-    dark: "rgba(16,38,74,0.96)",
-    glow: "rgba(243,198,77,0.26)",
-    icon: "rgba(255,249,227,0.84)",
+    light: "rgba(231,226,255,0.84)",
+    main: "rgba(36,74,124,0.76)",
+    dark: "rgba(18,41,78,0.96)",
+    glow: "rgba(53,103,168,0.26)",
+    icon: "rgba(241,239,255,0.84)",
   },
   apricot: {
-    light: "rgba(255,249,227,0.9)",
-    main: "rgba(216,166,47,0.8)",
-    dark: "rgba(16,38,74,0.96)",
-    glow: "rgba(243,198,77,0.3)",
-    icon: "rgba(255,249,227,0.88)",
+    light: "rgba(231,238,247,0.9)",
+    main: "rgba(53,103,168,0.8)",
+    dark: "rgba(18,41,78,0.96)",
+    glow: "rgba(53,103,168,0.3)",
+    icon: "rgba(241,239,255,0.88)",
   },
   cream: {
     light: "rgba(247,249,252,0.9)",
-    main: "rgba(216,225,239,0.68)",
-    dark: "rgba(16,38,74,0.96)",
-    glow: "rgba(216,225,239,0.22)",
+    main: "rgba(201,214,232,0.68)",
+    dark: "rgba(18,41,78,0.96)",
+    glow: "rgba(201,214,232,0.22)",
     icon: "rgba(247,249,252,0.84)",
   },
   muted: {
-    light: "rgba(216,225,239,0.54)",
-    main: "rgba(74,98,131,0.68)",
-    dark: "rgba(6,19,40,0.96)",
-    glow: "rgba(155,170,192,0.16)",
-    icon: "rgba(216,225,239,0.68)",
+    light: "rgba(201,214,232,0.54)",
+    main: "rgba(53,103,168,0.48)",
+    dark: "rgba(0,0,1,0.96)",
+    glow: "rgba(143,161,185,0.16)",
+    icon: "rgba(201,214,232,0.68)",
   },
 };
 
@@ -96,8 +96,8 @@ export function OrbMaterial({
       "radial-gradient(circle at 76% 78%, rgba(0,0,0,0.55) 0 36%, transparent 60%)",
     ].join(", "),
     boxShadow: active
-      ? `0 0 34px ${palette.glow}, inset -12px -16px 28px rgba(0,0,0,0.56), inset 8px 7px 18px rgba(255,249,227,0.08)`
-      : `0 0 18px ${palette.glow}, inset -10px -14px 24px rgba(0,0,0,0.58), inset 7px 6px 16px rgba(255,249,227,0.06)`,
+      ? `0 0 34px ${palette.glow}, inset -12px -16px 28px rgba(0,0,0,0.56), inset 8px 7px 18px rgba(241,239,255,0.08)`
+      : `0 0 18px ${palette.glow}, inset -10px -14px 24px rgba(0,0,0,0.58), inset 7px 6px 16px rgba(241,239,255,0.06)`,
   };
 
   return (
@@ -121,7 +121,7 @@ export function OrbMaterial({
         aria-hidden="true"
         className="absolute inset-[1px] rounded-full"
         style={{
-          background: "conic-gradient(from 300deg, rgba(255,249,227,0.46) 0deg 40deg, transparent 52deg 360deg)",
+          background: "conic-gradient(from 300deg, rgba(241,239,255,0.46) 0deg 40deg, transparent 52deg 360deg)",
           maskImage: "radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1px))",
           WebkitMaskImage: "radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1px))",
         }}
@@ -132,8 +132,8 @@ export function OrbMaterial({
         style={{
           width: "clamp(2px, 8%, 3px)",
           height: "clamp(2px, 8%, 3px)",
-          background: "rgba(255,249,227,0.82)",
-          boxShadow: "0 0 8px rgba(255,249,227,0.38)",
+          background: "rgba(241,239,255,0.82)",
+          boxShadow: "0 0 8px rgba(241,239,255,0.38)",
         }}
       />
       {icon ? (

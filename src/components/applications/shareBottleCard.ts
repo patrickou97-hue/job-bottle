@@ -34,8 +34,8 @@ export async function downloadBottleShareCard({
         width: 260,
         margin: 1,
         color: {
-          dark: "#10264A",
-          light: "#FFF9E3",
+          dark: "#12294E",
+          light: "#F7F9FC",
         },
       }),
     ),
@@ -66,16 +66,16 @@ export async function downloadBottleShareCard({
 
 function drawShareBackground(context: CanvasRenderingContext2D) {
   const background = context.createLinearGradient(0, 0, CARD_WIDTH, CARD_HEIGHT);
-  background.addColorStop(0, "#061328");
-  background.addColorStop(0.42, "#10264A");
-  background.addColorStop(1, "#1E3B66");
+  background.addColorStop(0, "#000001");
+  background.addColorStop(0.42, "#12294E");
+  background.addColorStop(1, "#24375C");
   context.fillStyle = background;
   context.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
 
   const paperGlow = context.createRadialGradient(820, 640, 80, 820, 640, 760);
-  paperGlow.addColorStop(0, "rgba(243,198,77,0.18)");
-  paperGlow.addColorStop(0.48, "rgba(216,166,47,0.1)");
-  paperGlow.addColorStop(1, "rgba(6,19,40,0)");
+  paperGlow.addColorStop(0, "rgba(53,103,168,0.18)");
+  paperGlow.addColorStop(0.48, "rgba(36,74,124,0.1)");
+  paperGlow.addColorStop(1, "rgba(0,0,1,0)");
   context.fillStyle = paperGlow;
   context.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
 
@@ -87,7 +87,7 @@ function drawShareBackground(context: CanvasRenderingContext2D) {
   context.bezierCurveTo(920, 390, 1035, 310, 1140, 285);
   context.stroke();
 
-  context.strokeStyle = "rgba(243,198,77,0.3)";
+  context.strokeStyle = "rgba(53,103,168,0.3)";
   context.lineWidth = 2.2;
   context.beginPath();
   context.moveTo(110, 1035);
@@ -137,9 +137,9 @@ function drawBottleSnapshot(
   const height = 780;
 
   const glow = context.createRadialGradient(x + width * 0.5, y + height * 0.58, 20, x + width * 0.5, y + height * 0.58, 360);
-  glow.addColorStop(0, "rgba(243,198,77,0.2)");
-  glow.addColorStop(0.42, "rgba(216,166,47,0.12)");
-  glow.addColorStop(1, "rgba(6,19,40,0)");
+  glow.addColorStop(0, "rgba(53,103,168,0.2)");
+  glow.addColorStop(0.42, "rgba(36,74,124,0.12)");
+  glow.addColorStop(1, "rgba(0,0,1,0)");
   context.fillStyle = glow;
   context.fillRect(x - 80, y - 80, width + 160, height + 160);
 
@@ -234,7 +234,7 @@ function drawShareStory(context: CanvasRenderingContext2D, applications: Applica
   });
 
   if (companies.length > 5) {
-    context.fillStyle = "rgba(243,198,77,0.86)";
+    context.fillStyle = "rgba(53,103,168,0.86)";
     context.font = "700 30px sans-serif";
     context.fillText("……", x + 38, y + 456 + 5 * 48);
   }
@@ -271,11 +271,11 @@ function drawShareFooter(context: CanvasRenderingContext2D, qrImage: HTMLImageEl
   roundedRect(context, CARD_PADDING, qrY - 36, CARD_WIDTH - CARD_PADDING * 2, qrSize + 66, 28);
   context.fill();
 
-  context.fillStyle = "#10264A";
+  context.fillStyle = "#12294E";
   context.font = "800 33px sans-serif";
   context.fillText("扫码开启你的秋招星瓶", CARD_PADDING + 32, qrY + 44);
 
-  context.fillStyle = "rgba(16,38,74,0.72)";
+  context.fillStyle = "rgba(18,41,78,0.72)";
   context.font = "600 21px sans-serif";
   context.fillText("www.starjob.space", CARD_PADDING + 32, qrY + 88);
   context.font = "700 21px sans-serif";
@@ -321,15 +321,15 @@ function getShareColor(status: ApplicationStatus) {
     halo: string;
     stroke: string;
   }> = {
-    opened: { fill: "#10264A", light: "#D8E1EF", halo: "rgba(16,38,74,0.38)", stroke: "rgba(216,225,239,0.66)" },
-    applied: { fill: "#1E3B66", light: "#D8E1EF", halo: "rgba(30,59,102,0.36)", stroke: "rgba(216,225,239,0.68)" },
-    written_test: { fill: "#D8A62F", light: "#FFF9E3", halo: "rgba(243,198,77,0.38)", stroke: "rgba(255,249,227,0.72)" },
-    first_round: { fill: "#E7B631", light: "#FFF9E3", halo: "rgba(243,198,77,0.4)", stroke: "rgba(255,249,227,0.72)" },
-    second_round: { fill: "#E7B631", light: "#FFF9E3", halo: "rgba(243,198,77,0.44)", stroke: "rgba(255,249,227,0.76)" },
-    final_round: { fill: "#F3C64D", light: "#FFF9E3", halo: "rgba(243,198,77,0.48)", stroke: "rgba(255,249,227,0.78)" },
-    offer: { fill: "#F3C64D", light: "#FFF9E3", halo: "rgba(243,198,77,0.58)", stroke: "rgba(255,249,227,0.84)" },
-    rejected: { fill: "#4A6283", light: "#9BAAC0", halo: "rgba(74,98,131,0.2)", stroke: "rgba(155,170,192,0.44)" },
-    withdrawn: { fill: "#10264A", light: "#9BAAC0", halo: "rgba(16,38,74,0.18)", stroke: "rgba(155,170,192,0.4)" },
+    opened: { fill: "#12294E", light: "#C9D6E8", halo: "rgba(18,41,78,0.38)", stroke: "rgba(201,214,232,0.66)" },
+    applied: { fill: "#244A7C", light: "#C9D6E8", halo: "rgba(36,74,124,0.36)", stroke: "rgba(201,214,232,0.68)" },
+    written_test: { fill: "#3567A8", light: "#E7EEF7", halo: "rgba(53,103,168,0.38)", stroke: "rgba(231,238,247,0.72)" },
+    first_round: { fill: "#4C78B5", light: "#E7EEF7", halo: "rgba(76,120,181,0.4)", stroke: "rgba(231,238,247,0.72)" },
+    second_round: { fill: "#5F8FCB", light: "#E7EEF7", halo: "rgba(95,143,203,0.44)", stroke: "rgba(231,238,247,0.76)" },
+    final_round: { fill: "#6F9DD2", light: "#E7EEF7", halo: "rgba(111,157,210,0.48)", stroke: "rgba(231,238,247,0.78)" },
+    offer: { fill: "#F4C542", light: "#FFF4C6", halo: "rgba(244,197,66,0.42)", stroke: "rgba(255,244,198,0.84)" },
+    rejected: { fill: "#6A7C96", light: "#8FA1B9", halo: "rgba(106,124,150,0.2)", stroke: "rgba(143,161,185,0.44)" },
+    withdrawn: { fill: "#12294E", light: "#8FA1B9", halo: "rgba(18,41,78,0.18)", stroke: "rgba(143,161,185,0.4)" },
   };
   return colors[status];
 }

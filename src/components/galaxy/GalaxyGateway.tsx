@@ -15,14 +15,14 @@ export function GalaxyGateway() {
           title="地区星系"
           description="从城市出发，查看北京、上海、深圳等地的校招机会，适合已经明确工作地点的你。"
           imageSrc="/assets/nebula/nebula-region.png"
-          tone="rgba(243,198,77,0.34)"
+          tone="rgba(53,103,168,0.34)"
         />
         <GalaxyChoice
           href="/galaxy/industry"
           title="行业星系"
           description="从方向出发，查看金融、互联网、咨询、科技等行业机会，适合仍在比较职业路径的你。"
           imageSrc="/assets/nebula/nebula-industry.png"
-          tone="rgba(216,166,47,0.3)"
+          tone="rgba(36,74,124,0.3)"
         />
       </section>
     </div>

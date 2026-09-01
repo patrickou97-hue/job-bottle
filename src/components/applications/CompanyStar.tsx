@@ -8,21 +8,21 @@ import { CompanyBadge } from "@/components/jobs/CompanyBadge";
 import { cn } from "@/lib/utils";
 import type { ApplicationStatus } from "@/lib/types";
 
-/* ── Brand status styling: deep navy for early steps, yellow for progress. ── */
+/* ── Brand status styling: one blue family for progress, yellow for offers. ── */
 
 const statusGlow: Record<
   ApplicationStatus,
   { color: string; opacity: number; grayscale: boolean }
 > = {
-  opened:       { color: "#10264A", opacity: 0.35, grayscale: false },
-  applied:      { color: "#1E3B66", opacity: 0.4, grayscale: false },
-  written_test: { color: "#D8A62F", opacity: 0.45, grayscale: false },
-  first_round:  { color: "#E7B631", opacity: 0.5, grayscale: false },
-  second_round: { color: "#E7B631", opacity: 0.55, grayscale: false },
-  final_round:  { color: "#F3C64D", opacity: 0.6, grayscale: false },
-  offer:        { color: "#F3C64D", opacity: 0.75, grayscale: false },
-  rejected:     { color: "#4A6283", opacity: 0.25, grayscale: true  },
-  withdrawn:    { color: "#10264A", opacity: 0.2, grayscale: true  },
+  opened:       { color: "#12294E", opacity: 0.35, grayscale: false },
+  applied:      { color: "#244A7C", opacity: 0.4, grayscale: false },
+  written_test: { color: "#3567A8", opacity: 0.45, grayscale: false },
+  first_round:  { color: "#4C78B5", opacity: 0.5, grayscale: false },
+  second_round: { color: "#5F8FCB", opacity: 0.55, grayscale: false },
+  final_round:  { color: "#6F9DD2", opacity: 0.6, grayscale: false },
+  offer:        { color: "#F4C542", opacity: 0.75, grayscale: false },
+  rejected:     { color: "#6A7C96", opacity: 0.25, grayscale: true  },
+  withdrawn:    { color: "#12294E", opacity: 0.2, grayscale: true  },
 };
 
 /* Simple deterministic hash for size variation */

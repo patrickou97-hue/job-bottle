@@ -46,10 +46,10 @@ const TREND_OPTIONS: Array<{ value: TrendMetric; label: string }> = [
 const statusTone: Record<ApplicationStatus, string> = {
   opened: "#718096",
   applied: "#45678D",
-  written_test: "#D8A62F",
-  first_round: "#E1B43F",
-  second_round: "#E8BF4A",
-  final_round: "#F3C64D",
+  written_test: "#3567A8",
+  first_round: "#4C78B5",
+  second_round: "#5F8FCB",
+  final_round: "#6F9DD2",
   offer: "#3F7658",
   rejected: "#B14B57",
   withdrawn: "#9BAAC0",
@@ -104,10 +104,10 @@ export function AdminAnalyticsClient() {
   if (state === "error" && !data) {
     return (
       <section className="analytics-empty rounded-2xl border border-[#e2e6ed] bg-white px-6 py-16 text-center shadow-[0_12px_32px_rgba(18,41,78,0.05)]">
-        <div className="mx-auto flex size-11 items-center justify-center rounded-xl bg-[#FFF8DE] text-[#152A55]">
+        <div className="mx-auto flex size-11 items-center justify-center rounded-xl bg-[#E8EDF4] text-[#12294E]">
           <Activity aria-hidden="true" className="size-5" />
         </div>
-        <h1 className="mt-5 text-lg font-semibold text-[#152A55]">数据分析暂时不可用</h1>
+        <h1 className="mt-5 text-lg font-semibold text-[#12294E]">数据分析暂时不可用</h1>
         <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#6e6e73]">{message || "请确认管理员权限和数据服务状态。"}</p>
         <Button className="mt-6" onClick={() => void load()}>
           <RefreshCw aria-hidden="true" className="size-4" />
@@ -136,7 +136,7 @@ export function AdminAnalyticsClient() {
               id="analytics-range"
               value={range}
               onChange={(event) => setRange(Number(event.target.value) as AdminAnalyticsRange)}
-              className="h-10 appearance-none rounded-lg border border-[#D7DEE8] bg-white px-3 pr-9 text-sm font-medium text-[#40536F] outline-none transition focus:border-[#D8A62F] focus:ring-2 focus:ring-[#D8A62F]/15"
+              className="h-10 appearance-none rounded-lg border border-[#D7DEE8] bg-white px-3 pr-9 text-sm font-medium text-[#40536F] outline-none transition focus:border-[#3567A8] focus:ring-2 focus:ring-[#3567A8]/15"
             >
               {RANGE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
             </select>
@@ -196,7 +196,7 @@ export function AdminAnalyticsClient() {
               <div key={step.label} className="grid grid-cols-[92px_minmax(0,1fr)_52px] items-center gap-3 text-sm">
                 <span className="truncate text-[#596474]">{step.label}</span>
                 <div className="h-2 overflow-hidden rounded-full bg-[#edf1f5]">
-                <div className="h-full rounded-full bg-[#D8A62F] transition-[width] duration-300" style={{ width: `${Math.min(100, Math.max(step.rate, step.value > 0 ? 2 : 0))}%` }} />
+                <div className="h-full rounded-full bg-[#3567A8] transition-[width] duration-300" style={{ width: `${Math.min(100, Math.max(step.rate, step.value > 0 ? 2 : 0))}%` }} />
                 </div>
                 <span className="text-right font-mono text-xs text-[#25364e]">{formatNumber(step.value)}</span>
               </div>
@@ -238,10 +238,10 @@ function MetricCard({ icon: Icon, label, value, note, comparison }: { icon: Luci
     <article className="rounded-[14px] border border-[#dde3eb] bg-white px-5 py-5 shadow-[0_8px_24px_rgba(18,41,78,0.04)]">
       <div className="flex items-start justify-between gap-3">
         <span className="text-sm font-medium text-[#626b78]">{label}</span>
-        <span className="flex size-8 items-center justify-center rounded-lg bg-[#FFF8DE] text-[#9B7108]"><Icon aria-hidden="true" className="size-4" /></span>
+        <span className="flex size-8 items-center justify-center rounded-lg bg-[#E8EDF4] text-[#3567A8]"><Icon aria-hidden="true" className="size-4" /></span>
       </div>
       <div className="mt-5 flex flex-wrap items-baseline gap-2">
-        <strong className="font-mono text-[2rem] font-medium leading-none tracking-[-0.05em] text-[#152A55]">{value}</strong>
+        <strong className="font-mono text-[2rem] font-medium leading-none tracking-[-0.05em] text-[#12294E]">{value}</strong>
         {comparison ? <ComparisonBadge comparison={comparison} /> : null}
       </div>
       <p className="mt-3 text-xs text-[#8a929e]">{note}</p>
@@ -278,7 +278,7 @@ function TrendPanel({ data }: { data: AdminAnalyticsResponse }) {
               aria-pressed={metric === option.value}
               className={cn(
                 "rounded-md px-2.5 py-1.5 text-xs font-medium text-[#7a8491] transition",
-                metric === option.value ? "bg-white text-[#152A55] shadow-sm" : "hover:text-[#40536F]",
+                metric === option.value ? "bg-white text-[#12294E] shadow-sm" : "hover:text-[#40536F]",
               )}
             >
               {option.label}
@@ -297,15 +297,15 @@ function TrendPanel({ data }: { data: AdminAnalyticsResponse }) {
             <svg className="h-full w-full overflow-visible" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${metricLabel}趋势图`} preserveAspectRatio="none">
               <defs>
                 <linearGradient id="admin-analytics-area" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="#D8A62F" stopOpacity="0.22" />
-                  <stop offset="100%" stopColor="#D8A62F" stopOpacity="0.02" />
+                  <stop offset="0%" stopColor="#3567A8" stopOpacity="0.22" />
+                  <stop offset="100%" stopColor="#3567A8" stopOpacity="0.02" />
                 </linearGradient>
               </defs>
               {[0, 0.5, 1].map((ratioValue) => <line key={ratioValue} x1={padding.left} x2={padding.left + innerWidth} y1={getY(max * ratioValue)} y2={getY(max * ratioValue)} stroke="#E5E9F0" strokeWidth="1" />)}
               <polygon points={areaPoints} fill="url(#admin-analytics-area)" />
-              <polyline points={linePoints} fill="none" stroke="#D8A62F" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
+              <polyline points={linePoints} fill="none" stroke="#3567A8" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" />
               {points.map((value, index) => (
-                <circle key={data.trend[index]?.date} cx={getX(index)} cy={getY(value)} r="3.5" fill="#ffffff" stroke="#D8A62F" strokeWidth="2">
+                <circle key={data.trend[index]?.date} cx={getX(index)} cy={getY(value)} r="3.5" fill="#ffffff" stroke="#3567A8" strokeWidth="2">
                   <title>{`${data.trend[index]?.label ?? ""}，${metricLabel} ${formatNumber(value)}`}</title>
                 </circle>
               ))}
@@ -393,7 +393,7 @@ function Panel({ title, icon: Icon, meta, children }: { title: string; icon: Luc
     <section className="rounded-[14px] border border-[#dde3eb] bg-white px-5 py-5 shadow-[0_8px_24px_rgba(18,41,78,0.04)] sm:px-6">
       <div className="mb-5 flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[#FFF8DE] text-[#9B7108]"><Icon aria-hidden="true" className="size-4" /></span>
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[#E8EDF4] text-[#3567A8]"><Icon aria-hidden="true" className="size-4" /></span>
           <div className="min-w-0"><h2 className="truncate text-[15px] font-semibold text-[#25364e]">{title}</h2><p className="mt-1 truncate text-[11px] text-[#929aa5]">{meta}</p></div>
         </div>
       </div>
@@ -403,7 +403,7 @@ function Panel({ title, icon: Icon, meta, children }: { title: string; icon: Luc
 }
 
 function SegmentRow({ segment, index }: { segment: AdminAnalyticsRank; index: number }) {
-  const colors = ["#152A55", "#D8A62F", "#E8BF4A", "#D8DEE8"];
+  const colors = ["#12294E", "#3567A8", "#6F9DD2", "#D8DEE8"];
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-3 text-sm"><span className="text-[#596474]">{segment.label}</span><span className="font-mono text-xs text-[#25364e]">{formatNumber(segment.value)} <span className="text-[#9aa3af]">{formatPercent(segment.share)}</span></span></div>

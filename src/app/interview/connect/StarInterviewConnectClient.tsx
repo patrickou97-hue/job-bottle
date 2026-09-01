@@ -61,7 +61,7 @@ export function StarInterviewConnectClient({
   return (
     <div className="surface-card rounded-[28px] p-7 sm:p-9">
       <div className="flex items-center gap-3">
-        <span className="grid size-11 place-items-center rounded-2xl bg-[#F3C64D] text-lg font-semibold text-[#152A55]">诘</span>
+        <span className="grid size-11 place-items-center rounded-2xl bg-[#12294E] text-lg font-semibold text-[#F4C542]">诘</span>
         <div>
           <p className="text-sm font-semibold text-ink-primary">诘星 StarInterview</p>
           <p className="text-xs text-ink-muted">由拾星账户安全连接</p>
@@ -75,7 +75,7 @@ export function StarInterviewConnectClient({
 
       {!signedIn ? (
         <a
-          className="pressable mt-7 flex min-h-12 w-full items-center justify-center rounded-xl bg-[#F3C64D] px-5 text-sm font-semibold text-[#152A55]"
+          className="pressable mt-7 flex min-h-12 w-full items-center justify-center rounded-xl bg-[#3567A8] px-5 text-sm font-semibold text-white"
           href={`/login?next=${encodeURIComponent(loginNext)}`}
         >
           登录拾星后继续
@@ -93,7 +93,7 @@ export function StarInterviewConnectClient({
           {message ? <p className="info-banner mt-5 text-sm">{message}</p> : null}
           <button
             type="button"
-            className="pressable mt-6 min-h-12 w-full rounded-xl bg-[#F3C64D] px-5 text-sm font-semibold text-[#152A55] disabled:opacity-50"
+          className="pressable mt-6 min-h-12 w-full rounded-xl bg-[#3567A8] px-5 text-sm font-semibold text-white disabled:opacity-50"
             onClick={authorize}
             disabled={busy}
           >

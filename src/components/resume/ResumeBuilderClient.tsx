@@ -735,7 +735,7 @@ export function ResumeBuilderClient({
                 type="button"
                 aria-pressed={selectedResume.id === resume.id}
                 data-selected={selectedResume.id === resume.id}
-                className={`resume-list-item resume-version-item min-w-0 px-4 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D8A62F]/40 focus-visible:ring-inset ${selectedResume.id === resume.id ? "text-ink-primary" : "text-ink-secondary"}`}
+                className={`resume-list-item resume-version-item min-w-0 px-4 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3567A8]/40 focus-visible:ring-inset ${selectedResume.id === resume.id ? "text-ink-primary" : "text-ink-secondary"}`}
                 onClick={() => setSelectedId(resume.id)}
               >
                 <span className="flex min-w-0 items-center gap-2 text-sm font-semibold">

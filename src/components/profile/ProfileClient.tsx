@@ -551,10 +551,10 @@ function OptionGrid({
               "pressable min-h-9 rounded-lg px-3 py-1.5 text-xs font-medium transition",
               dark
                 ? active
-                  ? "bg-[#152A55] text-[#F3C64D]"
+                  ? "bg-[#12294E] text-[#F4C542]"
                   : "bg-[#111827]/8 text-[#111827]/62 hover:bg-[#111827]/14"
                 : active
-                  ? "bg-[#F3C64D] text-[#152A55]"
+                  ? "bg-[#3567A8] text-white"
                   : "status-pill text-ink-secondary hover:text-ink-primary",
             )}
             aria-pressed={active}

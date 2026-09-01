@@ -11,59 +11,59 @@ const STAR_TONE: Record<
   { core: string; edge: string; glow: string; text: string; spark?: string }
 > = {
   opened: {
-    core: "#10264A",
-    edge: "#D8E1EF",
-    glow: "rgba(16, 38, 74, 0.3)",
-    text: "#FFF9E3",
+    core: "#12294E",
+    edge: "#C9D6E8",
+    glow: "rgba(18, 41, 78, 0.3)",
+    text: "#F7F9FC",
   },
   applied: {
-    core: "#1E3B66",
-    edge: "#D8E1EF",
-    glow: "rgba(30, 59, 102, 0.3)",
-    text: "#FFF9E3",
+    core: "#244A7C",
+    edge: "#C9D6E8",
+    glow: "rgba(36, 74, 124, 0.3)",
+    text: "#F7F9FC",
   },
   written_test: {
-    core: "#D8A62F",
-    edge: "#FFF9E3",
-    glow: "rgba(243, 198, 77, 0.34)",
-    text: "#152A55",
+    core: "#3567A8",
+    edge: "#E7EEF7",
+    glow: "rgba(53, 103, 168, 0.34)",
+    text: "#F7F9FC",
   },
   first_round: {
-    core: "#E7B631",
-    edge: "#FFF9E3",
-    glow: "rgba(243, 198, 77, 0.38)",
-    text: "#152A55",
+    core: "#4C78B5",
+    edge: "#E7EEF7",
+    glow: "rgba(76, 120, 181, 0.38)",
+    text: "#F7F9FC",
   },
   second_round: {
-    core: "#E7B631",
-    edge: "#FFF9E3",
-    glow: "rgba(243, 198, 77, 0.4)",
-    text: "#152A55",
+    core: "#5F8FCB",
+    edge: "#E7EEF7",
+    glow: "rgba(95, 143, 203, 0.4)",
+    text: "#F7F9FC",
   },
   final_round: {
-    core: "#F3C64D",
-    edge: "#FFF9E3",
-    glow: "rgba(243, 198, 77, 0.42)",
-    text: "#152A55",
+    core: "#6F9DD2",
+    edge: "#E7EEF7",
+    glow: "rgba(111, 157, 210, 0.42)",
+    text: "#F7F9FC",
   },
   offer: {
-    core: "#F3C64D",
-    edge: "#FFF9E3",
-    glow: "rgba(243, 198, 77, 0.52)",
-    text: "#152A55",
-    spark: "#FFF9E3",
+    core: "#F4C542",
+    edge: "#FFF4C6",
+    glow: "rgba(244, 197, 66, 0.52)",
+    text: "#12294E",
+    spark: "#FFF4C6",
   },
   rejected: {
-    core: "#4A6283",
-    edge: "#9BAAC0",
-    glow: "rgba(74, 98, 131, 0.2)",
-    text: "#D8E1EF",
+    core: "#6A7C96",
+    edge: "#8FA1B9",
+    glow: "rgba(106, 124, 150, 0.2)",
+    text: "#C9D6E8",
   },
   withdrawn: {
-    core: "#10264A",
-    edge: "#9BAAC0",
-    glow: "rgba(16, 38, 74, 0.18)",
-    text: "#D8E1EF",
+    core: "#12294E",
+    edge: "#8FA1B9",
+    glow: "rgba(18, 41, 78, 0.18)",
+    text: "#C9D6E8",
   },
 };
 
@@ -101,7 +101,7 @@ export function StackedStar({
       type="button"
       className={cn(
         "group relative flex items-center justify-center font-semibold leading-none transition outline-none",
-        selected && "drop-shadow-[0_0_14px_rgba(243,198,77,0.44)]",
+        selected && "drop-shadow-[0_0_14px_rgba(53,103,168,0.44)]",
         className,
       )}
       style={{
@@ -143,7 +143,7 @@ export function StackedStar({
         <path
           d="M50 5.5L60.8 34.2L91.2 36.4L67.7 55.9L75.2 85.5L50 68.8L24.8 85.5L32.3 55.9L8.8 36.4L39.2 34.2L50 5.5Z"
           fill={`url(#${gradientId})`}
-          stroke={selected ? "rgba(255,249,227,0.96)" : "rgba(237,242,248,0.46)"}
+          stroke={selected ? "rgba(241,239,255,0.96)" : "rgba(231,238,247,0.46)"}
           strokeWidth={selected ? 3.2 : 2.1}
           strokeLinejoin="round"
         />
@@ -162,7 +162,7 @@ export function StackedStar({
       {status === "offer" ? (
         <span
           aria-hidden="true"
-          className="absolute right-[10%] top-[13%] size-2 rounded-full shadow-[0_0_10px_rgba(243,198,77,0.7)]"
+          className="absolute right-[10%] top-[13%] size-2 rounded-full shadow-[0_0_10px_rgba(244,197,66,0.7)]"
           style={{ background: tone.spark }}
         />
       ) : null}

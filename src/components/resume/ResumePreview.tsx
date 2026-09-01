@@ -71,7 +71,7 @@ export function ResumePreview({ resume }: { resume: ResumeDocument }) {
       </div>
 
       {preview.status === "error" ? (
-        <div className="mt-3 border-l-2 border-[#D8A62F] bg-[rgba(243,198,77,0.14)] p-3 text-sm text-ink-secondary">
+        <div className="mt-3 border-l-2 border-[#3567A8] bg-[rgba(53,103,168,0.14)] p-3 text-sm text-ink-secondary">
           <p>预览暂时无法生成。{preview.message} 你填写的内容仍保留在当前页面。</p>
           <button
             type="button"

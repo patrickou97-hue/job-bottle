@@ -36,7 +36,6 @@ export default function LoginPage() {
           </header>
 
           <div className="login-page__story-copy">
-            <p className="login-page__eyebrow">拾星 · StarJob</p>
             <h2 id="login-story-title" aria-label="把明日的坐标收进星瓶">
               把明日的
               <span className="login-page__story-word-group">

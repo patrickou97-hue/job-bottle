@@ -15,7 +15,7 @@ export default function GlobalError({
 
   return (
     <html lang="zh-CN">
-      <body className="theme-work m-0 bg-[#F2F4F7] font-sans text-[#152A55]">
+      <body className="theme-work m-0 bg-[#e9ebef] font-sans text-[#12294E]">
         <main className="flex min-h-screen items-center justify-center px-5 text-center">
           <div className="max-w-lg">
             <h1 className="text-3xl font-semibold">拾星暂时未能打开</h1>
@@ -24,7 +24,7 @@ export default function GlobalError({
             </p>
             <button
               type="button"
-              className="mt-7 h-10 rounded-lg bg-[#F3C64D] px-5 text-sm font-medium text-[#152A55]"
+              className="mt-7 h-10 rounded-lg bg-[#3567A8] px-5 text-sm font-medium text-white"
               onClick={reset}
             >
               重试

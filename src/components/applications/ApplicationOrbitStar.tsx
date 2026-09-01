@@ -23,8 +23,8 @@ export function ApplicationOrbitStar({
   const momentum = momentumTier(application);
   const stayedDays = daysSince(application.updated_at);
   const momentumStyle = {
-    blue: "bg-[#F3C64D] shadow-[0_0_10px_rgba(243,198,77,0.28)]",
-    neutral: "bg-[color:var(--light-ice)] shadow-[0_0_8px_rgba(216,225,239,0.18)]",
+    blue: "bg-[color:var(--brand-blue)] shadow-[0_0_10px_rgba(53,103,168,0.28)]",
+    neutral: "bg-[color:var(--light-ice)] shadow-[0_0_8px_rgba(201,214,232,0.18)]",
     red: "bg-[#B14B57] shadow-[0_0_8px_rgba(177,75,87,0.18)]",
   }[momentum];
 
@@ -44,7 +44,7 @@ export function ApplicationOrbitStar({
       <span className="relative">
         <OrbMaterial
           size={32}
-          variant={selected || offer ? "gold" : terminal ? "muted" : getApplicationOrbVariant(application.status)}
+          variant={offer ? "gold" : terminal ? "muted" : getApplicationOrbVariant(application.status)}
           active={selected || offer}
         />
         <span
@@ -58,7 +58,7 @@ export function ApplicationOrbitStar({
       <span className="absolute left-1/2 top-[50px] max-w-20 -translate-x-1/2 whitespace-nowrap text-center text-[11px] leading-4 text-ink-secondary group-hover:text-ink-primary">
         {shortLabel}
       </span>
-      <span className="pointer-events-none absolute left-1/2 top-[72px] z-30 hidden w-44 -translate-x-1/2 rotate-0 bg-[#10264A]/72 px-3 py-2 text-left text-xs leading-5 text-ink-secondary shadow-[0_18px_48px_rgba(0,0,0,0.32)] backdrop-blur-xl group-hover:block group-focus:block">
+      <span className="pointer-events-none absolute left-1/2 top-[72px] z-30 hidden w-44 -translate-x-1/2 rotate-0 bg-[#12294E]/72 px-3 py-2 text-left text-xs leading-5 text-ink-secondary shadow-[0_18px_48px_rgba(0,0,0,0.32)] backdrop-blur-xl group-hover:block group-focus:block">
         <span className="block truncate text-nebula-silver">{application.job.company_name}</span>
         <span className="block truncate text-ink-muted">{application.job.job_titles || "岗位待补充"}</span>
         {momentum === "red" ? (
@@ -72,10 +72,10 @@ export function ApplicationOrbitStar({
 function getApplicationOrbVariant(status: ApplicationStatus): OrbMaterialVariant {
   if (status === "opened") return "blue";
   if (status === "applied") return "violet";
-  if (status === "written_test") return "gold";
-  if (status === "first_round") return "gold";
-  if (status === "second_round") return "gold";
-  if (status === "final_round") return "gold";
+  if (status === "written_test") return "blue";
+  if (status === "first_round") return "violet";
+  if (status === "second_round") return "cyan";
+  if (status === "final_round") return "apricot";
   if (status === "offer") return "gold";
   return "muted";
 }

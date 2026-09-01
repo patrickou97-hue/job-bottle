@@ -30,7 +30,7 @@ export function CaptureOrbit({
             className="absolute top-1/2 flex -translate-y-1/2 flex-col items-center gap-2"
             style={{ left: `calc(${index * stageWidth + stageWidth / 2}% - 28px)`, width: 56 }}
           >
-            <span className="size-2 rounded-full bg-nebula-silver/35 shadow-[0_0_18px_rgba(243,198,77,0.24)]" />
+            <span className="size-2 rounded-full bg-nebula-silver/35 shadow-[0_0_18px_rgba(53,103,168,0.24)]" />
             <span className="text-[11px] text-ink-muted">{APPLICATION_STATUS_LABELS[status]}</span>
           </div>
         ))}

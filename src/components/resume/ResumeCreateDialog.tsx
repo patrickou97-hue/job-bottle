@@ -99,7 +99,7 @@ function LanguageOption({
       )}
       onClick={onClick}
     >
-      <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-[#152A55] text-[#F3C64D]">{icon}</span>
+      <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-[#12294E] text-[#F4C542]">{icon}</span>
       <span>
         <span className="block text-sm font-semibold">{title}</span>
         <span className="mt-1 block text-xs leading-5 text-ink-muted">{description}</span>

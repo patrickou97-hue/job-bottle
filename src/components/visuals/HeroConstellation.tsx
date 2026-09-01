@@ -9,18 +9,18 @@ export function HeroConstellation() {
         <defs>
           <radialGradient id="heroGlow" cx="50%" cy="42%" r="58%">
             <stop offset="0%" stopColor="#FFF9E3" stopOpacity="0.24" />
-            <stop offset="48%" stopColor="#F3C64D" stopOpacity="0.1" />
-            <stop offset="100%" stopColor="#061328" stopOpacity="0" />
+            <stop offset="48%" stopColor="#3567A8" stopOpacity="0.1" />
+            <stop offset="100%" stopColor="#000001" stopOpacity="0" />
           </radialGradient>
           <linearGradient id="bottleLine" x1="115" x2="343" y1="108" y2="382">
             <stop stopColor="#FFF9E3" stopOpacity="0.82" />
-            <stop offset="0.55" stopColor="#F3C64D" stopOpacity="0.42" />
-            <stop offset="1" stopColor="#D8A62F" stopOpacity="0.22" />
+            <stop offset="0.55" stopColor="#3567A8" stopOpacity="0.42" />
+            <stop offset="1" stopColor="#244A7C" stopOpacity="0.22" />
           </linearGradient>
           <linearGradient id="orbitLine" x1="28" x2="420" y1="52" y2="344">
             <stop stopColor="#D8E1EF" stopOpacity="0" />
-            <stop offset="0.5" stopColor="#F3C64D" stopOpacity="0.44" />
-            <stop offset="1" stopColor="#D8A62F" stopOpacity="0.1" />
+            <stop offset="0.5" stopColor="#3567A8" stopOpacity="0.44" />
+            <stop offset="1" stopColor="#244A7C" stopOpacity="0.1" />
           </linearGradient>
         </defs>
 
@@ -53,7 +53,7 @@ export function HeroConstellation() {
         <path
           d="M154 109L187 257M231 144L251 197M301 95L331 224"
           fill="none"
-          stroke="#F3C64D"
+          stroke="#3567A8"
           strokeOpacity="0.2"
           strokeWidth="1"
         />
@@ -61,13 +61,13 @@ export function HeroConstellation() {
         <g>
           {[
             [88, 153, 4.5, "#FFF9E3"],
-            [154, 109, 5.5, "#F3C64D"],
-            [231, 144, 4, "#D8E1EF"],
+            [154, 109, 5.5, "#F4C542"],
+            [231, 144, 4, "#C9D6E8"],
             [301, 95, 6, "#FFF9E3"],
-            [372, 143, 4.5, "#D8A62F"],
-            [331, 224, 5, "#F3C64D"],
+            [372, 143, 4.5, "#C9D6E8"],
+            [331, 224, 5, "#3567A8"],
             [251, 197, 3.8, "#FFF9E3"],
-            [187, 257, 4.2, "#D8E1EF"],
+            [187, 257, 4.2, "#C9D6E8"],
             [121, 222, 3.8, "#FFF9E3"],
           ].map(([cx, cy, r, fill]) => (
             <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={r} fill={String(fill)} opacity="0.88" />
@@ -97,7 +97,7 @@ export function HeroConstellation() {
         <path
           d="M178 298C217 280 261 282 312 309"
           fill="none"
-          stroke="#F3C64D"
+          stroke="#3567A8"
           strokeOpacity="0.16"
           strokeWidth="1.2"
         />
@@ -112,14 +112,14 @@ export function HeroConstellation() {
         <path
           d="M369 147C343 174 319 198 296 226C280 245 267 268 258 299"
           fill="none"
-          stroke="#D8A62F"
+          stroke="#244A7C"
           strokeDasharray="3 12"
           strokeLinecap="round"
           strokeOpacity="0.28"
           strokeWidth="1.4"
         />
-        <circle cx="258" cy="299" r="5.5" fill="#D8A62F" opacity="0.78" />
-        <circle cx="226" cy="327" r="3.5" fill="#F3C64D" opacity="0.75" />
+        <circle cx="258" cy="299" r="5.5" fill="#3567A8" opacity="0.78" />
+        <circle cx="226" cy="327" r="3.5" fill="#F4C542" opacity="0.75" />
         <circle cx="291" cy="340" r="3" fill="#FFF9E3" opacity="0.68" />
         <circle cx="320" cy="279" r="2.8" fill="#D8E1EF" opacity="0.74" />
       </svg>
