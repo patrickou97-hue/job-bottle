@@ -1656,16 +1656,16 @@
 - 验证：`npm run typecheck`、`npm run lint`（0 错误，保留既有 1 个 warning）、`npm test`（149/149）、动效专项测试（4/4）、`npm run build -- --webpack`（62 个路由）和 `git diff --check` 均通过；`npm run smoke` 已确认本轮资源与扩展/动效相关检查可走通，但仍在历史 `--night-3: #564A71` 主题断言处停止。浏览器复核确认主入口与教程页均无精确文本“获取安装包”，教程页有 1 个“下载 0.2.7 安装包”文字入口，纸飞机/扩展截图均加载；登录页约 2 秒后切换为“投递进展”，三个页面均无 error/warning 日志。
 - 当前状态：上述改动仍在 `/private/tmp/starjob-official-source` 独立工作树，本地服务器保持运行，尚未提交、推送或部署；主工作区原有未提交内容未覆盖、未删除。
 
-## 2026-09-02 网申助手安装说明与截图首屏重排（本地未上线）
+## 2026-09-02 网申助手安装说明与截图首屏重排（已上线）
 
 - 用户目标：将用户提供的版本、下载和字段策略说明放到“安装拾星网申助手”标题下；移除首屏重复副标题和截图旁的说明文字，为真实扩展面板截图留出更完整的展示空间。
 - 实际改动：`src/components/extension/ExtensionGuide.tsx` 将三段说明改为标题下的单列信息组，保留轻量“下载 0.2.7 安装包”链接；截图区域改为单列大图，使用实际 `starjob-resume-assistant-popup-v026.png`，并保留屏幕阅读器说明。`src/app/globals.css` 将截图最大宽度提升到 38rem，移除原 42rem 高度上限，避免纵向截图被强行缩小。
 - 链接处理：用户示例中的本地地址在页面中使用同源相对路径 `/downloads/starjob-resume-assistant-v0.2.7.zip`，开发和生产均指向当前站点，不把 `127.0.0.1:3102` 写入正式页面。
 - 兼容边界：保留后续五步安装、同步简历、手动处理提示和下载行为；未修改认证、数据库、API、下载包内容、扩展逻辑或其他页面。
 - 备份：本轮编辑前快照位于 `backups/starjob-before-extension-guide-layout-20260902/RESTORE.md`，包含 `ExtensionGuide.tsx`、`globals.css` 和 Smoke 契约文件。
-- 验证：本地 `/extension/guide` DOM 已确认标题下出现三段新说明，页面不存在“获取安装包”，截图实际渲染宽度为 608px；`npm run typecheck`、`npm run lint`、`npm test`（149/149）、动效专项测试（4/4）、`npm run build -- --webpack`（62 个路由）和 `git diff --check` 均通过。
+- 验证：本地 `/extension/guide` DOM 已确认标题下出现三段新说明，页面不存在“获取安装包”，截图实际渲染宽度为 608px；生产 `/extension/guide` 已出现新文案和 `starjob-resume-assistant-popup-v026.png`，生产 `/extension` 已出现纸飞机插画且无“获取安装包”，0.2.7 安装包返回 HTTP 200 / `application/zip`；`npm run typecheck`、`npm run lint`、`npm test`（149/149）、动效专项测试（4/4）、`npm run build -- --webpack`（62 个路由）和 `git diff --check` 均通过。
 - 冒烟边界：`npm run smoke` 仍在历史 `src/styles/tokens.css` 断言 `--night-3: #564A71` 处停止；资源检查、网申助手相关检查和本轮页面契约已走通，本轮没有回填已淘汰的旧紫色 token。
-- 当前状态：改动仍在 `/private/tmp/starjob-official-source` 独立工作树，本地服务器保持运行，尚未提交、推送或部署；主工作区原有未提交内容未覆盖、未删除。
+- 当前状态：提交 `c084523` 已推送 `origin/main` 并由 Vercel 发布到 `https://www.starjob.space`；生产页面已核验，主工作区原有未提交内容未覆盖、未删除。
 
 
 ## 2026-09-02 全站主题蓝色统一与网申助手插画（本地未上线）
