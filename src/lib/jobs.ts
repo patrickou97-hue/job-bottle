@@ -6,6 +6,7 @@ import { matchesLocationFilter, normalizeProvinceName, PROVINCE_CITIES } from "@
 import type { Database, Job, JobFilters, JobFormValues, Profile } from "@/lib/types";
 
 const DEFAULT_JOBS_TIMEOUT_MS = 7000;
+const PUBLIC_JOB_PAGE_SIZE = 1000;
 export const RECENT_JOB_WINDOW_DAYS = 7;
 const PUBLIC_JOB_LIST_COLUMNS = "id,company_name,start_date,industry,batch_type,job_titles,job_categories,locations,apply_url,logo_url,tags,is_active,opens_at,closes_at,created_at,updated_at";
 
@@ -21,19 +22,25 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string)
 }
 
 export async function fetchActiveJobs(supabase: SupabaseClient<Database>) {
-  const query = supabase
-    .from("jobs")
-    .select(PUBLIC_JOB_LIST_COLUMNS)
-    .eq("is_active", true)
-    .order("updated_at", { ascending: false });
-  const { data, error } = await withTimeout(
-    Promise.resolve(query),
-    DEFAULT_JOBS_TIMEOUT_MS,
-    "读取岗位数据库超时。",
-  );
+  const rows: Job[] = [];
+  for (let from = 0; ; from += PUBLIC_JOB_PAGE_SIZE) {
+    const query = supabase
+      .from("jobs")
+      .select(PUBLIC_JOB_LIST_COLUMNS)
+      .eq("is_active", true)
+      .order("updated_at", { ascending: false })
+      .order("id", { ascending: false })
+      .range(from, from + PUBLIC_JOB_PAGE_SIZE - 1);
+    const { data, error } = await withTimeout(
+      Promise.resolve(query),
+      DEFAULT_JOBS_TIMEOUT_MS,
+      "读取岗位数据库超时。",
+    );
 
-  if (error) throw error;
-  return (data ?? []) as Job[];
+    if (error) throw error;
+    rows.push(...((data ?? []) as Job[]));
+    if ((data?.length ?? 0) < PUBLIC_JOB_PAGE_SIZE) return rows;
+  }
 }
 
 export async function fetchJobById(supabase: SupabaseClient<Database>, id: string) {
