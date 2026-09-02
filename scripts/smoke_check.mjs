@@ -321,9 +321,21 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/shareBottleCard.ts",
-    mustInclude: ["background.addColorStop(0, \"#000001\")", "background.addColorStop(0.42, \"#12294E\")", "fill: \"#7E7CB5\""],
-    mustNotInclude: ["fill: \"#F2D16D\"", "dark: \"#313B59\""],
-    label: "星瓶分享海报同步林深星渡色板",
+    mustInclude: ["renderBottleShareCard", "我的投递足迹", "2026 AUTUMN", "drawShareJourney", "扫码生成你的「星光瓶」", "#F7F7F4", "#1F5EBB"],
+    mustNotInclude: ["background.addColorStop(0, \"#000001\")", "#564A71"],
+    label: "星瓶分享海报按参考图重排且保持同一套动态数据模型",
+  },
+  {
+    file: "src/components/applications/shareBottleData.ts",
+    mustInclude: ["DEFAULT_SHARE_POSTER_OVERRIDES", "companyLimit: 10", "getShareCompanyEntries", "overflowCompanyCount"],
+    mustNotInclude: [],
+    label: "星瓶分享海报合并同名企业并支持超量折叠",
+  },
+  {
+    file: "src/components/applications/SharePosterEditor.tsx",
+    mustInclude: ["renderBottleShareCard", "下载 PNG / PDF", "企业展示数量", "内容不会修改投递记录"],
+    mustNotInclude: [],
+    label: "星瓶分享海报提供可编辑预览和导出设置",
   },
   {
     file: "src/components/ui/FiligreeDivider.tsx",
@@ -639,9 +651,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/shareBottleCard.ts",
-    mustInclude: ["context.drawImage(bottleImage", "globalCompositeOperation = \"screen\"", "bottleSnapshot", "已获 Offer", "已进面", "companies.slice(0, 5)", "context.fillText(\"……\"", "const qrSize = 170"],
+    mustInclude: ["context.drawImage(bottleImage", "globalCompositeOperation = \"screen\"", "bottleSnapshot", "已拿到 Offer", "面试中", "drawCompanyColumn", "drawQrCorners", "const qrSize = 94"],
     mustNotInclude: ["意向地区", "意向岗位", "独特简历", "推荐机会"],
-    label: "分享海报始终绘制瓶身、使用阶段统计、前五企业和安全二维码",
+    label: "分享海报始终绘制瓶身、使用动态阶段统计、双栏企业足迹和安全二维码",
   },
   {
     file: "supabase/migrations/20260710140000_resume_template_consolidation.sql",

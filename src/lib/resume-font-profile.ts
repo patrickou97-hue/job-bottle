@@ -36,7 +36,7 @@ export function collectResumeText(resume: ResumeDocument) {
   ];
 
   for (const item of resume.content.education) {
-    text.push(item.school, item.degree, item.major, item.startDate, item.endDate, item.gpa, item.courses, item.honors);
+    text.push(item.school, item.college ?? "", item.degreeLevel ?? "", item.degree, item.major, item.startDate, item.endDate, item.gpa, item.courses, item.honors);
   }
   for (const item of resume.content.work) {
     text.push(item.company, item.title, item.location, item.startDate, item.endDate, ...item.bullets);

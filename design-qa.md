@@ -1,30 +1,22 @@
 # Design QA
 
-final result: passed
+final result: blocked
 
-## Visual sources
+## Visual source
 
-- Resume hierarchy source: `/var/folders/lb/lcqhvr552z52tr_dr3wrf9ym0000gn/T/codex-clipboard-045eef50-710f-40da-8e7b-121aceab0e23.png`
-- Map segmented-control source: `/var/folders/lb/lcqhvr552z52tr_dr3wrf9ym0000gn/T/codex-clipboard-3b96a7b8-9930-4084-9a31-91b8636a4862.png`
-- Filter-rail source: `/var/folders/lb/lcqhvr552z52tr_dr3wrf9ym0000gn/T/codex-clipboard-03861699-73f0-4299-b8d4-6cb9e5f9a9b2.png`
-- Nebula scrolling source: `/var/folders/lb/lcqhvr552z52tr_dr3wrf9ym0000gn/T/codex-clipboard-24d0bbf7-4057-4a1d-8446-e7cecbe47e4d.png`
-- Implemented desktop states: `/Users/wangrui/Documents/Web/.codex-artifacts/design-qa-liquid-scroll/resume-workspace.png`, `/Users/wangrui/Documents/Web/.codex-artifacts/design-qa-liquid-scroll/explore-filters-desktop.png`, `/Users/wangrui/Documents/Web/.codex-artifacts/design-qa-liquid-scroll/explore-nebula-scroll.png`
-- Implemented mobile state: `/Users/wangrui/Documents/Web/.codex-artifacts/design-qa-liquid-scroll/explore-mobile.png`
-- Combined comparison: `/Users/wangrui/Documents/Web/.codex-artifacts/design-qa-liquid-scroll/comparison.png`
+- Reference poster: `/var/folders/lb/lcqhvr552z52tr_dr3wrf9ym0000gn/T/codex-clipboard-ce729cac-6147-4214-8eed-ab7610c8343d.png`
+- Implemented surface: `/bottle` → “分享我的星瓶” → “编辑我的星瓶海报”
+- Render/export source: `src/components/applications/shareBottleCard.ts`
 
-## Viewports and states checked
+## Intended comparison
 
-- Desktop 1440 x 1024: `/resume`, `/explore` default state, and the 104-job technology nebula selected state.
-- Mobile 390 x 844: `/explore` with both four-option segmented controls present.
-- Checked default, selected, hover-capable, keyboard-focusable, and nested-scroll states.
+- The poster now uses a paper-white card with a thin navy frame, oversized two-line title, blue top sentence with dashed arc and yellow star, StarJob lockup and autumn-season panel.
+- The statistics row is a dynamic four-column layout: 收藏、投递、面试、Offer.
+- The middle area is a dynamic blue application journey with milestone labels, a flag, the live bottle snapshot and a future-looking caption.
+- The lower area is a two-column, numbered company list with repeated companies merged and overflow reported as “…… 和 N 家公司”.
+- The footer keeps a real QR code and the call to action while the title, subtitle, footer note, visibility switches and company limit remain editable in the modal.
 
-## QA findings and iterations
+## Review boundary
 
-- Resume selection and editor surfaces now use low-density transparent layers; selected content is signalled by a restrained edge accent instead of a heavy nested card.
-- Map and location segmented controls now have one transparent track and one specular moving indicator. Both explicitly avoid backdrop blur, so the result reads as clear liquid glass rather than frosted glass.
-- The filter rail has one rounded outline and a content-sized `self-start` surface. QA caught and removed the previous grid stretch that made its background as tall as the entire 206-row job list.
-- Selecting the technology nebula renders all 104 jobs. The list viewport measured 382 px high with 7,545 px of scrollable content.
-- A real pointer-wheel scroll changed the nested list from `scrollTop: 0` to `scrollTop: 620` while the page remained at `scrollY: 344.5`, confirming the job box scrolls independently.
-- The detail pane has its own independent overflow region; the job-list region is focusable, labelled, touch-scroll enabled, and exposes a subtle scrollbar.
-- No horizontal overflow at 1440 px or 390 px.
-- `npx tsc --noEmit`, `npm run lint`, `npm run smoke`, `npm run build`, and `git diff --check` pass.
+- Source-level typecheck, lint, unit tests, webpack build and diff checks are the required automated checks.
+- Authenticated browser screenshot comparison is still required before marking this QA passed. The current environment does not provide authenticated browser automation, so this record intentionally remains blocked rather than claiming visual acceptance.

@@ -30,6 +30,8 @@ const basicsSchema = z.object({
 }).strict();
 const educationSchema = z.object({
   school: translatedText(180),
+  college: translatedText(180).optional().default(""),
+  degreeLevel: translatedText(40).optional().default(""),
   degree: translatedText(100),
   major: translatedText(180),
   startDate: boundedText(40),

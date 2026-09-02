@@ -85,6 +85,8 @@ export function createTranslationPlan(
   source.education.forEach((item, index) => {
     addGroup(`教育经历 ${index + 1}`, (entries) => {
       addEntry(entries, ["education", index, "school"], "school", item.school, 180);
+      addEntry(entries, ["education", index, "college"], "college", item.college, 180);
+      addEntry(entries, ["education", index, "degreeLevel"], "degree_level", item.degreeLevel, 40);
       addEntry(entries, ["education", index, "degree"], "degree", item.degree, 100);
       addEntry(entries, ["education", index, "major"], "major", item.major, 180);
       addEntry(entries, ["education", index, "courses"], "courses", item.courses, 800);

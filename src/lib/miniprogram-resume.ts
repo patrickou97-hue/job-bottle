@@ -32,6 +32,8 @@ const basicsSchema = z.object({
 const educationSchema = z.object({
   id: itemId,
   school: text(160),
+  college: text(160).optional().default(""),
+  degreeLevel: z.enum(["", "本科", "硕士"]).optional().default(""),
   degree: text(80),
   major: text(160),
   startDate: text(40),

@@ -8,7 +8,7 @@ const RATE_LIMIT = 8;
 
 const CANONICAL_KEYS = [
   "basics.name", "basics.englishName", "basics.birthDate", "basics.age", "basics.gender", "basics.nationality", "basics.preferredLocations", "basics.phone", "basics.email", "basics.city", "basics.linkedin", "basics.github", "basics.website", "basics.targetRole",
-  "education.school", "education.degree", "education.major", "education.startDate", "education.endDate", "education.gpa", "education.courses", "education.honors", "education.description",
+  "education.school", "education.college", "education.degreeLevel", "education.degree", "education.major", "education.startDate", "education.endDate", "education.gpa", "education.courses", "education.honors", "education.description",
   "work.company", "work.title", "work.location", "work.startDate", "work.endDate", "work.current", "work.description",
   "project.name", "project.role", "project.url", "project.startDate", "project.endDate", "project.description", "project.keywords",
   "skills", "campus.title", "campus.role", "campus.date", "campus.description", "awards.title", "awards.date", "awards.description", "certifications.title", "certifications.date", "certifications.details", "languages.title", "languages.details",

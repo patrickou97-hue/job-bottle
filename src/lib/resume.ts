@@ -30,6 +30,8 @@ export type ResumeBasics = {
 export type ResumeEducation = {
   id: string;
   school: string;
+  college?: string;
+  degreeLevel?: "" | "本科" | "硕士";
   degree: string;
   major: string;
   startDate: string;
@@ -490,6 +492,8 @@ export function createBlankEducation(): ResumeEducation {
   return {
     id: createId("edu"),
     school: "",
+    college: "",
+    degreeLevel: "",
     degree: "",
     major: "",
     startDate: "",

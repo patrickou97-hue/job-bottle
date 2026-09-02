@@ -23,6 +23,8 @@ export type ResumeTranslationDraft = {
   };
   education: Array<{
     school: string;
+    college?: string;
+    degreeLevel?: "" | "本科" | "硕士" | string;
     degree: string;
     major: string;
     startDate: string;
@@ -235,7 +237,12 @@ export function createResumeFromTranslation(
         photoDataUrl: source.content.basics.photoDataUrl,
       },
       sectionOrder: [...source.content.sectionOrder],
-      education: translated.education.map((item) => ({ ...item, id: createId("edu") })),
+      education: translated.education.map((item) => ({
+        ...item,
+        college: item.college ?? "",
+        degreeLevel: normalizeDegreeLevel(item.degreeLevel),
+        id: createId("edu"),
+      })),
       work: translated.work.map((item) => ({ ...item, id: createId("work") })),
       projects: translated.projects.map((item) => ({ ...item, id: createId("project") })),
       skills: translated.skills.map((item) => ({ ...item, id: createId("skill") })),
@@ -266,4 +273,11 @@ function withoutId<T extends { id: string }>(value: T): Omit<T, "id"> {
   const { id, ...item } = value;
   void id;
   return item;
+}
+
+function normalizeDegreeLevel(value: string | undefined): "" | "本科" | "硕士" {
+  if (!value) return "";
+  if (/硕士|master/i.test(value)) return "硕士";
+  if (/本科|bachelor/i.test(value)) return "本科";
+  return "";
 }

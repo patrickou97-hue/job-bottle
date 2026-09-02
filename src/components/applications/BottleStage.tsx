@@ -36,9 +36,10 @@ export function BottleStage({
   const spawnX = BOTTLE_AREA.centerX * 100;
   const spawnY = BOTTLE_AREA.neckY * 100;
   const drawableApplications = useMemo(
-    () => applications.filter((application) => positions.has(application.id)),
+    () => applications.filter((application) => positions.get(application.id)?.visible !== false),
     [applications, positions],
   );
+  const hiddenApplicationCount = applications.length - drawableApplications.length;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -199,6 +200,12 @@ export function BottleStage({
             />
           );
         })}
+
+        {hiddenApplicationCount > 0 ? (
+          <p className="pointer-events-none absolute inset-x-[14%] bottom-[6%] text-center text-[11px] leading-5 text-ink-muted">
+            星瓶已展示 {drawableApplications.length} 颗，另有 {hiddenApplicationCount} 颗收录在投递足迹中
+          </p>
+        ) : null}
       </div>
 
       <Image

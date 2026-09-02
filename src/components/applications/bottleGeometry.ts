@@ -25,6 +25,7 @@ export type BottleStackPosition = {
   safeRadius: number;
   rotate: number;
   row: number;
+  visible: boolean;
 };
 
 type PlacedBottleStar = {
@@ -80,18 +81,20 @@ export function calculateBottleStack(applications: ApplicationWithJob[]) {
   const positions = new Map<string, BottleStackPosition>();
   const rowOccupancy = new Map<number, number>();
   const placedStars: PlacedBottleStar[] = [];
+  const denseSlots = applications.length > 60 ? buildDenseBottleSlots() : null;
 
-  sortedApplications(applications).forEach((application) => {
+  sortedApplications(applications).forEach((application, index) => {
     const hash = hashString(application.id);
     const size = getApplicationBottleSize(application, applications.length);
     const safeRadius = getBottleSafeRadius(size, application.status);
-    const candidate = findStableBottlePosition(
-      hash,
-      safeRadius,
-      applications.length,
-      rowOccupancy,
-      placedStars,
-    );
+    const denseSlot = denseSlots?.[index] ?? null;
+    const candidate = denseSlot ?? findStableBottlePosition(
+        hash,
+        safeRadius,
+        applications.length,
+        rowOccupancy,
+        placedStars,
+      );
     const rotate = Math.round(jitter(hash, 19, 14));
 
     positions.set(application.id, {
@@ -102,16 +105,42 @@ export function calculateBottleStack(applications: ApplicationWithJob[]) {
       safeRadius,
       rotate,
       row: candidate.row,
+      visible: denseSlot !== null || denseSlots === null,
     });
-    placedStars.push({
-      id: application.id,
-      x: candidate.x,
-      y: candidate.y,
-      safeRadius,
-    });
+    if (denseSlot === null) {
+      placedStars.push({
+        id: application.id,
+        x: candidate.x,
+        y: candidate.y,
+        safeRadius,
+      });
+    }
   });
 
   return positions;
+}
+
+function buildDenseBottleSlots() {
+  const slots: Array<{ x: number; y: number; row: number }> = [];
+  const slotRadius = 12;
+  const rowStep = 27;
+  const columnStep = 28;
+
+  for (let row = 0; row < 11; row += 1) {
+    const y = 568 - row * rowStep;
+    const range = getBottleMainHorizontalRange(y, slotRadius);
+    if (!range) continue;
+    const width = range.max - range.min;
+    const capacity = Math.max(1, Math.floor(width / columnStep));
+    for (let column = 0; column < capacity; column += 1) {
+      const x = range.min + (width * (column + 0.5)) / capacity;
+      if (isBottleCircleInsideMainCavity(x, y, slotRadius)) {
+        slots.push({ x, y, row });
+      }
+    }
+  }
+
+  return slots;
 }
 
 export function validateBottleStackPosition(position: BottleStackPosition, status: string) {

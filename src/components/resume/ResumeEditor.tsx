@@ -565,6 +565,13 @@ function EducationEditor({ item, onChange }: { item: ResumeEducation; onChange: 
   return (
     <FieldGrid>
       <TextField label="学校" value={item.school} onChange={(value) => patch({ school: value })} />
+      <TextField label="学院（可选）" value={item.college ?? ""} onChange={(value) => patch({ college: value })} />
+      <SelectField
+        label="学历层次（可选）"
+        value={item.degreeLevel ?? ""}
+        options={[{ value: "", label: "未填写" }, { value: "本科", label: "本科" }, { value: "硕士", label: "硕士" }]}
+        onChange={(value) => patch({ degreeLevel: value as ResumeEducation["degreeLevel"] })}
+      />
       <TextField label="学位" value={item.degree} onChange={(value) => patch({ degree: value })} />
       <TextField label="专业" value={item.major} onChange={(value) => patch({ major: value })} />
       <TextField label="GPA" value={item.gpa} onChange={(value) => patch({ gpa: value })} />
@@ -930,7 +937,11 @@ function toEducationTarget(item: ResumeEducation): ResumePolishTarget {
     id: item.id,
     label: "教育经历描述",
     sectionType: "education",
-    content: { title: item.school, subtitle: `${item.degree} ${item.major}`.trim(), bullets: [item.courses, item.honors] },
+    content: {
+      title: [item.school, item.college].filter(Boolean).join(" · "),
+      subtitle: [item.degreeLevel, item.degree, item.major].filter(Boolean).join(" "),
+      bullets: [item.courses, item.honors],
+    },
   };
 }
 

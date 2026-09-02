@@ -32,6 +32,8 @@ export type ImportedResumeDraft = {
   basics: ImportedResumeBasics;
   education: Array<{
     school: string;
+    college?: string;
+    degreeLevel?: "" | "本科" | "硕士";
     degree: string;
     major: string;
     startDate: string;
@@ -264,8 +266,16 @@ function parseEducationSection(lines: string[]): ImportedResumeDraft["education"
   return groups.map((group) => {
     const text = group.join(" ");
     const [startDate, endDate] = extractDateRange(text);
+    const degreeLevelText = firstMatch(text, /(硕士|本科|master|bachelor)/i);
+    const degreeLevel: "" | "本科" | "硕士" = /硕士|master/i.test(degreeLevelText)
+      ? "硕士"
+      : /本科|bachelor/i.test(degreeLevelText)
+        ? "本科"
+        : "";
     return {
       school: group.find((line) => /(大学|学院|学校|university|college|school)/i.test(line))?.replace(dateRangePattern(), "").trim() ?? group[0] ?? "",
+      college: valueAfterLabel(text, /(?:学院|系所|college|department)\s*[:：]?\s*/i),
+      degreeLevel,
       degree: firstMatch(text, /(博士|硕士|本科|学士|大专|高中|ph\.?d\.?|master|bachelor|b\.?s\.?|b\.?a\.?|m\.?s\.?|m\.?a\.?)/i),
       major: valueAfterLabel(text, /(?:专业|major)\s*[:：]?\s*/i),
       startDate,

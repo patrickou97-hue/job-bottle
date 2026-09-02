@@ -43,6 +43,8 @@ const resumeSchema = z.object({
     basics: basicsSchema,
     education: z.array(z.object({
       school: shortText,
+      college: shortText,
+      degreeLevel: shortText,
       degree: shortText,
       major: shortText,
       ...datedEntryFields,

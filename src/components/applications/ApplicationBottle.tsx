@@ -8,9 +8,9 @@ import { BottleStage } from "@/components/applications/BottleStage";
 import { useBottleStack } from "@/components/applications/useBottleStack";
 import { FiligreeDivider } from "@/components/ui/FiligreeDivider";
 import { Button } from "@/components/ui/Button";
-import {
-  downloadBottleShareCard,
-} from "@/components/applications/shareBottleCard";
+import { SharePosterEditor } from "@/components/applications/SharePosterEditor";
+import { downloadBottleShareCard } from "@/components/applications/shareBottleCard";
+import type { SharePosterOverrides } from "@/components/applications/shareBottleData";
 import { dismissBottleDrop, peekBottleDrop } from "@/lib/bottle-drop";
 import { formatDateTime } from "@/lib/utils";
 import type { ApplicationWithJob } from "@/lib/types";
@@ -48,6 +48,8 @@ export function ApplicationBottle({
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [fallingId, setFallingId] = useState<string | null>(null);
   const [shareState, setShareState] = useState<"idle" | "generating" | "done" | "error">("idle");
+  const [shareEditorOpen, setShareEditorOpen] = useState(false);
+  const [shareSnapshotDataUrl, setShareSnapshotDataUrl] = useState<string | null>(null);
   const positions = useBottleStack(applications);
 
   const appliedCount = applications.filter((item) => item.status !== "opened").length;
@@ -94,19 +96,26 @@ export function ApplicationBottle({
     setFallingId(null);
   }
 
-  async function handleShareBottle() {
+  function handleOpenShareEditor() {
+    const bottleSnapshotDataUrl =
+      document
+        .querySelector<HTMLCanvasElement>("#application-bottle-target canvas")
+        ?.toDataURL("image/png") ?? null;
+    setShareSnapshotDataUrl(bottleSnapshotDataUrl);
+    setShareEditorOpen(true);
+  }
+
+  async function handleExportSharePoster(overrides: SharePosterOverrides) {
     setShareState("generating");
     try {
-      const bottleSnapshotDataUrl =
-        document
-          .querySelector<HTMLCanvasElement>("#application-bottle-target canvas")
-          ?.toDataURL("image/png") ?? null;
       await downloadBottleShareCard({
         applications,
-        bottleSnapshotDataUrl,
+        bottleSnapshotDataUrl: shareSnapshotDataUrl,
         positions,
+        overrides,
       });
       setShareState("done");
+      setShareEditorOpen(false);
       window.setTimeout(() => setShareState("idle"), 2400);
     } catch {
       setShareState("error");
@@ -159,7 +168,7 @@ export function ApplicationBottle({
           <Button
             className="mt-5 w-full"
             disabled={shareState === "generating"}
-            onClick={() => void handleShareBottle()}
+            onClick={handleOpenShareEditor}
           >
             {shareState === "generating" ? "正在生成" : "分享我的星瓶"}
           </Button>
@@ -208,6 +217,15 @@ export function ApplicationBottle({
         onClose={() => setSelected(null)}
         onChanged={onChanged}
         onDeleted={onDeleted}
+      />
+
+      <SharePosterEditor
+        open={shareEditorOpen}
+        onClose={() => setShareEditorOpen(false)}
+        applications={applications}
+        positions={positions}
+        bottleSnapshotDataUrl={shareSnapshotDataUrl}
+        onExport={handleExportSharePoster}
       />
     </section>
   );

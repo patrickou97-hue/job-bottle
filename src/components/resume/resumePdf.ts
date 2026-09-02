@@ -410,8 +410,12 @@ function renderEducation(state: LayoutState, items: ResumeEducation[], options: 
   sectionTitle(state, copy.education, options);
 
   visibleItems.forEach((item) => {
-    row(state, item.school, formatRange(item.startDate, item.endDate), options, true);
-    const meta = [item.major, item.degree, item.gpa].filter(Boolean).join(" · ");
+    const school = [item.school, item.college].filter(Boolean).join(" · ");
+    row(state, school, formatRange(item.startDate, item.endDate), options, true);
+    const degree = item.degreeLevel || item.degree;
+    const meta = [item.major, degree, item.degreeLevel && item.degree && item.degree !== item.degreeLevel ? item.degree : "", item.gpa]
+      .filter(Boolean)
+      .join(" · ");
     if (meta) {
       textLine(state, meta, options.bodySize, "normal");
     }
@@ -928,6 +932,8 @@ function formatRange(start: string, end: string, current = false, present = "至
 function hasEducationContent(item: ResumeEducation) {
   return [
     item.school,
+    item.college ?? "",
+    item.degreeLevel ?? "",
     item.degree,
     item.major,
     item.startDate,

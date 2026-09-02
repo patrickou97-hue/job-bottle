@@ -27,6 +27,8 @@ const basicsSchema = z.object({
 }).strict();
 const educationSchema = z.object({
   school: text(180),
+  college: text(180).optional().default(""),
+  degreeLevel: z.enum(["", "本科", "硕士"]).optional().default(""),
   degree: text(100),
   major: text(180),
   startDate: text(40),
@@ -415,7 +417,7 @@ function mapUpstreamError(error: unknown) {
   return NextResponse.json({ error: getUpstreamErrorMessage(error) }, { status });
 }
 
-const FULL_RESULT_SHAPE = `只返回一个完整严格 JSON，不要省略任何键：{"summary":"string","warnings":["string"],"draft":{"language":"zh-CN|en-US","title":"string","targetRole":"string","basics":{"name":"string","englishName":"string","birthDate":"仅原文明确标注时返回 YYYY-MM-DD，否则空字符串","gender":"string","nationality":"string","preferredLocations":"string","phone":"string","email":"string","city":"string","linkedin":"string","github":"string","website":"string","targetRole":"string"},"education":[{"school":"string","degree":"string","major":"string","startDate":"string","endDate":"string","gpa":"string","courses":"string","honors":"string"}],"work":[{"experienceType":"internship|employment|other","company":"string","title":"string","location":"string","startDate":"string","endDate":"string","current":false,"bullets":["string"]}],"projects":[{"name":"string","role":"string","url":"string","startDate":"string","endDate":"string","bullets":["string"],"keywords":"string"}],"skills":[{"category":"string","skills":["string"]}],"campus":[{"title":"string","role":"string","date":"string","bullets":["string"]}],"awards":[{"title":"string","role":"string","date":"string","bullets":["string"]}],"certifications":[{"title":"string","role":"string","date":"string","bullets":["string"]}],"languages":[{"title":"string","role":"string","date":"string","bullets":["string"]}],"customSections":[{"title":"string","role":"string","date":"string","bullets":["string"]}]}}`;
+const FULL_RESULT_SHAPE = `只返回一个完整严格 JSON，不要省略任何键：{"summary":"string","warnings":["string"],"draft":{"language":"zh-CN|en-US","title":"string","targetRole":"string","basics":{"name":"string","englishName":"string","birthDate":"仅原文明确标注时返回 YYYY-MM-DD，否则空字符串","gender":"string","nationality":"string","preferredLocations":"string","phone":"string","email":"string","city":"string","linkedin":"string","github":"string","website":"string","targetRole":"string"},"education":[{"school":"string","college":"可选学院或系所，没有明确内容时为空字符串","degreeLevel":"本科|硕士|","degree":"string","major":"string","startDate":"string","endDate":"string","gpa":"string","courses":"string","honors":"string"}],"work":[{"experienceType":"internship|employment|other","company":"string","title":"string","location":"string","startDate":"string","endDate":"string","current":false,"bullets":["string"]}],"projects":[{"name":"string","role":"string","url":"string","startDate":"string","endDate":"string","bullets":["string"],"keywords":"string"}],"skills":[{"category":"string","skills":["string"]}],"campus":[{"title":"string","role":"string","date":"string","bullets":["string"]}],"awards":[{"title":"string","role":"string","date":"string","bullets":["string"]}],"certifications":[{"title":"string","role":"string","date":"string","bullets":["string"]}],"languages":[{"title":"string","role":"string","date":"string","bullets":["string"]}],"customSections":[{"title":"string","role":"string","date":"string","bullets":["string"]}]}}`;
 
 const SYSTEM_PROMPT = `你是拾星简历智能整理器。你必须先通读用户整份简历，理解标题、版面顺序和每段经历的语义边界，再把原文一次性映射为完整的拾星简历结构；不能把任务拆成彼此不知道上下文的局部猜测。
 规则：
