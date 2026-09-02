@@ -23,10 +23,10 @@ export default function LoginPage() {
             <div className="login-page__brand-lockup">
               <Link href="/" aria-label="返回拾星主页" className="inline-flex">
                 <Image
-                  src="/brand/shi-xing-wordmark.png"
+                  src="/brand/shi-xing-wordmark-lockup.png"
                   alt="拾星 StarJob"
-                  width={1216}
-                  height={542}
+                  width={1056}
+                  height={430}
                   priority
                   className="login-page__wordmark brand-wordmark"
                 />

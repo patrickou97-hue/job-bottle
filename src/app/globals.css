@@ -481,14 +481,13 @@ textarea:focus-visible {
 .site-footer__brand-lockup {
   display: inline-flex;
   align-items: flex-end;
-  gap: 0.5rem;
+  gap: 0.28rem;
   line-height: 0;
 }
 
 .site-footer__english {
   width: 5.2rem;
   align-self: flex-end;
-  margin-bottom: 0.08rem;
 }
 
 .site-footer__brand p {
@@ -1626,7 +1625,7 @@ textarea:focus-visible {
 .admin-shell__brand-mark {
   display: inline-flex;
   align-items: flex-end;
-  gap: 0.45rem;
+  gap: 0.25rem;
   line-height: 0;
 }
 
@@ -1651,7 +1650,6 @@ textarea:focus-visible {
 .admin-shell__brand-en {
   width: 4.55rem;
   align-self: flex-end;
-  margin-bottom: 0.06rem;
 }
 
 .admin-shell__account {
@@ -2493,14 +2491,13 @@ textarea:focus-visible {
 .login-page__brand-lockup {
   display: inline-flex;
   align-items: flex-end;
-  gap: 0.55rem;
+  gap: 0.3rem;
   line-height: 0;
 }
 
 .login-page__brand-en {
   width: clamp(5.8rem, 8vw, 7rem);
   align-self: flex-end;
-  margin-bottom: 0.1rem;
 }
 
 .login-page__form-kicker {

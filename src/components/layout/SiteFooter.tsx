@@ -38,10 +38,10 @@ export function SiteFooter() {
             <div className="site-footer__brand-lockup">
               <Link href="/" aria-label="返回拾星主页" className="inline-flex">
                 <Image
-                  src="/brand/shi-xing-wordmark.png"
+                  src="/brand/shi-xing-wordmark-lockup.png"
                   alt="拾星 StarJob"
-                  width={176}
-                  height={78}
+                  width={1056}
+                  height={430}
                   className="site-footer__logo brand-wordmark"
                 />
               </Link>

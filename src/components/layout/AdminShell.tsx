@@ -133,7 +133,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
           <Link href="/admin" className="admin-shell__brand" aria-label="进入管理后台">
             <span className="admin-shell__brand-mark">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/brand/shi-xing-wordmark.png" alt={SITE_NAME} width={1216} height={542} className="admin-shell__brand-cn brand-wordmark" />
+              <img src="/brand/shi-xing-wordmark-lockup.png" alt={SITE_NAME} width={1056} height={430} className="admin-shell__brand-cn brand-wordmark" />
               <StarJobWordmark className="admin-shell__brand-en" />
             </span>
             <span aria-hidden="true" className="admin-shell__brand-divider" />

@@ -2114,6 +2114,15 @@ The smoke test (`npm run smoke`) checks these source code invariants:
 - 冒烟边界：`npm run smoke` 在既有 `src/styles/tokens.css` 约束处停止，提示缺少历史断言 `--night-3: #564A71`；本轮没有修改主题 token，也没有把该结果计为控件改动失败。
 - 当前状态：改动仍位于独立工作树 `/private/tmp/starjob-official-source`，本地开发服务器保持运行，尚未提交、推送或部署；主工作区原有未提交内容未覆盖、未删除。
 
+## 2026-09-02 中英文品牌组合 logo 光学对齐（已上线）
+
+- 用户目标：解决中文“拾星”和双色 StarJob 英文标识可见底部不齐、视觉间距偏大的问题；组合关系保持横向并排，不改变中文主标识本身。
+- 根因与决策：原始中文 PNG 的 alpha 可见范围为 `(80, 56)–(1136, 486)`，英文 PNG 的 alpha 可见范围为 `(24, 24)–(2080, 303)`；透明留白导致 flex 只对齐图片盒子而不是实际笔画。原始资产保留不动，新增按可见 alpha 范围紧裁剪的 lockup 资产，避免在不同尺寸下依赖脆弱的负偏移。
+- 实际改动：登录页、SiteFooter 和 AdminShell 使用 `shi-xing-wordmark-lockup.png`；StarJobWordmark 使用 `starjob-wordmark-lockup.png`；三处组合均以 flex-end 对齐，并将间距收紧到 0.30/0.28/0.25rem。其他单独使用拾星中文标识的首页、导航、星系和分享卡片保持原资产。
+- 兼容边界：未改变登录、路由、管理员权限、数据库、API、筛选、业务数据或原始品牌图片；新增资产仅用于三处中英文组合。编辑前快照位于 `backups/starjob-before-logo-lockup-alignment-20260902/RESTORE.md`。
+- 验证：`npm run typecheck`、`npm test`（149/149）、`npm run build -- --webpack` 和 `git diff --check` 通过；`npm run lint` 0 错误，仅保留 `scripts/seed_official_referral_sources.mjs:44` 的既有 warning；本地登录页和两个新增 PNG 均返回 200。
+- 发布：本轮提交已推送 `origin/main`，Vercel 正式部署完成；生产登录页与新增 logo 资源已核验。主工作区原有未提交内容未覆盖、未删除。
+
 ## 2026-09-02 SwufeHub 式逐字翻页与网申助手页面重排（本地未上线）
 
 - 用户目标：移除网申助手主页面和安装教程页的大号“获取安装包”按钮，放大安装教程中的真实扩展截图并重新排版；登录页动态标语改为参考 SwufeHub 顶部轮播的逐字机械翻页效果。
