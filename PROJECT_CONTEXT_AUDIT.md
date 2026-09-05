@@ -6,7 +6,16 @@
 
 每次三文档记录至少写明：日期、用户目标、根因/决策、实际改动文件与行为、兼容边界、验证命令和结果、提交与部署证据（如有）、已确认和未确认的外部状态。若本次只完成诊断而没有修改，也必须在三份文档中同步写清“零修改/零部署”及诊断证据。
 
-## 2026-09-05 投递完成确认与实际投递岗位展示（本地未上线）
+## 2026-09-05 工作区与 Git 风险清理（已完成）
+
+- 用户目标：彻底对齐未完成状态和 Git 风险，清除过往不需要的备份，并整理当前脏工作区。
+- 盘点与决策：主工作区原先位于落后 `origin/main` 24 个提交的 `codex/deploy-login-declutter`，同时混有已发布代码的旧版本差异、分阶段暂存、未暂存修改和历史生成物。已先将完整 tracked diff、状态清单和唯一未合并的 `codex/official-referral-100` 提交导出到 `/private/tmp/starjob-workspace-cleanup-20260905/`，再将 tracked 文件精确重置到 `origin/main@b4879a0`；该临时归档可用于恢复，不属于项目工作区或发布内容。
+- Git 整理：已移除已合并的 `codex/applied-position-confirmation`、落后的 `main`、未合并但不再保留为本地分支的 `codex/official-referral-100`，以及 7 个失效/临时 worktree（含其 prunable 元数据）；主工作区现已改名为本地 `main` 并跟踪 `origin/main`。未保留任何额外本地分支或失效 worktree。
+- 备份清理：已删除 14 个仅由项目历史生成的 `backups/starjob-before-*` 快照目录（包括约 152MB 的完整源码包）；对应版本仍可从 Git 提交历史回退。已将未使用的 `public/assets/login/starjob-login-bottle-frames-v1.png` 与 `.codex-artifacts/` 移到上述临时归档；PRD、ATS 测试夹具等用户材料未删除。
+- 兼容边界：本轮不改变产品源码、依赖、环境变量、Supabase schema/RLS/DDL、用户数据、API 或部署；只清理 Git 引用、ignored/生成物和主工作区脏状态。用户材料仍以未跟踪文件保留，后续如需纳入版本控制需单独确认。
+- 验证与当前状态：`git reset --hard origin/main`、`git worktree prune` 后，`git worktree list` 仅剩主工作区，`git branch -vv` 仅剩本地 `main` 且与 `origin/main` 同一提交；清理记录随本次文档提交同步到 `main` 后，`git status --short` 无 tracked 修改，仅列出 7 个保留的 PRD/ATS 用户文件。未执行产品测试、数据库写入或产品代码部署；生产代码状态保持此前已发布版本。
+
+## 2026-09-05 投递完成确认与实际投递岗位展示（已上线）
 
 - 用户目标：投递管理中不再把招聘岗位方向或“软件研发类、市场类”等岗位分类显示为用户自己的投递岗位；用户从岗位入口打开公司官网、返回拾星后，通过弹窗确认是否完成投递，并可同时填写实际投递的具体岗位。未填写时列表保持为空，之后仍可使用投递详情中已有的“我实际投递的岗位”字段补填。
 - 决策与实际改动：`src/components/jobs/ApplyReturnConfirm.tsx` 从页面内确认条升级为复用 `MotionDialog` 的可访问弹窗，新增 160 字以内的可选实际岗位输入；`HomeClient.tsx`、`JobDetailActions.tsx` 与 `GalaxyJobsClient.tsx` 三个官网投递入口统一将确认结果和 `applied_position` 一起保存，并在字段尚未部署时如实提示“投递已记录、岗位暂未同步”。`src/lib/applications.ts` 新增实际岗位清洗与展示函数，只接受用户明确填写的值，不回退到 `job_titles` 或 `job_categories`。
