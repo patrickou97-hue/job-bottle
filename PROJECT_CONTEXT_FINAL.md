@@ -11,6 +11,7 @@
 - 用户目标：彻底对齐未完成状态和 Git 风险，清除过往不需要的备份，并整理当前脏工作区。
 - 盘点与决策：主工作区原先位于落后 `origin/main` 24 个提交的 `codex/deploy-login-declutter`，同时混有已发布代码的旧版本差异、分阶段暂存、未暂存修改和历史生成物。已先将完整 tracked diff、状态清单和唯一未合并的 `codex/official-referral-100` 提交导出到 `/private/tmp/starjob-workspace-cleanup-20260905/`，再将 tracked 文件精确重置到 `origin/main@b4879a0`；该临时归档可用于恢复，不属于项目工作区或发布内容。
 - Git 整理：已移除已合并的 `codex/applied-position-confirmation`、落后的 `main`、未合并但不再保留为本地分支的 `codex/official-referral-100`，以及 7 个失效/临时 worktree（含其 prunable 元数据）；主工作区现已改名为本地 `main` 并跟踪 `origin/main`。未保留任何额外本地分支或失效 worktree。
+- Git 对象回收：确认被删除分支的唯一未合并提交已另存为 patch 后，执行 `git reflog expire --expire=now --all` 与 `git gc --prune=now`；复查 `git fsck --unreachable` 无输出，松散对象为 0，未留下不可达 Git 状态。
 - 备份清理：已删除 14 个仅由项目历史生成的 `backups/starjob-before-*` 快照目录（包括约 152MB 的完整源码包）；对应版本仍可从 Git 提交历史回退。已将未使用的 `public/assets/login/starjob-login-bottle-frames-v1.png` 与 `.codex-artifacts/` 移到上述临时归档；PRD、ATS 测试夹具等用户材料未删除。
 - 兼容边界：本轮不改变产品源码、依赖、环境变量、Supabase schema/RLS/DDL、用户数据、API 或部署；只清理 Git 引用、ignored/生成物和主工作区脏状态。用户材料仍以未跟踪文件保留，后续如需纳入版本控制需单独确认。
 - 验证与当前状态：`git reset --hard origin/main`、`git worktree prune` 后，`git worktree list` 仅剩主工作区，`git branch -vv` 仅剩本地 `main` 且与 `origin/main` 同一提交；清理记录随本次文档提交同步到 `main` 后，`git status --short` 无 tracked 修改，仅列出 7 个保留的 PRD/ATS 用户文件。未执行产品测试、数据库写入或产品代码部署；生产代码状态保持此前已发布版本。
