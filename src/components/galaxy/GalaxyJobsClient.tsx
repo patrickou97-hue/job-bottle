@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence } from "motion/react";
-import { fetchMyApplications, updateApplication, upsertApplication } from "@/lib/applications";
+import { fetchMyApplications, normalizeAppliedPosition, updateApplication, upsertApplication } from "@/lib/applications";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { getCandidateStage } from "@/lib/career-workspace";
 import { queueBottleDrop } from "@/lib/bottle-drop";
@@ -142,7 +142,10 @@ export function GalaxyJobsClient({ kind, slug }: { kind: GalaxyKind; slug: strin
     }
   }
 
-  async function resolveApplyConfirmation(status: "applied" | "withdrawn" | "keep_opened") {
+  async function resolveApplyConfirmation(
+    status: "applied" | "withdrawn" | "keep_opened",
+    appliedPosition = "",
+  ) {
     if (!pendingConfirmation) return;
     if (confirmationTimerRef.current) window.clearTimeout(confirmationTimerRef.current);
     if (status === "keep_opened") {
@@ -153,14 +156,25 @@ export function GalaxyJobsClient({ kind, slug }: { kind: GalaxyKind; slug: strin
     }
     setConfirmBusy(true);
     try {
-      await updateApplication(createClient(), pendingConfirmation.id, {
+      const normalizedAppliedPosition = normalizeAppliedPosition(appliedPosition);
+      const updated = await updateApplication(createClient(), pendingConfirmation.id, {
         status,
         progress_note: pendingConfirmation.progress_note,
+        ...(status === "applied" ? { applied_position: normalizedAppliedPosition } : {}),
       });
       setPendingConfirmation(null);
       setShowConfirmation(false);
-      setMessage(status === "applied" ? "投递已记录，这颗星已进入你的投递星图。" : "已标记为不投了。");
       await loadData();
+      const positionWasOmitted = updated.omittedApplicationColumns?.includes("applied_position");
+      setMessage(
+        status === "applied"
+          ? normalizedAppliedPosition && positionWasOmitted
+            ? "投递已记录；实际投递岗位暂未同步，请稍后在投递详情中补充。"
+            : normalizedAppliedPosition
+              ? "投递和实际岗位已记录，这颗星已进入你的投递星图。"
+              : "投递已记录，实际投递岗位暂时留空，可之后在投递详情中补充。"
+          : "已标记为不投了。",
+      );
     } catch {
       setMessage("状态暂未更新，请稍后重试。");
     } finally {
@@ -201,7 +215,8 @@ export function GalaxyJobsClient({ kind, slug }: { kind: GalaxyKind; slug: strin
             key={pendingConfirmation.id}
             companyName={pendingConfirmation.job.company_name}
             busy={confirmBusy}
-            onApplied={() => void resolveApplyConfirmation("applied")}
+            initialPosition={pendingConfirmation.applied_position ?? ""}
+            onApplied={(appliedPosition) => void resolveApplyConfirmation("applied", appliedPosition)}
             onLater={() => void resolveApplyConfirmation("keep_opened")}
             onWithdraw={() => void resolveApplyConfirmation("withdrawn")}
           />

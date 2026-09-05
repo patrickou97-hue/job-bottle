@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, ChevronDown, ExternalLink, RefreshCw, Search, Settings2, SlidersHorizontal } from "lucide-react";
 import { motion } from "motion/react";
 import { APPLICATION_PRIORITY_LABELS } from "@/lib/constants";
-import { fetchMyApplications, updateApplication } from "@/lib/applications";
+import { fetchMyApplications, getApplicationDisplayPosition, updateApplication } from "@/lib/applications";
 import { getNextAction } from "@/lib/career-workspace";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
@@ -174,7 +174,8 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
       });
       handleApplicationChanged({ ...optimistic, ...updated, job: application.job });
       setWorkflowEditorApplication(null);
-      setWorkspaceMessage(`${application.job.company_name} · ${getApplicationJobLabel(application)} 的独立投递流程已保存。`);
+      const appliedPosition = getApplicationDisplayPosition(application);
+      setWorkspaceMessage(`${application.job.company_name}${appliedPosition ? ` · ${appliedPosition}` : ""} 的独立投递流程已保存。`);
     } catch (error) {
       handleApplicationChanged(application);
       setWorkspaceMessage(error instanceof Error ? error.message : "岗位流程保存失败，请稍后重试。");
@@ -341,7 +342,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
       {workflowEditorApplication ? (
         <ApplicationWorkflowEditor
           open
-          companyName={`${workflowEditorApplication.job.company_name} · ${getApplicationJobLabel(workflowEditorApplication)}`}
+          companyName={`${workflowEditorApplication.job.company_name}${getApplicationDisplayPosition(workflowEditorApplication) ? ` · ${getApplicationDisplayPosition(workflowEditorApplication)}` : ""}`}
           nodes={getApplicationWorkflow(workflowEditorApplication)}
           saving={workflowSaving}
           onClose={() => setWorkflowEditorApplication(null)}
@@ -364,14 +365,14 @@ function ApplicationListRow({ application, ended = false, onOpen, onEditWorkflow
   const priorityKey = (application.priority ?? 0) as keyof typeof APPLICATION_PRIORITY_LABELS;
   const priorityLabel = APPLICATION_PRIORITY_LABELS[priorityKey] ?? APPLICATION_PRIORITY_LABELS[0];
   const jobMeta = [application.job.locations, application.job.industry, application.job.batch_type].filter(Boolean).join(" · ");
-  const jobTitle = getApplicationJobLabel(application);
+  const appliedPosition = getApplicationDisplayPosition(application);
   const officialUrl = isValidHttpUrl(application.job.apply_url) ? sanitizeApplicationUrl(application.job.apply_url) : undefined;
   return (
     <article className={`data-row grid gap-4 px-3 py-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(250px,1fr)_minmax(215px,0.75fr)] lg:items-center lg:px-4 ${ended ? "opacity-80" : ""}`}>
       <button type="button" className="min-w-0 text-left" onClick={onOpen}>
         <span className="block truncate text-lg font-semibold leading-6 tracking-tight text-ink-primary">{application.job.company_name}</span>
-        <span className="mt-0.5 block truncate text-sm font-normal leading-5 text-ink-secondary">{jobTitle}</span>
-        <span className="mt-1 block truncate text-xs text-ink-secondary">{jobMeta || application.job.job_categories.join("、") || "岗位信息待补充"}</span>
+        <span className="mt-0.5 block min-h-5 truncate text-sm font-normal leading-5 text-ink-secondary">{appliedPosition}</span>
+        {jobMeta ? <span className="mt-1 block truncate text-xs text-ink-secondary">{jobMeta}</span> : null}
       </button>
 
       <div className="grid min-w-0 gap-3 sm:grid-cols-2">
@@ -400,7 +401,7 @@ function ApplicationListRow({ application, ended = false, onOpen, onEditWorkflow
         ) : (
           <span className="inline-flex min-h-9 items-center justify-center rounded-lg bg-[color:var(--surface-subtle-bg)] px-3 text-center text-[10px] text-ink-muted">官网链接待补充</span>
         )}
-        <button type="button" className="text-action inline-flex min-h-9 justify-center gap-1.5 rounded-lg px-2 text-xs" onClick={onOpen} aria-label={`查看 ${application.job.company_name} ${jobTitle} 详情`}>
+        <button type="button" className="text-action inline-flex min-h-9 justify-center gap-1.5 rounded-lg px-2 text-xs" onClick={onOpen} aria-label={`查看 ${application.job.company_name}${appliedPosition ? ` ${appliedPosition}` : ""} 详情`}>
           查看详情<ArrowRight aria-hidden="true" className="size-3.5" />
         </button>
         <button type="button" className="text-action col-span-2 justify-self-end px-2 text-[11px]" onClick={onEditWorkflow}>
@@ -421,10 +422,6 @@ function StageFilterButton({ label, count, active, onClick }: { label: string; c
 
 function StatBlock({ value, label, urgent = false }: { value: number; label: string; urgent?: boolean }) {
   return <div><div className={urgent ? "font-display text-2xl font-semibold leading-none tabular-nums text-[color:var(--text-danger)] md:text-3xl" : "font-display text-2xl font-semibold leading-none tabular-nums text-ink-primary md:text-3xl"}>{value}</div><div className="mt-2 whitespace-nowrap text-xs text-ink-muted">{label}</div></div>;
-}
-
-function getApplicationJobLabel(application: ApplicationWithJob) {
-  return application.applied_position?.trim() || application.job.job_titles?.trim() || application.job.job_categories.join("、") || "岗位待补充";
 }
 
 function matchesStageGroup(application: ApplicationWithJob, group: StageGroup) {

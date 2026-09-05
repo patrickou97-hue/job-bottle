@@ -11,6 +11,15 @@ export type ApplicationUpdateResult = UserApplication & {
   /** Columns omitted only when the hosted schema has not received their migration yet. */
   omittedApplicationColumns?: readonly (keyof ApplicationUpdateValues)[];
 };
+
+export function normalizeAppliedPosition(value: string | null | undefined) {
+  const normalized = value?.trim();
+  return normalized ? normalized.slice(0, 160) : null;
+}
+
+export function getApplicationDisplayPosition(application: ApplicationWithJob) {
+  return normalizeAppliedPosition(application.applied_position) ?? "";
+}
 const APPLICATION_REQUEST_TIMEOUT_MS = 12_000;
 
 const LEGACY_UPDATE_KEYS = ["status", "progress_note", "note", "interview_round", "applied_at"] as const;

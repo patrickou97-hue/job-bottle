@@ -344,7 +344,7 @@ export function ProgressDrawer({
   if (!application) return null;
   const { job } = application;
   const meta = [job.locations, job.industry, job.batch_type].filter(Boolean).join(" · ");
-  const jobTitle = appliedPosition.trim() || job.job_titles?.trim() || "岗位待补充";
+  const jobTitle = appliedPosition.trim();
   const currentWorkflowNode = getApplicationWorkflowNode({
     status,
     workflow_node_id: workflowNodeId || null,
@@ -374,11 +374,13 @@ export function ProgressDrawer({
                 custom={Boolean(currentWorkflowNode?.isCustom || customStageLabel.trim())}
               />
             </div>
-            <p className="mt-3 text-sm font-medium leading-6 text-ink-secondary">
-              <span className="mr-2 text-xs font-semibold tracking-wide text-ink-muted">{appliedPosition.trim() ? "实际投递岗位" : "岗位方向"}</span>
-              {jobTitle}
-            </p>
-            <p className="mt-2 text-sm leading-6 text-ink-muted">{meta || "岗位信息待补充"}</p>
+            {jobTitle ? (
+              <p className="mt-3 text-sm font-medium leading-6 text-ink-secondary">
+                <span className="mr-2 text-xs font-semibold tracking-wide text-ink-muted">实际投递岗位</span>
+                {jobTitle}
+              </p>
+            ) : null}
+            {meta ? <p className="mt-2 text-sm leading-6 text-ink-muted">{meta}</p> : null}
           </div>
         </header>
 
@@ -386,7 +388,7 @@ export function ProgressDrawer({
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1.45fr)_180px_220px]">
             <WorkflowField label="我实际投递的岗位">
               <Input value={appliedPosition} onChange={(event) => setAppliedPosition(event.target.value)} placeholder="例如：产品经理（北京）" maxLength={160} />
-              <span className="mt-2 block text-xs leading-5 text-ink-muted">这条投递中你实际申请的职位，可与招聘信息中的岗位方向不同。</span>
+              <span className="mt-2 block text-xs leading-5 text-ink-muted">填写你在公司官网中实际选择并提交的职位；暂时不确定可以留空。</span>
             </WorkflowField>
             <label className="block">
               <span className="mb-2 block text-sm text-ink-secondary">优先级</span>

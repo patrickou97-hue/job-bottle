@@ -15,7 +15,7 @@ import {
   isRecentlyListedJob,
   jobMatchesProfilePreferences,
 } from "@/lib/jobs";
-import { fetchMyApplications, updateApplication, upsertApplication } from "@/lib/applications";
+import { fetchMyApplications, normalizeAppliedPosition, updateApplication, upsertApplication } from "@/lib/applications";
 import { getCandidateStage, getDeadlineInfo, getFitLabel, getMaterialReadiness } from "@/lib/career-workspace";
 import { getLocationFilterLabel } from "@/lib/locations";
 import { getCurrentUserOrNull } from "@/lib/auth";
@@ -51,6 +51,7 @@ type PendingApplyConfirmation = {
   jobId: string;
   companyName: string;
   progressNote: string | null;
+  appliedPosition: string | null;
 };
 
 export function HomeClient() {
@@ -292,6 +293,7 @@ export function HomeClient() {
           jobId: job.id,
           companyName: job.company_name,
           progressNote: application.progress_note,
+          appliedPosition: application.applied_position ?? null,
         });
         setMessage("岗位已收入星瓶，投递官网已打开。返回后，请确认是否完成投递。");
         return;
@@ -329,6 +331,7 @@ export function HomeClient() {
         jobId: job.id,
         companyName: job.company_name,
         progressNote: existing.progress_note,
+        appliedPosition: existing.applied_position ?? null,
       });
       setMessage("投递官网已打开。返回后，请确认是否完成投递。");
     } catch (error) {
@@ -396,7 +399,10 @@ export function HomeClient() {
     }, 2200);
   }
 
-  async function resolveApplyConfirmation(status: "applied" | "withdrawn" | "keep_opened") {
+  async function resolveApplyConfirmation(
+    status: "applied" | "withdrawn" | "keep_opened",
+    appliedPosition = "",
+  ) {
     if (!pendingApplyConfirmation) return;
     if (status === "keep_opened") {
       if (applyConfirmFallbackRef.current) {
@@ -416,19 +422,30 @@ export function HomeClient() {
         window.clearTimeout(applyConfirmFallbackRef.current);
         applyConfirmFallbackRef.current = null;
       }
-      await updateApplication(createClient(), pendingApplyConfirmation.applicationId, {
+      const normalizedAppliedPosition = normalizeAppliedPosition(appliedPosition);
+      const updated = await updateApplication(createClient(), pendingApplyConfirmation.applicationId, {
         status,
         progress_note: pendingApplyConfirmation.progressNote,
+        ...(status === "applied" ? { applied_position: normalizedAppliedPosition } : {}),
       });
       setPendingApplyConfirmation(null);
       setShowApplyConfirmation(false);
-      setMessage(status === "applied" ? "投递已记录，这颗星已进入你的投递星图。" : "已标记为不投了。");
       if (status === "applied") {
         void track("application_recorded", {
           job_id: pendingApplyConfirmation.jobId,
         });
       }
       await loadData();
+      const positionWasOmitted = updated.omittedApplicationColumns?.includes("applied_position");
+      setMessage(
+        status === "applied"
+          ? normalizedAppliedPosition && positionWasOmitted
+            ? "投递已记录；实际投递岗位暂未同步，请稍后在投递详情中补充。"
+            : normalizedAppliedPosition
+              ? "投递和实际岗位已记录，这颗星已进入你的投递星图。"
+              : "投递已记录，实际投递岗位暂时留空，可之后在投递详情中补充。"
+          : "已标记为不投了。",
+      );
     } catch {
       setMessage("状态暂未更新，请稍后重试。");
     } finally {
@@ -498,7 +515,8 @@ export function HomeClient() {
             key={pendingApplyConfirmation.applicationId}
             companyName={pendingApplyConfirmation.companyName}
             busy={confirmBusy}
-            onApplied={() => void resolveApplyConfirmation("applied")}
+            initialPosition={pendingApplyConfirmation.appliedPosition ?? ""}
+            onApplied={(appliedPosition) => void resolveApplyConfirmation("applied", appliedPosition)}
             onLater={() => void resolveApplyConfirmation("keep_opened")}
             onWithdraw={() => void resolveApplyConfirmation("withdrawn")}
           />

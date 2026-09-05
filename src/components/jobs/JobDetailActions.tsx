@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Archive } from "lucide-react";
 import { AnimatePresence } from "motion/react";
 import { getCurrentUserOrNull } from "@/lib/auth";
-import { updateApplication, upsertApplication } from "@/lib/applications";
+import { normalizeAppliedPosition, updateApplication, upsertApplication } from "@/lib/applications";
 import { getApplicationStageLabel, getCandidateStage, getJobPrimaryAction } from "@/lib/career-workspace";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { isValidHttpUrl, safeOpenUrl, sanitizeApplicationUrl } from "@/lib/utils";
@@ -152,7 +152,10 @@ export function JobDetailActions({
 
   const primaryAction = getJobPrimaryAction(application);
 
-  async function resolveApplyConfirmation(status: "applied" | "withdrawn" | "keep_opened") {
+  async function resolveApplyConfirmation(
+    status: "applied" | "withdrawn" | "keep_opened",
+    appliedPosition = "",
+  ) {
     if (!application) return;
     if (applyConfirmFallbackRef.current) {
       window.clearTimeout(applyConfirmFallbackRef.current);
@@ -168,15 +171,26 @@ export function JobDetailActions({
     setConfirmBusy(true);
     setMessage("");
     try {
+      const normalizedAppliedPosition = normalizeAppliedPosition(appliedPosition);
       const nextApplication = await updateApplication(createClient(), application.id, {
         status,
         progress_note: application.progress_note,
+        ...(status === "applied" ? { applied_position: normalizedAppliedPosition } : {}),
       });
       setApplication(nextApplication);
       if (status === "applied") void track("application_recorded", { job_id: job.id });
       applyConfirmationArmedRef.current = false;
       setShowApplyConfirmation(false);
-      setMessage(status === "applied" ? "投递已记录，这颗星已进入你的投递星图。" : "已标记为不投了。");
+      const positionWasOmitted = nextApplication.omittedApplicationColumns?.includes("applied_position");
+      setMessage(
+        status === "applied"
+          ? normalizedAppliedPosition && positionWasOmitted
+            ? "投递已记录；实际投递岗位暂未同步，请稍后在投递详情中补充。"
+            : normalizedAppliedPosition
+              ? "投递和实际岗位已记录，这颗星已进入你的投递星图。"
+              : "投递已记录，实际投递岗位暂时留空，可之后在投递详情中补充。"
+          : "已标记为不投了。",
+      );
     } catch {
       setMessage("状态暂未更新，请稍后重试。");
     } finally {
@@ -232,10 +246,10 @@ export function JobDetailActions({
       <AnimatePresence initial={false}>
         {application && showApplyConfirmation ? (
           <ApplyReturnConfirm
-            className="mt-4"
             companyName={job.company_name}
             busy={confirmBusy}
-            onApplied={() => void resolveApplyConfirmation("applied")}
+            initialPosition={application.applied_position ?? ""}
+            onApplied={(appliedPosition) => void resolveApplyConfirmation("applied", appliedPosition)}
             onLater={() => void resolveApplyConfirmation("keep_opened")}
             onWithdraw={() => void resolveApplyConfirmation("withdrawn")}
           />

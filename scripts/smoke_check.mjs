@@ -775,9 +775,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/jobs/ApplyReturnConfirm.tsx",
-    mustInclude: ["这次投递完成了吗", "已经投递", "暂未投递", "不再考虑"],
+    mustInclude: ["MotionDialog", "这次投递完成了吗", "实际投递岗位（可选）", "确认已投递", "暂未投递", "不再考虑", "onApplied(appliedPosition)"],
     mustNotInclude: ["DDL"],
-    label: "官网投递返回确认条提供 opened/applied 语义分离",
+    label: "官网投递返回弹窗同时确认状态并允许补充实际投递岗位",
   },
   {
     file: "src/components/jobs/JobCard.tsx",
@@ -865,9 +865,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/MyApplicationsClient.tsx",
-    mustInclude: ["application.job.company_name", "application.applied_position", "StatusPill", "handleApplicationChanged", "handleApplicationDeleted", "type StageGroup", "type FreshnessFilter", "getApplicationWorkflow(application)", "activeApplications", "endedApplications", "一条投递对应一家公司与一个岗位", "每一行就是一条投递", "endedExpanded", "打开官网", "查看详情", "编辑当前岗位流程", "7 天以上无进展", "需要关注优先", "text-lg font-semibold leading-6 tracking-tight text-ink-primary", "text-sm font-normal leading-5 text-ink-secondary"],
+    mustInclude: ["application.job.company_name", "getApplicationDisplayPosition", "min-h-5", "StatusPill", "handleApplicationChanged", "handleApplicationDeleted", "type StageGroup", "type FreshnessFilter", "getApplicationWorkflow(application)", "activeApplications", "endedApplications", "一条投递对应一家公司与一个岗位", "每一行就是一条投递", "endedExpanded", "打开官网", "查看详情", "编辑当前岗位流程", "7 天以上无进展", "需要关注优先", "text-lg font-semibold leading-6 tracking-tight text-ink-primary", "text-sm font-normal leading-5 text-ink-secondary"],
     mustNotInclude: ["DeadlineChip", "ApplicationStageSelect", "ApplicationCompanyGroup", "groupApplications", "按公司归组，每个岗位的进度单独记录", "onChanged={loadData}", "type WorkspaceView", "现在要做", "材料准备", "ApplicationOrbitSystem", 'text-xs font-medium text-ink-muted">{application.job.company_name}', 'text-sm font-semibold text-ink-primary">{jobTitle}'],
-    label: "投递管理使用单条记录、公司优先的视觉层级和折叠已结束记录",
+    label: "投递管理只显示用户明确填写的实际投递岗位并保留空白状态",
   },
   {
     file: "src/components/applications/ApplicationOrbitConfig.ts",
@@ -894,7 +894,6 @@ const SOURCE_INVARIANTS = [
       "我实际投递的岗位",
       "font-display text-3xl font-semibold leading-tight tracking-tight text-ink-primary md:text-4xl",
       "实际投递岗位",
-      "岗位方向",
       "当前投递进度",
       "size=\"wide\"",
       "投递渠道",
@@ -904,8 +903,8 @@ const SOURCE_INVARIANTS = [
       "进展时间线",
       "复盘",
     ],
-    mustNotInclude: ["StatusSelect", "投递状态", "招聘岗位方向", "job.job_categories", "rounded-[22px] border", "variant=\"secondary\"", "variant=\"danger\"", "await onChanged()", "router.refresh", "window.location.reload"],
-    label: "投递轨道侧滑面板使用公司优先层级、单条岗位信息和无界轨道节点",
+    mustNotInclude: ["StatusSelect", "投递状态", "岗位方向", "招聘岗位方向", "job.job_categories", "rounded-[22px] border", "variant=\"secondary\"", "variant=\"danger\"", "await onChanged()", "router.refresh", "window.location.reload"],
+    label: "投递轨道侧滑面板只展示实际投递岗位并保留现有补填入口",
   },
   {
     file: "src/components/applications/MyApplicationsClient.tsx",
