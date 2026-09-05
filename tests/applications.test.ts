@@ -116,6 +116,17 @@ test("all public apply entry points collect and persist the actual applied posit
   }
 });
 
+test("auto-saves the actual applied position after typing and flushes on blur", () => {
+  const source = readFileSync(new URL("../src/components/applications/ProgressDrawer.tsx", import.meta.url), "utf8");
+
+  assert.match(source, /appliedPositionSaveTimerRef/);
+  assert.match(source, /void saveAppliedPosition\(appliedPosition\)/);
+  assert.match(source, /}, 700\)/);
+  assert.match(source, /onBlur=\{\(\) => void handleAppliedPositionBlur\(\)\}/);
+  assert.match(source, /输入后自动保存/);
+  assert.match(source, /applied_position: cleanOptional\(nextPosition\)/);
+});
+
 test("defaults the application list to the most recently updated records", () => {
   const source = readFileSync(new URL("../src/components/applications/MyApplicationsClient.tsx", import.meta.url), "utf8");
 

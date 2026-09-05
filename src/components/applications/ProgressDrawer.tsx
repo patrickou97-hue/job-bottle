@@ -71,6 +71,8 @@ export function ProgressDrawer({
   const [saving, setSaving] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const messageTimerRef = useRef<number | null>(null);
+  const appliedPositionSaveTimerRef = useRef<number | null>(null);
+  const failedAppliedPositionRef = useRef<string | null>(null);
   const saveRequestRef = useRef(0);
   const applicationId = application?.id ?? null;
 
@@ -151,6 +153,7 @@ export function ProgressDrawer({
   useEffect(() => {
     return () => {
       if (messageTimerRef.current) window.clearTimeout(messageTimerRef.current);
+      if (appliedPositionSaveTimerRef.current) window.clearTimeout(appliedPositionSaveTimerRef.current);
     };
   }, []);
 
@@ -179,6 +182,96 @@ export function ProgressDrawer({
   });
   const workflowDirty = workflowFingerprint !== savedWorkflowFingerprint;
   const isDirty = status !== savedStatus || appliedPosition.trim() !== savedAppliedPosition.trim() || note.trim() !== savedNote.trim() || workflowDirty;
+
+  function flashMessage(nextMessage: string) {
+    setMessage(nextMessage);
+    if (messageTimerRef.current) window.clearTimeout(messageTimerRef.current);
+    messageTimerRef.current = window.setTimeout(() => {
+      setMessage("");
+      messageTimerRef.current = null;
+    }, 1500);
+  }
+
+  async function saveAppliedPosition(nextPosition: string) {
+    if (!application || saving) return false;
+    const normalizedPosition = nextPosition.trim();
+    if (normalizedPosition === savedAppliedPosition.trim()) return true;
+    const requestId = saveRequestRef.current + 1;
+    saveRequestRef.current = requestId;
+    const optimisticApplication: ApplicationWithJob = {
+      ...application,
+      applied_position: cleanOptional(nextPosition),
+      updated_at: new Date().toISOString(),
+    };
+    setSaving(true);
+    setMessage("");
+    void onChanged(optimisticApplication);
+    try {
+      const updated = await updateApplication(createClient(), application.id, {
+        applied_position: cleanOptional(nextPosition),
+      });
+      if (requestId !== saveRequestRef.current) return true;
+      const { omittedApplicationColumns = [], ...serverApplication } = updated;
+      if (omittedApplicationColumns.includes("applied_position")) {
+        throw new Error("实际投递岗位暂未同步，请先完成最新数据库升级。");
+      }
+      const mergedApplication: ApplicationWithJob = {
+        ...optimisticApplication,
+        ...serverApplication,
+        job: application.job,
+      };
+      failedAppliedPositionRef.current = null;
+      setSavedAppliedPosition(normalizedPosition);
+      setSavedWorkflowFingerprint((currentFingerprint) => replaceSavedAppliedPosition(
+        currentFingerprint,
+        normalizedPosition,
+      ));
+      void onChanged(mergedApplication);
+      flashMessage("实际投递岗位已自动保存");
+      return true;
+    } catch (error) {
+      if (requestId !== saveRequestRef.current) return false;
+      failedAppliedPositionRef.current = normalizedPosition;
+      void onChanged(application);
+      setMessage(error instanceof Error
+        ? error.message
+        : "自动保存未完成。你填写的岗位仍在当前面板中，请检查网络后重试。");
+      return false;
+    } finally {
+      if (requestId === saveRequestRef.current) setSaving(false);
+    }
+  }
+
+  async function handleAppliedPositionBlur() {
+    if (appliedPositionSaveTimerRef.current) {
+      window.clearTimeout(appliedPositionSaveTimerRef.current);
+      appliedPositionSaveTimerRef.current = null;
+    }
+    if (saving || appliedPosition.trim() === savedAppliedPosition.trim()) return;
+    failedAppliedPositionRef.current = null;
+    await saveAppliedPosition(appliedPosition);
+  }
+
+  useEffect(() => {
+    const normalizedPosition = appliedPosition.trim();
+    if (!open || !applicationId || saving) return;
+    if (normalizedPosition === savedAppliedPosition.trim()) return;
+    if (normalizedPosition === failedAppliedPositionRef.current) return;
+    if (appliedPositionSaveTimerRef.current) window.clearTimeout(appliedPositionSaveTimerRef.current);
+    appliedPositionSaveTimerRef.current = window.setTimeout(() => {
+      appliedPositionSaveTimerRef.current = null;
+      void saveAppliedPosition(appliedPosition);
+    }, 700);
+    return () => {
+      if (appliedPositionSaveTimerRef.current) {
+        window.clearTimeout(appliedPositionSaveTimerRef.current);
+        appliedPositionSaveTimerRef.current = null;
+      }
+    };
+    // The save function intentionally receives the value captured by this
+    // debounce cycle; other workflow edits must not reset its timer.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [applicationId, appliedPosition, open, savedAppliedPosition, saving]);
 
   async function saveProgress(
     nextStatus = status,
@@ -332,15 +425,6 @@ export function ProgressDrawer({
     }
   }
 
-  function flashMessage(nextMessage: string) {
-    setMessage(nextMessage);
-    if (messageTimerRef.current) window.clearTimeout(messageTimerRef.current);
-    messageTimerRef.current = window.setTimeout(() => {
-      setMessage("");
-      messageTimerRef.current = null;
-    }, 1500);
-  }
-
   if (!application) return null;
   const { job } = application;
   const meta = [job.locations, job.industry, job.batch_type].filter(Boolean).join(" · ");
@@ -387,8 +471,17 @@ export function ProgressDrawer({
         <section className="border-y border-[color:var(--line-ghost)] py-5">
           <div className="grid gap-4 lg:grid-cols-[minmax(0,1.45fr)_180px_220px]">
             <WorkflowField label="我实际投递的岗位">
-              <Input value={appliedPosition} onChange={(event) => setAppliedPosition(event.target.value)} placeholder="例如：产品经理（北京）" maxLength={160} />
-              <span className="mt-2 block text-xs leading-5 text-ink-muted">填写你在公司官网中实际选择并提交的职位；暂时不确定可以留空。</span>
+              <Input
+                value={appliedPosition}
+                onChange={(event) => {
+                  failedAppliedPositionRef.current = null;
+                  setAppliedPosition(event.target.value);
+                }}
+                onBlur={() => void handleAppliedPositionBlur()}
+                placeholder="例如：产品经理（北京）"
+                maxLength={160}
+              />
+              <span className="mt-2 block text-xs leading-5 text-ink-muted">输入后自动保存；暂时不确定可以留空。</span>
             </WorkflowField>
             <label className="block">
               <span className="mb-2 block text-sm text-ink-secondary">优先级</span>
@@ -685,6 +778,15 @@ function withoutAppliedPosition(application: ApplicationWithJob) {
   const next = { ...application };
   delete next.applied_position;
   return next;
+}
+
+function replaceSavedAppliedPosition(fingerprint: string, appliedPosition: string) {
+  try {
+    const savedWorkflow = JSON.parse(fingerprint) as Record<string, unknown>;
+    return JSON.stringify({ ...savedWorkflow, appliedPosition });
+  } catch {
+    return fingerprint;
+  }
 }
 
 function toDateTimeLocal(value?: string | null) {

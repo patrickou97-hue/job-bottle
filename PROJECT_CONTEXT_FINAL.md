@@ -10,11 +10,11 @@
 
 - 用户目标：投递管理中不再把招聘岗位方向或“软件研发类、市场类”等岗位分类显示为用户自己的投递岗位；用户从岗位入口打开公司官网、返回拾星后，通过弹窗确认是否完成投递，并可同时填写实际投递的具体岗位。未填写时列表保持为空，之后仍可使用投递详情中已有的“我实际投递的岗位”字段补填。
 - 决策与实际改动：`src/components/jobs/ApplyReturnConfirm.tsx` 从页面内确认条升级为复用 `MotionDialog` 的可访问弹窗，新增 160 字以内的可选实际岗位输入；`HomeClient.tsx`、`JobDetailActions.tsx` 与 `GalaxyJobsClient.tsx` 三个官网投递入口统一将确认结果和 `applied_position` 一起保存，并在字段尚未部署时如实提示“投递已记录、岗位暂未同步”。`src/lib/applications.ts` 新增实际岗位清洗与展示函数，只接受用户明确填写的值，不回退到 `job_titles` 或 `job_categories`。
-- 投递管理展示：`MyApplicationsClient.tsx` 的公司下方只显示 `applied_position`，空值保留空白行；地点、行业和批次仍作为独立元信息显示，但岗位分类不再作为缺省内容。`ProgressDrawer.tsx` 头部只在已有实际岗位时显示该岗位，不再显示“岗位方向”或招聘标题回退；原有“我实际投递的岗位”输入框和失焦保存流程保留，并明确允许暂时留空。
+- 投递管理展示：`MyApplicationsClient.tsx` 的公司下方只显示 `applied_position`，空值保留空白行；地点、行业和批次仍作为独立元信息显示，但岗位分类不再作为缺省内容。`ProgressDrawer.tsx` 头部只在已有实际岗位时显示该岗位，不再显示“岗位方向”或招聘标题回退；“我实际投递的岗位”输入停止 700ms 后自动保存、失焦时立即保存，清空也会保存为 `null`，无需点击“保存进度”。自动保存只提交岗位字段，不会把旁边尚未编辑完的流程内容一并落库；失败时保留当前输入并停止循环重试。
 - 兼容边界：未改变岗位筛选与后台岗位分类、状态枚举、投递流程节点、认证、RLS、数据库结构、API 路径、依赖、小程序或浏览器扩展；空输入规范化为 `null`，不猜测岗位。沿用现有 `applied_position` 兼容保护：如果生产库仍缺少该字段，只保存可兼容的投递状态且不谎称岗位已保存；正式登录账号的真实保存仍需单独验证。
-- 验证：`npm run typecheck` 通过；`npm test` 154/154；`npm run lint` 0 错误，保留 `scripts/seed_official_referral_sources.mjs:44` 的既有 1 条 warning；`npm run build -- --webpack` 在隔离工作树接入现有 `.env.local` 后成功生成 62 个路由。首次构建因隔离工作树缺少 Supabase 公共环境变量而在 `/sitemap.xml` 停止，补充只读环境文件引用后通过，不是源码错误。
+- 验证：`npm run typecheck` 通过；`npm test` 155/155（含输入防抖与失焦保存源码回归）；`npm run lint` 0 错误，保留 `scripts/seed_official_referral_sources.mjs:44` 的既有 1 条 warning；`npm run build -- --webpack` 在隔离工作树接入现有 `.env.local` 后成功生成 62 个路由。首次构建因隔离工作树缺少 Supabase 公共环境变量而在 `/sitemap.xml` 停止，补充只读环境文件引用后通过，不是源码错误。
 - 视觉与冒烟：使用临时 QA 路由检查确认弹窗，桌面 1280×720 为 512×322 居中面板；移动端 390×844 为底部面板，输入和三个动作无横向溢出，临时路由已删除。默认 `npm run smoke` 完成 1263 条开放岗位只读读取、资源与前置源码检查后，仍在历史主题断言处停止，原因是 `src/styles/tokens.css` 不再包含旧值 `--night-3: #564A71`；本轮未修改主题 token，也未把 Smoke 记为完整通过。
-- 当前状态：改动位于从 `origin/main@60e816f` 建立的隔离工作树 `/private/tmp/starjob-applied-position`；未修改原有脏工作区，未执行数据库或外部数据写入，未暂存、提交、推送或部署。
+- 当前状态：改动位于从 `origin/main@60e816f` 建立的隔离工作树 `/private/tmp/starjob-applied-position` 和本地分支 `codex/applied-position-confirmation`；未修改原有脏工作区，未执行数据库或外部数据写入，仅保留本地提交，未推送或部署。
 
 ## 2026-09-02 可编辑星瓶海报与简历教育字段（已上线）
 
