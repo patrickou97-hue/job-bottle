@@ -14,7 +14,8 @@
 - 兼容边界：未改变岗位筛选与后台岗位分类、状态枚举、投递流程节点、认证、RLS、数据库结构、API 路径、依赖、小程序或浏览器扩展；空输入规范化为 `null`，不猜测岗位。沿用现有 `applied_position` 兼容保护：如果生产库仍缺少该字段，只保存可兼容的投递状态且不谎称岗位已保存；正式登录账号的真实保存仍需单独验证。
 - 验证：`npm run typecheck` 通过；`npm test` 155/155（含输入防抖与失焦保存源码回归）；`npm run lint` 0 错误，保留 `scripts/seed_official_referral_sources.mjs:44` 的既有 1 条 warning；`npm run build -- --webpack` 在隔离工作树接入现有 `.env.local` 后成功生成 62 个路由。首次构建因隔离工作树缺少 Supabase 公共环境变量而在 `/sitemap.xml` 停止，补充只读环境文件引用后通过，不是源码错误。
 - 视觉与冒烟：使用临时 QA 路由检查确认弹窗，桌面 1280×720 为 512×322 居中面板；移动端 390×844 为底部面板，输入和三个动作无横向溢出，临时路由已删除。默认 `npm run smoke` 完成 1263 条开放岗位只读读取、资源与前置源码检查后，仍在历史主题断言处停止，原因是 `src/styles/tokens.css` 不再包含旧值 `--night-3: #564A71`；本轮未修改主题 token，也未把 Smoke 记为完整通过。
-- 当前状态：改动位于从 `origin/main@60e816f` 建立的隔离工作树 `/private/tmp/starjob-applied-position` 和本地分支 `codex/applied-position-confirmation`；未修改原有脏工作区，未执行数据库或外部数据写入，仅保留本地提交，未推送或部署。
+- 发布与生产证据：功能提交 `50eb965` 与自动保存提交 `14dc490` 已从隔离分支快进推送到 `origin/main`；GitHub Vercel check 对 `14dc490` 返回 `success / Deployment has completed`，deployment 为 `AAzqTJTjcNYTG6CE3CmsEAq8jD7T`。正式站 `/`、`/explore`、`/galaxy`、`/my` 均返回 HTTP 200，线上 HTML 与客户端资源合并检查已检出“这次投递完成了吗”“实际投递岗位（可选）”“确认已投递”“输入后自动保存”和允许留空文案。
+- 数据库与验收边界：正式 Supabase 对 `user_applications?select=applied_position&limit=0` 的匿名只读 schema 探针返回 HTTP 200 / `[]`，确认生产 schema 当前已有 `applied_position`，本轮没有执行 migration 或数据库写入。未修改原有脏工作区；当前没有可用的正式登录测试账号，因此尚未把匿名 schema 探针或页面资源命中当作真实用户“输入→自动保存→刷新回读”的 authenticated E2E 证据。
 
 ## 2026-09-02 可编辑星瓶海报与简历教育字段（已上线）
 
