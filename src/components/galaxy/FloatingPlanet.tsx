@@ -10,12 +10,13 @@ import { cn } from '@/lib/utils'
 type FloatingPlanetProps = {
   planet: PlanetRoute
   hovered: boolean
+  selected: boolean
   entering: boolean
   disabled: boolean
   shouldOrbit: boolean
   orbitScale: number
   planetScale?: number
-  onSelect: (planet: PlanetRoute, rect: DOMRect) => void
+  onSelect: (planet: PlanetRoute) => void
   onHover: (planet: PlanetRoute | null) => void
 }
 
@@ -31,11 +32,12 @@ function PlanetGlyph({ planet }: { planet: PlanetRoute }) {
 }
 
 function getOrbVariant(planet: PlanetRoute): OrbMaterialVariant {
-  if (planet.id === 'applications') return 'violet'
+  if (planet.id === 'applications') return 'rose'
+  if (planet.id === 'extension') return 'cyan'
   if (planet.id === 'bottle') return 'gold'
   if (planet.id === 'resume') return 'cream'
-  if (planet.id === 'forum') return 'rose'
-  if (planet.id === 'auth') return 'cream'
+  if (planet.id === 'forum') return 'violet'
+  if (planet.id === 'auth') return 'muted'
   if (planet.id === 'admin') return 'muted'
   return 'blue'
 }
@@ -43,6 +45,7 @@ function getOrbVariant(planet: PlanetRoute): OrbMaterialVariant {
 export function FloatingPlanet({
   planet,
   hovered,
+  selected,
   entering,
   disabled,
   shouldOrbit,
@@ -51,6 +54,7 @@ export function FloatingPlanet({
   onSelect,
   onHover,
 }: FloatingPlanetProps) {
+  const focused = hovered || selected
   const orbitRadius = planet.orbitRadius * orbitScale
   const planetSize = planet.size * planetScale
   const orbitStyle = {
@@ -74,7 +78,7 @@ export function FloatingPlanet({
           type="button"
           aria-label={planet.label}
           disabled={disabled}
-          onClick={(event) => onSelect(planet, event.currentTarget.getBoundingClientRect())}
+          onClick={() => onSelect(planet)}
           onMouseEnter={() => onHover(planet)}
           onMouseLeave={() => onHover(null)}
           onFocus={() => onHover(planet)}
@@ -82,25 +86,25 @@ export function FloatingPlanet({
           className="relative flex size-full items-center justify-center rounded-full outline-none"
           whileTap={disabled ? undefined : { scale: 0.975 }}
           animate={{
-            scale: entering ? 0.86 : hovered ? 1.04 : 1,
-            opacity: entering ? 0 : 1,
+            scale: entering ? (selected ? 1.08 : 0.94) : hovered ? 1.04 : 1,
+            opacity: entering ? (selected ? 1 : 0.16) : 1,
           }}
-          transition={{ duration: entering ? 0.42 : 0.24, ease: 'easeOut' }}
+          transition={{ duration: entering ? 0.18 : 0.24, ease: 'easeOut' }}
         >
           <OrbMaterial
             size="100%"
             variant={getOrbVariant(planet)}
-            active={hovered}
+            active={focused}
             icon={<PlanetGlyph planet={planet} />}
           />
         </motion.button>
         <motion.span
           className="pointer-events-none absolute left-1/2 top-full mt-2 -translate-x-1/2 whitespace-nowrap text-xs font-medium"
           style={{
-            color: hovered ? 'rgba(241,239,255,0.96)' : 'rgba(201,214,232,0.76)',
-            textShadow: hovered ? '0 0 18px rgba(29, 47, 79,0.28)' : 'none',
+            color: focused ? 'rgba(241,239,255,0.96)' : 'rgba(201,214,232,0.76)',
+            textShadow: focused ? '0 0 18px rgba(29, 47, 79,0.28)' : 'none',
           }}
-          animate={{ opacity: entering ? 0 : 1, y: hovered ? 1 : 0 }}
+          animate={{ opacity: entering ? (selected ? 1 : 0) : 1, y: focused ? 1 : 0 }}
           transition={{ duration: 0.2 }}
         >
           {planet.label}

@@ -44,7 +44,12 @@ export function MobilePlanetList({ planets, disabled, onSelect }: MobilePlanetLi
 }
 
 function getOrbVariant(planet: PlanetRoute): OrbMaterialVariant {
+  if (planet.id === 'applications') return 'rose'
+  if (planet.id === 'extension') return 'cyan'
+  if (planet.id === 'bottle') return 'gold'
+  if (planet.id === 'resume') return 'cream'
   if (planet.id === 'forum') return 'violet'
+  if (planet.id === 'auth') return 'muted'
   if (planet.id === 'admin') return 'muted'
   return 'blue'
 }

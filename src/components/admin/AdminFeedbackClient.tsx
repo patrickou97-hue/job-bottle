@@ -22,6 +22,7 @@ import {
   type AdminFeedbackPlatform,
   type AdminFeedbackStatus,
   type AdminFeedbackResponse,
+  resolveAdminFeedback,
 } from "@/lib/admin-feedback";
 import { cn, formatDateTime } from "@/lib/utils";
 
@@ -40,6 +41,7 @@ export function AdminFeedbackClient() {
   const [refreshing, setRefreshing] = useState(false);
   const [message, setMessage] = useState("");
   const [expandedId, setExpandedId] = useState("");
+  const [resolvingId, setResolvingId] = useState("");
 
   const load = useCallback(async (showLoading = false) => {
     if (showLoading) setRefreshing(true);
@@ -79,6 +81,19 @@ export function AdminFeedbackClient() {
   function updateQuery(value: string) {
     setPage(1);
     setQuery(value);
+  }
+
+  async function resolveFeedback(id: string) {
+    setResolvingId(id);
+    setMessage("");
+    try {
+      await resolveAdminFeedback(id);
+      await load(true);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "反馈状态暂时无法保存，请稍后重试。");
+    } finally {
+      setResolvingId("");
+    }
   }
 
   return (
@@ -121,7 +136,9 @@ export function AdminFeedbackClient() {
       {state === "loading" ? <LoadingState />
         : state === "error" ? <div className="empty-state" role="alert"><div><h2>反馈读取失败</h2><p>{message}</p></div></div>
           : feedback.length === 0 ? <div className="empty-state"><div><h2>没有符合条件的反馈</h2><p>可以更换关键词、处理状态或来源。</p></div></div>
-            : <FeedbackList feedback={feedback} expandedId={expandedId} onToggle={(id) => setExpandedId((current) => current === id ? "" : id)} />}
+            : <FeedbackList feedback={feedback} expandedId={expandedId} resolvingId={resolvingId} onResolve={resolveFeedback} onToggle={(id) => setExpandedId((current) => current === id ? "" : id)} />}
+
+      {message && state === "ready" ? <p className="text-sm text-[color:var(--text-danger)]" role="alert">{message}</p> : null}
 
       {state === "ready" && totalFiltered > 0 ? (
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[color:var(--line-ghost)] pt-4 text-sm text-ink-muted">
@@ -137,7 +154,7 @@ export function AdminFeedbackClient() {
   );
 }
 
-function FeedbackList({ feedback, expandedId, onToggle }: { feedback: AdminFeedbackItem[]; expandedId: string; onToggle: (id: string) => void }) {
+function FeedbackList({ feedback, expandedId, resolvingId, onResolve, onToggle }: { feedback: AdminFeedbackItem[]; expandedId: string; resolvingId: string; onResolve: (id: string) => void; onToggle: (id: string) => void }) {
   return (
     <div className="divide-y divide-[color:var(--line-ghost)] border-y border-[color:var(--line-ghost)]">
       {feedback.map((item) => {
@@ -158,10 +175,16 @@ function FeedbackList({ feedback, expandedId, onToggle }: { feedback: AdminFeedb
                 <p className="flex items-center gap-1.5"><UserRound aria-hidden="true" className="size-3.5" />{item.userId ? "登录用户" : "游客反馈"}</p>
                 <p className="mt-1 truncate">{item.contactEmail || "未留下邮箱"}</p>
               </div>
-              <Button variant="secondary" className="justify-self-start border border-[color:var(--line-ghost)] px-3 lg:justify-self-end" onClick={() => onToggle(item.id)} aria-expanded={expanded} aria-label={expanded ? "收起反馈详情" : "展开反馈详情"}>
-                {expanded ? <X aria-hidden="true" className="size-4" /> : <Clock3 aria-hidden="true" className="size-4" />}
-                {expanded ? "收起" : "查看详情"}
-              </Button>
+              <div className="flex flex-wrap items-center gap-2 lg:justify-self-end">
+                {!item.resolvedAt ? <Button variant="secondary" className="border border-[color:var(--line-ghost)] px-3" onClick={() => onResolve(item.id)} disabled={resolvingId === item.id} aria-label="解决反馈">
+                  <CheckCircle2 aria-hidden="true" className="size-4" />
+                  {resolvingId === item.id ? "保存中" : "解决反馈"}
+                </Button> : null}
+                <Button variant="secondary" className="border border-[color:var(--line-ghost)] px-3" onClick={() => onToggle(item.id)} aria-expanded={expanded} aria-label={expanded ? "收起反馈详情" : "展开反馈详情"}>
+                  {expanded ? <X aria-hidden="true" className="size-4" /> : <Clock3 aria-hidden="true" className="size-4" />}
+                  {expanded ? "收起" : "查看详情"}
+                </Button>
+              </div>
             </div>
             {expanded ? <FeedbackDetails item={item} /> : null}
           </article>

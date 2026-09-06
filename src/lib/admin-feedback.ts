@@ -48,3 +48,17 @@ export async function fetchAdminFeedback(input: {
   }
   return payload as AdminFeedbackResponse;
 }
+
+export async function resolveAdminFeedback(id: string) {
+  const response = await fetch("/api/admin/feedback", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id }),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = payload && typeof payload === "object" && "error" in payload ? payload.error : null;
+    throw new Error(typeof error === "string" ? error : "反馈状态暂时无法保存，请稍后重试。");
+  }
+  return payload as { feedback: { id: string; resolved_at: string | null } };
+}

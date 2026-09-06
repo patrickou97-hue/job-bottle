@@ -7,7 +7,7 @@ export function CorePlanet({ compact = false }: { compact?: boolean }) {
     <div className="relative flex flex-col items-center justify-center">
       <OrbMaterial
         size={size}
-        variant="blue"
+        variant="gold"
         active
         className="min-h-20 min-w-20"
       />

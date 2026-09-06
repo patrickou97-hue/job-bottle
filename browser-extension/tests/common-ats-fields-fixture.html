@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>拾星常见网申字段测试</title>
+    <style>
+      body { font-family: sans-serif; padding: 24px; }
+      section { margin: 18px 0; }
+      label { display: block; margin: 8px 0; }
+      input, select, textarea { min-height: 30px; width: 320px; }
+    </style>
+  </head>
+  <body>
+    <form>
+      <section>
+        <h2>基本信息</h2>
+        <label>姓名 <input id="name" /></label>
+        <label>年龄 <input id="age" type="number" /></label>
+        <label>性别 <select id="gender"><option value="">请选择</option><option>男</option><option>女</option></select></label>
+        <label>期望工作地点 <select id="preferred-location"><option value="">请选择</option><option>中国大陆</option><option>上海</option></select></label>
+        <label>国籍（地区） <select id="nationality"><option value="">请选择</option><option>中国</option></select></label>
+        <label>所在地点 <select id="current-location"><option value="">请选择</option><option>上海</option><option>深圳</option></select></label>
+      </section>
+
+      <section>
+        <h2>教育经历</h2>
+        <div>
+          <label>学校名称 <input id="basicInfo_recruitEducationList_0_schoolName" /></label>
+          <label>学历 <select id="basicInfo_recruitEducationList_0_degree"><option value="">请选择</option><option>本科</option><option>硕士</option></select></label>
+          <label>专业 <input id="basicInfo_recruitEducationList_0_major" /></label>
+          <label>开始时间 <input id="basicInfo_recruitEducationList_0_startDate" type="month" /></label>
+          <label>结束时间 <input id="basicInfo_recruitEducationList_0_endDate" type="month" /></label>
+        </div>
+      </section>
+
+      <section>
+        <h2>工作经历</h2>
+        <label><input id="no-work" type="checkbox" /> 没有工作经历</label>
+      </section>
+
+      <section>
+        <h2>实习经历</h2>
+        <div class="experience-record" data-experience-type="internship">
+          <label>公司名称 <input id="basicInfo_recruitWorkingList_0_companyName" /></label>
+          <label>职位名称 <input id="basicInfo_recruitWorkingList_0_jobTitle" /></label>
+          <label>开始时间 <input id="basicInfo_recruitWorkingList_0_startDate" type="month" /></label>
+          <label>结束时间 <input id="basicInfo_recruitWorkingList_0_endDate" type="month" /></label>
+          <label>描述 <textarea id="basicInfo_recruitWorkingList_0_description"></textarea></label>
+        </div>
+        <div class="experience-record" data-experience-type="internship">
+          <label>公司名称 <input id="basicInfo_recruitWorkingList_1_companyName" /></label>
+          <label>职位名称 <input id="basicInfo_recruitWorkingList_1_jobTitle" /></label>
+          <label>开始时间 <input id="basicInfo_recruitWorkingList_1_startDate" type="month" /></label>
+          <label>结束时间 <input id="basicInfo_recruitWorkingList_1_endDate" type="month" /></label>
+          <label>描述 <textarea id="basicInfo_recruitWorkingList_1_description"></textarea></label>
+        </div>
+      </section>
+
+      <section>
+        <h2>项目经历</h2>
+        <label>项目名称 <input id="basicInfo_recruitProjectList_0_projectName" /></label>
+        <label>项目角色 <input id="basicInfo_recruitProjectList_0_projectRole" /></label>
+        <label>开始时间 <input id="basicInfo_recruitProjectList_0_startDate" type="month" /></label>
+        <label>结束时间 <input id="basicInfo_recruitProjectList_0_endDate" type="month" /></label>
+        <label>项目链接 <input id="project-link" type="url" /></label>
+        <label>描述 <textarea id="basicInfo_recruitProjectList_0_description"></textarea></label>
+      </section>
+
+      <section>
+        <h2>作品</h2>
+        <label>作品链接 <input id="portfolio-link" type="url" /></label>
+        <label>作品附件 <input id="portfolio-file" type="file" /></label>
+      </section>
+
+      <section>
+        <h2>获奖</h2>
+        <label>获奖名称 <input id="basicInfo_recruitAwardList_0_title" /></label>
+        <label>获奖时间 <input id="basicInfo_recruitAwardList_0_date" placeholder="YYYY" /></label>
+        <label>描述 <textarea id="basicInfo_recruitAwardList_0_description"></textarea></label>
+      </section>
+
+      <section>
+        <h2>语言能力</h2>
+        <label>语言 <select id="basicInfo_recruitLanguageList_0_title"><option value="">请选择</option><option>英语</option><option>日语</option></select></label>
+        <label>精通程度 <select id="basicInfo_recruitLanguageList_0_role"><option value="">请选择</option><option>日常会话</option><option>商务沟通</option></select></label>
+      </section>
+
+      <section>
+        <h2>自我评价</h2>
+        <label>自我评价 <textarea id="self-summary"></textarea></label>
+      </section>
+    </form>
+    <pre id="result">pending</pre>
+    <script>
+      const resume = {
+        id: "common-fields-resume",
+        title: "商业分析校招版",
+        targetRole: "商业分析",
+        content: {
+          basics: { name: "王睿", englishName: "", birthDate: "2005-08-18", gender: "男", nationality: "中国", preferredLocations: "中国大陆", phone: "13800000000", email: "ray@example.com", city: "上海", linkedin: "", github: "", website: "https://portfolio.example.com", targetRole: "商业分析" },
+          education: [{ school: "西南财经大学", degree: "本科", major: "金融学", startDate: "2023-09", endDate: "2027-06", gpa: "", courses: "", honors: "" }],
+          work: [
+            { experienceType: "internship", company: "京东集团", title: "商业分析岗", location: "北京", startDate: "2026-05", endDate: "2026-06", current: false, bullets: ["围绕业务增长与转化指标搭建分析框架"] },
+            { experienceType: "internship", company: "中金公司", title: "估值分析", location: "上海", startDate: "2026-03", endDate: "2026-04", current: false, bullets: ["完成估值区间测算及敏感性分析"] },
+          ],
+          projects: [{ name: "MCM 美国大学生数学竞赛", role: "队长", url: "https://project.example.com", startDate: "2026-01", endDate: "2026-02", bullets: ["担任队长，负责统筹建模与 Python 实现"], keywords: "Python；数学建模" }],
+          skills: [{ category: "数据分析", skills: ["Python", "Excel"] }],
+          campus: [],
+          awards: [{ title: "MCM Finalist", role: "", date: "2026", bullets: ["美国大学生数学建模竞赛 Finalist"] }],
+          certifications: [],
+          languages: [{ title: "英语", role: "日常会话", date: "", bullets: [] }],
+          customSections: [],
+        },
+      };
+      const storage = {
+        starjobResumes: [resume], activeResumeId: resume.id, fillMode: "ai", analysisOnly: true,
+        aiOnly: false, aiFieldMappings: {}, aiAutofillOnly: false, aiValueMappings: {},
+      };
+      window.chrome = { storage: { local: { get: async () => ({ ...storage }) } } };
+
+      async function runFixture() {
+        const fillSource = await fetch("../starjob-resume-assistant/fill.js").then((response) => response.text());
+        const analysis = await window.eval(fillSource);
+        const byId = (id) => analysis.fields.find((field) => field.attributes.includes(id));
+        const mapping = (id, value, basis = "resume") => {
+          const field = byId(id);
+          if (field) storage.aiValueMappings[field.fieldKey] = { value, confidence: 0.99, basis };
+          return field;
+        };
+
+        const ageField = byId("age");
+        const noWorkField = byId("no-work");
+        const internshipStart1 = byId("basicInfo_recruitWorkingList_0_startDate");
+        const internshipStart2 = byId("basicInfo_recruitWorkingList_1_startDate");
+        const awardDate = byId("basicInfo_recruitAwardList_0_date");
+        mapping("name", "王睿");
+        mapping("gender", "男");
+        mapping("preferred-location", "中国大陆");
+        mapping("nationality", "中国");
+        mapping("current-location", "上海");
+        mapping("basicInfo_recruitEducationList_0_schoolName", "西南财经大学");
+        mapping("basicInfo_recruitEducationList_0_degree", "本科");
+        mapping("basicInfo_recruitEducationList_0_major", "金融学");
+        mapping("basicInfo_recruitWorkingList_0_companyName", "京东集团");
+        mapping("basicInfo_recruitWorkingList_0_jobTitle", "商业分析岗");
+        mapping("basicInfo_recruitWorkingList_1_companyName", "中金公司");
+        mapping("basicInfo_recruitWorkingList_1_jobTitle", "估值分析");
+        mapping("basicInfo_recruitProjectList_0_projectName", "MCM 美国大学生数学竞赛");
+        mapping("basicInfo_recruitProjectList_0_projectRole", "队长");
+        mapping("project-link", "https://project.example.com");
+        mapping("portfolio-link", "https://portfolio.example.com");
+        mapping("basicInfo_recruitAwardList_0_title", "MCM Finalist");
+        mapping("basicInfo_recruitLanguageList_0_title", "英语");
+        mapping("basicInfo_recruitLanguageList_0_role", "日常会话");
+        mapping("self-summary", "我擅长使用 Python 和 Excel 完成数据分析，也习惯通过结构化建模与敏感性分析验证结论，并能在团队项目中统筹任务、持续推进交付。", "derived");
+
+        storage.analysisOnly = false;
+        storage.aiAutofillOnly = true;
+        const summary = await window.eval(fillSource);
+        const value = (id) => document.getElementById(id).value;
+        const actual = {
+          age: value("age"),
+          noWork: document.getElementById("no-work").checked,
+          gender: value("gender"), preferredLocation: value("preferred-location"), nationality: value("nationality"),
+          currentLocation: value("current-location"), school: value("basicInfo_recruitEducationList_0_schoolName"),
+          educationStart: value("basicInfo_recruitEducationList_0_startDate"), educationEnd: value("basicInfo_recruitEducationList_0_endDate"),
+          internshipScopes: [internshipStart1?.recordScope, internshipStart2?.recordScope],
+          internshipIndices: [internshipStart1?.recordIndex, internshipStart2?.recordIndex],
+          internshipCompanies: [value("basicInfo_recruitWorkingList_0_companyName"), value("basicInfo_recruitWorkingList_1_companyName")],
+          internshipDates: [value("basicInfo_recruitWorkingList_0_startDate"), value("basicInfo_recruitWorkingList_0_endDate"), value("basicInfo_recruitWorkingList_1_startDate"), value("basicInfo_recruitWorkingList_1_endDate")],
+          internshipDescriptions: [value("basicInfo_recruitWorkingList_0_description"), value("basicInfo_recruitWorkingList_1_description")],
+          projectRole: value("basicInfo_recruitProjectList_0_projectRole"), projectLink: value("project-link"),
+          portfolioLink: value("portfolio-link"), awardDate: value("basicInfo_recruitAwardList_0_date"),
+          awardDateKey: awardDate?.deterministicKey, language: value("basicInfo_recruitLanguageList_0_title"), proficiency: value("basicInfo_recruitLanguageList_0_role"),
+          selfSummary: value("self-summary"),
+          fileExcluded: byId("portfolio-file") === undefined,
+          ageKey: ageField?.deterministicKey, noWorkKey: noWorkField?.deterministicKey, summary,
+        };
+        const expectedAge = (() => {
+          const now = new Date();
+          let age = now.getFullYear() - 2005;
+          if (now.getMonth() + 1 < 8 || (now.getMonth() + 1 === 8 && now.getDate() < 18)) age -= 1;
+          return String(age);
+        })();
+        const passed = actual.age === expectedAge
+          && actual.ageKey === "basics.age"
+          && actual.noWork === true && actual.noWorkKey === "work.none"
+          && actual.gender === "男" && actual.preferredLocation === "中国大陆" && actual.nationality === "中国"
+          && actual.currentLocation === "上海" && actual.school === "西南财经大学"
+          && actual.educationStart === "2023-09" && actual.educationEnd === "2027-06"
+          && actual.internshipScopes.join(",") === "internship,internship"
+          && actual.internshipIndices.join(",") === "0,1"
+          && actual.internshipCompanies.join(",") === "京东集团,中金公司"
+          && actual.internshipDates.join(",") === "2026-05,2026-06,2026-03,2026-04"
+          && actual.internshipDescriptions[0].includes("业务增长") && actual.internshipDescriptions[1].includes("敏感性分析")
+          && actual.projectRole === "队长" && actual.projectLink === "https://project.example.com"
+          && actual.portfolioLink === "https://portfolio.example.com"
+          && actual.awardDate === "2026" && actual.awardDateKey === "awards.date"
+          && actual.language === "英语" && actual.proficiency === "日常会话"
+          && actual.selfSummary.startsWith("我擅长") && actual.fileExcluded;
+        document.getElementById("result").textContent = JSON.stringify({ passed, actual });
+        document.title = passed ? "STARJOB_COMMON_ATS_FIELDS_TEST_PASS" : "STARJOB_COMMON_ATS_FIELDS_TEST_FAIL";
+      }
+
+      runFixture().catch((error) => {
+        document.getElementById("result").textContent = JSON.stringify({ passed: false, error: String(error) });
+        document.title = "STARJOB_COMMON_ATS_FIELDS_TEST_FAIL";
+      });
+    </script>
+  </body>
+</html>

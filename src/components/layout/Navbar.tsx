@@ -36,10 +36,12 @@ const mobileNavItems = [
   { href: "/profile", label: "个人", icon: UserCircleIcon },
 ];
 
+type NavbarProfile = Pick<Profile, "id" | "display_name" | "role">;
+
 export function Navbar({ appearance = "work" }: { appearance?: "scene" | "work" }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<NavbarProfile | null>(null);
 
   useEffect(() => {
     if (!isSupabaseConfigured()) return;
@@ -52,12 +54,12 @@ export function Navbar({ appearance = "work" }: { appearance?: "scene" | "work" 
         if (mounted) setProfile(null);
         return;
       }
-      const { data, error } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
+      const { data, error } = await supabase.from("profiles").select("id,display_name,role").eq("id", user.id).maybeSingle();
       if (error) {
         if (mounted) setProfile(null);
         return;
       }
-      if (mounted) setProfile((data as Profile | null) ?? null);
+      if (mounted) setProfile((data as NavbarProfile | null) ?? null);
     }
 
     void loadProfile();

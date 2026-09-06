@@ -28,7 +28,7 @@ export function SceneArrivalVeil() {
     });
     const timer = window.setTimeout(() => {
       delete root.dataset.sceneTransition;
-    }, reducedMotion ? 140 : 680);
+    }, reducedMotion ? 140 : 480);
 
     return () => {
       window.cancelAnimationFrame(frame);

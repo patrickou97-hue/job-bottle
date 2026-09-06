@@ -4,28 +4,43 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>拾星网申助手</title>
-    <link rel="stylesheet" href="popup.css?v=027-field-strategy" />
+    <link rel="stylesheet" href="popup.css?v=030-compact" />
   </head>
   <body>
     <main class="shell">
       <header class="brand-row">
-        <img src="assets/wordmark.png" alt="拾星" class="brand-wordmark" />
+        <img src="assets/icon48.png" alt="" class="brand-icon" />
         <div class="brand-copy">
-          <h1>网申助手</h1>
-          <p>本地读取简历 · 最终由你提交</p>
+          <h1>拾星网申助手</h1>
+          <p>只在你点击时填写当前页面</p>
         </div>
+        <span class="safety-badge">安全模式</span>
       </header>
 
+      <section id="pageContext" class="page-context" aria-label="当前网申页">
+        <p class="context-label">当前网申页</p>
+        <strong id="pageTitle">正在读取当前页面</strong>
+        <p id="pageUrl" class="context-url">打开网申页面后才会读取字段</p>
+        <p id="pageFieldMeta" class="context-meta">不会自动读取、填写或提交页面内容</p>
+      </section>
+
       <section id="emptyState" class="state-panel" hidden>
-        <h2>先同步一份拾星简历</h2>
-        <p>安装后前往拾星助手页，登录并选择“同步到扩展”。</p>
+        <h2>还没有选择简历</h2>
+        <p>先同步一份拾星简历，选择后才会出现填写动作，不会自动读取或提交。</p>
         <button id="openSyncFromEmpty" class="button button-primary" type="button">前往同步</button>
       </section>
 
       <section id="readyState" class="control-stack" hidden>
-        <label class="field-group" for="resumeSelect">
-          <span class="field-label-line"><span>使用简历</span><span aria-hidden="true">已同步版本</span></span>
-          <select id="resumeSelect"></select>
+        <label class="resume-picker" for="resumeSelect">
+          <span class="context-label">使用简历</span>
+          <span class="resume-picker-row">
+            <span class="resume-monogram" aria-hidden="true">CV</span>
+            <span class="resume-picker-copy">
+              <select id="resumeSelect" aria-label="选择拾星简历"></select>
+              <span id="resumeMeta">已同步简历</span>
+              <span id="prepMeta" class="prep-meta">可选：先在拾星完成网申前准备</span>
+            </span>
+          </span>
         </label>
 
         <fieldset class="mode-group">
@@ -45,7 +60,8 @@
         </fieldset>
         <p id="modeHint" class="mode-hint">默认只填写空白项，不会改动你已经输入的内容。</p>
 
-        <button id="fillButton" class="button button-primary" type="button">一键填写当前页面</button>
+        <button id="fillButton" class="button button-primary" type="button">只填空白项</button>
+        <p class="safe-note">不会填写验证码、密码或敏感声明 · 由你检查并提交</p>
         <div class="meta-row"><span class="meta-dot" aria-hidden="true"></span><p id="syncMeta" class="meta"></p></div>
       </section>
 
@@ -83,6 +99,6 @@
         <button id="clearData" class="text-button text-button-danger" type="button">清除本地数据</button>
       </footer>
     </main>
-    <script src="popup.js?v=027-field-strategy"></script>
+    <script src="popup.js?v=030-compact"></script>
   </body>
 </html>

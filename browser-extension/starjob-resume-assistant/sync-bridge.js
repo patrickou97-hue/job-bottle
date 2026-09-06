@@ -33,8 +33,11 @@ window.addEventListener("message", async (event) => {
     }
 
     const previous = await chrome.storage.local.get(["activeResumeId"]);
-    const activeResumeId = resumes.some((resume) => resume.id === previous.activeResumeId)
-      ? previous.activeResumeId
+    const requestedActiveResumeId = typeof message.activeResumeId === "string" ? message.activeResumeId : null;
+    const activeResumeId = resumes.some((resume) => resume.id === requestedActiveResumeId)
+      ? requestedActiveResumeId
+      : resumes.some((resume) => resume.id === previous.activeResumeId)
+        ? previous.activeResumeId
       : resumes[0]?.id || null;
     const lastSyncedAt = typeof message.syncedAt === "string" ? message.syncedAt : new Date().toISOString();
     const matchToken = typeof message.matchToken === "string" && message.matchToken.length <= 1_200 ? message.matchToken : null;

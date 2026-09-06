@@ -2,12 +2,44 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [popup, fill, route, rateLimitHelper] = await Promise.all([
+const [popup, popupHtml, popupCss, fill, route, rateLimitHelper, syncBridge] = await Promise.all([
   readFile(new URL("../../browser-extension/starjob-resume-assistant/popup.js", import.meta.url), "utf8"),
+  readFile(new URL("../../browser-extension/starjob-resume-assistant/popup.html", import.meta.url), "utf8"),
+  readFile(new URL("../../browser-extension/starjob-resume-assistant/popup.css", import.meta.url), "utf8"),
   readFile(new URL("../../browser-extension/starjob-resume-assistant/fill.js", import.meta.url), "utf8"),
   readFile(new URL("../../src/app/api/resume/extension-autofill/route.ts", import.meta.url), "utf8"),
   readFile(new URL("../../src/lib/extension-autofill-rate-limit.ts", import.meta.url), "utf8"),
+  readFile(new URL("../../browser-extension/starjob-resume-assistant/sync-bridge.js", import.meta.url), "utf8"),
 ]);
+
+test("真实 popup 与 Chrome 演示共享同一套面板结构和安全文案", () => {
+  assert.match(popupHtml, /assets\/icon48\.png/);
+  assert.match(popupHtml, /拾星网申助手/);
+  assert.match(popupHtml, /安全模式/);
+  assert.match(popupHtml, /id="pageContext"/);
+  assert.match(popupHtml, /当前网申页/);
+  assert.match(popupHtml, /只填空白项/);
+  assert.match(popupHtml, /覆盖已有内容/);
+  assert.match(popupHtml, /AI 智能填写/);
+  assert.match(popupHtml, /id="prepMeta"/);
+  assert.match(popupHtml, /不会填写验证码、密码或敏感声明/);
+  assert.match(popupCss, /background: #f1f3f4/);
+  assert.match(popupCss, /border-radius: 12px/);
+  assert.match(popupCss, /#e8f0fe/);
+  assert.match(popupCss, /\.button\s*\{[\s\S]*font-size: 12px/);
+  assert.match(popupCss, /\.mode-group label\s*\{[\s\S]*font-size: 9px/);
+  assert.match(popup, /renderPageContext/);
+  assert.match(popup, /formatApplicationPrep/);
+  assert.match(popup, /仍可正常填写/);
+  assert.match(popup, /当前选中的/);
+  assert.match(popup, /selectedResume\?\.title/);
+});
+
+test("网申助手同步时保留网页端选中的当前简历", () => {
+  assert.match(syncBridge, /requestedActiveResumeId/);
+  assert.match(syncBridge, /message\.activeResumeId/);
+  assert.match(syncBridge, /activeResumeId,/);
+});
 const durableRateMigration = await readFile(
   new URL("../../supabase/migrations/20260810110000_extension_autofill_durable_rate_limit.sql", import.meta.url),
   "utf8",

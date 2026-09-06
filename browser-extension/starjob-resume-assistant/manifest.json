@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "拾星网申助手",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "description": "按所选拾星简历填写网申表单，支持 AI 智能填写；最终由你确认提交。",
   "action": {
     "default_popup": "popup.html",

@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { FileText, KeyRound } from "lucide-react";
+import { memo } from "react";
 import { StatusPill } from "@/components/applications/StatusPill";
 import { getApplicationStageLabel, getJobPrimaryAction, type MaterialReadiness } from "@/lib/career-workspace";
 import { cn } from "@/lib/utils";
 import type { Job, UserApplication } from "@/lib/types";
 
-export function JobCard({
+export const JobCard = memo(function JobCard({
   job,
   application,
   deadline = null,
@@ -121,4 +122,4 @@ export function JobCard({
       </div>
     </div>
   );
-}
+});

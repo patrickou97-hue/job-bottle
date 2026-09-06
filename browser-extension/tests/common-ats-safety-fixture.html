@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>拾星常见字段空值安全测试</title>
+    <style>
+      body { font-family: sans-serif; padding: 24px; }
+      label { display: block; margin: 10px 0; }
+      input, select { min-height: 30px; width: 320px; }
+    </style>
+  </head>
+  <body>
+    <form>
+      <section>
+        <h2>基本信息</h2>
+        <label>年龄 <input id="age" type="number" /></label>
+        <label>性别 <select id="gender"><option value="">请选择</option><option>男</option><option>女</option></select></label>
+        <label>期望工作地点 <select id="preferred-location"><option value="">请选择</option><option>中国大陆</option><option>香港</option></select></label>
+        <label>国籍（地区） <select id="nationality"><option value="">请选择</option><option>中国</option><option>其他</option></select></label>
+      </section>
+      <section>
+        <h2>工作经历</h2>
+        <label><input id="no-work" type="checkbox" /> 没有工作经历</label>
+      </section>
+      <section>
+        <h2>项目经历</h2>
+        <label>项目链接 <input id="project-link" type="url" /></label>
+      </section>
+      <section>
+        <h2>作品</h2>
+        <label>作品附件 <input id="portfolio-file" type="file" /></label>
+      </section>
+    </form>
+    <pre id="result">pending</pre>
+    <script>
+      const resume = {
+        id: "common-fields-safety-resume",
+        title: "空值安全测试",
+        targetRole: "商业分析",
+        content: {
+          basics: { name: "测试用户", englishName: "", birthDate: "", gender: "", nationality: "", preferredLocations: "", phone: "", email: "", city: "", linkedin: "", github: "", website: "", targetRole: "商业分析" },
+          education: [],
+          work: [{ experienceType: "employment", company: "示例公司", title: "商业分析岗", location: "", startDate: "2025-01", endDate: "2025-06", current: false, bullets: [] }],
+          projects: [{ name: "无链接项目", role: "", url: "", startDate: "", endDate: "", bullets: [], keywords: "" }],
+          skills: [], campus: [], awards: [], certifications: [], languages: [], customSections: [],
+        },
+      };
+      const storage = {
+        starjobResumes: [resume], activeResumeId: resume.id, fillMode: "ai", analysisOnly: true,
+        aiOnly: false, aiFieldMappings: {}, aiAutofillOnly: false, aiValueMappings: {},
+      };
+      window.chrome = { storage: { local: { get: async () => ({ ...storage }) } } };
+
+      async function runFixture() {
+        const fillSource = await fetch("../starjob-resume-assistant/fill.js").then((response) => response.text());
+        const analysis = await window.eval(fillSource);
+        const byId = (id) => analysis.fields.find((field) => field.attributes.includes(id));
+        storage.analysisOnly = false;
+        storage.aiAutofillOnly = true;
+        const summary = await window.eval(fillSource);
+        const actual = {
+          age: document.getElementById("age").value,
+          gender: document.getElementById("gender").value,
+          preferredLocation: document.getElementById("preferred-location").value,
+          nationality: document.getElementById("nationality").value,
+          noWork: document.getElementById("no-work").checked,
+          projectLink: document.getElementById("project-link").value,
+          exposedSafeFields: [byId("gender"), byId("preferred-location"), byId("nationality"), byId("project-link")].every(Boolean),
+          fileExcluded: byId("portfolio-file") === undefined,
+          summary,
+        };
+        const passed = actual.age === ""
+          && actual.gender === ""
+          && actual.preferredLocation === ""
+          && actual.nationality === ""
+          && actual.noWork === false
+          && actual.projectLink === ""
+          && actual.exposedSafeFields
+          && actual.fileExcluded
+          && summary.filled === 1;
+        document.getElementById("result").textContent = JSON.stringify({ passed, actual });
+        document.title = passed ? "STARJOB_COMMON_ATS_SAFETY_TEST_PASS" : "STARJOB_COMMON_ATS_SAFETY_TEST_FAIL";
+      }
+
+      runFixture().catch((error) => {
+        document.getElementById("result").textContent = JSON.stringify({ passed: false, error: String(error) });
+        document.title = "STARJOB_COMMON_ATS_SAFETY_TEST_FAIL";
+      });
+    </script>
+  </body>
+</html>

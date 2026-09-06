@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createExtensionMatchToken } from "@/lib/extension-match-token";
+import { getApplicationPrepSummary } from "@/lib/application-prep";
 import { resumeRowToDocument } from "@/lib/resume-sync";
 import { createClient } from "@/lib/supabase/server";
 
@@ -28,6 +29,7 @@ export async function GET() {
       const document = resumeRowToDocument(row);
       return {
         ...document,
+        applicationPrep: getApplicationPrepSummary(document),
         content: {
           ...document.content,
           basics: {

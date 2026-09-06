@@ -1,5 +1,49 @@
 # 拾星 StarJob — 最终完整确认版交接文档
 
+## 2026-09-06 首页、性能、网申助手与反馈改动统一发布候选（待推送）
+
+- 用户目标：把前面已在本地验证、但尚未上线的产品改动统一发布，包括首页轻量转场与太阳系配色、岗位列表性能、网申助手演示与网申前准备、真实 0.2.8 popup、以及管理员反馈解决按钮。
+- 发布边界：纳入网站源码、公开的 `public/downloads/starjob-resume-assistant-v0.2.8.zip`、扩展源码和相关回归测试；不纳入未跟踪的 PRD、`promo-video/` 或浏览器夹具之外的本地宣传/探索材料。真实 Chrome Web Store 上架不等同于网站安装包上线，本次只发布网站可下载包与官网入口。
+- 兼容边界：不新增 Supabase migration/RLS/DDL，不写入用户数据，不改变真实扩展的敏感字段、验证码、密码、自动提交禁止规则；网申前准备仍绑定当前 `ResumeDocument`，可以跳过，不阻断正常填写。首页贴图实验已回退，不发布行星贴图资源、土星环或额外纹理请求。
+- 发布前验证：`node --test scripts/tests/motion-performance.test.mjs` 8/8；`npm test` 166/166；`npm run lint` 0 errors、保留 3 条既有 warning；`npm run build -- --webpack` 成功生成 62 个路由；`npm run build:extension` 与 `npm run verify:extension-package` 通过；`git diff --check` 通过。`npm run test:extension` 在当前机器因 Chrome 未输出页面内容仍未作为通过证据。
+- Git、部署与外部状态：当前改动仍在本地 `main` 工作区，尚未生成本轮发布提交、推送或触发 Vercel；待与 `origin/main` 的 favicon 提交安全合并后发布。正式站点、线上缓存、登录态网申填写和 Chrome Web Store 状态在发布完成前不宣称已验证。
+
+## 2026-09-06 首页转场改为轻量目标星球淡出（本地已验证，未部署）
+
+- 用户目标：试用方案 3，取消首页点击后的十字星全屏放大；保留星系首页，让目标星球轻微强调、其余内容淡出，再由新页面轻微上移淡入。
+- 决策：不删除首页、不新增动画库、不使用全屏 `blur` / `backdrop-filter`；转场只使用 `opacity`、`transform` 和已有 Motion，点击后等待 180ms 让目标星球完成轻微强调再导航。首页直接跳工作台时不再调用 `markSceneDeparture`，避免额外触发深色全屏 arrival veil；其他 scene 页面原有导航仍保留自己的到达处理。
+- 实际改动：`src/components/galaxy/SpaceHome.tsx` 删除 `PlanetTransitionOverlay` 和中心十字星遮罩，改为 `selectedPlanetId` + `isLeaving` 状态；点击目标星球放大至 1.08、其他星球降至 0.94/0.16 透明度，轨道线、中心星和顶部品牌轻量淡出，保留 `router.prefetch` 与登录跳转逻辑。`src/components/galaxy/FloatingPlanet.tsx` 增加目标态并把选中反馈限制在小行星组件内；`src/components/layout/RouteContentTransition.tsx` 启用已有 `pageVariants` 的 `opacity: 0 → 1`、`y: 8 → 0` 页面进入；删除不再使用的 `PlanetTransitionOverlay.tsx` 及对应 CSS；同步更新动效测试和 smoke 契约。
+- 性能与兼容边界：不引入 canvas、GSAP、Lottie、持续 `requestAnimationFrame` 或整页动态模糊；动画主要落在合成友好的透明度和变换，reduced-motion 下直接导航。数据库、Supabase、简历、网申助手、权限和其他 scene 路由不变。
+- 验证：定向动效测试 7/7；`npm test` 165/165；`npm run lint` 0 errors，保留 3 条既有 warning；`npm run build -- --webpack` 成功生成 62 个路由；本地生产服务 `http://127.0.0.1:3110/` 实际点击“简历制作”后进入 `/resume`，截图确认没有十字星遮罩且目标页面正常呈现；`git diff --check` 通过。
+- Git、部署与外部状态：修改继续保留在当前 `main` 工作区，未提交、未推送、未部署；本地 3110 预览已重启并保留首页检查点。
+
+## 2026-09-06 首页太阳系配色与求职主路径重排（本地已验证，未部署）
+
+- 用户目标：继续保留星系首页，但重新安排首页应该承载的内容；参考太阳系为星球增加可辨认的低饱和配色，并让用户一眼看懂“找岗位 → 做简历 → 网申 → 管理投递”的主路径。
+- 决策：不砍首页，也不把首页改成信息卡片工作台。中心星球作为太阳；第一层轨道放“岗位坐标、简历制作”，第二层放“投递管理、网申助手”，外层放“星瓶、拾星指南”；登录/资料保留在右上角，不再重复占用一个轨道位。首页底部增加极轻的“发现机会 · 准备材料 · 安全网申”提示，提供动线解释但不制造新的卡片和请求。
+- 实际改动：`src/lib/planet-routes.ts` 新增真实的 `网申助手` `/extension` 行星并按四层轨道重新编排；`src/components/galaxy/SpaceHome.tsx` 移除轨道内重复的登录星球、补充网申助手移动端位置和主路径提示；`src/components/galaxy/FloatingPlanet.tsx` 为网申助手和星瓶补充图标/配色映射；`src/components/galaxy/CorePlanet.tsx` 将中心材质改为太阳金色；`src/components/visual/OrbMaterial.tsx` 将岗位、网申、投递、简历、星瓶、指南和登录/管理员分别映射为地球青蓝、天王星青色、火星红、土星沙金、木星琥珀、海王星蓝紫和月面灰；`src/components/galaxy/planet-visuals.ts`、`MobilePlanetList.tsx` 同步扩展网申助手视觉类型和映射；同步补充动效测试与首页 smoke 契约。
+- 性能与兼容边界：配色只使用现有 CSS radial-gradient、box-shadow、opacity/transform 和已有图标，不新增图片、canvas、动画库、持续 `requestAnimationFrame`、网络请求或 Supabase 读写；轨道仍由最多四条 CSS 同心线承载，移除一个重复账号星球后首页 DOM 更少。所有真实路由、登录回跳、简历、网申助手、投递数据和权限语义保持不变。
+- 验证：`node --test scripts/tests/motion-performance.test.mjs` 8/8；`npm test` 166/166；`npm run lint` 0 errors，保留 3 条既有 warning；`npm run build -- --webpack` 成功生成 62 个路由；`git diff --check` 通过。重启本地生产服务 `http://127.0.0.1:3110/` 后截图确认中心太阳、分层轨道和多色行星已生效；浏览器实际从首页到达 `/extension` 并确认“拾星网申助手”页面可用，随后恢复首页检查点。
+- Git、部署与外部状态：修改继续保留在当前 `main` 工作区，未提交、未推送、未部署；没有写入 Supabase。真实设备的 FPS、登录态云端数据和线上 CDN 缓存仍未在本轮宣称通过；当前本地生产预览为 `http://127.0.0.1:3110/`。
+
+## 2026-09-06 首页真实行星贴图试用后回退（本地已验证，未部署）
+
+- 用户反馈：尝试成熟行星贴图后，视觉观感偏“塑料”，要求回退成原来的首页材质。
+- 决策：撤销本轮贴图实验，不保留真实表面图、土星环或贴图资源；保留上一轮已经确认的太阳系色彩映射、首页主路径和轻量转场。首页继续使用现有 CSS radial-gradient、box-shadow 和图标材质，避免因为追求写实而失去拾星的品牌感。
+- 实际回退：从 `src/components/visual/OrbMaterial.tsx` 移除 `textureSrc`、贴图背景层和贴图 data attribute；从 `CorePlanet.tsx` 移除太阳贴图；从 `FloatingPlanet.tsx` 移除土星环和星瓶试验图标；移除 `public/assets/space/planets/` 下本轮下载的贴图与 README；同步删除贴图专用测试和 smoke 断言。此前的 `OrbMaterial` 太阳系低饱和配色和首页内容重排不回退。
+- 性能与兼容边界：本轮最终不新增图片请求、静态资源、依赖、WebGL、运行时纹理处理或数据库行为；首页恢复到贴图前的资源负担。Solar System Scope 贴图仅作为设计评估材料，不进入产品发布包。
+- 验证：`node --test scripts/tests/motion-performance.test.mjs` 8/8；`npm test` 166/166；`npm run lint` 0 errors，保留 3 条既有 warning；`npm run build -- --webpack` 成功生成 62 个路由；`git diff --check` 通过。重启 `http://127.0.0.1:3110/` 后截图确认真实贴图和土星环已消失，上一版 CSS 行星配色仍在。
+- Git、部署与外部状态：修改继续保留在当前 `main` 工作区，未提交、未推送、未部署；没有写入 Supabase。当前 localhost 已重启并停留在首页检查点。
+
+## 2026-09-06 网申助手演示二次收紧与流程入口强化（本地已验证，未部署）
+
+- 用户目标：把网申前准备归属到网申助手 section 内，先选择本次使用的简历，再可选补充基本资料和经历；针对用户截图继续缩小网页演示中的插件面板字号，同时让“体验使用流程”入口在首屏明显可见。
+- 决策：简历制作顶层只维护 `ResumeDocument`；`/extension` 内的准备流程先确定简历来源，后续基本信息、教育/实习/工作、项目和技能检查都绑定当前简历，跳过准备不阻断正常填写。演示仅模拟视觉和交互，不替代真实扩展的 AI 请求、字段安全判断或提交边界。
+- 实际改动：`src/components/extension/ExtensionPreparation.tsx`、`src/components/resume/ApplicationPrepPanel.tsx` 和 `ExtensionHubClient.tsx` 完成选择简历、保存与同步当前简历；`browser-extension/starjob-resume-assistant/sync-bridge.js` / `popup.js` 保留并展示网页端选中的简历，AI 文案明确只使用当前简历；`browser-extension/starjob-resume-assistant/popup.css` 修复主按钮继承浏览器默认 16px 的问题，收紧真实 popup；`src/components/extension/ExtensionDemoDialog.tsx` 将网页演示 Chrome popup 从 304px 收窄到 278px，继续降低标题、说明、简历卡、模式按钮、主按钮和安全文案字号，并单独将“选择拾星简历”设为 8px、三种填写方式设为 7px、主操作文字设为 9px，保留标准四色 Chrome logo、实习字段和 2.6 秒 AI 分析序列；`ExtensionHubClient.tsx` 将“体验使用流程”改为蓝色主按钮并置于安装教程之前；测试补充面板宽度、四个操作文字字号和入口样式断言。排查发现网页演示字号异常的根因是 `src/app/globals.css` 中未分层的 `button, input, textarea, select { font: inherit; }` 覆盖了 Tailwind 的 `text-[7px]`、`text-[9px]` 和 `font-medium`，导致浏览器实际计算仍是 16px/400；已将该控件重置移入 `@layer base`，让局部字号和字重真正生效。
+- 兼容边界：不新增数据库、migration、RLS、API 或第二套简历；云端仍复用现有 `resumes` 读写，本地仍复用现有简历存储。真实 popup 的 AI 分析流程不被演示动画替换；演示没有持续循环、`requestAnimationFrame` 或重型滤镜，reduced-motion 下跳过等待直接展示结果。
+- 验证：`npm run typecheck` 通过（由生产 build 内 TypeScript 检查覆盖）；根因修复前浏览器计算样式为模式按钮 16px/400/24px、高 58px，修复后为 7px/500/10.5px、高 20.5px；主按钮实际为 9px/500/13.5px、高 25.5px，确认不是浏览器缩放或 `devicePixelRatio` 问题。`npm test` 165/165；`npm run lint` 0 errors，保留 3 条既有 warning；`npm run build -- --webpack` 成功生成 62 个路由；`npm run build:extension` 成功生成 `public/downloads/starjob-resume-assistant-v0.2.8.zip`（173203 bytes）；`git diff --check` 通过。`http://127.0.0.1:3110/extension` 已实际完成“首屏明显入口 → 打开插件 → 选择简历 → AI 分析 → 填写完成”，浏览器截图和 computed-style 检查确认网页演示面板已收窄至 278px、入口为蓝色主按钮、操作字不再被全局样式放大；DOM 验证了 10 个字段、6 个空白项、三段分析状态和 6 个字段结果。真实设备 FPS、登录态云端保存和真实 Chrome/ATS 填写仍是独立验收项。
+- Git、部署与外部状态：所有修改继续保留在当前 `main` 工作区，未提交、未推送、未部署，未写入 Supabase；当前本地生产预览为 `http://127.0.0.1:3110/extension`。
+
 ## 三文档不可绕过死命令（2026-08-09 起）
 
 **死命令：任何代码、组件、样式、路由、API、类型、脚本、migration / RLS / DDL、数据库或外部数据写入、数据源或导入规则、环境变量、自动化、依赖、产品或视觉决策、测试、Git、部署、回滚、风险边界或验证证据只要发生变化，都必须在同一工作会话内同时、等量更新 `PROJECT_CONTEXT_FINAL.md`、`PROJECT_CONTEXT.md`、`PROJECT_CONTEXT_AUDIT.md`。三份任一漏写、内容不一致或缺少证据时，禁止暂存、提交、推送、部署、宣称完成或交接。后续代理无权跳过、弱化、延期、改成单文档记录，也不得用聊天记录、代码注释、提交信息或其他文档替代。**
@@ -21,6 +65,52 @@
 - 验证与状态：透明角像素和资源格式检查通过，视觉检查通过；改动位于 `codex/favicon-wordmark` 本地分支，尚未推送或部署。
 
 每次三文档记录至少写明：日期、用户目标、根因/决策、实际改动文件与行为、兼容边界、验证命令和结果、提交与部署证据（如有）、已确认和未确认的外部状态。若本次只完成诊断而没有修改，也必须在三份文档中同步写清“零修改/零部署”及诊断证据。
+
+## 2026-09-06 管理员反馈解决状态（本地未部署）
+
+- 用户目标：在反馈管理中加入“解决反馈”按钮；解决状态只对管理员可见，普通用户不能看到反馈是否已解决。
+- 决策：复用现有 `feedback_submissions.resolved_at` 字段，不新增 migration、RLS、DDL 或第二套状态；管理员通过同一路径的受保护 `PATCH /api/admin/feedback` 写入解决时间，操作使用当前管理员会话客户端，数据库在写入时再次复核管理员权限。
+- 实际改动：`src/app/api/admin/feedback/route.ts` 新增 UUID 校验、管理员鉴权、幂等的解决写入与状态返回；`src/lib/admin-feedback.ts` 新增 `resolveAdminFeedback`；`src/components/admin/AdminFeedbackClient.tsx` 在未解决反馈行加入“解决反馈”按钮，保存后刷新列表和待处理/已处理统计。普通 `/api/feedback` 与 `createFeedback` 仍只返回提交成功和反馈 ID，不返回 `resolved_at`。
+- 兼容边界：不改变普通用户提交反馈、网页/小程序来源、反馈内容、搜索筛选、分页和现有后台读取；状态只存在管理员接口和管理员页面中。没有执行数据库写入，没有把解决状态暴露到用户端，也没有新增“撤销解决”行为。
+- 验证：新增 `tests/admin-feedback.test.ts`，验证解决写入必须经过 `requireAdminAccess`、使用 caller-scoped Supabase 更新、普通反馈接口不暴露解决字段；`npm test` 159/159；`npm run typecheck` 通过；`npm run lint` 0 errors，保留 3 条既有 warning；`npm run build -- --webpack` 成功生成 62 个路由；本地生产 `/admin/feedback` 返回 200，匿名 GET/PATCH `/api/admin/feedback` 分别返回 401；`git diff --check` 通过。没有管理员真实登录态，因此未宣称真实点击写入和刷新统计的 authenticated E2E 已通过。
+- Git、部署与外部状态：修改留在当前 `main` 工作区，未提交、未推送、未部署；没有写入 Supabase。已有性能整改、网申助手演示、PRD、测试夹具和 `promo-video/` 等用户工作区修改保持不动。
+
+## 2026-09-06 网申助手真实 popup 与演示一致化（本地已打包，未部署）
+
+- 用户目标：将真实 Chrome/Chromium 扩展 popup 对齐当前更好看的网申助手演示，并保证真实能力、演示流程和官网最新安装包一致。
+- 决策：真实 popup 保留真实的三种填写语义（只填空白项、覆盖已有内容、AI 智能填写）和原有安全边界，以演示面板的 Chrome 视觉为基准：拾星插件图标、当前网申页卡片、简历卡片、圆角白色面板、安全模式、蓝色主操作和“由你检查并提交”提示。演示同步补齐覆盖模式，不再只展示两种填写方式。
+- 实际改动：`browser-extension/starjob-resume-assistant/popup.html` / `popup.css` / `popup.js` 重做 popup 结构、颜色、圆角、间距与当前页上下文；popup 只在打开时读取活动标签页标题/路径元数据，不读取表单内容，点击填写仍沿用原有 `fill.js`、跨 iframe、AI 批次和敏感字段防护。`ExtensionDemoDialog.tsx` 将演示面板的填写方式改为与真实 popup 相同的三态。`manifest.json` 升为 0.2.8，官网 `ExtensionHubClient.tsx` / `ExtensionGuide.tsx` 与 README、smoke 契约改指向 0.2.8；生成 `public/downloads/starjob-resume-assistant-v0.2.8.zip` 和 `dist/拾星网申助手-v0.2.8.zip`。
+- 兼容边界：未改变网申字段识别、AI 接口、同步协议、权限、自动提交禁止规则、敏感字段边界、数据库、Supabase、网站登录和既有 0.2.5 载荷兼容；没有把演示当成真实填写。0.2.7 及更早版本仍可被网站识别，0.2.8 只新增 popup 视觉与上下文展示。
+- 验证：`npm test` 160/160；popup 与演示定向契约 12/12；`npm run typecheck` 通过；`npm run lint` 0 errors、保留 3 条既有 warning；`npm run build -- --webpack` 成功生成 62 个路由；`npm run build:extension` 生成 171,694 bytes 的 0.2.8 包；`npm run verify:extension-package` 确认官网包与 dist 副本 12/12 文件逐字节一致；`git diff --check` 通过。`npm run test:extension` 在当前机器因 Chrome 未输出页面内容而失败，未把它记为扩展夹具通过，也未将该环境失败归因于 popup 修改。
+- 视觉验收：本地静态 popup 预览已显示与演示一致的当前网申页、简历卡片、三态填写按钮、安全提示和 footer；本地生产 `/extension` 重启后实际打开演示并检查到三态按钮。真实 Chrome 加载解压扩展、已登录账户同步和真实网申填写仍是独立验收项。
+- Git、部署与外部状态：修改保留在当前 `main` 工作区；尝试暂存时 `.git/index` 返回 `EPERM`，无法安全 commit/push。随后从 `origin/main` 生成只含本次网申助手文件的临时发布目录，但 Vercel CLI 返回“没有现有 credentials”，因此未发布到 Vercel/Chrome Web Store，也没有把临时部署当成正式上线。0.2.8 安装包已在工作区生成，可在获得仓库或 Vercel 发布凭据后直接发布。当前本地生产预览为 `http://127.0.0.1:3110/extension`。
+
+## 2026-09-06 网申前准备层与实际扩展提示（本地已验证，未部署）
+
+- 用户目标：在真正开始网申填写前增加一次可选择的基本资料检查，让用户知道补充后会更准确；未填写时不影响正常使用；同时重新梳理简历制作、网申助手与真实扩展之间的用户动线。
+- 决策：不重构成第二套简历，也不新建数据库字段。把“网申准备”作为现有简历编辑器中的独立四步章节：基本资料、可选补充、经历检查、使用确认；所有输入直接写回当前 `ResumeDocument`。网申助手首页提供显式入口，准备页始终提供“跳过准备，直接使用网申助手”；没有准备度门槛，扩展仍按原安全策略填写并由用户检查、提交。
+- 实际改动：新增 `src/lib/application-prep.ts`，统一计算姓名、手机号、邮箱、城市、目标岗位、出生日期、性别、国籍/地区、期望地点的准备度及教育/经历/项目/技能数量；新增 `src/components/resume/ApplicationPrepPanel.tsx`，在 `ResumeEditor` 增加“网申准备”章节和四步向导，经历卡片可直接跳回已有编辑章节。`src/app/resume/page.tsx` 支持 `?action=prepare`，`ResumeBuilderClient.tsx` 增加桌面/移动入口和版本卡片准备度。`ExtensionHubClient.tsx` 增加网申前准备说明和入口。`/api/resume/extension-profile` 随同步下发同一份准备度摘要，真实 popup 与官网演示在简历卡片下显示“资料准备度”；补充 popup 契约和 `tests/application-prep.test.ts`。
+- 兼容边界：复用既有简历编辑、浏览器本地保存、云端同步、扩展同步协议和 `content_json`，不新增 migration、RLS、DDL、Supabase 表、第二套后端或敏感字段采集；不自动填写身份证、户籍、政治面貌、家庭信息、验证码、密码和敏感声明；准备度仅作提示，低准备度不阻止普通填写。现有字段变化仍由简历编辑器、导入、翻译、PDF、扩展和小程序共享同一份简历数据。
+- 验证：`npm test` 163/163；准备层、popup 和动效定向测试 15/15；`npm run typecheck` 通过；`npm run lint` 0 errors，保留 3 条既有 warning（promo-video 2 条、seed 脚本 1 条）；`npm run build -- --webpack` 成功生成 62 个路由；`npm run build:extension` 生成 172,670 bytes 的 0.2.8 包；`npm run verify:extension-package` 确认 12/12 个文件与源码逐字节一致；`git diff --check` 通过。
+- 体验验收：本地生产 `http://127.0.0.1:3110/resume?action=prepare` 实际落到“网申准备”，四步前进/回退可用，经历卡片可跳回教育编辑；`http://127.0.0.1:3110/extension` 首屏实际显示“先检查一遍网申资料”、准备入口与“可跳过，不会阻止填写”；本地视觉复核未发现新增横向溢出或连续重型动效。真实 Chrome 加载扩展、登录后同步和真实 ATS 填写仍需独立验收。
+- Git、部署与外部状态：修改继续保留在当前 `main` 工作区，未提交、未推送、未部署；没有写入 Supabase。`.git/index` 仍曾返回 EPERM，未强行暂存。当前本地生产预览为 `http://127.0.0.1:3110/extension`，扩展安装包已在工作区生成，可在取得发布权限后再发布。
+
+## 2026-09-06 网申准备归属与首页转场诊断（本轮零代码修改）
+
+- 用户目标：评估是否应把网申前准备放入网申助手 section，并判断首页点击行星后的快速放大是否应改为十字星展开转场。
+- 诊断与决策：建议将入口和体验归属放到 `/extension`，但继续复用简历的基础信息作为唯一数据源；简历编辑器保留基础字段，不再把网申准备作为另一套顶层工作流。当前首页在点击后 160ms 执行路由跳转，同时叠加行星位移放大、主页整体缩放/淡出、轨道淡出和目标页星幕进入，视觉节奏过快且合成层/绘制任务叠加。建议改为一次性中心十字星展开覆盖：只动画 `transform` 与 `opacity`，不使用全屏 blur、粒子或持续循环；保留预取和 reduced-motion 直接进入。
+- 用户动线建议：`/extension` 首屏先展示“网申前准备”，进入后选择简历、补充可选基本信息、检查安全边界，完成或跳过后再同步/打开扩展；popup 仅展示准备度和“可补充、不阻断”的提示。简历与扩展继续共享同一份 `ResumeDocument`。
+- 实际改动与验证：本轮只完成代码阅读和设计诊断，没有修改产品代码、测试、依赖、数据库、环境变量、Git 或部署；未执行新的本地转场改动或上线。诊断依据为 `SpaceHome.tsx`、`PlanetTransitionOverlay.tsx`、`OrbMaterial.tsx`、`SceneArrivalVeil.tsx` 和 `src/lib/motion.ts` 的当前实现。
+
+## 2026-09-06 StarJob 性能整改与网申助手体验演示（本地未部署）
+
+- 用户目标：依据用户提供的共享对话和《StarJob-agent-handoff.md》，改善 www.starjob.space 的掉帧、点击迟滞、页面切换和网申助手首次体验；比较 NextOffer 时保留 StarJob 的品牌、数据与业务边界，不删除首页。
+- 根因与决策：当前线上探针显示 StarJob 各页面可返回 200，但首页约 0.706 秒、/explore 约 0.751 秒、/my-applications 与 /my-bottle 约 1.36 秒；NextOffer 首次约 0.455 秒、预热后约 0.207 秒，说明网络/服务端等待存在差异，但无法解释内容已加载后的持续掉帧。历史源码证据显示岗位清单会将约 1263 条结果全部保留为 DOM；因此本轮优先处理浏览器主线程、布局和 DOM 数量，不把问题归因于 Vercel + Supabase，也不以删除首页作为方案。
+- 实际改动：新增 `@tanstack/react-virtual`；新增 `src/components/jobs/VirtualJobList.tsx`，使用原生 window scroll、稳定岗位 ID、完整高度占位、测量行高和 8 项 overscan，只挂载视口附近岗位；`HomeClient.tsx` 将公开岗位先渲染、认证后并行补齐个人投递/简历/偏好，并收窄 profile 查询字段；`JobCard.tsx` 使用 memo；`RouteContentTransition.tsx` 移除旧页面退出与新页面同时存在的 popLayout 过渡；`WelcomeNotice.tsx` 将非关键认证/公告查询延后到 900ms；`SpaceHome.tsx` 将点击后的路由等待从 720ms 改为 160ms（reduced motion 为 0）；`/extension` 的 `ExtensionHubClient.tsx` 动态加载 `ExtensionDemoDialog.tsx`，新增 `public/assets/extension/starjob-resume-assistant-icon48.png`，以 Chrome 标签栏、地址栏、插件图标、弹出面板、选择简历和“只填空白项 / AI 智能填写”完成真实点击链路；结果页只演示本地字段变化，不执行登录、安装、同步、读取网页或提交。动效复用现有 Motion，仅对小型模拟面板使用短时 transform/opacity cubic-bezier，并尊重 reduced motion。
+- 兼容边界：保留连续滚动、筛选、排序、地图定位、浏览器返回位置和真实扩展同步/填写链路；没有改变 Supabase schema、RLS、migration、API、认证、用户数据或首页品牌功能；演示只在用户点击“体验使用流程”后动态载入。更新 `scripts/tests/motion-performance.test.mjs`，不恢复已淘汰的旧 220ms 断言。
+- 验证：`npm run typecheck` 通过；`npm test` 159/159；`node --test scripts/tests/motion-performance.test.mjs` 6/6；`npm run lint` 0 errors，保留 `promo-video/src/PromoVideo.tsx` 两条和 `scripts/seed_official_referral_sources.mjs` 一条既有 warning；`npm run build -- --webpack` 成功生成 62 个路由；`git diff --check` 通过。没有执行 `npm run smoke` 的完整页面阶段，因此没有宣称真实浏览器 FPS、认证态 E2E 或设备验收通过。
+- 浏览器复核补充：本地生产页 `/explore` 实际显示约 9–27 个岗位行，列表总高度仍约 14–15 万像素；滚动到长列表中段后搜索“腾讯”，结果为 6 条且列表自动回到清单可视区域。`/extension` 的“体验使用流程”已实际完成 4 个动作：点击 Chrome 右上角拾星插件图标、点击“选择拾星简历”、点击“AI 智能填写”、看到 2 个空白字段变为已填并完成关闭；期间未登录、未安装、未同步、未读取网申页、未提交。已接受桌面截图作为视觉复核证据；真实 Chrome/设备验收仍需单独进行。浏览器控制层对长页面滚动存在节流，本轮未将深滚动后的返回位置记为通过证据。
+- Git、部署与外部状态：尝试创建 `codex/starjob-performance-rework` 时被当前环境的 `.git` 写权限阻止，改为在现有 `main` 工作区保留未提交修改；已保留原有三份项目文档修改、PRD、测试夹具和 `promo-video/`，没有覆盖或删除。未提交、未推送、未部署，未写入 Supabase；正式线上仍是原版本。
 
 ## 2026-09-05 工作区与 Git 风险清理（已完成）
 
@@ -1223,3 +1313,11 @@ git diff --check
 - 验证：`npm run typecheck` 通过；`npm run lint` 0 错误，仅保留 `scripts/seed_official_referral_sources.mjs:44` 原有未使用变量 warning；`npm test` 149/149；动效测试 4/4；`npm run build -- --webpack` 成功生成 62 个路由；本地浏览器检查 `/extension`、`/extension/guide` 桌面首屏与 390×844 教程页，无横向溢出，页面运行日志无 error/warning。
 - 冒烟边界：`npm run smoke` 仍在历史主题断言处停止，提示 `src/styles/tokens.css` 缺少旧断言 `--night-3: #564A71`；本轮主题已按用户最新 P1 参考色更新为 `#1D2F4F`，没有回填旧色，也未把该历史断言结果计为页面或资源接入失败。
 - 当前状态：改动仍位于独立工作树 `/private/tmp/starjob-official-source`，本地开发服务器保持运行，尚未提交、推送或部署；主工作区原有未提交内容未覆盖、未删除。
+## 2026-09-05 拾星抖音 / 小红书竖屏宣传片首版（本地交付，未上线）
+
+- 用户目标：先完整了解拾星网站功能，再用 Remotion 制作一条有网感的竖屏宣传片，用于抖音和小红书宣传拾星。
+- 功能提炼与叙事决策：根据当前网页端真实功能，将主线收敛为“岗位坐标 → 收入星瓶 → 投递管理 → 简历版本 → 网申助手 → CTA”；保留岗位按公司/行业/地点/批次筛选、去官网投递后返回确认实际状态、投递阶段管理、简历复制/绑定/实时 A4 预览/导出、浏览器扩展填写常用字段等已存在能力，不把管理员或未验证的真实数据写入宣传片。
+- 实际改动：新增独立 \`promo-video/\` Remotion 工程、\`promo-video/src/Root.tsx\`、\`promo-video/src/PromoVideo.tsx\`、\`promo-video/src/index.tsx\`、\`promo-video/package.json\`、\`promo-video/package-lock.json\`、\`promo-video/tsconfig.json\`、\`promo-video/.gitignore\` 和 \`promo-video/README.md\`；复用并复制现有中文字标、星瓶、星云和网申助手截图到 \`promo-video/public/\`，不修改现有网站业务代码、路由、数据库、API、认证或部署配置。
+- 视频规格与内容：Composition \`PromoVideo\` 为 1080×1920、30fps、900 帧（30 秒）、H.264 MP4；六段各 5 秒，使用深空蓝/冷白/黄色品牌层级、运动排版、岗位地图 UI、星瓶掉落动效、简历 A4 预览、网申助手真实面板和结尾 \`STARJOB.SPACE\`。当前版本不带音乐，发布时可在抖音或小红书内叠加平台音乐。
+- 验证：\`npm run typecheck\` 通过；\`npm run render:preview\` 成功输出预览 MP4（900/900，约 3.3 MB）；关键帧 60、220、370、520、670、820 已生成并完成画面检查，确认中文清晰、画幅安全、功能识别明确、网申助手截图无裁切；\`npm run render\` 成功输出完整 MP4（900/900，约 8.2 MB）；\`file\` 确认两个输出均为 MP4。
+- 当前状态与边界：视频和源工程仅保存在本地 \`promo-video/\`，本轮未提交、未推送、未部署、未修改正式站点；抖音/小红书的音乐、封面、发布文案和真实平台上传尚未完成。主工作区原有未提交改动未覆盖、未删除。

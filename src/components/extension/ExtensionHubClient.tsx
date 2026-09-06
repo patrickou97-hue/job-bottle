@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowRightIcon,
@@ -12,7 +13,15 @@ import {
 const CHANNEL = "starjob-resume-assistant";
 const LEGACY_COMPATIBLE_VERSIONS = new Set(["0.1.7", "0.1.8", "0.1.9"]);
 const SHORT_TIMEOUT_AI_VERSIONS = new Set(["0.2.0"]);
-const PREVIOUS_AI_VERSIONS = new Set(["0.2.1", "0.2.2", "0.2.3", "0.2.4", "0.2.5", "0.2.6"]);
+const PREVIOUS_AI_VERSIONS = new Set(["0.2.1", "0.2.2", "0.2.3", "0.2.4", "0.2.5", "0.2.6", "0.2.7"]);
+const ExtensionDemoDialog = dynamic(
+  () => import("@/components/extension/ExtensionDemoDialog").then((module) => module.ExtensionDemoDialog),
+  { ssr: false },
+);
+const ExtensionPreparation = dynamic(
+  () => import("@/components/extension/ExtensionPreparation").then((module) => module.ExtensionPreparation),
+  { ssr: false },
+);
 
 type SyncState = "idle" | "checking" | "syncing" | "success" | "missing" | "auth" | "empty" | "error";
 
@@ -21,6 +30,9 @@ export function ExtensionHubClient() {
   const [extensionVersion, setExtensionVersion] = useState<string | null>(null);
   const [syncState, setSyncState] = useState<SyncState>("checking");
   const [message, setMessage] = useState("正在检测拾星网申助手");
+  const [demoOpen, setDemoOpen] = useState(false);
+  const [preparationOpen, setPreparationOpen] = useState(false);
+  const [preparedResumeId, setPreparedResumeId] = useState<string | null>(null);
   const syncTimerRef = useRef<number | null>(null);
 
   const postToExtension = useCallback((payload: Record<string, unknown>) => {
@@ -39,11 +51,11 @@ export function ExtensionHubClient() {
         setExtensionVersion(detectedVersion);
         setSyncState("idle");
         setMessage(detectedVersion && LEGACY_COMPATIBLE_VERSIONS.has(detectedVersion)
-          ? `${detectedVersion} 可继续同步与原有填写；AI 智能填写需要升级到 0.2.7。`
+          ? `${detectedVersion} 可继续同步与原有填写；AI 智能填写需要升级到 0.2.8。`
           : detectedVersion && SHORT_TIMEOUT_AI_VERSIONS.has(detectedVersion)
-            ? `${detectedVersion} 的 AI 填写仍可使用；建议升级到 0.2.7，获得完整字段分析和新填写策略。`
+            ? `${detectedVersion} 的 AI 填写仍可使用；建议升级到 0.2.8，获得完整字段分析和新填写策略。`
             : detectedVersion && PREVIOUS_AI_VERSIONS.has(detectedVersion)
-              ? `${detectedVersion} 仍可继续使用；升级到 0.2.7 后会区分实习与正式工作，并补全常见字段策略。`
+              ? `${detectedVersion} 仍可继续使用；升级到 0.2.8 后会获得与演示一致的 Chrome popup 面板。`
               : "网申助手已安装，可同步当前账户的云端简历。");
       }
       if (payload.type === "SYNC_COMPLETE") {
@@ -118,6 +130,7 @@ export function ExtensionHubClient() {
         type: "SYNC_RESUMES",
         version: payload.version || 1,
         resumes: payload.resumes,
+        activeResumeId: preparedResumeId,
         syncedAt: payload.syncedAt || new Date().toISOString(),
         aiMatchingAvailable: Boolean(payload.aiMatchingAvailable),
         matchToken: payload.matchToken || null,
@@ -146,7 +159,11 @@ export function ExtensionHubClient() {
           <p className="mt-5 max-w-[46ch] text-base leading-8 text-ink-secondary">
             把拾星简历同步到浏览器，在网申页面填写常用字段；你负责核对与提交。
           </p>
-          <div className="mt-7 flex flex-wrap gap-3">
+          <div className="mt-7 flex flex-wrap items-center gap-3">
+            <button type="button" className="gold-button pressable inline-flex h-11 items-center gap-2 rounded-lg px-4 text-sm font-semibold" onClick={() => setDemoOpen(true)}>
+              体验使用流程
+              <ArrowRightIcon aria-hidden="true" className="size-4" />
+            </button>
             <Link href="/extension/guide" className="text-action pressable h-11 px-2 text-sm font-semibold">
               查看安装教程
               <ArrowRightIcon aria-hidden="true" className="size-4" />
@@ -167,12 +184,56 @@ export function ExtensionHubClient() {
         </div>
       </section>
 
+      <section id="application-prep" className="border-b border-[color:var(--line-ghost)] pb-12">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(360px,1.1fr)] lg:items-start">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--aurora)]">建议第一次填写前完成</p>
+            <h2 className="mt-3 text-2xl font-semibold tracking-[-0.025em] text-ink-primary">先选一份简历，再准备网申资料</h2>
+            <p className="mt-3 max-w-[52ch] text-sm leading-7 text-ink-secondary">
+              实习/工作经历、项目和技能都会从当前选中的简历读取。用 1 分钟补充这份简历的常见资料，准备越完整，助手越容易准确带入；暂时不填也完全不影响正常使用。
+            </p>
+          </div>
+          <div className="rounded-2xl border border-[color:var(--line-ghost)] bg-[color:var(--surface-read-bg-strong)] p-5 shadow-[0_14px_42px_rgba(29,47,79,0.06)] sm:p-6">
+            <div className="grid gap-4 sm:grid-cols-3">
+              {[
+                ["选择简历", "确定本次网申使用哪一份"],
+                ["基本资料", "补充当前简历的常见字段"],
+                ["经历检查", "确认当前简历的经历与技能"],
+              ].map(([title, detail]) => (
+                <div key={title} className="border-l-2 border-[color:var(--surface-selected-bg)] pl-3">
+                  <p className="text-sm font-semibold text-ink-primary">{title}</p>
+                  <p className="mt-1 text-xs leading-5 text-ink-muted">{detail}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-5 flex flex-wrap items-center gap-3">
+              <button type="button" className="gold-button pressable inline-flex min-h-11 items-center justify-center rounded-lg px-4 text-sm font-semibold" onClick={() => setPreparationOpen((current) => !current)} aria-expanded={preparationOpen} aria-controls="application-prep-flow">
+                开始网申前准备
+              </button>
+              <span className="text-xs text-ink-muted">可跳过，不会阻止填写</span>
+            </div>
+          </div>
+        </div>
+        {preparationOpen ? (
+          <div id="application-prep-flow">
+            <ExtensionPreparation
+              onClose={() => setPreparationOpen(false)}
+              onContinue={(resumeId) => {
+                setPreparedResumeId(resumeId || null);
+                setPreparationOpen(false);
+                window.setTimeout(() => document.getElementById("sync")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+              }}
+            />
+          </div>
+        ) : null}
+      </section>
+
       <section id="sync" className="scroll-mt-24">
         <div className="grid gap-8 lg:grid-cols-[minmax(0,0.85fr)_minmax(360px,1.15fr)] lg:items-start">
           <div>
             <h2 className="text-2xl font-semibold tracking-[-0.02em] text-ink-primary">将简历同步到浏览器</h2>
             <p className="mt-3 max-w-[48ch] text-sm leading-7 text-ink-secondary">
-              登录后可读取最多 20 份云端简历。照片会被移除，其余内容仅保存于当前浏览器的扩展本地存储。
+              登录后可读取最多 20 份云端简历。准备阶段选中的简历会成为插件当前使用简历，之后仍可在 Chrome 面板中切换；照片会被移除，其余内容仅保存于当前浏览器的扩展本地存储。
             </p>
           </div>
           <div className="border-y border-[color:var(--line-ghost)] py-6">
@@ -220,6 +281,8 @@ export function ExtensionHubClient() {
           <p className="mt-2 text-xs leading-6 text-ink-muted">普通模式的智能匹配仅分析去内容化的字段元数据。主动选择“AI 智能填写”后，系统会以所选简历为唯一依据，从上到下填写全部可确认的安全字段；自我描述会以第一人称归纳有依据的责任心、沟通与专业优势，经历描述只使用对应记录，页面已有输入内容不会被读取或发送。</p>
         </div>
       </section>
+
+      {demoOpen ? <ExtensionDemoDialog onClose={() => setDemoOpen(false)} /> : null}
     </div>
   );
 }

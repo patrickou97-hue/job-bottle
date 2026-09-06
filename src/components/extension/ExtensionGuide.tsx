@@ -46,10 +46,10 @@ export function ExtensionGuide() {
         <div className="max-w-4xl">
           <h1 className="page-title">安装拾星网申助手</h1>
           <div className="mt-5 max-w-3xl space-y-2 text-sm leading-7 text-ink-secondary">
-            <p>当前版本 0.2.7，适用于 Chrome、Edge 及其他 Chromium 浏览器。</p>
+            <p>当前版本 0.2.8，适用于 Chrome、Edge 及其他 Chromium 浏览器。</p>
             <p>
-              <a href="/downloads/starjob-resume-assistant-v0.2.7.zip" download className="text-action pressable h-8 font-semibold">
-                下载 0.2.7 安装包
+              <a href="/downloads/starjob-resume-assistant-v0.2.8.zip" download className="text-action pressable h-8 font-semibold">
+                下载 0.2.8 安装包
                 <ArrowDownIcon aria-hidden="true" className="size-4" />
               </a>
             </p>

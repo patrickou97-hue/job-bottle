@@ -8,18 +8,19 @@ import { motion, useReducedMotion } from 'motion/react'
 import { getCurrentUserOrNull } from '@/lib/auth'
 import { PLANET_ROUTES, type PlanetRoute } from '@/lib/galaxy-routes'
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/client'
-import { markSceneDeparture } from '@/lib/scene-transition'
 import { CorePlanet } from './CorePlanet'
 import { FloatingPlanet } from './FloatingPlanet'
 import { OrbitLines } from './OrbitLines'
-import { PlanetTransitionOverlay } from './PlanetTransitionOverlay'
 import { SpaceBackground } from './SpaceBackground'
 
-const TRANSITION_MS = 720
+// Prefetch first, then give the clicked planet a short emphasis before the
+// destination's own content transition takes over.
+const TRANSITION_MS = 180
 const MOBILE_PLANET_SIZE: Record<string, number> = {
   jobs: 56,
   applications: 56,
   bottle: 56,
+  extension: 54,
   resume: 52,
   forum: 48,
   admin: 46,
@@ -35,6 +36,7 @@ const MOBILE_ROUTE_LAYOUT: Record<string, { radius: number; angle: number }> = {
   applications: { radius: 226, angle: 104 },
   bottle: { radius: 226, angle: 198 },
   resume: { radius: 146, angle: 302 },
+  extension: { radius: 146, angle: 240 },
   forum: { radius: 146, angle: 48 },
   admin: { radius: 226, angle: 276 },
   auth: { radius: 146, angle: 168 },
@@ -44,7 +46,8 @@ export function SpaceHome() {
   const router = useRouter()
   const reducedMotion = useReducedMotion()
   const [hovered, setHovered] = useState<PlanetRoute | null>(null)
-  const [planetTransition, setPlanetTransition] = useState<{ planet: PlanetRoute; rect: DOMRect } | null>(null)
+  const [selectedPlanetId, setSelectedPlanetId] = useState<string | null>(null)
+  const [isLeaving, setIsLeaving] = useState(false)
   const [user, setUser] = useState<{ id: string } | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [viewportWidth, setViewportWidth] = useState(1200)
@@ -98,39 +101,27 @@ export function SpaceHome() {
   }, [])
 
   const planets = useMemo(() => {
-    const authPlanet: PlanetRoute = {
-      id: 'auth',
-      label: user ? '资料' : '登录',
-      description: user ? '查看资料与简历' : '登录后保存投递记录',
-      href: user ? '/profile' : '/login',
-      orbitRadius: 990,
-      orbitDuration: 120,
-      initialAngle: 38,
-      size: 48,
-      variant: 'auth',
-    }
-    return [...PLANET_ROUTES.filter((planet) => !planet.adminOnly || isAdmin), authPlanet]
-  }, [isAdmin, user])
+    return PLANET_ROUTES.filter((planet) => !planet.adminOnly || isAdmin)
+  }, [isAdmin])
 
-  function enterPlanet(planet: PlanetRoute, rect?: DOMRect) {
-    if (planetTransition) return
+  function enterPlanet(planet: PlanetRoute) {
+    if (isLeaving) return
     if (planet.adminOnly && !isAdmin) return
 
     setHovered(planet)
+    setSelectedPlanetId(planet.id)
     const href = planet.requiresAuth && !user ? `/login?next=${encodeURIComponent(planet.href)}` : planet.href
     router.prefetch(href)
-    const fallbackRect = new DOMRect(window.innerWidth / 2 - planet.size / 2, window.innerHeight / 2 - planet.size / 2, planet.size, planet.size)
-    setPlanetTransition({ planet, rect: rect ?? fallbackRect })
+    setIsLeaving(true)
     window.setTimeout(
       () => {
-        markSceneDeparture(href)
         router.push(href)
       },
-      reducedMotion ? 80 : TRANSITION_MS,
+      reducedMotion ? 0 : TRANSITION_MS,
     )
   }
 
-  const entering = planetTransition !== null
+  const entering = isLeaving
   const shouldOrbit = !reducedMotion && !entering
   const desktopMaxOrbitRadius = Math.max(...planets.map((planet) => planet.orbitRadius))
   const compactDesktopHeight = viewportHeight <= 720
@@ -174,7 +165,16 @@ export function SpaceHome() {
     >
       <SpaceBackground entering={entering} />
 
-      <Link href="/" aria-label="返回拾星主页" className="absolute left-5 top-5 z-30 md:left-10 md:top-8">
+      <Link
+        href="/"
+        aria-label="返回拾星主页"
+        className="absolute left-5 top-5 z-30 md:left-10 md:top-8"
+        style={{
+          opacity: entering ? 0 : 1,
+          transform: entering ? 'translateY(-4px)' : 'translateY(0)',
+          transition: 'opacity 180ms ease, transform 180ms ease',
+        }}
+      >
         <Image
           src="/brand/shi-xing-wordmark.png"
           alt="拾星"
@@ -204,34 +204,38 @@ export function SpaceHome() {
         className="absolute right-6 top-5 z-30 rounded-md text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--aurora)] focus-visible:ring-offset-2 focus-visible:ring-offset-black md:right-10 md:top-8"
         style={{
           color: 'var(--text-secondary)',
-          opacity: entering ? 0.25 : 1,
-          transition: 'color 180ms ease, opacity 180ms ease',
+          opacity: entering ? 0 : 1,
+          transform: entering ? 'translateY(-4px)' : 'translateY(0)',
+          transition: 'color 180ms ease, opacity 180ms ease, transform 180ms ease',
         }}
       >
         {user ? '资料' : '登录'}
       </button>
 
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-4 z-20 hidden justify-center md:flex"
+        style={{ opacity: entering ? 0 : 1, transition: 'opacity 180ms ease' }}
+      >
+        <p className="text-[11px] tracking-[0.18em]" style={{ color: 'rgba(201,214,232,0.52)' }}>
+          发现机会 <span className="mx-2" style={{ color: 'rgba(224,161,55,0.72)' }}>·</span> 准备材料 <span className="mx-2" style={{ color: 'rgba(224,161,55,0.72)' }}>·</span> 安全网申
+        </p>
+      </div>
+
       <section className="absolute inset-x-0 bottom-10 top-20 z-10 hidden items-center justify-center md:flex lg:bottom-8 lg:top-16">
         <motion.div
-          animate={{ opacity: entering ? 0 : 1, scale: entering ? 1.08 : 1 }}
+          animate={{ opacity: entering ? 0 : 1 }}
           transition={{ duration: 0.48, ease: 'easeOut' }}
         >
           <OrbitLines planets={planets} activeId={hovered?.id} orbitScale={desktopOrbitScale} />
         </motion.div>
 
-        <motion.div
-          className="absolute"
-          animate={{
-            opacity: entering ? 0.12 : 1,
-            scale: entering ? 0.82 : 1,
-          }}
-          transition={{ duration: 0.52, ease: 'easeOut' }}
-        >
+        <div className="absolute">
           {planets.map((planet) => (
             <FloatingPlanet
               key={planet.id}
               planet={planet}
               hovered={hovered?.id === planet.id}
+              selected={selectedPlanetId === planet.id}
               entering={entering}
               disabled={entering}
               shouldOrbit={shouldOrbit}
@@ -240,30 +244,32 @@ export function SpaceHome() {
               onHover={setHovered}
             />
           ))}
-        </motion.div>
+        </div>
 
         <motion.div
           className="relative z-20"
-          animate={{ opacity: entering ? 0.16 : 1, scale: entering ? 0.94 : 1 }}
-          transition={{ duration: 0.48, ease: 'easeOut' }}
+          animate={{ opacity: entering ? 0 : 1, scale: entering ? 0.98 : 1 }}
+          transition={{ duration: 0.18, ease: 'easeOut' }}
         >
           <CorePlanet />
         </motion.div>
       </section>
 
       <section className="relative z-10 flex h-full flex-col items-center justify-center gap-12 md:hidden">
-        <motion.div
-          className="relative flex h-[min(78svh,640px)] min-h-[500px] w-full items-center justify-center"
-          animate={{ opacity: entering ? 0.14 : 1, scale: entering ? 0.9 : 1 }}
-          transition={{ duration: 0.42, ease: 'easeOut' }}
-        >
-          <OrbitLines planets={mobilePlanets} activeId={hovered?.id} orbitScale={mobileOrbitScale} />
+        <div className="relative flex h-[min(78svh,640px)] min-h-[500px] w-full items-center justify-center">
+          <motion.div
+            animate={{ opacity: entering ? 0 : 1 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+          >
+            <OrbitLines planets={mobilePlanets} activeId={hovered?.id} orbitScale={mobileOrbitScale} />
+          </motion.div>
           <div className="absolute">
             {mobilePlanets.map((planet) => (
               <FloatingPlanet
                 key={planet.id}
                 planet={planet}
                 hovered={hovered?.id === planet.id}
+                selected={selectedPlanetId === planet.id}
                 entering={entering}
                 disabled={entering}
                 shouldOrbit={shouldOrbit}
@@ -272,15 +278,17 @@ export function SpaceHome() {
                 onSelect={enterPlanet}
                 onHover={setHovered}
               />
-            ))}
+              ))}
           </div>
-          <div className="relative z-20">
+          <motion.div
+            className="relative z-20"
+            animate={{ opacity: entering ? 0 : 1, scale: entering ? 0.98 : 1 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+          >
             <CorePlanet compact />
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </section>
-
-      <PlanetTransitionOverlay transition={planetTransition} />
     </main>
   )
 }

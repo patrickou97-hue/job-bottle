@@ -30,6 +30,11 @@ const elements = {
   openSyncFromEmpty: document.querySelector("#openSyncFromEmpty"),
   openGuide: document.querySelector("#openGuide"),
   clearData: document.querySelector("#clearData"),
+  pageTitle: document.querySelector("#pageTitle"),
+  pageUrl: document.querySelector("#pageUrl"),
+  pageFieldMeta: document.querySelector("#pageFieldMeta"),
+  resumeMeta: document.querySelector("#resumeMeta"),
+  prepMeta: document.querySelector("#prepMeta"),
 };
 
 let overwriteConfirmationExpiresAt = 0;
@@ -55,6 +60,30 @@ function resetProgress() {
   for (const [step, text] of Object.entries(progressDefaults)) updateProgress(step, "pending", text);
   startProgressClock();
   updateTaskProgress(0, 0, "准备读取页面");
+}
+
+async function renderPageContext() {
+  if (!elements.pageTitle || !elements.pageUrl || !elements.pageFieldMeta) return;
+  if (!globalThis.chrome?.tabs?.query) {
+    elements.pageTitle.textContent = "校园招聘 · 产品实习生申请";
+    elements.pageUrl.textContent = "careers.example.com/application/product-intern";
+    elements.pageFieldMeta.textContent = "演示页面 · 点击填写后才会读取字段";
+    return;
+  }
+
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!tab?.url) throw new Error("missing_url");
+    const pageUrl = new URL(tab.url);
+    if (!/^https?:$/.test(pageUrl.protocol)) throw new Error("unsupported_page");
+    elements.pageTitle.textContent = tab.title || "当前网申页面";
+    elements.pageUrl.textContent = `${pageUrl.host}${pageUrl.pathname}`;
+    elements.pageFieldMeta.textContent = "点击填写后才会读取字段 · 不会自动提交";
+  } catch {
+    elements.pageTitle.textContent = "当前页面不可用";
+    elements.pageUrl.textContent = "请打开企业网申填写页面";
+    elements.pageFieldMeta.textContent = "不会读取浏览器内部页面";
+  }
 }
 
 function updateProgress(step, status, text) {
@@ -138,14 +167,15 @@ function resetOverwriteConfirmation() {
   if (overwriteConfirmationTimer) window.clearTimeout(overwriteConfirmationTimer);
   overwriteConfirmationTimer = null;
   const mode = selectedFillMode();
+  const selectedResumeLabel = elements.resumeSelect?.selectedOptions?.[0]?.textContent?.trim() || "当前简历";
   elements.modeHint.dataset.tone = mode === "overwrite" ? "warning" : mode === "ai" ? "ai" : "neutral";
   elements.modeHint.textContent = mode === "overwrite"
     ? "覆盖模式会替换页面已有内容，填写前需要再次确认。"
     : mode === "ai"
-      ? "AI 会从页面顶部开始，按每条记录和字段顺序逐项填写；经历描述与日期只使用对应记录。"
+      ? "AI 只使用当前选中的「" + selectedResumeLabel + "」，会从页面顶部开始按每条记录和字段顺序逐项填写；经历描述与日期只使用对应记录。"
       : "默认只填写空白项，不会改动你已经输入的内容。";
   if (!elements.fillButton.disabled) {
-    elements.fillButton.textContent = mode === "ai" ? "AI 智能填写当前页面" : "一键填写当前页面";
+    elements.fillButton.textContent = mode === "ai" ? "AI 智能填写" : mode === "overwrite" ? "覆盖已有内容" : "只填空白项";
   }
   if (elements.resultTitle.textContent === "请确认覆盖") elements.resultPanel.hidden = true;
 }
@@ -181,6 +211,16 @@ function formatSyncTime(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "简历只保存在当前浏览器";
   return `上次同步 ${date.toLocaleString("zh-CN", { hour12: false })}`;
+}
+
+function formatApplicationPrep(resume) {
+  const prep = resume?.applicationPrep;
+  if (!prep || !Number.isFinite(prep.filledCount) || !Number.isFinite(prep.totalCount)) {
+    return "可选：先在拾星完成网申前准备";
+  }
+  return prep.hasMinimumProfile
+    ? `资料准备度 ${prep.filledCount}/${prep.totalCount} · 常见字段可带入`
+    : `资料准备度 ${prep.filledCount}/${prep.totalCount} · 仍可正常填写`;
 }
 
 function friendlyFillError(error, abortReason) {
@@ -391,11 +431,18 @@ async function render() {
     elements.resumeSelect.append(option);
   }
 
+  const selectedResume = resumes.find((resume) => resume.id === activeId) || resumes[0];
+  elements.resumeMeta.textContent = resumes.length > 1
+    ? `${selectedResume?.title || "未命名简历"} · ${resumes.length} 份已同步`
+    : `${selectedResume?.title || "未命名简历"} · 已同步`;
+  elements.prepMeta.textContent = formatApplicationPrep(selectedResume);
+
   const selectedMode = ["merge", "overwrite", "ai"].includes(stored.fillMode) ? stored.fillMode : "merge";
   document.querySelector(`input[name="fillMode"][value="${selectedMode}"]`).checked = true;
   elements.syncMeta.textContent = formatSyncTime(stored.lastSyncedAt);
   resetOverwriteConfirmation();
   resetClearConfirmation();
+  await renderPageContext();
 }
 
 async function fillCurrentPage() {
@@ -728,19 +775,18 @@ elements.clearData.addEventListener("click", async () => {
 function renderPreview() {
   elements.emptyState.hidden = true;
   elements.readyState.hidden = false;
+  elements.resultPanel.hidden = true;
+  elements.progressPanel.hidden = true;
   const option = document.createElement("option");
   option.value = "preview";
   option.textContent = "产品运营-校招版";
   elements.resumeSelect.append(option);
+  elements.resumeMeta.textContent = "演示简历 · 63 个字段已就绪";
+  elements.prepMeta.textContent = "资料准备度 7/9 · 可选补充，不影响填写";
   elements.syncMeta.textContent = "简历只保存在当前浏览器";
-  resetProgress();
-  updateProgress("extract", "success", "共提取 40 个可见字段");
-  updateProgress("match", "success", "本地识别 28 个，后台复核 3 个");
-  updateProgress("fill", "success", "本地内容已先填写，补充完成 18/35");
-  updateProgress("summary", "success", "17 个需手动确认，其中 12 个在简历中没有对应值");
-  updateTaskProgress(4, 4, "预览：已填写 18 项，17 项需手动确认");
-  stopProgressClock();
-  showResult("已填写 18 项", "请检查页面中标记的字段，并手动提交网申。", "success", ["最高学历", "毕业时间", "附件简历", "身份证明"]);
+  document.querySelector('input[name="fillMode"][value="merge"]').checked = true;
+  resetOverwriteConfirmation();
+  void renderPageContext();
 }
 
 if (globalThis.chrome?.storage?.local) void render();

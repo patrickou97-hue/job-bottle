@@ -28,7 +28,7 @@ import {
 import type { Job } from "@/lib/types";
 import type { ResumePolishResult, ResumePolishSectionType } from "@/lib/resume-ai";
 
-type EditorSection = "basic" | "order" | "education" | "work" | "projects" | "skills" | "other" | "target";
+export type EditorSection = "basic" | "order" | "education" | "work" | "projects" | "skills" | "other" | "target";
 
 const EDITOR_SECTIONS: { id: EditorSection; label: string }[] = [
   { id: "basic", label: "基础" },
@@ -978,5 +978,3 @@ function findCustomCollection(resume: ResumeDocument, id: string): "certificatio
   if (resume.content.customSections.some((item) => item.id === id)) return "customSections";
   return null;
 }
-
-export type { EditorSection };

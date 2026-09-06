@@ -108,7 +108,9 @@ export function WelcomeNotice() {
       await resolveUserNotice(user);
     }
 
-    const initialResolveTimer = window.setTimeout(() => void resolveNotice(), 220);
+    // Keep the first interaction and route transition free of an extra auth
+    // lookup. The notice remains available shortly after the page settles.
+    const initialResolveTimer = window.setTimeout(() => void resolveNotice(), 900);
     const supabase = isSupabaseConfigured() ? createClient() : null;
     const { data: authListener } = supabase?.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT") {

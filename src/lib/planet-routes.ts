@@ -7,7 +7,7 @@ export type PlanetRoute = {
   orbitDuration: number
   initialAngle: number
   size: number
-  variant: 'jobs' | 'applications' | 'bottle' | 'resume' | 'auth' | 'admin' | 'forum'
+  variant: 'jobs' | 'applications' | 'bottle' | 'resume' | 'auth' | 'admin' | 'forum' | 'extension'
   requiresAuth?: boolean
   adminOnly?: boolean
 }
@@ -21,15 +21,26 @@ export const PLANET_ROUTES: PlanetRoute[] = [
     orbitRadius: 420,
     orbitDuration: 104,
     initialAngle: 284,
-    size: 64,
+    size: 68,
     variant: 'jobs',
+  },
+  {
+    id: 'resume',
+    label: '简历制作',
+    description: '编辑、预览并导出你的简历',
+    href: '/resume',
+    orbitRadius: 420,
+    orbitDuration: 110,
+    initialAngle: 72,
+    size: 62,
+    variant: 'resume',
   },
   {
     id: 'applications',
     label: '投递管理',
     description: '梳理投递流程，记录每一步进展',
     href: '/my',
-    orbitRadius: 610,
+    orbitRadius: 620,
     orbitDuration: 124,
     initialAngle: 168,
     size: 64,
@@ -37,37 +48,37 @@ export const PLANET_ROUTES: PlanetRoute[] = [
     requiresAuth: true,
   },
   {
+    id: 'extension',
+    label: '网申助手',
+    description: '先选简历，再安全填写网申表单',
+    href: '/extension',
+    orbitRadius: 620,
+    orbitDuration: 118,
+    initialAngle: 322,
+    size: 62,
+    variant: 'extension',
+  },
+  {
     id: 'bottle',
     label: '星瓶',
     description: '回看已收录的岗位与求职轨迹',
     href: '/bottle',
-    orbitRadius: 610,
-    orbitDuration: 114,
+    orbitRadius: 820,
+    orbitDuration: 132,
     initialAngle: 24,
-    size: 64,
+    size: 54,
     variant: 'bottle',
     requiresAuth: true,
-  },
-  {
-    id: 'resume',
-    label: '简历制作',
-    description: '编辑、预览并导出你的简历',
-    href: '/resume',
-    orbitRadius: 800,
-    orbitDuration: 130,
-    initialAngle: 100,
-    size: 56,
-    variant: 'resume',
   },
   {
     id: 'forum',
     label: '拾星指南',
     description: '查看公告、教程和经验分享',
     href: '/forum',
-    orbitRadius: 800,
+    orbitRadius: 820,
     orbitDuration: 138,
     initialAngle: 236,
-    size: 48,
+    size: 50,
     variant: 'forum',
   },
   {

@@ -26,7 +26,78 @@ test("主页首屏不再等待认证态，认证与公告在首屏之后处理",
 
   assert.doesNotMatch(home, /if\s*\(\s*!authResolved\s*\)/);
   assert.match(home, /requestAnimationFrame\(updateViewport\)/);
-  assert.match(notice, /setTimeout\(\(\) => void resolveNotice\(\), 220\)/);
+  assert.match(notice, /setTimeout\(\(\) => void resolveNotice\(\), 900\)/);
+});
+
+test("主页转场使用目标行星轻微强调和内容淡出，不创建全屏遮罩", async () => {
+  const home = await source("src/components/galaxy/SpaceHome.tsx");
+  const planet = await source("src/components/galaxy/FloatingPlanet.tsx");
+  const route = await source("src/components/layout/RouteContentTransition.tsx");
+  const styles = await source("src/app/globals.css");
+
+  assert.match(home, /TRANSITION_MS = 180/);
+  assert.match(home, /selectedPlanetId/);
+  assert.match(home, /setIsLeaving\(true\)/);
+  assert.doesNotMatch(home, /PlanetTransitionOverlay|markSceneDeparture\(href\)/);
+  assert.match(planet, /selected: boolean/);
+  assert.match(planet, /selected \? 1\.08 : 0\.94/);
+  assert.match(planet, /selected \? 1 : 0\.16/);
+  assert.match(route, /initial=\{reducedMotion \? false : "initial"\}/);
+  assert.doesNotMatch(styles, /planet-transition-overlay|clip-path: polygon\(50% 0%/);
+});
+
+test("主页把网申助手放入求职主路径并使用独立的太阳系色彩", async () => {
+  const routes = await source("src/lib/planet-routes.ts");
+  const planet = await source("src/components/galaxy/FloatingPlanet.tsx");
+  const core = await source("src/components/galaxy/CorePlanet.tsx");
+  const material = await source("src/components/visual/OrbMaterial.tsx");
+
+  assert.match(routes, /id: 'extension'[\s\S]*?label: '网申助手'[\s\S]*?href: '\/extension'[\s\S]*?variant: 'extension'/);
+  assert.match(planet, /planet\.id === 'extension'\) return 'cyan'/);
+  assert.match(core, /variant="gold"/);
+  assert.match(material, /rgba\(163,78,74,0\.82\)/);
+  assert.match(material, /rgba\(67,144,163,0\.85\)/);
+});
+
+test("岗位清单使用原生窗口化连续滚动而不是把全部结果挂进 DOM", async () => {
+  const list = await source("src/components/jobs/VirtualJobList.tsx");
+  const home = await source("src/components/jobs/HomeClient.tsx");
+
+  assert.match(list, /useWindowVirtualizer/);
+  assert.match(list, /getItemKey/);
+  assert.match(list, /directDomUpdates: true/);
+  assert.match(list, /containerRef/);
+  assert.match(home, /<VirtualJobList/);
+  assert.doesNotMatch(home, /filteredJobs\.map\(\(job, index\) =>/);
+});
+
+test("网申助手演示复刻 Chrome 插件点击链路且动效只作用于小型模拟面板", async () => {
+  const demo = await source("src/components/extension/ExtensionDemoDialog.tsx");
+  const hub = await source("src/components/extension/ExtensionHubClient.tsx");
+  const styles = await source("src/app/globals.css");
+
+  assert.match(demo, /ChromeTabBar/);
+  assert.match(demo, /starjob-resume-assistant-icon48\.png/);
+  assert.match(demo, /打开拾星网申助手插件/);
+  assert.match(demo, /选择拾星简历/);
+  assert.match(demo, /只填空白项/);
+  assert.match(demo, /覆盖已有内容/);
+  assert.match(demo, /AI 智能填写/);
+  assert.match(demo, /w-\[min\(278px/);
+  assert.match(demo, /text-\[7px\]/);
+  assert.match(demo, /text-left text-\[8px\]/);
+  assert.match(demo, /实习经历/);
+  assert.match(demo, /AI 正在分析当前表单/);
+  assert.match(demo, /读取页面字段/);
+  assert.match(demo, /setTimeout/);
+  assert.match(demo, /#fbbc04/);
+  assert.match(demo, /#34a853/);
+  assert.match(demo, /useReducedMotion/);
+  assert.match(demo, /transform|opacity/);
+  assert.doesNotMatch(demo, /setInterval|requestAnimationFrame/);
+  assert.match(hub, /gold-button/);
+  assert.match(hub, /体验使用流程/);
+  assert.match(styles, /@layer base \{[\s\S]*button,[\s\S]*font: inherit;/);
 });
 
 test("非主页共享页脚接入且登录 slogan 保持动效降级入口", async () => {

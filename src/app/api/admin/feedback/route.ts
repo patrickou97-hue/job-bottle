@@ -10,6 +10,10 @@ const RECENT_DAYS = 7;
 
 type FeedbackRow = Database["public"]["Tables"]["feedback_submissions"]["Row"];
 
+type FeedbackMutationInput = {
+  id?: unknown;
+};
+
 export async function GET(request: NextRequest) {
   const access = await requireAdminAccess();
   if ("response" in access) return access.response;
@@ -54,6 +58,44 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("[admin_feedback]", error instanceof Error ? error.message : "unknown error");
     return NextResponse.json({ error: "反馈记录暂时无法读取，请稍后重试。" }, { status: 500 });
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  const access = await requireAdminAccess();
+  if ("response" in access) return access.response;
+
+  const input = await request.json().catch(() => null) as FeedbackMutationInput | null;
+  const id = typeof input?.id === "string" ? input.id.trim() : "";
+  if (!isUuid(id)) {
+    return NextResponse.json({ error: "反馈编号无效。" }, { status: 400 });
+  }
+
+  try {
+    // Keep this write on the caller-scoped client so the database rechecks the
+    // same guard-aware admin permission at statement time.
+    const { data, error } = await access.supabase
+      .from("feedback_submissions")
+      .update({ resolved_at: new Date().toISOString() })
+      .eq("id", id)
+      .is("resolved_at", null)
+      .select("id,resolved_at")
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) {
+      const { data: existing, error: readError } = await access.supabase
+        .from("feedback_submissions")
+        .select("id,resolved_at")
+        .eq("id", id)
+        .maybeSingle();
+      if (readError) throw readError;
+      if (!existing) return NextResponse.json({ error: "反馈不存在或已被删除。" }, { status: 404 });
+      return NextResponse.json({ feedback: existing }, { headers: { "Cache-Control": "private, no-store" } });
+    }
+    return NextResponse.json({ feedback: data }, { headers: { "Cache-Control": "private, no-store" } });
+  } catch (error) {
+    console.error("[admin_feedback_update]", error instanceof Error ? error.message : "unknown error");
+    return NextResponse.json({ error: "反馈状态保存失败，请稍后重试。" }, { status: 500 });
   }
 }
 
@@ -130,4 +172,8 @@ function normalizeQuery(value: string | null) {
 
 function escapeIlike(value: string) {
   return value.replace(/[\\%_(),]/g, "\\$&");
+}
+
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }

@@ -77,6 +77,17 @@ export const PLANET_VISUALS: Record<PlanetVariant, PlanetVisual> = {
     glint: 'rgba(231,226,255,0.4)',
     grain: 'rgba(201,214,232,0.11)',
   },
+  extension: {
+    surface: {
+      background:
+        'radial-gradient(circle at 30% 24%, rgba(208,244,247,0.82) 0 4%, rgba(67,144,163,0.78) 20%, rgba(9,34,54,0.98) 58%, rgba(0,0,1,1) 100%)',
+      boxShadow:
+        '0 0 30px rgba(77,181,192,0.26), 0 0 86px rgba(9,34,54,0.16), inset -15px -21px 38px rgba(0,0,0,0.6), inset 10px 8px 24px rgba(208,244,247,0.08)',
+    },
+    hoverGlow: '0 0 42px rgba(77,181,192,0.36), 0 0 106px rgba(67,144,163,0.2), inset -15px -21px 38px rgba(0,0,0,0.54)',
+    glint: 'rgba(208,244,247,0.5)',
+    grain: 'rgba(67,144,163,0.13)',
+  },
   admin: {
     surface: {
       background:

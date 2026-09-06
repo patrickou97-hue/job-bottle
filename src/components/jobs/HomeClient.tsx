@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence } from "motion/react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Archive, KeyRound, Sparkles } from "lucide-react";
@@ -16,7 +16,7 @@ import {
   jobMatchesProfilePreferences,
 } from "@/lib/jobs";
 import { fetchMyApplications, normalizeAppliedPosition, updateApplication, upsertApplication } from "@/lib/applications";
-import { getCandidateStage, getDeadlineInfo, getFitLabel, getMaterialReadiness } from "@/lib/career-workspace";
+import { getCandidateStage } from "@/lib/career-workspace";
 import { getLocationFilterLabel } from "@/lib/locations";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { queueBottleDrop } from "@/lib/bottle-drop";
@@ -25,13 +25,13 @@ import { track } from "@/lib/track";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { cn, isValidHttpUrl, safeOpenUrl, formatDateTime, sanitizeApplicationUrl } from "@/lib/utils";
 import { JobFilterBar } from "@/components/jobs/JobFilterBar";
-import { JobCard } from "@/components/jobs/JobCard";
 import { ApplyReturnConfirm } from "@/components/jobs/ApplyReturnConfirm";
 import { ProgressDrawer } from "@/components/applications/ProgressDrawer";
 import { StatusPill } from "@/components/applications/StatusPill";
 import { Button } from "@/components/ui/Button";
 import { EmptyConstellation } from "@/components/visuals/EmptyConstellation";
 import { ChinaJobMap } from "@/components/jobs/ChinaJobMap";
+import { VirtualJobList, type VirtualJobListHandle } from "@/components/jobs/VirtualJobList";
 import { CaptureAnimation } from "@/components/capture/CaptureAnimation";
 import { useCaptureMotion } from "@/components/capture/useCaptureMotion";
 import { ReferralCodeDrawer } from "@/components/referrals/ReferralCodeHub";
@@ -87,6 +87,7 @@ export function HomeClient() {
   const applyPageWasHiddenRef = useRef(false);
   const applyConfirmFallbackRef = useRef<number | null>(null);
   const loadRequestRef = useRef(0);
+  const virtualJobListRef = useRef<VirtualJobListHandle>(null);
   const { capturedJob, startCapture, clearCapture } = useCaptureMotion();
 
   async function loadData() {
@@ -95,49 +96,63 @@ export function HomeClient() {
     setLoading(true);
     setLoadError("");
     setMessage("");
+    if (!isSupabaseConfigured()) {
+      setJobs([]);
+      setApplications([]);
+      console.error("Supabase environment variables are not configured.");
+      setLoadError("岗位暂时无法读取，请稍后重试。");
+      setLoading(false);
+      return;
+    }
+
+    const supabase = createClient();
+    const userPromise = getCurrentUserOrNull(supabase).catch(() => null);
+
     try {
-      if (!isSupabaseConfigured()) {
-        setJobs([]);
-        setApplications([]);
-        console.error("Supabase environment variables are not configured.");
-        setLoadError("岗位暂时无法读取，请稍后重试。");
-        return;
-      }
-      const supabase = createClient();
-      const [jobRows, user] = await Promise.all([
-        fetchActiveJobs(supabase),
-        getCurrentUserOrNull(supabase),
-      ]);
+      // The public catalogue is the first paint. Private workspace state is
+      // hydrated afterwards, so an auth/profile request cannot hold the list
+      // behind a loading screen.
+      const jobRows = await fetchActiveJobs(supabase);
       if (requestId !== loadRequestRef.current) return;
       setJobs(jobRows);
-
-      if (user) {
-        setCurrentUserId(user.id);
-        const [profileResult, applicationRows, resumeRows] = await Promise.all([
-          supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
-          fetchMyApplications(supabase, user.id),
-          fetchMyResumes(supabase).catch((error: unknown) => {
-            if (isMissingResumeTableError(error)) return [];
-            throw error;
-          }),
-        ]);
-        if (requestId !== loadRequestRef.current) return;
-        setProfile(profileResult.data as Profile | null);
-        setApplications(applicationRows);
-        setResumes(resumeRows);
-      } else {
-        setCurrentUserId(null);
-        setApplications([]);
-        setResumes([]);
-        setProfile(null);
-      }
+      setLoading(false);
     } catch {
       if (requestId !== loadRequestRef.current) return;
       setLoadError(typeof navigator !== "undefined" && !navigator.onLine
         ? "当前网络不可用，筛选条件已保留。联网后可重新加载岗位。"
         : "岗位暂时无法读取，请检查网络后重试。");
-    } finally {
-      if (requestId === loadRequestRef.current) setLoading(false);
+      setLoading(false);
+      return;
+    }
+
+    const user = await userPromise;
+    if (requestId !== loadRequestRef.current) return;
+
+    if (!user) {
+      setCurrentUserId(null);
+      setApplications([]);
+      setResumes([]);
+      setProfile(null);
+      return;
+    }
+
+    setCurrentUserId(user.id);
+    try {
+      const [profileResult, applicationRows, resumeRows] = await Promise.all([
+        supabase.from("profiles").select("id,display_name,phone,city,school,major,graduation_year,preferred_regions,target_roles,role,created_at,updated_at").eq("id", user.id).maybeSingle(),
+        fetchMyApplications(supabase, user.id),
+        fetchMyResumes(supabase).catch((error: unknown) => {
+          if (isMissingResumeTableError(error)) return [];
+          throw error;
+        }),
+      ]);
+      if (requestId !== loadRequestRef.current) return;
+      setProfile(profileResult.data as Profile | null);
+      setApplications(applicationRows);
+      setResumes(resumeRows);
+    } catch {
+      if (requestId !== loadRequestRef.current) return;
+      setMessage("岗位已加载；个人投递状态暂时无法同步，请稍后重试。");
     }
   }
 
@@ -220,10 +235,6 @@ export function HomeClient() {
     return mapMatchingJobs;
   }, [applicationByJobId, jobView, mapMatchingJobs]);
   const filteredJobs = baseVisibleJobs;
-  // Hundreds of layout-animated rows make filtering feel slower than the
-  // underlying data work. Keep the transition for focused result sets and use
-  // stable plain rows for the full catalogue.
-  const animateJobList = filteredJobs.length <= 80;
   const activeFilterChips = useMemo(
     () => getActiveFilterChips(filters, jobView, discoveryScope),
     [discoveryScope, filters, jobView],
@@ -460,12 +471,7 @@ export function HomeClient() {
 
   function focusJob(job: Job) {
     setFocusedJobId(job.id);
-    window.setTimeout(() => {
-      document.getElementById(`job-row-${job.id}`)?.scrollIntoView({
-        block: "center",
-        behavior: "smooth",
-      });
-    }, 60);
+    virtualJobListRef.current?.scrollToJob(job.id);
   }
 
   function handleApplicationChanged(nextApplication: ApplicationWithJob) {
@@ -639,49 +645,20 @@ export function HomeClient() {
               }
             />
           ) : (
-            <div className="list-surface">
-              {animateJobList ? (
-              <AnimatePresence initial={false}>
-                {filteredJobs.map((job, index) => (
-                  <motion.div key={job.id} layout="position" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
-                    <JobCard
-                      job={job}
-                      index={index}
-                      application={applicationByJobId.get(job.id) ?? null}
-                      deadline={getDeadlineInfo(job)}
-                      fitLabel={getFitLabel(job, profile)}
-                      material={getMaterialReadiness(job.id, resumes)}
-                      highlighted={hoveredJobId === job.id || focusedJobId === job.id}
-                      onApply={handleApply}
-                      onOpenProgress={openProgressByJob}
-                      onOpenReferral={setReferralJob}
-                      onHover={(target) => setHoveredJobId(target?.id ?? null)}
-                      onFocusJob={(target) => setFocusedJobId(target.id)}
-                    />
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-              ) : (
-                filteredJobs.map((job, index) => (
-                  <div key={job.id}>
-                    <JobCard
-                      job={job}
-                      index={index}
-                      application={applicationByJobId.get(job.id) ?? null}
-                      deadline={getDeadlineInfo(job)}
-                      fitLabel={getFitLabel(job, profile)}
-                      material={getMaterialReadiness(job.id, resumes)}
-                      highlighted={hoveredJobId === job.id || focusedJobId === job.id}
-                      onApply={handleApply}
-                      onOpenProgress={openProgressByJob}
-                      onOpenReferral={setReferralJob}
-                      onHover={(target) => setHoveredJobId(target?.id ?? null)}
-                      onFocusJob={(target) => setFocusedJobId(target.id)}
-                    />
-                  </div>
-                ))
-              )}
-            </div>
+            <VirtualJobList
+              ref={virtualJobListRef}
+              jobs={filteredJobs}
+              applicationByJobId={applicationByJobId}
+              profile={profile}
+              resumes={resumes}
+              hoveredJobId={hoveredJobId}
+              focusedJobId={focusedJobId}
+              onApply={handleApply}
+              onOpenProgress={openProgressByJob}
+              onOpenReferral={setReferralJob}
+              onHover={(target) => setHoveredJobId(target?.id ?? null)}
+              onFocusJob={(target) => setFocusedJobId(target.id)}
+            />
           )}
         </section>
       </div>
