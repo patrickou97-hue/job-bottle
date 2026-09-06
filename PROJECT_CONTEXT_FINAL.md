@@ -1,12 +1,13 @@
 # 拾星 StarJob — 最终完整确认版交接文档
 
-## 2026-09-06 首页、性能、网申助手与反馈改动统一发布候选（待推送）
+## 2026-09-06 首页、性能、网申助手与反馈改动统一上线
 
 - 用户目标：把前面已在本地验证、但尚未上线的产品改动统一发布，包括首页轻量转场与太阳系配色、岗位列表性能、网申助手演示与网申前准备、真实 0.2.8 popup、以及管理员反馈解决按钮。
-- 发布边界：纳入网站源码、公开的 `public/downloads/starjob-resume-assistant-v0.2.8.zip`、扩展源码和相关回归测试；不纳入未跟踪的 PRD、`promo-video/` 或浏览器夹具之外的本地宣传/探索材料。真实 Chrome Web Store 上架不等同于网站安装包上线，本次只发布网站可下载包与官网入口。
-- 兼容边界：不新增 Supabase migration/RLS/DDL，不写入用户数据，不改变真实扩展的敏感字段、验证码、密码、自动提交禁止规则；网申前准备仍绑定当前 `ResumeDocument`，可以跳过，不阻断正常填写。首页贴图实验已回退，不发布行星贴图资源、土星环或额外纹理请求。
-- 发布前验证：`node --test scripts/tests/motion-performance.test.mjs` 8/8；`npm test` 166/166；`npm run lint` 0 errors、保留 3 条既有 warning；`npm run build -- --webpack` 成功生成 62 个路由；`npm run build:extension` 与 `npm run verify:extension-package` 通过；`git diff --check` 通过。`npm run test:extension` 在当前机器因 Chrome 未输出页面内容仍未作为通过证据。
-- Git、部署与外部状态：当前改动仍在本地 `main` 工作区，尚未生成本轮发布提交、推送或触发 Vercel；待与 `origin/main` 的 favicon 提交安全合并后发布。正式站点、线上缓存、登录态网申填写和 Chrome Web Store 状态在发布完成前不宣称已验证。
+- 发布范围：网站源码、公开的 `public/downloads/starjob-resume-assistant-v0.2.8.zip`、扩展源码和相关回归测试已发布；未跟踪的 PRD、`promo-video/` 和本地宣传/探索材料仍留在工作区，没有混入正式站。真实 Chrome Web Store 上架不等同于网站安装包上线，本次完成的是网站可下载包与官网入口上线。
+- 兼容边界：未新增 Supabase migration/RLS/DDL，未写入用户数据；未改变真实扩展的敏感字段、验证码、密码、自动提交禁止规则；网申前准备仍绑定当前 `ResumeDocument`，可以跳过，不阻断正常填写。首页贴图实验已回退，没有发布行星贴图资源、土星环或额外纹理请求。
+- Git 与部署证据：发布提交 `5f86157` 已 rebase 到远端 favicon 修复后的 `main` 并推送 `origin/main`。GitHub Vercel check [HKKotg24r31CRX98cw33VffzgXGe](https://vercel.com/job-bottle/job-bottle/HKKotg24r31CRX98cw33VffzgXGe) 返回 `success / Deployment has completed`。
+- 线上核验：`https://www.starjob.space/`、`/extension`、`/extension/guide`、`/resume?action=prepare`、`/admin/feedback` 均返回 HTTP 200；主页 HTML 已检出“发现机会 · 准备材料 · 安全网申”和“网申助手”，网申助手 HTML 已检出“体验使用流程”和“先选一份简历”；`/downloads/starjob-resume-assistant-v0.2.8.zip` 返回 HTTP 200、`application/zip`、173203 bytes。匿名 `GET /api/admin/feedback` 与 `GET /api/resume/extension-profile` 均返回 401，未把匿名探针当作登录态验收。
+- 验证与未确认项：`node --test scripts/tests/motion-performance.test.mjs` 8/8；`npm test` 166/166；`npm run lint` 0 errors、保留 3 条既有 warning；Webpack 生产构建成功生成 62 个路由；`npm run build:extension` 与 `npm run verify:extension-package` 通过；`git diff --check` 通过。`npm run smoke` 已完成资源、岗位只读和大量源码检查，但仍在 `ApplicationOrbitStar` 的历史严格文本契约处停止；没有恢复已淘汰的主题 token，也未把该 stale gate 写成产品线上失败。`npm run test:extension` 在当前机器因 Chrome 未输出页面内容仍未作为扩展 E2E 通过证据；真实登录态网申填写、设备 FPS 和 Chrome Web Store 上架仍未确认。
 
 ## 2026-09-06 首页转场改为轻量目标星球淡出（本地已验证，未部署）
 
