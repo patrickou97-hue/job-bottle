@@ -96,6 +96,8 @@ const sectionSchema = z.object({
   type: z.string().max(40),
   title: z.string().max(120),
   recordIndex: z.number().int().min(0).max(50).nullable().optional().default(null),
+  sectionId: z.string().max(120).nullable().optional().default(null),
+  pageRecordId: z.string().max(160).nullable().optional().default(null),
   fieldKeys: z.array(z.string().max(520)).max(80).optional().default([]),
 }).strip();
 
@@ -126,6 +128,14 @@ const fieldSchema = z.object({
   deterministicConfidence: z.number().min(0).max(1),
   recordIndex: z.number().int().min(0).max(50).nullable().optional().default(null),
   recordScope: z.enum(["internship", "employment"]).nullable().optional().default(null),
+  sectionType: z.string().max(40).nullable().optional().default(null),
+  sectionId: z.string().max(120).nullable().optional().default(null),
+  pageRecordId: z.string().max(160).nullable().optional().default(null),
+  semanticKey: z.string().max(80).nullable().optional().default(null),
+  resumeRecordId: z.string().max(160).nullable().optional().default(null),
+  resumePath: z.string().max(240).nullable().optional().default(null),
+  elementIdentity: z.string().max(180).optional().default(""),
+  datePart: z.enum(["year", "month", "day"]).nullable().optional().default(null),
   options: z.array(optionSchema).max(40).optional().default([]),
 }).strip();
 
@@ -216,6 +226,11 @@ export async function POST(request: NextRequest) {
 
   try {
     const modelFields = parsed.data.fields.map((field, index) => ({ ...field, fieldKey: `f${index}` }));
+    const modelKeyByOriginalKey = new Map(parsed.data.fields.map((field, index) => [field.fieldKey, `f${index}`]));
+    const modelSections = parsed.data.formSections.map((section) => ({
+      ...section,
+      fieldKeys: section.fieldKeys.map((fieldKey) => modelKeyByOriginalKey.get(fieldKey)).filter((fieldKey): fieldKey is string => Boolean(fieldKey)),
+    })).filter((section) => section.fieldKeys.length > 0);
     const controller = new AbortController();
     const abortForClientDisconnect = () => controller.abort(request.signal.reason);
     if (request.signal.aborted) abortForClientDisconnect();
@@ -235,7 +250,7 @@ export async function POST(request: NextRequest) {
           response_format: { type: "json_object" },
           messages: [
             { role: "system", content: SYSTEM_PROMPT },
-            { role: "user", content: buildUserPrompt(parsed.data.resume, modelFields, parsed.data.formSections, parsed.data.applicationContext) },
+            { role: "user", content: buildUserPrompt(parsed.data.resume, modelFields, modelSections, parsed.data.applicationContext) },
           ],
         }),
         signal: controller.signal,
@@ -332,14 +347,31 @@ function parseResult(
     const resumeFacts = collectResumeFacts(resume);
     const summaryFacts = collectResumeSummaryFacts(resume);
     const seen = new Set<string>();
+    let ambiguousRecordCount = 0;
     const mappings = modelFields.map((modelField, index) => {
       const field = originalFields[index];
       const returned = returnedByKey.get(modelField.fieldKey) ?? mappingSchema.parse({ fieldKey: modelField.fieldKey });
       const mapping = { ...returned, fieldKey: field.fieldKey, confidence: returned.confidence ?? 0 };
+      const exactResumeValue = deriveExactResumeValue(field, resume);
+      if (exactResumeValue?.failureCode === "AMBIGUOUS_RECORD") ambiguousRecordCount += 1;
       const recordDateValue = deriveRecordDateValue(field, resume);
       const recordDescriptionValue = deriveRecordDescriptionValue(field, resume);
       const derivedValue = deriveGraduationValue(field, resume);
       const ageValue = deriveAgeValue(field, resume);
+      if (exactResumeValue?.value) {
+        return {
+          field,
+          mapping: {
+            ...mapping,
+            action: field.interactionType.includes("select") ? "select" as const : "fill" as const,
+            value: exactResumeValue.value,
+            confidence: 0.99,
+            basis: "resume" as const,
+            source: { type: "resume" as const, path: exactResumeValue.resumePath },
+            evidence: [exactResumeValue.resumePath],
+          },
+        };
+      }
       if (recordDateValue) {
         return { field, mapping: { ...mapping, value: recordDateValue, confidence: 0.99, basis: "resume" as const } };
       }
@@ -364,7 +396,19 @@ function parseResult(
       seen.add(mapping.fieldKey);
       return true;
     }).map(({ mapping }) => ({ ...mapping, value: mapping.value?.trim() || null }));
-    return { mappings };
+    return {
+      mappings,
+      diagnostics: {
+        checkpoint: "B-C",
+        aiPayloadFieldCount: originalFields.length,
+        aiRawMappingCount: parsed.data.mappings.length,
+        validatedMappingCount: mappings.length,
+        ambiguousRecordCount,
+        discardedUnknown,
+        discardedDuplicate,
+        discardedMalformed,
+      },
+    };
   } catch {
     console.warn("[extension_autofill_rejected_result]", { reason: "invalid_json", contentLength: content.length });
     return null;
@@ -647,6 +691,39 @@ function deriveRecordDateValue(field: z.infer<typeof fieldSchema>, resume: z.inf
   if (!entry || typeof entry !== "object") return null;
   const value = (entry as Record<string, unknown>)[property];
   return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+const REPEATABLE_SECTIONS = new Set(["education", "work", "project", "campus", "awards", "certifications", "languages"]);
+
+function deriveExactResumeValue(field: z.infer<typeof fieldSchema>, resume: z.infer<typeof resumeSchema>) {
+  const [section, property] = (field.deterministicKey || "").split(".");
+  if (!section || !property || field.deterministicConfidence < 0.9) return null;
+  if (REPEATABLE_SECTIONS.has(section)) {
+    if (field.recordIndex === null || !field.pageRecordId || !field.resumePath) {
+      return { value: null, resumePath: "", failureCode: "AMBIGUOUS_RECORD" as const };
+    }
+    const entry = getSectionEntries(resume, section, field.recordScope)[field.recordIndex];
+    if (!entry || typeof entry !== "object") return null;
+    const record = entry as Record<string, unknown>;
+    let rawValue: unknown = record[property];
+    if (property === "description") {
+      if (section === "education") rawValue = [record.courses, record.honors].filter(Boolean).join("\n");
+      else rawValue = Array.isArray(record.bullets) ? record.bullets.join("\n") : "";
+    }
+    const value = Array.isArray(rawValue) ? rawValue.filter(Boolean).join("、") : String(rawValue ?? "").trim();
+    return value ? { value, resumePath: field.resumePath, failureCode: null } : null;
+  }
+
+  if (section === "basic") {
+    const rawValue = (resume.content.basics as Record<string, unknown>)[property] ?? (property === "targetRole" ? resume.targetRole : null);
+    const value = Array.isArray(rawValue) ? rawValue.filter(Boolean).join("、") : String(rawValue ?? "").trim();
+    return value ? { value, resumePath: `basics.${property}`, failureCode: null } : null;
+  }
+  if (field.deterministicKey === "skills") {
+    const value = resume.content.skills.flatMap((group) => group.skills).filter(Boolean).join("、");
+    return value ? { value, resumePath: "skills", failureCode: null } : null;
+  }
+  return null;
 }
 
 function deriveRecordDescriptionValue(field: z.infer<typeof fieldSchema>, resume: z.infer<typeof resumeSchema>) {

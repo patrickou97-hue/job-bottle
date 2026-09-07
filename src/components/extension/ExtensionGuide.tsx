@@ -46,19 +46,19 @@ export function ExtensionGuide() {
         <div className="max-w-4xl">
           <h1 className="page-title">安装拾星网申助手</h1>
           <div className="mt-5 max-w-3xl space-y-2 text-sm leading-7 text-ink-secondary">
-            <p>当前版本 1.0.0，适用于 Chrome、Edge 及其他 Chromium 浏览器。</p>
+            <p>当前版本 1.0.1，适用于 Chrome、Edge 及其他 Chromium 浏览器。</p>
             <div className="flex flex-wrap items-center gap-3 pt-3">
               <a
-                href="/downloads/starjob-resume-assistant-v1.0.0.zip"
+                href="/downloads/starjob-resume-assistant-v1.0.1.zip"
                 download
                 className="gold-button pressable inline-flex min-h-12 items-center gap-2 rounded-xl px-5 text-base font-semibold"
               >
                 <ArrowDownIcon aria-hidden="true" className="size-5" />
-                下载 1.0.0 安装包
+                下载 1.0.1 安装包
               </a>
               <span className="text-xs text-ink-muted">ZIP 安装包 · 下载后完整解压</span>
             </div>
-            <p>下载后请完整解压。1.0.0 会识别 ARIA 和自定义下拉控件，动态等待候选项，并在写入后回读校验；只填写你在拾星简历中明确保存的内容，验证码、密码和最终提交仍由你处理。</p>
+            <p>下载后请完整解压。1.0.1 会先稳定扫描页面，再把每一段经历与所选简历中的对应记录绑定；日期和重复字段写入后都会回读校验。只填写你在拾星简历中明确保存的内容，验证码、密码和最终提交仍由你处理。</p>
           </div>
         </div>
       </section>

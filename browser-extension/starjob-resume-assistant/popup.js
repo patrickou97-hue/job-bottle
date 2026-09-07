@@ -298,6 +298,66 @@ function qualifyFrameFieldKey(frameId, fieldIndex, fieldKey) {
   return `${prefix}${String(fieldKey).slice(0, 520 - prefix.length)}`;
 }
 
+async function waitForFormStability(tabId, taskSignal) {
+  throwIfAborted(taskSignal);
+  await chrome.scripting.executeScript({
+    target: { tabId, allFrames: true },
+    func: async () => new Promise((resolve) => {
+      const root = document.body || document.documentElement;
+      if (!root) { resolve({ quiet: true, mutations: 0 }); return; }
+      let mutations = 0;
+      let quietTimer;
+      const finish = (quiet) => {
+        observer.disconnect();
+        window.clearTimeout(quietTimer);
+        window.clearTimeout(maxTimer);
+        resolve({ quiet, mutations });
+      };
+      const scheduleQuiet = () => {
+        window.clearTimeout(quietTimer);
+        quietTimer = window.setTimeout(() => finish(true), 320);
+      };
+      const observer = new MutationObserver((records) => {
+        mutations += records.length;
+        scheduleQuiet();
+      });
+      observer.observe(root, { childList: true, subtree: true, attributes: true });
+      const maxTimer = window.setTimeout(() => finish(false), 2_400);
+      scheduleQuiet();
+    }),
+  });
+  throwIfAborted(taskSignal);
+}
+
+function analysisFingerprint(results) {
+  return results
+    .filter((entry) => entry.result)
+    .sort((left, right) => left.frameId - right.frameId)
+    .map((entry) => `${entry.frameId}:${(entry.result.fields || []).map((field) => [
+      field.fieldKey,
+      field.pageRecordId || "-",
+      field.semanticKey || field.deterministicKey || "-",
+    ].join("@")).join(",")}`)
+    .join("|");
+}
+
+async function scanStableForm(tabId, taskSignal) {
+  let previousFingerprint = "";
+  let latestResults = [];
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await waitForFormStability(tabId, taskSignal);
+    latestResults = await chrome.scripting.executeScript({
+      target: { tabId, allFrames: true },
+      files: ["fill.js"],
+    });
+    throwIfAborted(taskSignal);
+    const fingerprint = analysisFingerprint(latestResults);
+    if (fingerprint && fingerprint === previousFingerprint) return latestResults;
+    previousFingerprint = fingerprint;
+  }
+  return latestResults;
+}
+
 async function executeMappedFillByFrame({
   tabId,
   frameIds,
@@ -307,9 +367,15 @@ async function executeMappedFillByFrame({
   mappingStorageKey,
 }) {
   const mappingsByFrame = new Map(frameIds.map((frameId) => [frameId, {}]));
+  const rawKeysByFrame = new Map(frameIds.map((frameId) => [frameId, new Set()]));
   for (const [qualifiedKey, mapping] of Object.entries(mappings)) {
     const address = fieldAddressByQualifiedKey.get(qualifiedKey);
     if (!address) continue;
+    const usedRawKeys = rawKeysByFrame.get(address.frameId);
+    if (!usedRawKeys || usedRawKeys.has(address.rawFieldKey)) {
+      throw new Error("字段身份发生冲突，本次未写入页面");
+    }
+    usedRawKeys.add(address.rawFieldKey);
     mappingsByFrame.get(address.frameId)[address.rawFieldKey] = mapping;
   }
 
@@ -481,10 +547,7 @@ async function fillCurrentPage() {
       aiValueMappings: {},
     });
 
-    const analysisResults = await chrome.scripting.executeScript({
-      target: { tabId: tab.id, allFrames: true },
-      files: ["fill.js"],
-    });
+    const analysisResults = await scanStableForm(tab.id, taskController.signal);
     throwIfAborted(taskController.signal);
     const analyses = analysisResults
       .filter((entry) => entry.result)
@@ -523,6 +586,11 @@ async function fillCurrentPage() {
       .filter((field) => !field.deterministicKey || Number(field.deterministicConfidence) < 0.74)
       .slice(0, SMART_MATCH_MAX_FIELDS);
     updateProgress("extract", "success", `共提取 ${extracted} 个可见字段`);
+    console.info("[starjob_pipeline_checkpoint_A]", {
+      scanFieldCount: extracted,
+      eligibleFieldCount: fields.length,
+      frames: analyses.map(({ frameId, result }) => ({ frameId, diagnostics: result.pipelineDiagnostics, fieldTraces: result.fieldTraces })),
+    });
     updateTaskProgress(1, 4, `已读取 ${extracted} 个可见字段`);
 
     if (extracted === 0) {
@@ -559,6 +627,8 @@ async function fillCurrentPage() {
 
       const aiValueMappings = {};
       let acceptedMappings = 0;
+      let aiRawMappingCount = 0;
+      let validatedMappingCount = 0;
       const sanitizedResume = sanitizeResumeForAi(selectedResume, fields);
       const pageUrl = new URL(tab.url);
       const applicationContext = {
@@ -574,6 +644,13 @@ async function fillCurrentPage() {
       }
       const totalTaskUnits = batches.length + 3;
       const operationId = createOperationId();
+      const sectionsForBatch = (batch) => {
+        const keys = new Set(batch.map((field) => field.fieldKey));
+        return formSections.map((section) => ({
+          ...section,
+          fieldKeys: (section.fieldKeys || []).filter((fieldKey) => keys.has(fieldKey)),
+        })).filter((section) => section.fieldKeys.length > 0);
+      };
       updateTaskProgress(1, totalTaskUnits, `已拆分为 ${batches.length} 批，正在并行分析`);
       let completedBatches = 0;
       const payloads = await Promise.all(batches.map(async (batch) => {
@@ -584,7 +661,7 @@ async function fillCurrentPage() {
             token: stored.matchToken,
             operationId,
             taskSignal: taskController.signal,
-            formSections,
+            formSections: sectionsForBatch(batch),
             applicationContext,
           });
           completedBatches += 1;
@@ -596,7 +673,9 @@ async function fillCurrentPage() {
           throw error;
         }
       }));
-      for (const payload of payloads) {
+      const acceptPayload = (payload) => {
+        aiRawMappingCount += Number(payload?.diagnostics?.aiRawMappingCount || 0);
+        validatedMappingCount += Number(payload?.diagnostics?.validatedMappingCount || 0);
         for (const mapping of payload.mappings || []) {
           if (mapping?.fieldKey && typeof mapping.value === "string" && mapping.value.trim()
             && !["manual", "skip"].includes(mapping.action)
@@ -616,7 +695,35 @@ async function fillCurrentPage() {
             acceptedMappings += 1;
           }
         }
+      };
+      for (const payload of payloads) acceptPayload(payload);
+
+      const missingDeterministicFields = fields.filter((field) => (
+        field.deterministicKey
+        && Number(field.deterministicConfidence) >= 0.9
+        && !aiValueMappings[field.fieldKey]
+      ));
+      if (missingDeterministicFields.length > 0 && batches.length < 15) {
+        const retryBatch = missingDeterministicFields.slice(0, 100);
+        updateProgress("match", "loading", `正在补齐首次遗漏的 ${retryBatch.length} 个字段`);
+        const retryPayload = await requestAiAutofillBatch({
+          batch: retryBatch,
+          resume: sanitizedResume,
+          token: stored.matchToken,
+          operationId,
+          taskSignal: taskController.signal,
+          formSections: sectionsForBatch(retryBatch),
+          applicationContext,
+        });
+        acceptPayload(retryPayload);
       }
+      console.info("[starjob_pipeline_checkpoint_B_C]", {
+        aiPayloadFieldCount: fields.length,
+        aiRawMappingCount,
+        validatedMappingCount,
+        compiledActionCount: Object.keys(aiValueMappings).length,
+        missingDeterministicFieldCount: fields.filter((field) => field.deterministicKey && Number(field.deterministicConfidence) >= 0.9 && !aiValueMappings[field.fieldKey]).length,
+      });
       updateProgress("match", "success", `所有批次成功后，AI 找到 ${acceptedMappings} 个有简历依据或可追溯改写的值`);
       updateProgress("fill", "loading", "正在按页面顺序填写并选择空白项");
       updateTaskProgress(2 + batches.length, totalTaskUnits, `已确认 ${acceptedMappings} 个有简历依据的值，正在填写`);
@@ -639,6 +746,10 @@ async function fillCurrentPage() {
       });
       throwIfAborted(taskController.signal);
       const total = summarizeFrameResults(aiFill.results);
+      console.info("[starjob_pipeline_checkpoint_D]", {
+        ...total,
+        frames: aiFill.results.map(({ frameId, result }) => ({ frameId, diagnostics: result?.pipelineDiagnostics, fieldTraces: result?.fieldTraces })),
+      });
       total.failed += aiFill.failedFields;
       total.manual += aiFill.failedFields;
       const frameFailureCopy = aiFill.failedFrames > 0 ? `（涉及 ${aiFill.failedFrames} 个页面区域）` : "";

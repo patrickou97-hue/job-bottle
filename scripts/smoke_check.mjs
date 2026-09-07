@@ -1185,7 +1185,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "browser-extension/starjob-resume-assistant/manifest.json",
-    mustInclude: ["\"manifest_version\": 3", "\"version\": \"1.0.0\"", "\"activeTab\"", "\"scripting\"", "\"storage\"", "https://www.starjob.space/extension*", "https://www.starjob.space/*"],
+    mustInclude: ["\"manifest_version\": 3", "\"version\": \"1.0.1\"", "\"activeTab\"", "\"scripting\"", "\"storage\"", "https://www.starjob.space/extension*", "https://www.starjob.space/*"],
     mustNotInclude: ["\"cookies\"", "\"tabs\"", "<all_urls>", "localhost", "nowcoder", "牛客"],
     label: "拾星网申助手使用 Manifest V3 和用户触发的最小权限",
   },
@@ -1257,7 +1257,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "browser-extension/tests/ai-autofill-fixture.html",
-    mustInclude: ["STARJOB_AI_AUTOFILL_TEST_PASS", "Wang Xiaoxing", "basis: \"derived\"", "user-kept@example.com", "毕业状态", "studentStatus === true", "自我描述", "basicInfo_recruitEducationList_0_description", "basicInfo_recruitWorkingList_0_startDate", "basicInfo_recruitWorkingList_1_description", "actual.educationDescription", "actual.work1Description", "actual.work2Description", "actual.summary.structured === 7", "invalidDatesRepaired === 0", "birth-date", "2000-02-03", "ant-picker-header-super-prev-btn", "身份证号", "同意隐私协议", "actual.summary.derived === 3"],
+    mustInclude: ["STARJOB_AI_AUTOFILL_TEST_PASS", "Wang Xiaoxing", "basis: \"derived\"", "user-kept@example.com", "毕业状态", "studentStatus === true", "自我描述", "basicInfo_recruitEducationList_0_description", "basicInfo_recruitWorkingList_0_startDate", "basicInfo_recruitWorkingList_1_description", "actual.educationDescription", "actual.work1Description", "actual.work2Description", "actual.summary.structured === 11", "invalidDatesRepaired === 0", "birth-date", "2000-02-03", "ant-picker-header-super-prev-btn", "身份证号", "同意隐私协议", "actual.summary.derived === 3"],
     mustNotInclude: ["MIMO_API_KEY", "SUPABASE_SERVICE_ROLE_KEY", ".submit()"],
     label: "AI 智能填写浏览器夹具覆盖拼音派生、下拉选择、已有值保留和敏感字段排除",
   },
@@ -1269,15 +1269,15 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/extension/ExtensionHubClient.tsx",
-    mustInclude: ["<span className=\"block\">一份简历，</span>", "<span className=\"block\">抵达更多坐标</span>", "把拾星简历同步到浏览器，在网申页面填写常用字段；你负责核对与提交。", "starjob-extension-paper-planes.png", "多架纸飞机沿不同虚线轨迹飞向远方", "查看安装教程", "安装后重新检测", "window.location.reload()", "LEGACY_COMPATIBLE_VERSIONS", "SHORT_TIMEOUT_AI_VERSIONS", "PREVIOUS_AI_VERSIONS", "new Set([\"0.1.7\", \"0.1.8\", \"0.1.9\"])", "new Set([\"0.2.0\"])", "new Set([\"0.2.1\", \"0.2.2\", \"0.2.3\", \"0.2.4\", \"0.2.5\", \"0.2.6\", \"0.2.7\", \"0.2.8\"])", "AI 智能填写需要升级到 1.0.0"],
+    mustInclude: ["<span className=\"block\">一份简历，</span>", "<span className=\"block\">抵达更多坐标</span>", "把拾星简历同步到浏览器，在网申页面填写常用字段；你负责核对与提交。", "starjob-extension-paper-planes.png", "多架纸飞机沿不同虚线轨迹飞向远方", "查看安装教程", "安装后重新检测", "window.location.reload()", "LEGACY_COMPATIBLE_VERSIONS", "SHORT_TIMEOUT_AI_VERSIONS", "PREVIOUS_AI_VERSIONS", "new Set([\"0.1.7\", \"0.1.8\", \"0.1.9\"])", "new Set([\"0.2.0\"])", "\"1.0.0\"", "AI 智能填写需要升级到 1.0.1"],
     mustNotInclude: ["获取安装包", "DOWNLOAD_URL", "/downloads/starjob-resume-assistant-v0.2.8.zip", "一份简历，投向更多可能", "常见网申字段按页面顺序填入", "你只需检查，再决定提交", "简历写一次，网申少重复", "请升级到 0.1.8", "extensionVersion !==", "starjob-resume-assistant-popup.png", "https://pan.baidu.com/s/1q9gVenToSLL5x5tXZzYLig?pwd=SXZS", "https://pan.baidu.com/s/13sk2UUdep9S1zoJdEk_sSA?pwd=SXZS", "https://pan.baidu.com/s/1jl_OHVc_HxXbUrI1-IS56g?pwd=SXZS"],
     label: "网申助手首屏使用更克制的价值表达与纸飞机线稿引导",
   },
   {
     file: "src/components/extension/ExtensionGuide.tsx",
-    mustInclude: ["/downloads/starjob-resume-assistant-v1.0.0.zip", "下载 1.0.0 安装包", "当前版本 1.0.0", "下载后请完整解压。1.0.0 会识别 ARIA 和自定义下拉控件", "只填写你在拾星简历中明确保存的内容", "安装后刷新检测", "步骤 {String(index + 1).padStart(2, \"0\")}"],
+    mustInclude: ["/downloads/starjob-resume-assistant-v1.0.1.zip", "下载 1.0.1 安装包", "当前版本 1.0.1", "下载后请完整解压。1.0.1 会先稳定扫描页面", "只填写你在拾星简历中明确保存的内容", "安装后刷新检测", "步骤 {String(index + 1).padStart(2, \"0\")}"],
     mustNotInclude: ["获取安装包", "pan.baidu.com", "百度网盘提取码", "最新版本 0.1.9", "starjob-resume-assistant-popup-v026.png"],
-    label: "网申助手下载页与安装教程共用 1.0.0 官网安装包",
+    label: "网申助手下载页与安装教程共用 1.0.1 官网安装包",
   },
   {
     file: "scripts/build_resume_extension.mjs",
@@ -1386,7 +1386,7 @@ const REQUIRED_FILES = [
   "public/downloads/starjob-resume-assistant-v0.2.5.zip",
   "public/downloads/starjob-resume-assistant-v0.2.7.zip",
   "public/downloads/starjob-resume-assistant-v0.2.8.zip",
-  "public/downloads/starjob-resume-assistant-v1.0.0.zip",
+  "public/downloads/starjob-resume-assistant-v1.0.1.zip",
   "browser-extension/starjob-resume-assistant/assets/icon16.png",
   "browser-extension/starjob-resume-assistant/assets/icon48.png",
   "browser-extension/starjob-resume-assistant/assets/icon128.png",

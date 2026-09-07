@@ -207,7 +207,9 @@
           progressLabel: document.querySelector("#progressLabel").textContent,
           summaryText: document.querySelector('[data-step="summary"] p').textContent,
         };
-        const passed = actual.analysisCounts.join(",") === "110,30"
+        const passed = actual.analysisCounts.length >= 4
+          && actual.analysisCounts.length % 2 === 0
+          && actual.analysisCounts.every((count, index) => count === (index % 2 === 0 ? 110 : 30))
           && actual.modelBatchSizes.join(",") === "50,50,40"
           && actual.modelFieldCount === 140
           && actual.uniqueModelFieldCount === 140

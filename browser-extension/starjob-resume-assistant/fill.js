@@ -76,8 +76,8 @@
     { key: "education.school", section: "education", aliases: ["学校", "学校名称", "院校", "毕业院校", "大学", "school", "schoolname", "university", "college", "institution"], values: education.map((item) => item.school) },
     { key: "education.degree", section: "education", aliases: ["学历", "学位", "degree", "educationlevel", "highestdegree"], values: education.map((item) => item.degree) },
     { key: "education.major", section: "education", aliases: ["专业", "主修专业", "major", "fieldofstudy", "discipline"], values: education.map((item) => item.major) },
-    { key: "education.startDate", section: "education", aliases: ["入学时间", "教育开始时间", "入学日期", "educationstartdate", "schoolstartdate", "startdate"], values: education.map((item) => item.startDate), date: true },
-    { key: "education.endDate", section: "education", aliases: ["毕业时间", "预计毕业时间", "教育结束时间", "毕业日期", "educationenddate", "graduationdate", "enddate"], values: education.map((item) => item.endDate), date: true },
+    { key: "education.startDate", section: "education", aliases: ["入学时间", "教育开始时间", "入学日期", "入学年份", "入学月份", "educationstartdate", "schoolstartdate", "startdate", "startyear", "startmonth"], values: education.map((item) => item.startDate), date: true },
+    { key: "education.endDate", section: "education", aliases: ["毕业时间", "预计毕业时间", "教育结束时间", "毕业日期", "毕业年份", "毕业月份", "educationenddate", "graduationdate", "enddate", "endyear", "endmonth"], values: education.map((item) => item.endDate), date: true },
     { key: "education.gpa", section: "education", aliases: ["gpa", "绩点", "平均绩点", "gradepointaverage"], values: education.map((item) => item.gpa) },
     { key: "education.courses", section: "education", aliases: ["主修课程", "相关课程", "核心课程", "courses", "coursework", "relevantcourses"], values: education.map((item) => item.courses) },
     { key: "education.honors", section: "education", aliases: ["在校荣誉", "教育荣誉", "奖学金", "honors", "academichonors"], values: education.map((item) => item.honors) },
@@ -87,16 +87,16 @@
     { key: "work.company", section: "work", aliases: ["公司", "公司名称", "单位名称", "雇主", "company", "companyname", "employer", "organization"], values: workValues("company").default, valuesByScope: workValues("company") },
     { key: "work.title", section: "work", aliases: ["职位", "岗位", "岗位名称", "职务", "职位名称", "jobtitle", "position", "role", "title"], values: workValues("title").default, valuesByScope: workValues("title") },
     { key: "work.location", section: "work", aliases: ["工作地点", "实习地点", "公司地点", "worklocation", "joblocation", "companylocation"], values: workValues("location").default, valuesByScope: workValues("location") },
-    { key: "work.startDate", section: "work", aliases: ["开始日期", "开始时间", "工作开始日期", "工作开始时间", "实习开始时间", "任职开始时间", "workstartdate", "employmentstartdate", "startdate"], values: workValues("startDate").default, valuesByScope: workValues("startDate"), date: true },
-    { key: "work.endDate", section: "work", aliases: ["结束日期", "结束时间", "工作结束日期", "工作结束时间", "实习结束时间", "离职时间", "workenddate", "employmentenddate", "enddate"], values: workValues("endDate").default, valuesByScope: workValues("endDate"), date: true },
+    { key: "work.startDate", section: "work", aliases: ["开始日期", "开始时间", "开始年份", "开始月份", "工作开始日期", "工作开始时间", "实习开始时间", "任职开始时间", "workstartdate", "employmentstartdate", "startdate", "startyear", "startmonth"], values: workValues("startDate").default, valuesByScope: workValues("startDate"), date: true },
+    { key: "work.endDate", section: "work", aliases: ["结束日期", "结束时间", "结束年份", "结束月份", "工作结束日期", "工作结束时间", "实习结束时间", "离职时间", "workenddate", "employmentenddate", "enddate", "endyear", "endmonth"], values: workValues("endDate").default, valuesByScope: workValues("endDate"), date: true },
     { key: "work.current", section: "work", aliases: ["至今", "仍在职", "当前任职", "currentlyworkhere", "currentposition", "present"], values: workValues("current", (value) => Boolean(value)).default, valuesByScope: workValues("current", (value) => Boolean(value)), checkbox: true },
     { key: "work.description", section: "work", aliases: ["经历描述", "工作描述", "工作内容", "工作职责", "职责描述", "工作职责描述", "岗位职责", "岗位描述", "实习描述", "实习内容", "主要职责", "主要工作", "主要工作内容", "工作业绩", "工作成果", "职责及业绩", "描述", "workdescription", "jobdescription", "responsibilities", "responsibility", "duties", "duty", "achievements", "description"], values: workValues("bullets", (value) => joinBullets(value)).default, valuesByScope: workValues("bullets", (value) => joinBullets(value)), multiline: true },
 
     { key: "project.name", section: "project", aliases: ["项目名称", "项目名", "projectname", "projecttitle"], values: projects.map((item) => item.name) },
     { key: "project.role", section: "project", aliases: ["项目角色", "担任角色", "项目职务", "projectrole", "roleinproject"], values: projects.map((item) => item.role) },
     { key: "project.url", section: "project", aliases: ["项目链接", "项目网址", "projectlink", "projecturl"], values: projects.map((item) => item.url), types: ["url"] },
-    { key: "project.startDate", section: "project", aliases: ["项目开始时间", "项目开始日期", "projectstartdate", "startdate"], values: projects.map((item) => item.startDate), date: true },
-    { key: "project.endDate", section: "project", aliases: ["项目结束时间", "项目结束日期", "projectenddate", "enddate"], values: projects.map((item) => item.endDate), date: true },
+    { key: "project.startDate", section: "project", aliases: ["项目开始时间", "项目开始日期", "开始年份", "开始月份", "projectstartdate", "startdate", "startyear", "startmonth"], values: projects.map((item) => item.startDate), date: true },
+    { key: "project.endDate", section: "project", aliases: ["项目结束时间", "项目结束日期", "结束年份", "结束月份", "projectenddate", "enddate", "endyear", "endmonth"], values: projects.map((item) => item.endDate), date: true },
     { key: "project.description", section: "project", aliases: ["项目描述", "项目内容", "项目职责", "项目成果", "项目业绩", "项目详情", "项目介绍", "项目经历", "项目经历描述", "负责内容", "主要内容", "个人贡献", "职责描述", "经历描述", "描述", "projectdescription", "projectdetails", "projectresponsibilities", "projectduties", "projectachievements", "responsibilities", "responsibility", "duties", "duty", "achievements", "contribution", "description"], values: projects.map((item) => joinBullets(item.bullets)), multiline: true },
     { key: "project.keywords", section: "project", aliases: ["项目关键词", "项目技能", "技术栈", "projectskills", "technologies", "techstack"], values: projects.map((item) => item.keywords) },
 
@@ -438,6 +438,15 @@
 
   function inferPairedDateKey(element, sectionHint) {
     if (!["education", "work", "project"].includes(sectionHint)) return null;
+    const ownDescriptor = normalize([
+      element.getAttribute("name") || "",
+      element.id || "",
+      element.getAttribute("aria-label") || "",
+      element.getAttribute("placeholder") || "",
+      element.labels?.[0]?.textContent || "",
+    ].join(" "));
+    if (/开始|起始|入学|start/.test(ownDescriptor)) return `${sectionHint}.startDate`;
+    if (/结束|截止|离职|毕业|end|finish/.test(ownDescriptor)) return `${sectionHint}.endDate`;
     let container = element.parentElement;
     for (let depth = 0; container && depth < 6; depth += 1, container = container.parentElement) {
       const text = normalize((container.innerText || "").slice(0, 500));
@@ -603,6 +612,29 @@
       if (/月份|年月|yyyymm|month/.test(dateSignal)) return `${year}-${month}`;
     }
     return text;
+  }
+
+  function inferDatePart(element, signals) {
+    const descriptor = normalize([
+      ...signals.visible,
+      ...signals.attributes,
+      element.getAttribute("aria-label") || "",
+      element.getAttribute("placeholder") || "",
+    ].join(" "));
+    if (/开始年份|起始年份|入学年份|毕业年份|结束年份|离职年份|startyear|endyear/i.test(descriptor)) return "year";
+    if (/开始月份|起始月份|入学月份|毕业月份|结束月份|离职月份|startmonth|endmonth/i.test(descriptor)) return "month";
+    if (/开始日(?!期)|起始日(?!期)|入学日(?!期)|毕业日(?!期)|结束日(?!期)|离职日(?!期)|startday|endday/i.test(descriptor)) return "day";
+    return null;
+  }
+
+  function valueForDatePart(rawValue, datePart, element) {
+    if (!datePart) return formatDate(rawValue, element);
+    const parts = parseDateParts(rawValue);
+    if (!parts) return "";
+    if (datePart === "year") return String(parts.year);
+    if (datePart === "month") return String(parts.month).padStart(2, "0");
+    if (datePart === "day") return String(parts.day || 1).padStart(2, "0");
+    return formatDate(rawValue, element);
   }
 
   function setNativeValue(element, value) {
@@ -921,7 +953,7 @@
   }
 
   async function fillElement(element, rawValue, definition) {
-    const value = definition.date ? formatDate(rawValue, element) : asText(rawValue);
+    const value = definition.date ? valueForDatePart(rawValue, definition.datePart, element) : asText(rawValue);
     if (definition.checkbox && element instanceof HTMLInputElement && element.type === "checkbox") {
       if (rawValue === undefined || rawValue === null || rawValue === "") return false;
       element.checked = rawValue === true || /^(true|1|yes|y|是|至今|仍在职)$/i.test(String(rawValue));
@@ -929,6 +961,11 @@
       return verifyReadback(element, element.checked, { checkbox: true });
     }
     if (!value) return false;
+
+    // Readonly ATS date pickers are also comboboxes. Date resolution must run
+    // before the generic dynamic-select state machine or a month/day option can
+    // be selected from the wrong popup.
+    if (definition.date && !definition.datePart && await tryExactDatePickerSelection(element, rawValue)) return true;
 
     if (isDynamicControl(element) && !(element instanceof HTMLInputElement && ["date", "month", "datetime-local"].includes(element.type))) {
       return fillDynamicControl(element, value, definition);
@@ -964,18 +1001,20 @@
       return verifyReadback(element, matched[0].value);
     }
     if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
-      if (definition.date && await tryExactDatePickerSelection(element, rawValue)) return true;
       setNativeValue(element, value);
       dispatchEvents(element);
       if (definition.date) {
         await wait(24);
-        if (!dateValuesEquivalent(rawValue, currentValue(element))) {
+        const validDateReadback = definition.datePart
+          ? normalize(value) === normalize(currentValue(element))
+          : dateValuesEquivalent(rawValue, currentValue(element));
+        if (!validDateReadback) {
           setNativeValue(element, "");
           dispatchEvents(element);
           return false;
         }
       }
-      return verifyReadback(element, value, { date: Boolean(definition.date) });
+      return verifyReadback(element, value, { date: Boolean(definition.date && !definition.datePart) });
     }
     if (element instanceof HTMLElement && element.isContentEditable) {
       element.textContent = value;
@@ -1043,8 +1082,14 @@
       sectionPath.join(" > "),
       getStableDomSignature(element),
       normalize(contextText).slice(0, 120),
+      `field-ordinal:${index}`,
     ].join("|");
-    const fieldId = `sj_${hashSemanticIdentity(semanticFingerprint)}`;
+    // The ordinal is part of the identity on purpose. Repeated ATS cards often
+    // have byte-for-byte identical markup, labels and attributes. A semantic
+    // hash alone therefore aliases every "company" field to one key and the
+    // last mapping silently wins. The stabilized scan guarantees the ordinal
+    // is taken only after the current DOM has settled.
+    const fieldId = `sj_${index}_${hashSemanticIdentity(semanticFingerprint)}`;
     element.dataset.starjobFieldId = fieldId;
     element.setAttribute("data-starjob-field-id", fieldId);
     element.dataset.starjobSemanticFingerprint = semanticFingerprint.slice(0, 900);
@@ -1094,6 +1139,27 @@
     return Number.isInteger(index) && index >= 0 && index < getDefinitionValues(definition, recordScope).length;
   }
 
+  function getResumeRecord(section, recordIndex, recordScope = null) {
+    if (!Number.isInteger(recordIndex)) return null;
+    if (section === "education") return education[recordIndex] || null;
+    if (section === "project") return projects[recordIndex] || null;
+    if (section === "campus") return campus[recordIndex] || null;
+    if (section === "awards") return awards[recordIndex] || null;
+    if (section === "certifications") return certifications[recordIndex] || null;
+    if (section === "languages") return languages[recordIndex] || null;
+    if (section === "work") return getWorkEntries(recordScope)[recordIndex] || null;
+    return null;
+  }
+
+  function getResumePath(section, property, recordIndex, recordScope = null) {
+    if (!Number.isInteger(recordIndex) || !property) return null;
+    const collection = section === "project" ? "projects" : section;
+    if (section !== "work") return `${collection}[${recordIndex}].${property}`;
+    const record = getResumeRecord(section, recordIndex, recordScope);
+    const sourceIndex = record ? work.indexOf(record) : -1;
+    return sourceIndex >= 0 ? `work[${sourceIndex}].${property}` : null;
+  }
+
   function assignRecordIndices(plans, fields) {
     const sections = ["education", "work", "project", "campus", "awards", "certifications", "languages"];
     const anchorKeys = {
@@ -1135,7 +1201,23 @@
           }
           plan.recordIndex = recordIndex;
           const field = fields.find((item) => item.fieldKey === plan.fieldKey);
-          if (field) field.recordIndex = recordIndex;
+          const sectionId = `${section}:${scope}`;
+          const pageRecordId = `${sectionId}:${recordIndex}`;
+          const property = plan.matchedDefinition.key.split(".")[1] || "";
+          const resumeRecord = getResumeRecord(section, recordIndex, plan.recordScope);
+          plan.sectionId = sectionId;
+          plan.pageRecordId = pageRecordId;
+          plan.resumePath = getResumePath(section, property, recordIndex, plan.recordScope);
+          plan.resumeRecordId = resumeRecord?.id || plan.resumePath?.replace(/\.[^.]+$/, "") || null;
+          if (field) {
+            field.recordIndex = recordIndex;
+            field.sectionType = section;
+            field.sectionId = sectionId;
+            field.pageRecordId = pageRecordId;
+            field.semanticKey = property;
+            field.resumePath = plan.resumePath;
+            field.resumeRecordId = plan.resumeRecordId;
+          }
         }
       }
     }
@@ -1164,6 +1246,14 @@
       deterministicConfidence: field.deterministicConfidence,
       recordIndex: Number.isInteger(field.recordIndex) ? field.recordIndex : null,
       recordScope: field.recordScope || null,
+      sectionType: field.sectionType || null,
+      sectionId: field.sectionId || null,
+      pageRecordId: field.pageRecordId || null,
+      semanticKey: field.semanticKey || null,
+      resumeRecordId: field.resumeRecordId || null,
+      resumePath: field.resumePath || null,
+      elementIdentity: field.elementIdentity,
+      datePart: field.datePart || null,
       options: field.options,
     };
   }
@@ -1178,6 +1268,8 @@
         type: field.recordScope || (field.deterministicKey?.split(".")[0] || "custom"),
         title: title.slice(0, 120),
         recordIndex,
+        sectionId: field.sectionId || null,
+        pageRecordId: field.pageRecordId || null,
         fieldKeys: [],
       };
       section.fieldKeys.push(field.fieldKey);
@@ -1227,9 +1319,11 @@
   function getExactStructuredValue(plan) {
     if (!plan.matchedDefinition) return undefined;
     const locallyExact = plan.matchedDefinition.localExact === true && plan.bestScore >= 0.9;
-    const structuredExact = plan.structuredContract && plan.bestScore >= 1
-      && /\.(?:startDate|endDate|date|description|url)$/.test(plan.matchedDefinition.key);
-    if (!locallyExact && !structuredExact) return undefined;
+    const recordAwareExact = Number.isInteger(plan.recordIndex)
+      && plan.pageRecordId
+      && plan.bestScore >= 0.9
+      && ["education", "work", "project", "campus", "awards", "certifications", "languages"].includes(plan.matchedDefinition.section);
+    if (!locallyExact && !recordAwareExact) return undefined;
     const values = getDefinitionValues(plan.matchedDefinition, plan.recordScope);
     const recordIndex = locallyExact || plan.matchedDefinition.repeatable === false ? 0 : plan.recordIndex;
     if (!isUsableRecordIndex(recordIndex, plan.matchedDefinition, plan.recordScope)) return undefined;
@@ -1348,6 +1442,8 @@
       nearbyText: getNearbyText(element),
       controlType: getControlType(element),
       interactionType: getInteractionType(element),
+      elementIdentity: element.dataset.starjobFieldId || fieldKey,
+      datePart: matchedDefinition?.date ? inferDatePart(element, signals) : null,
       required: element.hasAttribute("required") || element.getAttribute("aria-required") === "true",
       constraints: {
         maxLength: Number.isFinite(element.maxLength) && element.maxLength >= 0 ? element.maxLength : null,
@@ -1376,6 +1472,35 @@
 
   assignRecordIndices(plans, extractedFields);
 
+  const duplicateFieldKeys = extractedFields
+    .filter((field, index, all) => all.findIndex((candidate) => candidate.fieldKey === field.fieldKey) !== index)
+    .map((field) => field.fieldKey);
+  const duplicateElementIdentities = extractedFields
+    .filter((field, index, all) => all.findIndex((candidate) => candidate.elementIdentity === field.elementIdentity) !== index)
+    .map((field) => field.elementIdentity);
+  if (duplicateFieldKeys.length || duplicateElementIdentities.length) {
+    console.error("[starjob_pipeline_collision]", {
+      duplicateFieldKeys: [...new Set(duplicateFieldKeys)],
+      duplicateElementIdentities: [...new Set(duplicateElementIdentities)],
+    });
+    throw new Error("FIELD_IDENTITY_COLLISION");
+  }
+
+  const createFieldTrace = (field, plan) => ({
+    fieldKey: field.fieldKey,
+    sectionType: field.sectionType || plan?.matchedDefinition?.section || null,
+    sectionId: field.sectionId || null,
+    pageRecordId: field.pageRecordId || null,
+    recordIndex: Number.isInteger(field.recordIndex) ? field.recordIndex : null,
+    semanticKey: field.semanticKey || field.deterministicKey || null,
+    resumeRecordId: field.resumeRecordId || null,
+    resumePath: field.resumePath || null,
+    plannedValue: null,
+    elementIdentity: field.elementIdentity,
+    execution: null,
+  });
+  const fieldTraces = extractedFields.map((field) => createFieldTrace(field, plans.find((plan) => plan.fieldKey === field.fieldKey)));
+
   if (analysisOnly) {
     return {
       scanned: candidates.length,
@@ -1386,6 +1511,14 @@
       formSections: buildFormSections(extractedFields.filter((field) => !field.sensitive)),
       provider: detectProvider(),
       sensitive: sensitiveCount,
+      pipelineDiagnostics: {
+        checkpoint: "A",
+        scanFieldCount: candidates.length,
+        eligibleFieldCount: extractedFields.filter((field) => !field.sensitive).length,
+        duplicateFieldKeyCount: duplicateFieldKeys.length,
+        duplicateElementIdentityCount: duplicateElementIdentities.length,
+      },
+      fieldTraces,
     };
   }
 
@@ -1449,13 +1582,46 @@
   }
 
   async function fillElementSafely(element, value, definition) {
+    const elementIdentity = element?.dataset?.starjobFieldId || null;
+    const matches = elementIdentity
+      ? Array.from(document.querySelectorAll(`[data-starjob-field-id="${CSS.escape(elementIdentity)}"]`))
+      : [];
+    const resolvedElement = element?.isConnected ? element : matches.length === 1 ? matches[0] : null;
+    const trace = fieldTraces.find((item) => item.elementIdentity === elementIdentity);
+    if (trace) trace.plannedValue = asText(value).slice(0, 180);
+    if (!resolvedElement || matches.length > 1) {
+      if (trace) trace.execution = {
+        resolved: false,
+        written: false,
+        readback: "",
+        verified: false,
+        failureCode: matches.length > 1 ? "ELEMENT_IDENTITY_COLLISION" : "ELEMENT_NOT_FOUND",
+      };
+      failed += 1;
+      return false;
+    }
     try {
-      return await fillElement(element, value, definition);
+      const verified = await fillElement(resolvedElement, value, definition);
+      if (trace) trace.execution = {
+        resolved: true,
+        written: verified,
+        readback: currentValue(resolvedElement).slice(0, 180),
+        verified,
+        failureCode: verified ? null : "READBACK_MISMATCH",
+      };
+      return verified;
     } catch (error) {
       failed += 1;
+      if (trace) trace.execution = {
+        resolved: true,
+        written: false,
+        readback: currentValue(resolvedElement).slice(0, 180),
+        verified: false,
+        failureCode: "EXECUTION_ERROR",
+      };
       console.warn("[starjob_fill_field_failed]", {
-        tag: element?.tagName,
-        type: element instanceof HTMLInputElement ? element.type : undefined,
+        tag: resolvedElement?.tagName,
+        type: resolvedElement instanceof HTMLInputElement ? resolvedElement.type : undefined,
         message: error instanceof Error ? error.message : String(error),
       });
       return false;
@@ -1485,7 +1651,11 @@
       if (!plansToRepair.length) continue;
 
       for (const plan of plansToRepair) {
-        if (plan.expectedDateValue && await fillElementSafely(plan.element, plan.expectedDateValue, { date: true })) {
+        const traceField = extractedFields.find((field) => field.fieldKey === plan.fieldKey);
+        if (plan.expectedDateValue && await fillElementSafely(plan.element, plan.expectedDateValue, {
+          date: true,
+          datePart: traceField?.datePart || null,
+        })) {
           markFilled(plan.element, plan.signals.visible.find(Boolean) || "经历日期");
         }
       }
@@ -1554,7 +1724,8 @@
       const checkboxValue = /^(true|1|yes|y|是|至今|仍在职)$/i.test(String(value));
       if (matchedDefinition?.date) plan.expectedDateValue = value;
       if (await fillElementSafely(element, isCheckbox ? checkboxValue : value, {
-        date: Boolean(matchedDefinition?.date) || isLikelyDateControl(element),
+        date: Boolean(matchedDefinition?.date) || (!matchedDefinition && isLikelyDateControl(element)),
+        datePart: extractedFields.find((field) => field.fieldKey === fieldKey)?.datePart || null,
         checkbox: isCheckbox,
         optionMatch: mapping?.optionMatch || null,
         interactionType: extractedFields.find((field) => field.fieldKey === fieldKey)?.interactionType || getInteractionType(element),
@@ -1626,7 +1797,10 @@
       continue;
     }
     if (matchedDefinition.date) plan.expectedDateValue = value;
-    if (await fillElementSafely(element, value, matchedDefinition)) {
+    if (await fillElementSafely(element, value, {
+      ...matchedDefinition,
+      datePart: extractedFields.find((field) => field.fieldKey === fieldKey)?.datePart || null,
+    })) {
       filled += 1;
       markFilled(element, matchedDefinition.aliases[0]);
     } else {
@@ -1653,5 +1827,14 @@
     invalidDatesRepaired: invalidDateRanges.repaired,
     invalidDatesUnresolved: invalidDateRanges.unresolved,
     unmatched: unmatchedLabels.slice(0, 12),
+    pipelineDiagnostics: {
+      checkpoint: "D",
+      scanFieldCount: candidates.length,
+      eligibleFieldCount: extractedFields.filter((field) => !field.sensitive).length,
+      compiledActionCount: matched,
+      executedActionCount: fieldTraces.filter((trace) => trace.execution?.resolved).length,
+      verifiedFillCount: filled,
+    },
+    fieldTraces,
   };
 })();

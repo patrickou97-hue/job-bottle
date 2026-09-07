@@ -47,6 +47,36 @@ const FIXTURES = [
     marker: "STARJOB_AI_AUTOFILL_BATCH_FAILURE_TEST_PASS",
     label: "AI 批次失败零写入夹具",
   },
+  {
+    path: "/browser-extension/tests/four-internships.html",
+    marker: "STARJOB_FOUR_INTERNSHIPS_TEST_PASS",
+    label: "四段实习记录身份夹具",
+  },
+  {
+    path: "/browser-extension/tests/two-projects.html",
+    marker: "STARJOB_TWO_PROJECTS_TEST_PASS",
+    label: "两段项目记录身份夹具",
+  },
+  {
+    path: "/browser-extension/tests/repeated-record-dates.html",
+    marker: "STARJOB_REPEATED_DATES_TEST_PASS",
+    label: "重复经历日期夹具",
+  },
+  {
+    path: "/browser-extension/tests/split-year-month.html",
+    marker: "STARJOB_SPLIT_DATE_TEST_PASS",
+    label: "年月拆分控件夹具",
+  },
+  {
+    path: "/browser-extension/tests/rerender-after-first-record.html",
+    marker: "STARJOB_RERENDER_TEST_PASS",
+    label: "填写中重渲染夹具",
+  },
+  {
+    path: "/browser-extension/tests/late-hydration-form.html",
+    marker: "STARJOB_LATE_HYDRATION_TEST_PASS",
+    label: "延迟 hydration 扫描夹具",
+  },
 ];
 const MIME_TYPES = new Map([
   [".css", "text/css; charset=utf-8"],

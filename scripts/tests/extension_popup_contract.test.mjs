@@ -131,16 +131,40 @@ test("常见网申字段按实习范围和安全边界处理", () => {
   assert.match(route, /recordScope=internship/);
 });
 
-test("1.0.0 使用语义字段、动态控件状态机和可追溯生成", () => {
+test("1.0.1 使用记录身份、稳定扫描、动态控件和可追溯生成", () => {
   assert.match(fill, /function detectProvider\(\)/);
   assert.match(fill, /data-starjob-field-id/);
+  assert.match(fill, /`field-ordinal:\$\{index\}`/);
+  assert.match(fill, /pageRecordId/);
+  assert.match(fill, /resumePath/);
+  assert.match(fill, /FIELD_IDENTITY_COLLISION/);
   assert.match(fill, /function waitForDynamicOptions/);
   assert.match(fill, /function fillDynamicControl/);
   assert.match(fill, /function verifyReadback/);
   assert.match(fill, /formSections: buildFormSections/);
+  assert.match(popup, /async function waitForFormStability/);
+  assert.match(popup, /new MutationObserver/);
+  assert.match(popup, /async function scanStableForm/);
+  assert.match(popup, /analysisFingerprint/);
+  assert.match(popup, /字段身份发生冲突，本次未写入页面/);
+  assert.match(popup, /missingDeterministicFields/);
+  assert.match(popup, /sectionsForBatch/);
   assert.match(route, /grounded_generation/);
   assert.match(route, /evidence/);
   assert.match(route, /applicationContext/);
+  assert.match(route, /function deriveExactResumeValue/);
+  assert.match(route, /AMBIGUOUS_RECORD/);
+  assert.match(route, /aiRawMappingCount/);
+  assert.match(route, /validatedMappingCount/);
+});
+
+test("日期字段先走日期解析且年月拆分不构造虚假日", () => {
+  const datePickerIndex = fill.indexOf("definition.date && !definition.datePart && await tryExactDatePickerSelection");
+  const dynamicIndex = fill.indexOf("isDynamicControl(element)", datePickerIndex);
+  assert.ok(datePickerIndex >= 0 && dynamicIndex > datePickerIndex, "日期选择必须先于普通动态下拉");
+  assert.match(fill, /function inferDatePart/);
+  assert.match(fill, /function valueForDatePart/);
+  assert.match(fill, /datePart: extractedFields\.find/);
 });
 
 test("AI 返回的可忽略格式差异不会让整批安全字段失败", () => {
