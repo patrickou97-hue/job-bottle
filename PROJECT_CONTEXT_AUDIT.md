@@ -7,7 +7,7 @@
 - 实际改动：`src/components/applications/ApplicationBottle.tsx` 移除分享状态、按钮、编辑器和 PNG/PDF 导出；删除 `SharePosterEditor.tsx`、`shareBottleCard.ts`、`shareBottleData.ts` 及 `tests/share_bottle_data.test.ts`；`src/components/profile/ProfileClient.tsx` 移除分享功能下线后的残留隐私文案；`scripts/smoke_check.mjs` 改为校验星瓶页没有分享入口；`src/components/applications/MyApplicationsClient.tsx` 与 `src/app/globals.css` 仅增加筛选控件的窄屏换行和中等宽度分栏适配。
 - 兼容边界：不新增或修改 Supabase migration/RLS/DDL、API、认证、用户数据和业务状态；保留原星瓶展示、进度查看、投递管理和 `/my` 原有视觉。未把另一工作区的无关脏改动、扩展资源删除或宣传材料带入本次发布。
 - 验证：`npm run typecheck` 通过；`npm test -- --runInBand` 164/164；`npm run lint` 0 errors、1 条既有 warning；加载本地公开 Supabase 变量后 `npm run build -- --webpack` 成功生成 62 个路由；`git diff --check` 通过。`npm run smoke` 已完成公开岗位读取和源码契约检查，在历史 `ApplicationOrbitStar.tsx` 严格契约处停止，未把该无关 stale gate 改入本次发布。
-- Git 与部署证据：发布提交 `7538a76a042e75f57339c31b20bfb4cacb9a7e48` 及交接文档提交 `7bf7a7dd0bf9151e9e44808b2dd67ad3837f78ed` 已推送到 `origin/main`，对应 Vercel 部署 [vcRcdSh7onL81W8tH537H7KLUEhb](https://vercel.com/job-bottle/job-bottle/vcRcdSh7onL81W8tH537H7KLUEhb) 已完成；本地生产预览已重启在 `http://localhost:3120/`。本次追加的个人中心残留分享文案修正已完成本地构建，尚未提交、推送或部署。
+- Git 与部署证据：发布提交 `7538a76a042e75f57339c31b20bfb4cacb9a7e48` 与最终修正提交 `0972772` 已推送到 `origin/main`；最终 Vercel 部署 [9grXyoKWQ8yYgrNN9Bq2aC6z7zRS](https://vercel.com/job-bottle/job-bottle/9grXyoKWQ8yYgrNN9Bq2aC6z7zRS) 返回 `success / Deployment has completed`；本地生产预览已重启在 `http://localhost:3120/`。
 - 线上核验：正式站 `/`、`/bottle`、`/my`、`/guide` 均返回 HTTP 200；匿名 `GET /api/admin/feedback` 与 `GET /api/resume/extension-profile` 均返回 401。没有管理员或普通用户真实登录态，因此未宣称认证态 E2E、真实投递数据和设备验收已通过。
 
 ## 2026-09-06 首页、性能、网申助手与反馈改动统一上线
