@@ -12,7 +12,6 @@ import {
   Mail,
   MapPin,
   Save,
-  ShieldCheck,
   Target,
   UserRound,
 } from "lucide-react";
@@ -442,7 +441,6 @@ export function ProfileClient() {
         >
           <div className="max-w-2xl space-y-5">
             <InfoLine icon={<Mail aria-hidden="true" className="size-4" />} label="登录邮箱" value={userEmail || "未读取"} />
-            <InfoLine icon={<ShieldCheck aria-hidden="true" className="size-4" />} label="公开分享" value="分享海报不会展示邮箱或内部 ID。" />
             <button
               type="button"
               className="text-action pressable inline-flex min-h-10 items-center gap-2 text-sm text-[color:var(--text-danger)]"
