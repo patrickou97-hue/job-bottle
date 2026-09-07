@@ -183,9 +183,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/ApplicationBottle.tsx",
-    mustInclude: ["2026 秋招季", "本季统计", "已收进", "FiligreeDivider", "分享我的星瓶"],
-    mustNotInclude: ["bg-white/[0.025]", "shadow-[0_28px_90px"],
-    label: "星瓶页按 v4 季节容器布局呈现",
+    mustInclude: ["2026 秋招季", "本季统计", "已收进", "FiligreeDivider", "查看进度"],
+    mustNotInclude: ["bg-white/[0.025]", "shadow-[0_28px_90px", "分享我的星瓶", "SharePosterEditor", "downloadShareBottleImage"],
+    label: "星瓶页按 v4 季节容器布局呈现且不包含分享入口",
   },
   {
     file: "src/components/applications/BottleStage.tsx",
@@ -312,24 +312,6 @@ const SOURCE_INVARIANTS = [
     mustInclude: ["--night-0: #000001", "--night-1: #12294E", "--night-3: #1D2F4F", "--dusk: #244A7C", ".theme-work", "--background: #e9ebef", "--surface-read-bg: #f6f7f9", "--text-primary: #1d1d1f", "--aurora: var(--brand-blue)", "--apple-radius-control: 8px", ".theme-scene"],
     mustNotInclude: ["--arcane: #8F86F0", "--star-apricot: #D9ADA9", "--aurora: #62D9FF"],
     label: "全站使用林深星渡五色基调和更轻的半透明工作面",
-  },
-  {
-    file: "src/components/applications/shareBottleCard.ts",
-    mustInclude: ["renderBottleShareCard", "我的投递足迹", "2026 AUTUMN", "drawShareJourney", "扫码生成你的「星光瓶」", "#F7F7F4", "#1F5EBB"],
-    mustNotInclude: ["background.addColorStop(0, \"#000001\")", "#564A71"],
-    label: "星瓶分享海报按参考图重排且保持同一套动态数据模型",
-  },
-  {
-    file: "src/components/applications/shareBottleData.ts",
-    mustInclude: ["DEFAULT_SHARE_POSTER_OVERRIDES", "companyLimit: 10", "getShareCompanyEntries", "overflowCompanyCount"],
-    mustNotInclude: [],
-    label: "星瓶分享海报合并同名企业并支持超量折叠",
-  },
-  {
-    file: "src/components/applications/SharePosterEditor.tsx",
-    mustInclude: ["renderBottleShareCard", "下载 PNG / PDF", "企业展示数量", "内容不会修改投递记录"],
-    mustNotInclude: [],
-    label: "星瓶分享海报提供可编辑预览和导出设置",
   },
   {
     file: "src/components/ui/FiligreeDivider.tsx",
@@ -642,12 +624,6 @@ const SOURCE_INVARIANTS = [
     mustInclude: ["create table if not exists public.resumes", "preferred_regions", "target_roles", "minimal", "executive", "resumes_select_own", "resumes_update_own", "grant select, insert, update, delete on public.resumes to authenticated"],
     mustNotInclude: ["service_role"],
     label: "云端资料和简历修复迁移补齐 owner-only RLS 与必要字段",
-  },
-  {
-    file: "src/components/applications/shareBottleCard.ts",
-    mustInclude: ["context.drawImage(bottleImage", "globalCompositeOperation = \"screen\"", "bottleSnapshot", "已拿到 Offer", "面试中", "drawCompanyColumn", "drawQrCorners", "const qrSize = 94"],
-    mustNotInclude: ["意向地区", "意向岗位", "独特简历", "推荐机会"],
-    label: "分享海报始终绘制瓶身、使用动态阶段统计、双栏企业足迹和安全二维码",
   },
   {
     file: "supabase/migrations/20260710140000_resume_template_consolidation.sql",

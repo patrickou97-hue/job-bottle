@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT_AUDIT
 
+## 2026-09-07 `/my` 适配保留旧样式与星瓶分享入口回退对齐（本地待发布）
+
+- 用户目标：对齐两个并行工作区的新改动后一起上线；保留 `/my` 原有视觉，仅修复窄屏筛选区适配，并移除不再需要的星瓶分享海报入口与导出链路。
+- 根因与决策：新的分享海报预览不符合当前产品取舍，回退分享入口、编辑器、导出模型和对应测试；`/my` 不再继续视觉重设计，只保留不改变外观的响应式布局规则。另一工作区中的扩展素材、宣传稿、PRD 及其他独立功能改动不属于本次对齐范围，继续保留在原工作区。
+- 实际改动：`src/components/applications/ApplicationBottle.tsx` 移除分享状态、按钮、编辑器和 PNG/PDF 导出；删除 `SharePosterEditor.tsx`、`shareBottleCard.ts`、`shareBottleData.ts` 及 `tests/share_bottle_data.test.ts`；`scripts/smoke_check.mjs` 改为校验星瓶页没有分享入口；`src/components/applications/MyApplicationsClient.tsx` 与 `src/app/globals.css` 仅增加筛选控件的窄屏换行和中等宽度分栏适配。
+- 兼容边界：不新增或修改 Supabase migration/RLS/DDL、API、认证、用户数据和业务状态；保留原星瓶展示、进度查看、投递管理和 `/my` 原有视觉。未把另一工作区的无关脏改动、扩展资源删除或宣传材料带入本次发布。
+- 验证：`npm run typecheck` 通过；`npm test -- --runInBand` 164/164；`npm run lint` 0 errors、1 条既有 warning；加载本地公开 Supabase 变量后 `npm run build -- --webpack` 成功生成 62 个路由；`git diff --check` 通过。`npm run smoke` 已完成公开岗位读取和源码契约检查，在历史 `ApplicationOrbitStar.tsx` 严格契约处停止，未把该无关 stale gate 改入本次发布。
+- Git 与部署证据：本轮代码已在当前隔离工作区合并，提交、推送和部署尚未完成；本地生产预览仍使用 `http://localhost:3120/`。线上 HTTP、匿名 API、认证态 E2E 和真实设备验收待发布后分别核验。
+
 ## 2026-09-06 首页、性能、网申助手与反馈改动统一上线
 
 - 用户目标：把前面已在本地验证、但尚未上线的产品改动统一发布，包括首页轻量转场与太阳系配色、岗位列表性能、网申助手演示与网申前准备、真实 0.2.8 popup、以及管理员反馈解决按钮。

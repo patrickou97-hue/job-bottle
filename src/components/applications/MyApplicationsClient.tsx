@@ -242,8 +242,8 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
               <StageFilterButton label="已结束" count={stageCounts.ended} active={stageGroup === "ended"} onClick={() => setStageGroup("ended")} />
             </div>
 
-            <div className="grid gap-3 py-4 md:grid-cols-[minmax(220px,1fr)_210px_180px_auto]">
-              <div className="relative">
+            <div className="application-filter-controls grid gap-3 py-4 md:grid-cols-[minmax(220px,1fr)_210px_180px_auto]">
+              <div className="application-filter-search relative">
                 <label htmlFor="application-search" className="sr-only">搜索公司、岗位或自定义进程</label>
                 <Search aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-nebula-blue/70" />
                 <Input id="application-search" type="search" autoComplete="off" className="pl-11" value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder="搜索公司、岗位或进程" />
@@ -261,7 +261,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
                 <option value="attention">需要关注优先</option>
                 <option value="company">按公司名称</option>
               </Select>
-              <div className="flex gap-2">
+              <div className="application-filter-actions flex gap-2">
                 {filtersActive ? <Button variant="secondary" className="gap-2" onClick={clearFilters}><SlidersHorizontal aria-hidden="true" className="size-4" />清除</Button> : null}
                 <Button variant="secondary" className="gap-2" onClick={loadData}><RefreshCw aria-hidden="true" className="size-4" />刷新</Button>
               </div>

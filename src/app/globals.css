@@ -2966,3 +2966,35 @@ textarea:focus-visible {
     flex-direction: column;
   }
 }
+
+/* Keep the original work-page styling while letting the /my controls fit narrow widths. */
+.application-filter-controls,
+.application-filter-search,
+.application-filter-actions {
+  min-width: 0;
+}
+
+.application-filter-actions {
+  flex-wrap: wrap;
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .application-filter-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .application-filter-search,
+  .application-filter-actions {
+    grid-column: 1 / -1;
+  }
+
+  .application-filter-actions {
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 767px) {
+  .application-filter-actions > button {
+    flex: 1 1 auto;
+  }
+}
