@@ -1,6 +1,6 @@
 # PROJECT_CONTEXT_AUDIT
 
-## 2026-09-08 网申助手 1.0.1 P0 回归修复（本地全量验证，准备发布）
+## 2026-09-08 网申助手 1.0.1 P0 回归修复（已上线）
 
 - 用户目标：修复 1.0.0 的三个 P0 回归——第一次触发 AI 时字段处理不完整、四段实习/两段项目被重复填成同一条、起止时间错位；按 `Scan → Semantic Page Model → AI → Resume Resolver → Action Planner → Element Resolver → Executor` 完整链路收紧字段身份，并发布 1.0.1。
 - 根因：首次扫描缺少 DOM 静默窗口，动态表单尚未稳定时就进入分析；批次内 section 仍携带原始字段键，AI 返回又允许稀疏结果直接进入执行。重复经历控件在原始 DOM 缺少唯一 `id/name` 时生成了相同 `fieldKey`，后续从 AI 限定键还原为原始键时被对象静默覆盖，多个记录最终指向同一映射。日期同时受该冲突影响，且只读日期控件先落入通用 combobox 分支，拆分的年/月控件没有明确 `datePart`。
@@ -8,7 +8,7 @@
 - 回归覆盖：新增 `four-internships.html`、`two-projects.html`、`repeated-record-dates.html`、`split-year-month.html`、`rerender-after-first-record.html`、`late-hydration-form.html` 六个夹具，专门覆盖无唯一 id/name 的重复结构、错误 AI 值、拆分日期、首条写入后重渲染及延迟注入；原 AI 与大 iframe 夹具同步更新为确定性结构化解析结果。
 - 验证：`npm run typecheck` 通过；`npm test` 167/167；`npm run test:extension` 14/14，包含三种填写模式及六个新增 P0 夹具；`npm run lint` 0 errors、保留 3 条既有 warning；`npm run build -- --webpack` 成功生成 62 个路由；`npm run build:extension`、`npm run verify:extension-package`、`npm run smoke` 和 `git diff --check` 均通过。最终发布的 `public/downloads/starjob-resume-assistant-v1.0.1.zip` 为 210083 bytes，SHA-256 `de59eacfe67c0257a065a6b74cd0d2273a84dea18ef807c5c3dd7f5c1add1c07`，包内 12 个文件与源目录逐字节一致。
 - 边界：没有新增数据库、migration、RLS、权限或自动提交能力，验证码、密码与敏感声明仍不自动填写。六类本地回归和页面构建已验证，但真实第三方 ATS、登录态 AI 请求和用户设备上的最终提交仍属于独立设备验收；无法建立稳定记录身份的站点会明确拒绝歧义字段，不猜测、不跨记录写入。
-- Git、部署与外部状态：1.0.1 从最新 `origin/main` 的隔离克隆中只提交上述扩展、API、官网版本入口、安装包、测试和三份交接文档；当前条目记录的是发布前状态，推送、Vercel READY、线上下载和匿名接口探针须在实际完成后另行补证。
+- Git、部署与外部状态：功能提交 `307aa035bca83e1c816baf8adfa357e223d30552` 已从最新 `origin/main` 的隔离克隆推送到 `main`；Vercel 部署 `AhCX5zZvFLzddRaoahTLY8JZr47L` 返回 `success / Deployment has completed`。正式站 `/extension`、`/extension/guide` 与 `/downloads/starjob-resume-assistant-v1.0.1.zip` 均返回 HTTP 200，页面检出 1.0.1 下载地址与“当前版本 1.0.1”；线上 ZIP 为 210083 bytes，SHA-256 `de59eacfe67c0257a065a6b74cd0d2273a84dea18ef807c5c3dd7f5c1add1c07`，与发布包一致。匿名 `POST /api/resume/extension-autofill` 返回 401，未把该探针当作登录态 AI E2E。
 
 ## 2026-09-07 网申助手 ATS 语义引擎 1.0.0（准备发布）
 
