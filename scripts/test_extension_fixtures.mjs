@@ -13,6 +13,11 @@ const FIXTURES = [
     label: "本地规则填写夹具",
   },
   {
+    path: "/browser-extension/tests/overwrite-fixture.html",
+    marker: "STARJOB_OVERWRITE_TEST_PASS",
+    label: "覆盖已有内容夹具",
+  },
+  {
     path: "/browser-extension/tests/ai-autofill-fixture.html",
     marker: "STARJOB_AI_AUTOFILL_TEST_PASS",
     label: "AI 智能填写夹具",

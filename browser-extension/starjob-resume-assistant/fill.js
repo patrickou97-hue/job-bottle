@@ -109,7 +109,7 @@
     { key: "awards.date", section: "awards", aliases: ["获奖时间", "奖项时间", "获奖日期", "awarddate", "awardyear"], values: awards.map((item) => item.date), date: true },
     { key: "awards.description", section: "awards", aliases: ["获奖描述", "奖项描述", "荣誉描述", "描述", "awarddescription", "honordescription"], values: awards.map((item) => joinBullets(item.bullets)), multiline: true },
     { key: "certifications.title", section: "certifications", aliases: ["证书", "证书名称", "资格证书", "认证名称", "certification", "certificationname", "license"], values: certifications.map((item) => item.title) },
-    { key: "certifications.date", section: "certifications", aliases: ["获证时间", "证书时间", "认证时间", "certificationdate", "licensedate"], values: certifications.map((item) => item.date), date: true },
+    { key: "certifications.date", section: "certifications", aliases: ["获证时间", "获证日期", "证书时间", "证书日期", "发证日期", "认证时间", "认证日期", "certificationdate", "licensedate"], values: certifications.map((item) => item.date), date: true },
     { key: "certifications.details", section: "certifications", aliases: ["证书描述", "认证描述", "成绩", "分数", "等级", "certificationdetails", "score", "grade"], values: certifications.map((item) => joinBullets(item.bullets)) },
     { key: "languages.title", section: "languages", aliases: ["语言", "语言名称", "外语名称", "语种", "languagename"], values: languages.map((item) => item.title) },
     { key: "languages.details", section: "languages", aliases: ["语言能力", "外语能力", "语言水平", "精通程度", "熟练程度", "languageproficiency"], values: languages.map((item) => [item.role, joinBullets(item.bullets)].filter(Boolean).join("；")), multiline: true },
@@ -212,13 +212,20 @@
   function getFieldSignals(element) {
     const visible = [];
     const attributes = [];
-    if (element.labels) visible.push(...Array.from(element.labels).map((label) => label.textContent || ""));
-    visible.push(element.getAttribute("aria-label") || "");
+    const labelCandidates = [];
+    const addCandidate = (value, source, confidence) => {
+      const text = String(value || "").replace(/\s+/g, " ").trim().slice(0, 180);
+      if (!text || text.length > 180 || labelCandidates.some((candidate) => normalize(candidate.text) === normalize(text))) return;
+      labelCandidates.push({ text, source, confidence });
+      visible.push(text);
+    };
+    if (element.labels) Array.from(element.labels).forEach((label) => addCandidate(label.textContent, "label", 1));
+    addCandidate(element.getAttribute("aria-label"), "aria-label", 0.98);
     const labelledBy = element.getAttribute("aria-labelledby");
     if (labelledBy) {
-      visible.push(...labelledBy.split(/\s+/).map((id) => document.getElementById(id)?.textContent || ""));
+      labelledBy.split(/\s+/).forEach((id) => addCandidate(document.getElementById(id)?.textContent, "aria-labelledby", 0.99));
     }
-    visible.push(element.getAttribute("placeholder") || "");
+    addCandidate(element.getAttribute("placeholder"), "placeholder", 0.72);
     const hasOwnLabel = visible.some((value) => String(value).trim().length > 0);
     if (!hasOwnLabel) {
       let container = element.parentElement;
@@ -230,18 +237,98 @@
           .map((label) => label.textContent || "")
           .filter((text) => text.trim().length > 0 && text.trim().length <= 80);
         if (nearbyLabels.length) {
-          visible.push(nearbyLabels[0]);
+          addCandidate(nearbyLabels[0], "nearby", 0.68);
           break;
         }
       }
     }
+    if (!visible.length) {
+      const fieldset = element.closest("fieldset");
+      addCandidate(fieldset?.querySelector(":scope > legend")?.textContent, "legend", 0.95);
+    }
     attributes.push(element.getAttribute("name") || "");
     attributes.push(element.id || "");
     attributes.push(element.getAttribute("data-testid") || "");
+    attributes.push(element.getAttribute("data-field") || "");
+    attributes.push(element.getAttribute("autocomplete") || "");
+    attributes.push(element.getAttribute("role") || "");
     return {
       visible: visible.filter(Boolean).map((value) => String(value).slice(0, 180)),
       attributes: attributes.filter(Boolean).map((value) => String(value).slice(0, 180)),
+      labelCandidates: labelCandidates.slice(0, 12),
     };
+  }
+
+  function getAccessibleName(element, signals = getFieldSignals(element)) {
+    return signals.labelCandidates?.[0]?.text
+      || element.getAttribute("aria-label")
+      || element.getAttribute("name")
+      || element.id
+      || "";
+  }
+
+  function getSectionPath(element) {
+    const path = [];
+    let current = element.parentElement;
+    for (let depth = 0; current && depth < 8; depth += 1, current = current.parentElement) {
+      const heading = current.querySelector(":scope > legend, :scope > h1, :scope > h2, :scope > h3, :scope > h4, :scope > [role='heading'], :scope > [data-section-title]");
+      const value = heading?.textContent || current.getAttribute("data-section") || current.getAttribute("aria-label") || "";
+      const text = String(value).replace(/\s+/g, " ").trim();
+      if (text && text.length <= 120 && !path.some((item) => normalize(item) === normalize(text))) path.unshift(text);
+    }
+    return path.slice(-4);
+  }
+
+  function getNearbyText(element) {
+    const values = [];
+    let current = element;
+    for (let depth = 0; current && depth < 3; depth += 1, current = current.parentElement) {
+      const siblings = Array.from(current.parentElement?.children || [])
+        .filter((node) => node !== current && node instanceof HTMLElement)
+        .slice(0, 8);
+      siblings.forEach((node) => {
+        if (node.querySelector?.("input, textarea, select, [role='textbox'], [role='combobox']")) return;
+        const text = (node.innerText || node.textContent || "").replace(/\s+/g, " ").trim();
+        if (text && text.length <= 180 && !values.includes(text)) values.push(text);
+      });
+      if (values.length >= 4) break;
+    }
+    return values.slice(0, 6);
+  }
+
+  function getFieldDescription(element) {
+    const describedBy = element.getAttribute("aria-describedby") || "";
+    return describedBy.split(/\s+/).map((id) => document.getElementById(id)?.textContent || "")
+      .join(" ").replace(/\s+/g, " ").trim().slice(0, 240);
+  }
+
+  function getControlType(element) {
+    const role = (element.getAttribute("role") || "").toLowerCase();
+    if (element instanceof HTMLSelectElement) return "native_select";
+    if (element instanceof HTMLTextAreaElement) return "native_textarea";
+    if (element instanceof HTMLInputElement) {
+      if (element.type === "radio" || role === "radio") return "native_radio";
+      if (element.type === "checkbox" || role === "checkbox" || role === "switch") return "native_checkbox";
+      return "native_input";
+    }
+    if (element.isContentEditable) return "contenteditable";
+    return "custom_control";
+  }
+
+  function getInteractionType(element) {
+    const role = (element.getAttribute("role") || "").toLowerCase();
+    const popup = element.getAttribute("aria-haspopup") || "";
+    if (element instanceof HTMLSelectElement) return "native_select";
+    if (element instanceof HTMLInputElement && ["date", "month", "datetime-local"].includes(element.type)) return "date_input";
+    if (role === "combobox" || popup === "listbox" || element.hasAttribute("data-starjob-search-select")) {
+      return element instanceof HTMLInputElement && !element.readOnly ? "search_select" : "click_select";
+    }
+    if (role === "radio" || (element instanceof HTMLInputElement && element.type === "radio")) return "radio_group";
+    if (role === "checkbox" || role === "switch" || (element instanceof HTMLInputElement && element.type === "checkbox")) return "checkbox_group";
+    if (element instanceof HTMLTextAreaElement || element.isContentEditable) return "textarea";
+    if (element instanceof HTMLInputElement && isLikelyDateControl(element)) return "date_picker";
+    if (element instanceof HTMLInputElement || role === "textbox" || role === "spinbutton") return "text";
+    return popup ? "click_select" : "unknown";
   }
 
   function getContextText(element) {
@@ -271,7 +358,8 @@
     if (/学校名称|毕业院校|入学时间|毕业时间|schoolname|educationlevel/.test(text)) return "education";
     if (/公司名称|工作经历|实习经历|任职经历|companyname|workexperience|employment/.test(text)) return "work";
     if (/校园经历名称|学生工作名称|社团名称|活动名称|campustitle|activityname/.test(text)) return "campus";
-    if (/证书名称|资格证书|认证名称|certificationname/.test(text)) return "certifications";
+    if (/证书名称|资格证书|认证名称|发证日期|获证日期|certificationname|certificationdate|licensedate/.test(text)) return "certifications";
+    if (/证书|认证|certificate|certification|license/.test(text)) return "certifications";
     if (/语言名称|外语名称|语种|languagename/.test(text)) return "languages";
     return null;
   }
@@ -422,18 +510,31 @@
           text: (option.textContent || "").replace(/\s+/g, " ").trim().slice(0, 120),
         }));
     }
-    return getRadioGroupElements(element).slice(0, 40).map((radio) => ({
+    const nativeOptions = getRadioGroupElements(element).slice(0, 40).map((radio) => ({
       value: radio.value.trim().slice(0, 120),
       text: getChoiceOptionLabel(radio).slice(0, 120),
     }));
+    if (nativeOptions.length) return nativeOptions;
+    const referencedIds = `${element.getAttribute("aria-controls") || ""} ${element.getAttribute("aria-owns") || ""}`.trim().split(/\s+/).filter(Boolean);
+    const roots = referencedIds.map((id) => document.getElementById(id)).filter(Boolean);
+    if (element.getAttribute("aria-expanded") === "true") roots.push(element.parentElement);
+    const options = roots.flatMap((root) => Array.from(root?.querySelectorAll?.("[role='option'], [role='treeitem'], [data-value], [data-option-value]") || []))
+      .filter((option) => option instanceof HTMLElement && isVisible(option))
+      .slice(0, 40)
+      .map((option) => ({
+        value: (option.getAttribute("data-value") || option.getAttribute("data-option-value") || option.textContent || "").trim().slice(0, 120),
+        text: (option.textContent || option.getAttribute("aria-label") || "").replace(/\s+/g, " ").trim().slice(0, 120),
+      }));
+    return options;
   }
 
   function getChoiceQuestion(element) {
-    if (!(element instanceof HTMLInputElement) || element.type !== "radio") return "";
+    const role = (element.getAttribute("role") || "").toLowerCase();
+    if (!((element instanceof HTMLInputElement && element.type === "radio") || role === "radio" || role === "checkbox" || role === "switch")) return "";
     const fieldset = element.closest("fieldset");
     const legend = fieldset?.querySelector(":scope > legend");
     if (legend?.textContent?.trim()) return legend.textContent.replace(/\s+/g, " ").trim().slice(0, 120);
-    const group = element.closest("[role='radiogroup'], [data-field], .form-item, .ant-form-item, .el-form-item");
+    const group = element.closest("[role='radiogroup'], [role='group'], [data-field], .form-item, .ant-form-item, .el-form-item");
     const heading = group?.querySelector("legend, [data-label], .form-label, .ant-form-item-label, .el-form-item__label");
     return (heading?.textContent || "").replace(/\s+/g, " ").trim().slice(0, 120);
   }
@@ -514,9 +615,13 @@
   }
 
   function dispatchEvents(element) {
-    element.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText" }));
+    dispatchInput(element);
     element.dispatchEvent(new Event("change", { bubbles: true }));
     element.dispatchEvent(new Event("blur", { bubbles: true }));
+  }
+
+  function dispatchInput(element) {
+    element.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText" }));
   }
 
   function dispatchActivation(element) {
@@ -528,6 +633,108 @@
   }
 
   const wait = (milliseconds) => new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+
+  function isDynamicControl(element) {
+    const role = (element.getAttribute("role") || "").toLowerCase();
+    return role === "combobox"
+      || element.hasAttribute("aria-haspopup")
+      || element.hasAttribute("aria-controls")
+      || element.hasAttribute("data-starjob-control")
+      || element.hasAttribute("data-starjob-search-select");
+  }
+
+  function visibleDynamicOptions(root = document) {
+    const nodes = Array.from(root.querySelectorAll?.("[role='option'], [role='treeitem'], [role='menuitem'], [role='gridcell'], [data-value], [data-option-value], [class*='select-option'], [class*='dropdown-option']") || [])
+      .filter((node) => node instanceof HTMLElement && isVisible(node) && !node.getAttribute("aria-disabled"));
+    return [...new Set(nodes)];
+  }
+
+  function findDynamicPopup(control, beforeNodes = new Set()) {
+    const referenced = `${control.getAttribute("aria-controls") || ""} ${control.getAttribute("aria-owns") || ""}`
+      .split(/\s+/).filter(Boolean).map((id) => document.getElementById(id)).filter((node) => node instanceof HTMLElement);
+    const candidates = [
+      ...referenced,
+      ...Array.from(document.querySelectorAll("[role='listbox'], [role='menu'], [role='tree'], [role='dialog'], [data-radix-popper-content-wrapper], [class*='dropdown'], [class*='select-dropdown'], [class*='popover']")),
+    ].filter((node) => node instanceof HTMLElement && isVisible(node));
+    const fresh = candidates.filter((node) => !beforeNodes.has(node) && visibleDynamicOptions(node).length);
+    return referenced.find((node) => visibleDynamicOptions(node).length) || fresh.at(-1) || candidates.find((node) => visibleDynamicOptions(node).length) || null;
+  }
+
+  async function waitForDynamicOptions(control, beforeNodes = new Set(), timeout = 1_200) {
+    const startedAt = Date.now();
+    const immediate = findDynamicPopup(control, beforeNodes);
+    if (immediate) return immediate;
+    return new Promise((resolve) => {
+      let settled = false;
+      const finish = (value) => {
+        if (settled) return;
+        settled = true;
+        observer.disconnect();
+        window.clearInterval(poller);
+        resolve(value);
+      };
+      const check = () => {
+        const popup = findDynamicPopup(control, beforeNodes);
+        if (popup || Date.now() - startedAt >= timeout) finish(popup);
+      };
+      const observer = new MutationObserver(check);
+      observer.observe(document.body, { childList: true, subtree: true, attributes: true, characterData: true });
+      const poller = window.setInterval(check, 48);
+      check();
+    });
+  }
+
+  function optionText(option) {
+    return [
+      option.getAttribute("data-value") || "",
+      option.getAttribute("data-option-value") || "",
+      option.getAttribute("aria-label") || "",
+      option.textContent || "",
+    ].join(" ").replace(/\s+/g, " ").trim();
+  }
+
+  function resolveDynamicOption(options, rawValue, optionMatch) {
+    const target = normalize(optionMatch?.targetText || rawValue);
+    if (!target) return null;
+    const exact = options.filter((option) => [option.getAttribute("data-value"), option.getAttribute("data-option-value"), option.textContent, option.getAttribute("aria-label")]
+      .filter(Boolean).some((value) => normalize(value) === target));
+    if (exact.length === 1) return exact[0];
+    const strong = options.filter((option) => {
+      const normalized = normalize(optionText(option));
+      return normalized === target || (normalized.length > 2 && (normalized.includes(target) || target.includes(normalized)));
+    });
+    return strong.length === 1 ? strong[0] : null;
+  }
+
+  async function fillDynamicControl(element, rawValue, definition = {}) {
+    const beforeNodes = new Set(Array.from(document.querySelectorAll("[role='listbox'], [role='menu'], [role='tree'], [role='dialog'], [class*='dropdown'], [class*='popover']")));
+    element.focus?.();
+    dispatchActivation(element);
+    await wait(16);
+    if (element instanceof HTMLInputElement && !element.readOnly) {
+      setNativeValue(element, asText(rawValue));
+      dispatchInput(element);
+    }
+    const popup = await waitForDynamicOptions(element, beforeNodes);
+    if (!popup) return false;
+    const option = resolveDynamicOption(visibleDynamicOptions(popup), rawValue, definition.optionMatch);
+    if (!option) return false;
+    dispatchActivation(option);
+    await wait(40);
+    const expected = normalize(optionText(option) || rawValue);
+    const actual = normalize(currentValue(element) || element.getAttribute("aria-label") || element.textContent || "");
+    const activeId = element.getAttribute("aria-activedescendant");
+    return Boolean(option.getAttribute("aria-selected") === "true" || activeId === option.id || (expected && actual && (actual === expected || actual.includes(expected) || expected.includes(actual))));
+  }
+
+  async function verifyReadback(element, expected, options = {}) {
+    await wait(24);
+    if (options.date) return dateValuesEquivalent(expected, currentValue(element));
+    if (options.checkbox) return Boolean(element.checked) === Boolean(expected);
+    const expectedText = normalize(expected);
+    const actualText = normalize(currentValue(element) || element.getAttribute("aria-label") || "");
+    return Boolean(expectedText && actualText && (actualText === expectedText || actualText.includes(expectedText) || expectedText.includes(actualText)));
+  }
 
   function isVisibleDatePickerNode(element) {
     if (!(element instanceof HTMLElement)) return false;
@@ -719,9 +926,13 @@
       if (rawValue === undefined || rawValue === null || rawValue === "") return false;
       element.checked = rawValue === true || /^(true|1|yes|y|是|至今|仍在职)$/i.test(String(rawValue));
       dispatchEvents(element);
-      return true;
+      return verifyReadback(element, element.checked, { checkbox: true });
     }
     if (!value) return false;
+
+    if (isDynamicControl(element) && !(element instanceof HTMLInputElement && ["date", "month", "datetime-local"].includes(element.type))) {
+      return fillDynamicControl(element, value, definition);
+    }
 
     if (element instanceof HTMLInputElement && element.type === "radio") {
       const target = normalize(value);
@@ -729,7 +940,7 @@
       if (!option) return false;
       option.checked = true;
       dispatchEvents(option);
-      return true;
+      return verifyReadback(option, value);
     }
 
     if (element instanceof HTMLSelectElement) {
@@ -750,7 +961,7 @@
         element.value = matched[0].value;
       }
       dispatchEvents(element);
-      return true;
+      return verifyReadback(element, matched[0].value);
     }
     if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
       if (definition.date && await tryExactDatePickerSelection(element, rawValue)) return true;
@@ -764,12 +975,12 @@
           return false;
         }
       }
-      return true;
+      return verifyReadback(element, value, { date: Boolean(definition.date) });
     }
     if (element instanceof HTMLElement && element.isContentEditable) {
       element.textContent = value;
       dispatchEvents(element);
-      return true;
+      return verifyReadback(element, value);
     }
     return false;
   }
@@ -794,17 +1005,50 @@
     element.title = derived ? `拾星 AI 派生填写：${label}` : `拾星已填写：${label}`;
   }
 
+  function hashSemanticIdentity(value) {
+    let hash = 2166136261;
+    for (let index = 0; index < value.length; index += 1) {
+      hash ^= value.charCodeAt(index);
+      hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0).toString(16).padStart(8, "0");
+  }
+
+  function getStableDomSignature(element) {
+    const parts = [];
+    let current = element;
+    for (let depth = 0; current && depth < 6; depth += 1, current = current.parentElement) {
+      const stable = current.getAttribute?.("data-field")
+        || current.getAttribute?.("data-testid")
+        || current.getAttribute?.("data-record-id")
+        || current.getAttribute?.("name")
+        || current.id
+        || current.getAttribute?.("role")
+        || current.tagName?.toLowerCase();
+      if (stable) parts.unshift(String(stable).slice(0, 80));
+    }
+    return parts.join("/");
+  }
+
   function createFieldKey(index, element, signals, contextText) {
     const inputType = element instanceof HTMLInputElement ? element.type : element.tagName.toLowerCase();
-    return [
+    const sectionPath = getSectionPath(element);
+    const semanticFingerprint = [
       window.location.origin,
       window.location.pathname,
-      index,
       inputType,
-      normalize(signals.visible.join(" ")).slice(0, 100),
-      normalize(signals.attributes.join(" ")).slice(0, 100),
-      normalize(contextText).slice(0, 100),
+      element.getAttribute("role") || "",
+      getAccessibleName(element, signals),
+      signals.attributes.join(" "),
+      sectionPath.join(" > "),
+      getStableDomSignature(element),
+      normalize(contextText).slice(0, 120),
     ].join("|");
+    const fieldId = `sj_${hashSemanticIdentity(semanticFingerprint)}`;
+    element.dataset.starjobFieldId = fieldId;
+    element.setAttribute("data-starjob-field-id", fieldId);
+    element.dataset.starjobSemanticFingerprint = semanticFingerprint.slice(0, 900);
+    return `${window.location.origin}|${window.location.pathname}|${fieldId}`;
   }
 
   function getExplicitRecordNumber(element, signals, contextText) {
@@ -904,12 +1148,80 @@
       attributes: field.attributes,
       context: field.context,
       inputType: field.inputType,
+      tag: field.tag,
+      role: field.role,
+      accessibleName: field.accessibleName,
+      labelCandidates: field.labelCandidates,
+      description: field.description,
+      sectionPath: field.sectionPath,
+      nearbyText: field.nearbyText,
+      controlType: field.controlType,
+      interactionType: field.interactionType,
+      required: field.required,
+      constraints: field.constraints,
+      optionState: field.optionState,
       deterministicKey: field.deterministicKey,
       deterministicConfidence: field.deterministicConfidence,
       recordIndex: Number.isInteger(field.recordIndex) ? field.recordIndex : null,
       recordScope: field.recordScope || null,
       options: field.options,
     };
+  }
+
+  function buildFormSections(fields) {
+    const sections = new Map();
+    for (const field of fields) {
+      const title = field.sectionPath?.join(" / ") || field.context || "未分组字段";
+      const recordIndex = Number.isInteger(field.recordIndex) ? field.recordIndex : null;
+      const key = `${title}|${recordIndex ?? "-"}`;
+      const section = sections.get(key) || {
+        type: field.recordScope || (field.deterministicKey?.split(".")[0] || "custom"),
+        title: title.slice(0, 120),
+        recordIndex,
+        fieldKeys: [],
+      };
+      section.fieldKeys.push(field.fieldKey);
+      sections.set(key, section);
+    }
+    return [...sections.values()].slice(0, 40);
+  }
+
+  function detectProvider() {
+    const hostname = window.location.hostname.toLowerCase();
+    const pathname = window.location.pathname.toLowerCase();
+    const scripts = Array.from(document.scripts).map((script) => script.src || "").filter(Boolean).slice(0, 80);
+    const iframeSources = Array.from(document.querySelectorAll("iframe")).map((frame) => frame.src || "").filter(Boolean).slice(0, 40);
+    const bodyMarkers = (document.body?.innerText || "").slice(0, 4_000).toLowerCase();
+    const domMarkers = Array.from(document.querySelectorAll("[data-testid], [data-qa], [class], [id]")).slice(0, 120)
+      .map((node) => `${node.id || ""} ${node.getAttribute("data-testid") || ""} ${node.getAttribute("data-qa") || ""} ${node.className || ""}`.slice(0, 180).toLowerCase());
+    const rules = [
+      { provider: "moka", tests: [() => /app\.mokahr\.com/.test(hostname), () => /mokahr\.com/.test(iframeSources.join(" ")), () => /\/apply\/|campus[_-]?apply|social[_-]?recruitment/.test(pathname), () => /mokahr/.test(scripts.join(" "))] },
+      { provider: "feishu", tests: [() => /\.jobs\.feishu\.cn$/.test(hostname), () => /feishu\.cn/.test(scripts.join(" ")), () => /飞书|feishu/.test(bodyMarkers), () => /combobox|portal|select/.test(domMarkers.join(" "))] },
+      { provider: "beisen", tests: [() => /\.zhiye\.com$/.test(hostname), () => /zhiye\.com/.test(iframeSources.join(" ")), () => /campus|social/.test(pathname)] },
+      { provider: "dayee", tests: [() => /hotjob\.cn|wintalent\.cn/.test(hostname), () => /\/wt\//.test(pathname), () => /dayee|wintalent/.test(scripts.join(" "))] },
+      { provider: "workday", tests: [() => /workday\.com/.test(hostname), () => /workday/.test(scripts.join(" ")), () => /workday/.test(pathname)] },
+      { provider: "greenhouse", tests: [() => /greenhouse\.io/.test(hostname), () => /greenhouse/.test(pathname)] },
+      { provider: "lever", tests: [() => /jobs\.lever\.co/.test(hostname), () => /lever/.test(scripts.join(" "))] },
+      { provider: "ashby", tests: [() => /jobs\.ashbyhq\.com/.test(hostname), () => /ashby/.test(scripts.join(" "))] },
+      { provider: "oracle", tests: [() => /oraclecloud\.com/.test(hostname), () => /oracle/.test(scripts.join(" "))] },
+      { provider: "successfactors", tests: [() => /successfactors\./.test(hostname), () => /successfactors/.test(pathname)] },
+    ];
+    let best = { provider: "generic", confidence: 0, evidence: [] };
+    for (const rule of rules) {
+      const matched = rule.tests.filter((test) => test()).length;
+      const confidence = Math.min(0.98, matched / Math.max(2, rule.tests.length));
+      if (confidence > best.confidence) best = {
+        provider: rule.provider,
+        confidence: Number(confidence.toFixed(2)),
+        evidence: [hostname, pathname, ...scripts.filter((src) => rule.provider === "moka" ? /moka/ : new RegExp(rule.provider, "i").test(src)).slice(0, 2)],
+      };
+    }
+    const profiles = [
+      ["bytedance", /bytedance|byte-dance|douyin|tiktok/], ["tencent", /tencent|qq\.com/], ["jd", /zhaopin\.jd|campus\.jd/],
+      ["baidu", /baidu/], ["meituan", /meituan/], ["pdd", /pinduoduo|pdd/], ["alibaba", /alibaba|alibabagroup/], ["xiaohongshu", /xiaohongshu|xhs/],
+    ];
+    const company = profiles.find(([, pattern]) => pattern.test(`${hostname} ${pathname} ${bodyMarkers}`))?.[0] || "";
+    return { ...best, company, evidence: best.evidence.slice(0, 6) };
   }
 
   function getExactStructuredValue(plan) {
@@ -936,17 +1248,30 @@
     });
   }
 
-  const candidates = Array.from(document.querySelectorAll("input, textarea, select, [contenteditable='true']"))
+  function isFieldCandidate(element) {
+    const role = (element.getAttribute("role") || "").toLowerCase();
+    const native = element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement || element instanceof HTMLSelectElement;
+    const semanticRole = ["textbox", "combobox", "radio", "checkbox", "switch", "spinbutton"].includes(role);
+    const custom = element.hasAttribute("aria-haspopup") || element.hasAttribute("aria-controls") || element.hasAttribute("data-starjob-control") || element.hasAttribute("data-starjob-search-select");
+    if (!native && !element.isContentEditable && !semanticRole && !custom) return false;
+    if (["option", "listbox", "menuitem", "treeitem", "dialog"].includes(role)) return false;
+    if (element instanceof HTMLButtonElement && !custom && !semanticRole) return false;
+    return true;
+  }
+
+  const candidates = Array.from(document.querySelectorAll("input, textarea, select, button, [contenteditable='true'], [role='textbox'], [role='combobox'], [role='radio'], [role='checkbox'], [role='switch'], [role='spinbutton'], [aria-haspopup], [aria-controls], [data-starjob-control], [data-starjob-search-select]"))
     .filter((element) => {
-      if (!(element instanceof HTMLElement) || !isVisible(element)) return false;
+      if (!(element instanceof HTMLElement) || !isVisible(element) || !isFieldCandidate(element)) return false;
       if (element instanceof HTMLInputElement) {
         if (["hidden", "password", "submit", "button", "reset", "image", "file"].includes(element.type)) return false;
         if (element.type === "radio") {
           if (requestedFillMode !== "ai" && !aiAutofillOnly) return false;
           if (getRadioGroupElements(element)[0] !== element) return false;
         }
-        if (element.readOnly && !isLikelyDateControl(element)) return false;
+        if (element.readOnly && !isLikelyDateControl(element) && !isDynamicControl(element)) return false;
       }
+      if (element.getAttribute("aria-disabled") === "true") return false;
+      if ((element.getAttribute("role") || "").toLowerCase() === "radio" && requestedFillMode !== "ai" && !aiAutofillOnly) return false;
       return !element.disabled;
     });
   const extractedFields = [];
@@ -1014,6 +1339,23 @@
       recordIndex: structuredContract?.recordIndex ?? null,
       recordScope,
       options: getChoiceOptions(element),
+      tag: element.tagName.toLowerCase(),
+      role: element.getAttribute("role") || "",
+      accessibleName: getAccessibleName(element, signals).slice(0, 180),
+      labelCandidates: signals.labelCandidates || [],
+      description: getFieldDescription(element),
+      sectionPath: getSectionPath(element),
+      nearbyText: getNearbyText(element),
+      controlType: getControlType(element),
+      interactionType: getInteractionType(element),
+      required: element.hasAttribute("required") || element.getAttribute("aria-required") === "true",
+      constraints: {
+        maxLength: Number.isFinite(element.maxLength) && element.maxLength >= 0 ? element.maxLength : null,
+        min: element.getAttribute("min") || null,
+        max: element.getAttribute("max") || null,
+        pattern: element.getAttribute("pattern") || null,
+      },
+      optionState: getChoiceOptions(element).length ? "static" : (isDynamicControl(element) ? "dynamic" : "unknown"),
       sensitive,
     });
     plans.push({
@@ -1041,6 +1383,8 @@
       fields: extractedFields
         .filter((field) => !field.sensitive)
         .map(toAnalysisField),
+      formSections: buildFormSections(extractedFields.filter((field) => !field.sensitive)),
+      provider: detectProvider(),
       sensitive: sensitiveCount,
     };
   }
@@ -1177,7 +1521,9 @@
     if (aiAutofillOnly) {
       const mapping = aiValueMappings[fieldKey];
       const exactStructuredValue = getExactStructuredValue(plan);
-      const hasAcceptedMapping = mapping && typeof mapping === "object" && Number(mapping.confidence) >= 0.82;
+      const hasAcceptedMapping = mapping && typeof mapping === "object"
+        && !["manual", "skip"].includes(mapping.action)
+        && Number(mapping.confidence) >= 0.82;
       if (exactStructuredValue === undefined && !hasAcceptedMapping) {
         manual += 1;
         rememberUnmatched(signals);
@@ -1193,7 +1539,7 @@
         continue;
       }
       const value = exactStructuredValue === undefined
-        ? typeof mapping.value === "string" ? mapping.value.trim() : ""
+        ? typeof mapping.value === "string" ? mapping.value.trim() : typeof mapping.displayValue === "string" ? mapping.displayValue.trim() : ""
         : exactStructuredValue;
       const isCheckbox = element instanceof HTMLInputElement && element.type === "checkbox";
       if (!value && !(isCheckbox && value === false)) {
@@ -1203,13 +1549,15 @@
         continue;
       }
       const isDerived = matchedDefinition?.localDerived === true
-        || (exactStructuredValue === undefined && mapping.basis === "derived");
+        || (exactStructuredValue === undefined && mapping.basis !== "resume");
       if (exactStructuredValue !== undefined) structured += 1;
       const checkboxValue = /^(true|1|yes|y|是|至今|仍在职)$/i.test(String(value));
       if (matchedDefinition?.date) plan.expectedDateValue = value;
       if (await fillElementSafely(element, isCheckbox ? checkboxValue : value, {
         date: Boolean(matchedDefinition?.date) || isLikelyDateControl(element),
         checkbox: isCheckbox,
+        optionMatch: mapping?.optionMatch || null,
+        interactionType: extractedFields.find((field) => field.fieldKey === fieldKey)?.interactionType || getInteractionType(element),
       })) {
         filled += 1;
         if (isDerived) derived += 1;

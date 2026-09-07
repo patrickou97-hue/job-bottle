@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT_AUDIT
 
+## 2026-09-07 网申助手 ATS 语义引擎 1.0.0（准备发布）
+
+- 用户目标：把两份策略资料合并为新的网申助手填写策略，生成 1.0.0 安装包，并在发布前验证三种模式和前端显示。
+- 关键判断：将字段从“标签+索引”升级为带 accessibleName、sectionPath、recordIndex、controlType、interactionType、optionState 的语义模型；将 AI 输出收敛为可执行且可回读的结构化动作；动态下拉和重渲染由执行层等待、重定位和 readback 处理。
+- 变更证据：扩展 `fill.js`、`popup.js`、manifest、README，服务端 `extension-match` / `extension-autofill`，官网 `ExtensionHubClient` / `ExtensionGuide`，覆盖夹具、扩展契约和 smoke 脚本；安装包为 `public/downloads/starjob-resume-assistant-v1.0.0.zip`，旧 popup 图片已删除。
+- 安全/数据证据：没有新增 migration、RLS、DDL、用户数据写入或第二后端；不读取 Cookie、不自动提交、不填写密码/验证码/隐私同意/录用决策题；grounded_generation 必须有简历证据并经过敏感内容、数字和重叠校验。
+- 验证证据：`npm test` 166/166、lint 0 errors、typecheck、Webpack 生产构建、扩展构建和 12/12 包一致性通过；规则、覆盖、AI 三个浏览器夹具均通过。前端 3110 的 `/extension` 与 `/extension/guide` 进行了浏览器 DOM/布局检查。Chrome headless 无 stdout，故不宣称自动扩展 E2E；隔离副本临时 dev smoke 受 Turbopack 跨目录依赖路径限制，静态源码/资源探针已通过。
+- 发布边界：本记录在推送前建立；推送、Vercel 部署、正式站页面/下载包 200 和匿名 API 401 将在发布后补充，不把本地证据写成线上证据。
+
 ## 2026-09-07 `/my` 适配保留旧样式与星瓶分享入口回退对齐（本地待发布）
 
 - 用户目标：对齐两个并行工作区的新改动后一起上线；保留 `/my` 原有视觉，仅修复窄屏筛选区适配，并移除不再需要的星瓶分享海报入口与导出链路。

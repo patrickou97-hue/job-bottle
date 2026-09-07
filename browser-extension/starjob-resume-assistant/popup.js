@@ -251,7 +251,7 @@ function createOperationId() {
   return `${hex.slice(0, 4).join("")}-${hex.slice(4, 6).join("")}-${hex.slice(6, 8).join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10).join("")}`;
 }
 
-async function requestAiAutofillBatch({ batch, resume, token, operationId, taskSignal }) {
+async function requestAiAutofillBatch({ batch, resume, token, operationId, taskSignal, formSections, applicationContext }) {
   const controller = new AbortController();
   const cancelFromTask = () => controller.abort(taskSignal.reason || "cancelled");
   taskSignal.addEventListener("abort", cancelFromTask, { once: true });
@@ -260,7 +260,7 @@ async function requestAiAutofillBatch({ batch, resume, token, operationId, taskS
     const response = await fetch(`${STARJOB_HOME}/api/resume/extension-autofill`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ resume, fields: batch, operationId }),
+      body: JSON.stringify({ resume, fields: batch, formSections, applicationContext, operationId }),
       cache: "no-store",
       signal: controller.signal,
     });
@@ -499,6 +499,19 @@ async function fillCurrentPage() {
           }))
         : []
     ));
+    const formSections = analyses.flatMap(({ frameId, result }) => (
+      Array.isArray(result.formSections)
+        ? (() => {
+            const indexByKey = new Map((Array.isArray(result.fields) ? result.fields : []).map((field, index) => [field.fieldKey, index]));
+            return result.formSections.map((section) => ({
+              ...section,
+              fieldKeys: Array.isArray(section.fieldKeys)
+                ? section.fieldKeys.map((rawKey) => qualifyFrameFieldKey(frameId, indexByKey.get(rawKey) ?? 0, rawKey))
+                : [],
+            }));
+          })()
+        : []
+    ));
     const fieldAddressByQualifiedKey = new Map(fields.map((field) => [field.fieldKey, {
       frameId: field.sourceFrameId,
       rawFieldKey: field.sourceFieldKey,
@@ -547,6 +560,14 @@ async function fillCurrentPage() {
       const aiValueMappings = {};
       let acceptedMappings = 0;
       const sanitizedResume = sanitizeResumeForAi(selectedResume, fields);
+      const pageUrl = new URL(tab.url);
+      const applicationContext = {
+        company: analyses[0]?.result?.provider?.company || pageUrl.hostname.replace(/^www\./, ""),
+        jobTitle: tab.title || "",
+        sourceUrl: `${pageUrl.origin}${pageUrl.pathname}`,
+        provider: analyses[0]?.result?.provider?.provider || "generic",
+        providerConfidence: analyses[0]?.result?.provider?.confidence || 0,
+      };
       const batches = [];
       for (let index = 0; index < fields.length; index += AI_AUTOFILL_BATCH_SIZE) {
         batches.push(fields.slice(index, index + AI_AUTOFILL_BATCH_SIZE));
@@ -563,6 +584,8 @@ async function fillCurrentPage() {
             token: stored.matchToken,
             operationId,
             taskSignal: taskController.signal,
+            formSections,
+            applicationContext,
           });
           completedBatches += 1;
           updateProgress("match", "loading", `已完成 ${completedBatches}/${batches.length} 批，全部成功后再填写页面`);
@@ -576,17 +599,25 @@ async function fillCurrentPage() {
       for (const payload of payloads) {
         for (const mapping of payload.mappings || []) {
           if (mapping?.fieldKey && typeof mapping.value === "string" && mapping.value.trim()
-            && ["resume", "derived"].includes(mapping.basis) && Number(mapping.confidence) >= 0.82) {
+            && !["manual", "skip"].includes(mapping.action)
+            && ["resume", "derived", "grounded_generation"].includes(mapping.basis) && Number(mapping.confidence) >= 0.82) {
             aiValueMappings[mapping.fieldKey] = {
               value: mapping.value.trim(),
+              displayValue: typeof mapping.displayValue === "string" ? mapping.displayValue.trim() : null,
               confidence: Number(mapping.confidence),
               basis: mapping.basis,
+              action: mapping.action || "fill",
+              evidence: Array.isArray(mapping.evidence) ? mapping.evidence : [],
+              source: mapping.source || null,
+              needsReview: mapping.needsReview === true,
+              controlType: mapping.controlType || null,
+              optionMatch: mapping.optionMatch || null,
             };
             acceptedMappings += 1;
           }
         }
       }
-      updateProgress("match", "success", `所有批次成功后，AI 找到 ${acceptedMappings} 个有简历依据的值`);
+      updateProgress("match", "success", `所有批次成功后，AI 找到 ${acceptedMappings} 个有简历依据或可追溯改写的值`);
       updateProgress("fill", "loading", "正在按页面顺序填写并选择空白项");
       updateTaskProgress(2 + batches.length, totalTaskUnits, `已确认 ${acceptedMappings} 个有简历依据的值，正在填写`);
       throwIfAborted(taskController.signal);

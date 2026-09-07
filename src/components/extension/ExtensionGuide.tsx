@@ -46,29 +46,21 @@ export function ExtensionGuide() {
         <div className="max-w-4xl">
           <h1 className="page-title">安装拾星网申助手</h1>
           <div className="mt-5 max-w-3xl space-y-2 text-sm leading-7 text-ink-secondary">
-            <p>当前版本 0.2.8，适用于 Chrome、Edge 及其他 Chromium 浏览器。</p>
-            <p>
-              <a href="/downloads/starjob-resume-assistant-v0.2.8.zip" download className="text-action pressable h-8 font-semibold">
-                下载 0.2.8 安装包
-                <ArrowDownIcon aria-hidden="true" className="size-4" />
+            <p>当前版本 1.0.0，适用于 Chrome、Edge 及其他 Chromium 浏览器。</p>
+            <div className="flex flex-wrap items-center gap-3 pt-3">
+              <a
+                href="/downloads/starjob-resume-assistant-v1.0.0.zip"
+                download
+                className="gold-button pressable inline-flex min-h-12 items-center gap-2 rounded-xl px-5 text-base font-semibold"
+              >
+                <ArrowDownIcon aria-hidden="true" className="size-5" />
+                下载 1.0.0 安装包
               </a>
-            </p>
-            <p>下载后请完整解压。新增显式实习 / 正式工作分组，以及性别、国籍 / 地区、期望地点、项目链接、获奖时间和语言熟练度等常见字段策略；只填写你在拾星简历中明确保存的内容。</p>
+              <span className="text-xs text-ink-muted">ZIP 安装包 · 下载后完整解压</span>
+            </div>
+            <p>下载后请完整解压。1.0.0 会识别 ARIA 和自定义下拉控件，动态等待候选项，并在写入后回读校验；只填写你在拾星简历中明确保存的内容，验证码、密码和最终提交仍由你处理。</p>
           </div>
         </div>
-      </section>
-
-      <section className="extension-guide__preview border-b border-[color:var(--line-ghost)] pb-12">
-        <figure className="extension-product-visual mx-auto w-full max-w-[620px]" aria-label="拾星网申助手扩展面板预览">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/assets/extension/starjob-resume-assistant-popup-v026.png"
-            alt="拾星网申助手扩展面板，展示填写方式、填写结果和处理进度"
-            width={760}
-            height={1680}
-          />
-          <figcaption className="sr-only">安装后预览：拾星网申助手扩展面板</figcaption>
-        </figure>
       </section>
 
       <section className="grid gap-x-10 gap-y-8 md:grid-cols-2">

@@ -1,5 +1,15 @@
 # 拾星 StarJob — 最终完整确认版交接文档
 
+## 2026-09-07 网申助手 ATS 语义引擎 1.0.0（准备发布）
+
+- 用户目标：结合两份策略资料，升级网申助手的网页解析、ATS 适配、AI 分析和安全填写策略，并在发布前验证规则填写、覆盖填写、AI 智能填写三种模式及前端展示。
+- 根因与决策：旧链路主要依赖简化字段标签和固定索引，遇到 ARIA/custom 控件、动态下拉、重复经历和页面重渲染时上下文不足；本版改为“语义采集 → provider/ATS 识别 → 稳定字段 ID → 确定性匹配或结构化 AI 计划 → 等待控件 → 写入 → readback 校验 → 未完成整理”，AI 只返回可审计的 action/evidence/source/needsReview 映射，不允许提交、验证码、密码和敏感身份字段。
+- 实际改动：`browser-extension/starjob-resume-assistant/fill.js` 增加可访问名称、区块路径、邻近文本、控件/交互类型、动态选项等待与匹配、稳定语义指纹、Moka/飞书/北森/大易/Workday 等 provider 识别、写入后回读；`popup.js` 发送页面区块和岗位上下文，并保持全批次成功后再写入；`extension-autofill` / `extension-match` API 增加字段元数据、页面区块、岗位上下文和 grounded_generation 约束；官网和安装教程同步改为 1.0.0，并删除旧网申助手图片；新增覆盖模式浏览器夹具与契约检查。
+- 安全边界：规则填写仍只处理可核对资料；AI 生成仅限基于简历证据的自我介绍/描述类安全字段，拒绝无证据数字、敏感身份信息、教育描述虚构和未知字段；不读取 Cookie，不自动提交，不处理密码、验证码、隐私同意和录用决策题；没有新增数据库迁移或第二套后端。
+- 验证：`npm test` 166/166；`npm run lint` 0 errors、3 条既有 warning；`npm run typecheck` 通过；Webpack 生产构建 62 个路由通过；`npm run build:extension` 与 `npm run verify:extension-package` 通过，安装包 12/12 文件逐字节一致。浏览器真实夹具三种模式均通过：只填空白项填充 42 项并保留既有值，覆盖模式替换 4 项，AI 模式填充结构化经历/日期并保留既有邮箱、跳过敏感字段。`npm run test:extension` 的 Chrome headless runner 在当前机器因 Chrome 未输出页面内容未作为通过证据；隔离副本 `npm run smoke` 的源码/资源探针通过，临时 Next dev 探针另受跨目录依赖路径的 Turbopack 限制。
+- 本地前端：`http://127.0.0.1:3110/extension` 与 `/extension/guide` 已用当前构建检查 1.0.0 文案、下载入口、旧图片移除、首屏布局和安装教程，无发现遮挡或溢出。
+- 发布范围：网站源码和 `public/downloads/starjob-resume-assistant-v1.0.0.zip` 纳入发布；待推送 `origin/main` 并等待 Vercel 自动部署后再做正式站 HTTP 核验。真实登录态、真实 ATS 站点和 Chrome Web Store 上架仍是独立验收项。
+
 ## 2026-09-07 `/my` 适配保留旧样式与星瓶分享入口回退对齐（本地待发布）
 
 - 用户目标：对齐两个并行工作区的新改动后一起上线；保留 `/my` 原有视觉，仅修复窄屏筛选区适配，并移除不再需要的星瓶分享海报入口与导出链路。

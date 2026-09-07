@@ -66,7 +66,7 @@ test("新版批次共享操作额度且旧版请求保持兼容", () => {
   assert.match(popup, /const operationId = createOperationId\(\)/);
   assert.match(popup, /typeof crypto\.randomUUID === "function"/);
   assert.match(popup, /crypto\.getRandomValues\(new Uint8Array\(16\)\)/);
-  assert.match(popup, /JSON\.stringify\(\{ resume, fields: batch, operationId \}\)/);
+  assert.match(popup, /JSON\.stringify\(\{ resume, fields: batch, formSections, applicationContext, operationId \}\)/);
   assert.match(route, /operationId:\s*z\.string\(\)\.uuid\(\)\.optional\(\)/);
   assert.match(route, /await takeExtensionAutofillRateSlot\(tokenPayload\.sub, parsed\.data\.operationId\)/);
   assert.match(rateLimitHelper, /p_operation_id:\s*operationId \?\? randomUUID\(\)/);
@@ -129,4 +129,28 @@ test("常见网申字段按实习范围和安全边界处理", () => {
   assert.match(route, /getSectionEntries\(resume, section, field\.recordScope\)/);
   assert.match(route, /function deriveAgeValue/);
   assert.match(route, /recordScope=internship/);
+});
+
+test("1.0.0 使用语义字段、动态控件状态机和可追溯生成", () => {
+  assert.match(fill, /function detectProvider\(\)/);
+  assert.match(fill, /data-starjob-field-id/);
+  assert.match(fill, /function waitForDynamicOptions/);
+  assert.match(fill, /function fillDynamicControl/);
+  assert.match(fill, /function verifyReadback/);
+  assert.match(fill, /formSections: buildFormSections/);
+  assert.match(route, /grounded_generation/);
+  assert.match(route, /evidence/);
+  assert.match(route, /applicationContext/);
+});
+
+test("AI 返回的可忽略格式差异不会让整批安全字段失败", () => {
+  assert.match(route, /const mappingSchema = z\.object\(/);
+  assert.match(route, /mappings: z\.array\(z\.unknown\(\)\)\.max\(100\)/);
+  assert.match(route, /normalizeJsonCandidate\(content\)/);
+  assert.match(route, /discardedMalformed/);
+  assert.match(route, /finish_reason\?: string \| null/);
+  assert.match(route, /finish_reason === "length"/);
+  assert.match(route, /不能填写的字段可以省略/);
+  assert.match(route, /服务端会安全补成空映射/);
+  assert.match(route, /只返回 JSON/);
 });

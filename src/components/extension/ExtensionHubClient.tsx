@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowRightIcon,
+  DownloadSimpleIcon,
   LockKeyIcon,
   PuzzlePieceIcon,
   ShieldCheckIcon,
@@ -13,7 +14,7 @@ import {
 const CHANNEL = "starjob-resume-assistant";
 const LEGACY_COMPATIBLE_VERSIONS = new Set(["0.1.7", "0.1.8", "0.1.9"]);
 const SHORT_TIMEOUT_AI_VERSIONS = new Set(["0.2.0"]);
-const PREVIOUS_AI_VERSIONS = new Set(["0.2.1", "0.2.2", "0.2.3", "0.2.4", "0.2.5", "0.2.6", "0.2.7"]);
+const PREVIOUS_AI_VERSIONS = new Set(["0.2.1", "0.2.2", "0.2.3", "0.2.4", "0.2.5", "0.2.6", "0.2.7", "0.2.8"]);
 const ExtensionDemoDialog = dynamic(
   () => import("@/components/extension/ExtensionDemoDialog").then((module) => module.ExtensionDemoDialog),
   { ssr: false },
@@ -51,11 +52,11 @@ export function ExtensionHubClient() {
         setExtensionVersion(detectedVersion);
         setSyncState("idle");
         setMessage(detectedVersion && LEGACY_COMPATIBLE_VERSIONS.has(detectedVersion)
-          ? `${detectedVersion} 可继续同步与原有填写；AI 智能填写需要升级到 0.2.8。`
+          ? `${detectedVersion} 可继续同步与原有填写；AI 智能填写需要升级到 1.0.0。`
           : detectedVersion && SHORT_TIMEOUT_AI_VERSIONS.has(detectedVersion)
-            ? `${detectedVersion} 的 AI 填写仍可使用；建议升级到 0.2.8，获得完整字段分析和新填写策略。`
+            ? `${detectedVersion} 的 AI 填写仍可使用；建议升级到 1.0.0，获得完整字段分析和新填写策略。`
             : detectedVersion && PREVIOUS_AI_VERSIONS.has(detectedVersion)
-              ? `${detectedVersion} 仍可继续使用；升级到 0.2.8 后会获得与演示一致的 Chrome popup 面板。`
+              ? `${detectedVersion} 仍可继续使用；升级到 1.0.0 后会获得 ATS 控件识别、动态选项和填写后校验。`
               : "网申助手已安装，可同步当前账户的云端简历。");
       }
       if (payload.type === "SYNC_COMPLETE") {
@@ -164,6 +165,14 @@ export function ExtensionHubClient() {
               体验使用流程
               <ArrowRightIcon aria-hidden="true" className="size-4" />
             </button>
+            <a
+              href="/downloads/starjob-resume-assistant-v1.0.0.zip"
+              download
+              className="pressable inline-flex h-11 items-center gap-2 rounded-lg border border-[color:var(--brand-blue)] bg-[color:var(--surface-selected-bg)] px-4 text-sm font-semibold text-[color:var(--brand-blue)] shadow-[0_8px_22px_rgba(29,47,79,.12)] transition-[transform,filter,background-color] duration-200 hover:brightness-105"
+            >
+              <DownloadSimpleIcon aria-hidden="true" className="size-4" />
+              下载 1.0.0 安装包
+            </a>
             <Link href="/extension/guide" className="text-action pressable h-11 px-2 text-sm font-semibold">
               查看安装教程
               <ArrowRightIcon aria-hidden="true" className="size-4" />
