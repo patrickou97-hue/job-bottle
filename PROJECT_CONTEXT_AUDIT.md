@@ -1,12 +1,12 @@
 # PROJECT_CONTEXT_AUDIT
 
-## 2026-09-08 网申助手 1.1.1 长表单批次扩容（本地已验证，未部署）
+## 2026-09-08 网申助手 1.1.1 长表单批次扩容（已上线）
 
 - 用户反馈与根因：常见长表单被拆成 19 个 AI 批次时，1.1.0 会提示超过安全上限。客户端 `AI_AUTOFILL_MAX_BATCHES` 与数据库持久限流函数都把单次操作和十分钟滚动窗口固定为 15 批，因此即使删除前端拦截，第 16 个服务端请求仍会被拒绝；这不是模型无法处理 19 批。
 - 实际改动：1.1.1 把单次 AI 操作和十分钟滚动批次上限同步提高到 100，把单页安全字段上限从 750 提高到 1500。请求仍按批次严格串行，沿用同一 operation/page snapshot，逐批返回并暂存分析结果；只有全部批次完整通过后才统一写入页面，任一批失败仍保持零写入。密码、验证码、身份证、隐私声明等敏感字段过滤规则没有放宽。数据库通过新增迁移 `20260908160000_raise_extension_autofill_batch_limit.sql` 覆盖函数和约束，没有改写已上线历史迁移。
-- 版本与页面：扩展 manifest、README、官网下载安装入口和安装教程更新为 1.1.1；1.1.0 被识别为可继续使用但建议升级的上一版本。候选包 `public/downloads/starjob-resume-assistant-v1.1.1.zip` 为 217826 bytes，SHA-256 `75cc731eab6bf0e18859f7f53746ad76b1fd7d6f1a886317005ff3730086f7b8`，包内 12/12 文件与源码逐字节一致。
+- 版本与页面：扩展 manifest、README、官网下载安装入口和安装教程更新为 1.1.1；1.1.0 被识别为可继续使用但建议升级的上一版本。安装包 `public/downloads/starjob-resume-assistant-v1.1.1.zip` 为 217826 bytes，SHA-256 `75cc731eab6bf0e18859f7f53746ad76b1fd7d6f1a886317005ff3730086f7b8`，包内 12/12 文件与源码逐字节一致。
 - 验证：`npm run typecheck` 通过；`npm test` 171/171；沙箱外真实 Chrome headless `npm run test:extension` 15/15，新增覆盖 323 个字段恰好拆成 19 个串行批次、所有批次完成前零页面写入，以及 1501 个安全字段在调用模型前停止；`npm run lint` 0 errors、1 条既有 warning；`npm run build -- --webpack` 生成 62 个静态页面；`npm run smoke`、`npm run build:extension`、`npm run verify:extension-package` 和 `git diff --check` 通过。`npm audit --omit=dev --audit-level=high` 仍为既有 8 个问题（6 moderate、2 high），本轮没有新增依赖。
-- 发布边界：当前修改位于基于 `origin/main@b1ce75a` 的隔离工作树，尚未提交、推送或部署；Supabase 新迁移尚未在托管数据库执行。未进行携带真实简历的登录态 AI E2E 或第三方 ATS 实际写入。仅部署网站和扩展而不执行该迁移会导致第 16 批仍被服务端限流，因此正式上线必须先执行迁移，再发布 1.1.1，并分别验证托管函数、页面、安装包和登录态长表单。
+- Git、迁移与生产状态：功能提交 `bc4b1c1befbba096c3fa1d7fe3e15eba71c27451` 已推送到 `main`；托管 Supabase 迁移列表显示 `20260908160000` 已执行。Vercel 生产站 `/extension`、`/extension/guide` 和 `/downloads/starjob-resume-assistant-v1.1.1.zip` 均返回 HTTP 200，页面检出 1.1.1、100 个 AI 批次和 1500 个安全字段；线上 ZIP 为 217826 bytes，SHA-256 `75cc731eab6bf0e18859f7f53746ad76b1fd7d6f1a886317005ff3730086f7b8`，与发布包一致。匿名 `POST /api/resume/extension-autofill` 返回 401。未进行携带真实简历的登录态 AI E2E 或第三方 ATS 实际写入。
 
 ## 2026-09-08 网申助手 1.1.0 AI Smart Fill V2（已上线）
 
