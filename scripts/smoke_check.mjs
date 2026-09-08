@@ -1232,6 +1232,12 @@ const SOURCE_INVARIANTS = [
     label: "网申助手单次操作与十分钟滚动批次上限同步提升到 100",
   },
   {
+    file: "supabase/migrations/20260908180000_raise_extension_autofill_rolling_batch_window.sql",
+    mustInclude: ["current_batch_count >= 100", "active_batch_count >= 500", "five such operations (500 batches)", "to service_role"],
+    mustNotInclude: ["to anon", "to authenticated"],
+    label: "网申助手十分钟滚动批次窗口允许最多五个长表单操作",
+  },
+  {
     file: "src/lib/extension-match-token.ts",
     mustInclude: ["server-only", "createHmac", "timingSafeEqual", "TOKEN_SCOPE", "TOKEN_TTL_MS", "EXTENSION_MATCH_TOKEN_SECRET"],
     mustNotInclude: ["NEXT_PUBLIC_", "console.log", "SUPABASE_SERVICE_ROLE_KEY"],

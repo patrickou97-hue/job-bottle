@@ -48,6 +48,10 @@ const raisedBatchLimitMigration = await readFile(
   new URL("../../supabase/migrations/20260908160000_raise_extension_autofill_batch_limit.sql", import.meta.url),
   "utf8",
 );
+const rollingBatchWindowMigration = await readFile(
+  new URL("../../supabase/migrations/20260908180000_raise_extension_autofill_rolling_batch_window.sql", import.meta.url),
+  "utf8",
+);
 
 test("扩展按 frameId 隔离智能字段映射", () => {
   assert.match(popup, /qualifyFrameFieldKey\(frameId, fieldIndex, field\.fieldKey\)/);
@@ -97,6 +101,11 @@ test("新版批次共享操作额度且旧版请求保持兼容", () => {
   assert.match(raisedBatchLimitMigration, /batch 101 observes 100 and fails/);
   assert.match(raisedBatchLimitMigration, /grant execute on function public\.take_extension_autofill_rate_slot\(uuid, uuid\) to service_role/);
   assert.doesNotMatch(raisedBatchLimitMigration, /to anon|to authenticated/);
+  assert.match(rollingBatchWindowMigration, /current_batch_count >= 100/);
+  assert.match(rollingBatchWindowMigration, /active_batch_count >= 500/);
+  assert.match(rollingBatchWindowMigration, /five such operations \(500 batches\)/);
+  assert.match(rollingBatchWindowMigration, /grant execute on function public\.take_extension_autofill_rate_slot\(uuid, uuid\) to service_role/);
+  assert.doesNotMatch(rollingBatchWindowMigration, /to anon|to authenticated/);
 });
 
 test("AI 智能填写按语义和输出预算串行分批，允许 100 批与 1500 字段并拦截陈旧响应", () => {
