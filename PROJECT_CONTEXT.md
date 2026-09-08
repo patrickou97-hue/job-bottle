@@ -1,6 +1,6 @@
 # PROJECT_CONTEXT.md — 秋招星瓶 (Job Bottle)
 
-## 2026-09-08 网申助手 1.1.0 AI Smart Fill V2（发布候选）
+## 2026-09-08 网申助手 1.1.0 AI Smart Fill V2（已上线）
 
 - 用户目标：修复 AI 偶发返回不完整，并把 AI 填写从机械复述简历升级为“简历提供事实边界，结合岗位和字段语义组织答案”；同时增强常见大厂招聘官网和 ATS 控件适配。
 - 线上根因证据：Vercel 的 `/api/resume/extension-autofill` 日志在 10:29:21 与 10:29:48 出现 `reason: truncated`，返回内容长度分别为 12676 和 12804；同批另有 HTTP 200 请求记录 `discardedMalformed: 1`。偶发不完整同时来自大批次输出截断，以及异常映射被丢弃后仍被旧逻辑当作成功。
@@ -8,6 +8,7 @@
 - ATS 适配：支持开放 Shadow DOM、JSON-LD JobPosting、页面 metadata、岗位职责和任职要求提取；供应商画像覆盖 Workday、Greenhouse、Lever、Moka、飞书招聘、北森和大易，公司画像补充字节跳动、腾讯、阿里、京东、美团、百度、拼多多、小红书、网易、哔哩哔哩、小米和华为。
 - 验证：隔离发布树基于 `origin/main@cc909dc`。`npm run typecheck` 通过；`npm test` 171/171；`npm run test:extension` 15/15；`npm run lint` 0 errors、1 条既有 warning；`npm run build -- --webpack` 成功生成 62 个静态页面；`npm run smoke`、`npm run build:extension`、`npm run verify:extension-package` 与 `git diff --check` 通过。安装包 `public/downloads/starjob-resume-assistant-v1.1.0.zip` 为 217465 bytes，SHA-256 `921bfedfce9cb6528cd802a11177b0b4f3589b8160414fb3bac93359a70ffdd2`，包内 12 个文件与扩展源码逐字节一致。`npm audit --omit=dev --audit-level=high` 仍报告依赖链中 8 个无可用修复的已知问题（6 moderate、2 high），本轮没有新增依赖。
 - 边界：本轮不新增数据库、migration、RLS、扩展权限或自动提交。真实第三方 ATS、携带用户真实简历的登录态 AI E2E 和用户设备最终提交仍是独立验收项；封闭 Shadow DOM、跨域 iframe 和复杂级联控件可能继续需要站点专用适配。
+- Git、部署与外部状态：功能提交 `7a59b2646b55187e65f4bc4d6fe5fe208dbf523d` 已从隔离发布树推送到 `main`，并触发 Vercel 生产部署。正式站 `/extension` 与 `/extension/guide` 均返回 HTTP 200，并检出 1.1.0 下载地址；`/downloads/starjob-resume-assistant-v1.1.0.zip` 返回 HTTP 200，线上文件为 217465 bytes，SHA-256 `921bfedfce9cb6528cd802a11177b0b4f3589b8160414fb3bac93359a70ffdd2`，与发布包一致。匿名 `POST /api/resume/extension-autofill` 返回 401；该探针只验证鉴权边界，不等同于登录态 AI E2E。
 
 ## 2026-09-08 网申助手 1.0.1 P0 回归修复（已上线）
 
