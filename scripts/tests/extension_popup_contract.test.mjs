@@ -200,11 +200,23 @@ test("AI 返回的可忽略格式差异不会让整批安全字段失败", () =>
   assert.match(route, /normalizeJsonCandidate\(content\)/);
   assert.match(route, /discardedMalformed/);
   assert.match(route, /finish_reason\?: string \| null/);
-  assert.match(route, /finishReason === "length"/);
-  assert.match(route, /每个输入 fieldKey 恰好出现一次/);
+  assert.match(route, /\["length", "max_tokens"\]/);
+  assert.match(route, /extractPartialOutcomeRows\(content\)/);
+  assert.match(route, /normalizeModelOutcomeCandidate\(row\)/);
+  assert.match(route, /每个输入 fieldKey 都应返回一次/);
+  assert.match(route, /MIN_CONFIDENCE = 0\.68/);
   assert.match(route, /MAX_REPAIR_PASSES = 2/);
+  assert.match(route, /pendingGroups/);
+  assert.match(route, /repairGroupIndex/);
+  assert.match(route, /repair_upstream_error/);
+  assert.match(route, /modelCallCount/);
+  assert.match(route, /MAX_MODEL_OUTPUT_TOKENS = 5_000/);
+  assert.match(route, /MIN_MODEL_OUTPUT_TOKENS = 1_200/);
   assert.match(route, /extension_autofill_model_trace/);
-  assert.match(route, /extension_autofill_incomplete_contract/);
+  assert.match(route, /extension_autofill_partial_contract/);
+  assert.match(route, /AI_RESPONSE_INCOMPLETE/);
+  assert.match(route, /degraded: missingAfterRepair.length > 0/);
+  assert.match(route, /isHardBlockedApplicationField\(field\)/);
   assert.match(route, /只返回 JSON/);
 });
 

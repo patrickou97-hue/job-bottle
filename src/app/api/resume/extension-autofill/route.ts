@@ -2,14 +2,22 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { takeExtensionAutofillRateSlot } from "@/lib/extension-autofill-rate-limit";
 import { verifyExtensionMatchToken } from "@/lib/extension-match-token";
-import { analyzeOutcomeCompleteness, introducedUnsupportedNumbers, splitRepairKeys } from "@/lib/extension-smart-fill-v2";
+import {
+  analyzeOutcomeCompleteness,
+  extractPartialOutcomeRows,
+  introducedUnsupportedNumbers,
+  normalizeModelOutcomeCandidate,
+  splitRepairKeys,
+} from "@/lib/extension-smart-fill-v2";
 
 export const maxDuration = 90;
 export const preferredRegion = "hkg1";
 
 const REQUEST_TIMEOUT_MS = 75_000;
-const MIN_CONFIDENCE = 0.82;
+const MIN_CONFIDENCE = 0.68;
 const MAX_REPAIR_PASSES = 2;
+const MAX_MODEL_OUTPUT_TOKENS = 5_000;
+const MIN_MODEL_OUTPUT_TOKENS = 1_200;
 
 const shortText = z.string().max(240).optional().default("");
 const mediumText = z.string().max(1_200).optional().default("");
@@ -253,76 +261,117 @@ export async function POST(request: NextRequest) {
       companyProfile: parsed.data.applicationContext.company || "",
     };
     const collected = new Map<string, z.infer<typeof mappingSchema>>();
-    const attemptQueue: z.infer<typeof fieldSchema>[][] = [modelFields];
     const modelTraces: Record<string, unknown>[] = [];
-    let attemptIndex = 0;
-    while (attemptQueue.length && attemptIndex <= MAX_REPAIR_PASSES) {
-      const attemptFields = attemptQueue.shift() || [];
-      if (!attemptFields.length) break;
-      const attemptSections = modelSections.map((section) => ({
-        ...section,
-        fieldKeys: section.fieldKeys.filter((fieldKey) => attemptFields.some((field) => field.fieldKey === fieldKey)),
-      })).filter((section) => section.fieldKeys.length > 0);
-      const startedAt = Date.now();
-      const reply = await callAutofillModel({
-        apiKey,
-        baseUrl,
-        model,
-        requestSignal: request.signal,
-        resume: parsed.data.resume,
-        fields: attemptFields,
-        formSections: attemptSections,
-        applicationContext: parsed.data.applicationContext,
-        repairPass: attemptIndex,
-      });
-      const parsedReply = parseModelOutcomes(reply.content, attemptFields, reply.finishReason);
-      for (const mapping of parsedReply.mappings) collected.set(mapping.fieldKey, mapping);
-      const trace = {
-        ...traceBase,
-        repairPass: attemptIndex,
-        requestedFieldCount: attemptFields.length,
-        returnedFieldCount: parsedReply.mappings.length,
-        missingFieldCount: parsedReply.missingFieldKeys.length,
-        duplicateFieldCount: parsedReply.discardedDuplicate,
-        unexpectedFieldCount: parsedReply.discardedUnknown,
-        malformedFieldCount: parsedReply.discardedMalformed,
-        providerRequestId: reply.id,
-        model: reply.model,
-        promptTokens: reply.usage?.prompt_tokens ?? null,
-        completionTokens: reply.usage?.completion_tokens ?? null,
-        finishReason: reply.finishReason,
-        rawContentLength: reply.content.length,
-        parseStatus: parsedReply.parseStatus,
-        durationMs: Date.now() - startedAt,
-      };
-      modelTraces.push(trace);
-      console.info("[extension_autofill_model_trace]", trace);
+    let pendingGroups: z.infer<typeof fieldSchema>[][] = [modelFields];
+    let completedRepairPasses = 0;
+    for (let repairPass = 0; pendingGroups.length && repairPass <= MAX_REPAIR_PASSES; repairPass += 1) {
+      const roundGroups = pendingGroups;
+      pendingGroups = [];
+      completedRepairPasses = repairPass;
+      const roundResults = await Promise.all(roundGroups.map(async (attemptFields, repairGroupIndex) => {
+        const attemptSections = modelSections.map((section) => ({
+          ...section,
+          fieldKeys: section.fieldKeys.filter((fieldKey) => attemptFields.some((field) => field.fieldKey === fieldKey)),
+        })).filter((section) => section.fieldKeys.length > 0);
+        const startedAt = Date.now();
+        try {
+          const reply = await callAutofillModel({
+            apiKey,
+            baseUrl,
+            model,
+            requestSignal: request.signal,
+            resume: parsed.data.resume,
+            fields: attemptFields,
+            formSections: attemptSections,
+            applicationContext: parsed.data.applicationContext,
+            repairPass,
+          });
+          const parsedReply = parseModelOutcomes(reply.content, attemptFields, reply.finishReason);
+          return {
+            attemptFields,
+            parsedReply,
+            trace: {
+              ...traceBase,
+              repairPass,
+              repairGroupIndex,
+              requestedFieldCount: attemptFields.length,
+              returnedFieldCount: parsedReply.mappings.length,
+              missingFieldCount: parsedReply.missingFieldKeys.length,
+              duplicateFieldCount: parsedReply.discardedDuplicate,
+              unexpectedFieldCount: parsedReply.discardedUnknown,
+              malformedFieldCount: parsedReply.discardedMalformed,
+              providerRequestId: reply.id,
+              model: reply.model,
+              promptTokens: reply.usage?.prompt_tokens ?? null,
+              completionTokens: reply.usage?.completion_tokens ?? null,
+              finishReason: reply.finishReason,
+              rawContentLength: reply.content.length,
+              parseStatus: parsedReply.parseStatus,
+              durationMs: Date.now() - startedAt,
+            },
+          };
+        } catch (error) {
+          if (repairPass === 0 || request.signal.aborted) throw error;
+          const trace = {
+            ...traceBase,
+            repairPass,
+            repairGroupIndex,
+            requestedFieldCount: attemptFields.length,
+            returnedFieldCount: 0,
+            missingFieldCount: attemptFields.length,
+            parseStatus: "repair_upstream_error",
+            errorName: error instanceof Error ? error.name : "unknown",
+            errorStatus: error instanceof ExtensionAutofillUpstreamError ? error.status : null,
+            durationMs: Date.now() - startedAt,
+          };
+          return { attemptFields, parsedReply: null, trace };
+        }
+      }));
 
-      const missingFields = attemptFields.filter((field) => parsedReply.missingFieldKeys.includes(field.fieldKey));
-      if (missingFields.length) {
-        if (attemptIndex === 0 && parsedReply.parseStatus !== "ok" && missingFields.length > 1) {
+      for (const { attemptFields, parsedReply, trace } of roundResults) {
+        modelTraces.push(trace);
+        console.info("[extension_autofill_model_trace]", trace);
+        if (!parsedReply) {
+          if (repairPass < MAX_REPAIR_PASSES) pendingGroups.push(attemptFields);
+          continue;
+        }
+        for (const mapping of parsedReply.mappings) collected.set(mapping.fieldKey, mapping);
+        const missingFields = attemptFields.filter((field) => parsedReply.missingFieldKeys.includes(field.fieldKey));
+        if (!missingFields.length || repairPass >= MAX_REPAIR_PASSES) continue;
+        if (repairPass === 0 && parsedReply.parseStatus !== "ok" && missingFields.length > 1) {
           const fieldByKey = new Map(missingFields.map((field) => [field.fieldKey, field]));
-          attemptQueue.push(...splitRepairKeys(missingFields.map((field) => field.fieldKey), parsedReply.parseStatus)
+          pendingGroups.push(...splitRepairKeys(missingFields.map((field) => field.fieldKey), parsedReply.parseStatus)
             .map((keys) => keys.map((key) => fieldByKey.get(key)).filter((field): field is z.infer<typeof fieldSchema> => Boolean(field))));
         } else {
-          attemptQueue.push(missingFields);
+          pendingGroups.push(missingFields);
         }
       }
-      attemptIndex += 1;
     }
     const missingAfterRepair = modelFields.filter((field) => !collected.has(field.fieldKey));
     if (missingAfterRepair.length) {
-      console.warn("[extension_autofill_incomplete_contract]", {
+      // A missing model outcome is not a safe reason to discard the answers
+      // that already passed schema validation. Keep the unresolved field
+      // manual so the extension can continue with safe answers and surface
+      // the remainder for human review.
+      console.warn("[extension_autofill_partial_contract]", {
         ...traceBase,
         requestedFieldCount: modelFields.length,
         returnedFieldCount: collected.size,
         missingFieldCount: missingAfterRepair.length,
-        repairAttempts: Math.max(0, modelTraces.length - 1),
+        unresolvedFieldKeys: missingAfterRepair.map((field) => field.fieldKey).slice(0, 24),
+        repairAttempts: completedRepairPasses,
       });
-      return NextResponse.json({
-        error: "AI 返回内容不完整，系统已尝试补齐，请稍后重试",
-        diagnostics: { complete: false, requestedFieldCount: modelFields.length, returnedFieldCount: collected.size, missingFieldCount: missingAfterRepair.length },
-      }, { status: 502 });
+      for (const field of missingAfterRepair) {
+        collected.set(field.fieldKey, mappingSchema.parse({
+          fieldKey: field.fieldKey,
+          status: "manual",
+          action: "manual",
+          value: null,
+          intent: "unknown",
+          needsReview: true,
+          reason: "AI_RESPONSE_INCOMPLETE",
+        }));
+      }
     }
     const combinedContent = JSON.stringify({ outcomes: modelFields.map((field) => collected.get(field.fieldKey)) });
     const result = parseResult(combinedContent, modelFields, parsed.data.fields, parsed.data.resume);
@@ -332,7 +381,15 @@ export async function POST(request: NextRequest) {
       operationId: parsed.data.operationId || null,
       pageSnapshotId: parsed.data.pageSnapshotId || null,
       batchId: parsed.data.batchId || null,
-      diagnostics: { ...result.diagnostics, complete: true, repairAttempts: Math.max(0, modelTraces.length - 1), modelTraces },
+      diagnostics: {
+        ...result.diagnostics,
+        complete: true,
+        degraded: missingAfterRepair.length > 0,
+        unresolvedFieldCount: missingAfterRepair.length,
+        repairAttempts: completedRepairPasses,
+        modelCallCount: modelTraces.length,
+        modelTraces,
+      },
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     logServerError(error);
@@ -371,7 +428,7 @@ async function callAutofillModel(input: {
   if (input.requestSignal.aborted) abortForClientDisconnect();
   else input.requestSignal.addEventListener("abort", abortForClientDisconnect, { once: true });
   const timeout = setTimeout(() => controller.abort(), Math.min(REQUEST_TIMEOUT_MS, 26_000));
-  const outputBudget = Math.min(3_500, Math.max(900, 500 + input.fields.reduce((total, field) => {
+  const outputBudget = Math.min(MAX_MODEL_OUTPUT_TOKENS, Math.max(MIN_MODEL_OUTPUT_TOKENS, 650 + input.fields.reduce((total, field) => {
     const descriptor = `${field.label} ${field.accessibleName} ${field.context}`;
     return total + (/描述|评价|优势|动机|规划|为什么|why|summary|description/i.test(descriptor) ? 520 : 115);
   }, 0)));
@@ -418,43 +475,45 @@ async function callAutofillModel(input: {
 
 function parseModelOutcomes(content: string, expectedFields: z.infer<typeof fieldSchema>[], finishReason: string | null) {
   const expected = new Set(expectedFields.map((field) => field.fieldKey));
-  if (finishReason === "length") return {
-    mappings: [] as z.infer<typeof mappingSchema>[],
-    missingFieldKeys: [...expected],
-    discardedUnknown: 0,
-    discardedDuplicate: 0,
-    discardedMalformed: 0,
-    parseStatus: "truncated" as const,
-  };
+  const wasTruncated = ["length", "max_tokens"].includes(finishReason || "");
+  let rows: unknown[] = [];
+  let parseStatus: "ok" | "truncated" | "partial_json" | "invalid_json" = wasTruncated ? "truncated" : "ok";
   try {
-    const parsed = resultSchema.safeParse(JSON.parse(normalizeJsonCandidate(content)));
-    if (!parsed.success) throw new Error("invalid_shape");
-    const rows = parsed.data.outcomes || parsed.data.mappings || [];
+    const decoded = JSON.parse(normalizeJsonCandidate(content));
+    if (Array.isArray(decoded)) rows = decoded;
+    else {
+      const parsed = resultSchema.safeParse(decoded);
+      if (!parsed.success) throw new Error("invalid_shape");
+      rows = parsed.data.outcomes || parsed.data.mappings || [];
+    }
+  } catch {
+    rows = extractPartialOutcomeRows(content);
+    parseStatus = wasTruncated ? "truncated" : rows.length ? "partial_json" : "invalid_json";
+  }
+  try {
     const mappings: z.infer<typeof mappingSchema>[] = [];
     const seen = new Set<string>();
-    const duplicateKeys = new Set<string>();
     let discardedUnknown = 0;
     let discardedDuplicate = 0;
     let discardedMalformed = 0;
     for (const row of rows) {
-      const parsedMapping = mappingSchema.safeParse(row);
+      const parsedMapping = mappingSchema.safeParse(normalizeModelOutcomeCandidate(row));
       if (!parsedMapping.success) { discardedMalformed += 1; continue; }
       if (!expected.has(parsedMapping.data.fieldKey)) { discardedUnknown += 1; continue; }
-      if (seen.has(parsedMapping.data.fieldKey)) { discardedDuplicate += 1; duplicateKeys.add(parsedMapping.data.fieldKey); continue; }
+      if (seen.has(parsedMapping.data.fieldKey)) { discardedDuplicate += 1; continue; }
       const action = parsedMapping.data.action;
       const status = parsedMapping.data.status || (["manual", "skip"].includes(action) ? action as "manual" | "skip" : "answered");
       mappings.push({ ...parsedMapping.data, status });
       seen.add(parsedMapping.data.fieldKey);
     }
-    const uniqueMappings = mappings.filter((mapping) => !duplicateKeys.has(mapping.fieldKey));
-    const completeness = analyzeOutcomeCompleteness([...expected], uniqueMappings);
+    const completeness = analyzeOutcomeCompleteness([...expected], mappings);
     return {
-      mappings: uniqueMappings,
+      mappings,
       missingFieldKeys: completeness.missingKeys,
       discardedUnknown,
       discardedDuplicate,
       discardedMalformed,
-      parseStatus: "ok" as const,
+      parseStatus,
     };
   } catch {
     return {
@@ -463,7 +522,7 @@ function parseModelOutcomes(content: string, expectedFields: z.infer<typeof fiel
       discardedUnknown: 0,
       discardedDuplicate: 0,
       discardedMalformed: 0,
-      parseStatus: "invalid_json" as const,
+      parseStatus: rows.length ? parseStatus : "invalid_json" as const,
     };
   }
 }
@@ -572,6 +631,7 @@ function parseResult(
     };
     const mappings = candidates.filter(({ field, mapping }) => {
       if (!field || seen.has(mapping.fieldKey)) return false;
+      if (mapping.intent === "sensitive" || isHardBlockedApplicationField(field)) return reject("SENSITIVE_FIELD");
       if (["manual", "skip"].includes(mapping.status || mapping.action || "")) return false;
       if (!mapping.value?.trim()) return reject("EMPTY_VALUE");
       if (!mapping.basis) return reject("MISSING_BASIS");
@@ -810,6 +870,11 @@ function isGroundedGenerationAllowed(
   return !/(行业领先|市场第一|顶尖|世界级|客户满意度|显著提升|大幅提升|leading|best-in-class|world-class)/i.test(value);
 }
 
+function isHardBlockedApplicationField(field: z.infer<typeof fieldSchema>) {
+  const descriptor = `${field.label} ${field.accessibleName} ${field.attributes} ${field.context} ${field.description} ${field.sectionPath.join(" ")}`;
+  return /(验证码|密码|身份证|护照|婚姻|民族|政治面貌|宗教|健康|残疾|退伍|薪资|家庭成员|安全问题|隐私同意|法律声明|提交确认|captcha|password|passport|salary|social.?security|security.?question|privacy.?consent|legal.?declaration)/i.test(descriptor);
+}
+
 function hasUserPreferenceBasis(
   value: string,
   field: z.infer<typeof fieldSchema>,
@@ -1022,7 +1087,7 @@ function logServerError(error: unknown) {
   console.error("[extension_autofill]", details);
 }
 
-const RESULT_SHAPE = `只返回 JSON：{"outcomes":[{"fieldKey":"页面字段中的短 fieldKey（如 f0）","status":"answered、manual 或 skip","intent":"identity、contact、education、experience、project、skill、preference、eligibility、motivation、self_summary、open_question、sensitive 或 unknown","action":"fill、select、check、generate、manual 或 skip","value":"实际写入或选择的值，不能安全填写时为 null","displayValue":"网页上应显示的选项文本或 null","confidence":0到1,"basis":"exact_fact、normalized_fact、derived、semantic_inference、grounded_generation、user_preference 或 null","source":{"type":"resume","path":"work[0].bullets[0]"},"evidence":["work[0].bullets[0]"],"needsReview":false,"controlType":"...","optionMatch":{"strategy":"exact","targetText":"..."},"reason":"简短理由或 null"}]}。outcomes 必须与页面字段一一对应：每个输入 fieldKey 恰好出现一次，不得遗漏、重复或新增。不能安全回答时也必须返回 status=manual 或 skip。semantic_inference 和 grounded_generation 必须列出真实 evidence 路径，不得创造简历中没有的事实、实体或数字。`;
+const RESULT_SHAPE = `只返回 JSON：{"outcomes":[{"fieldKey":"页面字段中的短 fieldKey（如 f0）","status":"answered、manual 或 skip","intent":"identity、contact、education、experience、project、skill、preference、eligibility、motivation、self_summary、open_question、sensitive 或 unknown","action":"fill、select、check、generate、manual 或 skip","value":"实际写入或选择的值，不能安全填写时为 null","displayValue":"网页上应显示的选项文本或 null","confidence":0到1,"basis":"exact_fact、normalized_fact、derived、semantic_inference、grounded_generation、user_preference 或 null","source":{"type":"resume","path":"work[0].bullets[0]"},"evidence":["work[0].bullets[0]"],"needsReview":false,"controlType":"...","optionMatch":{"strategy":"exact","targetText":"..."},"reason":"简短理由或 null"}]}。每个输入 fieldKey 都应返回一次；为降低截断风险，controlType、source、displayValue、reason 等没有值的可选字段可以省略，但回答字段必须保留 fieldKey、status、action、value、basis、confidence 和 evidence。不能安全回答时返回 status=manual、action=manual、value=null，不要猜测。即使遗漏少数字段，也只让这些字段进入人工确认，不要为了补齐而编造事实。semantic_inference 和 grounded_generation 必须列出真实 evidence 路径，不得创造简历中没有的事实、实体或数字。`;
 
 const SYSTEM_PROMPT = `你是拾星网申助手的保守型填写引擎。你只能根据用户主动提供的结构化简历，为安全的网申字段生成或选择值。
 
