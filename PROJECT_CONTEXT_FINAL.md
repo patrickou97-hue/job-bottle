@@ -1,5 +1,14 @@
 # 拾星 StarJob — 最终完整确认版交接文档
 
+## 2026-09-08 网申助手 1.1.0 AI Smart Fill V2（发布候选）
+
+- 用户目标：修复 AI 偶发返回不完整，并把 AI 填写从机械复述简历升级为“简历提供事实边界，结合岗位和字段语义组织答案”；同时增强常见大厂招聘官网和 ATS 控件适配。
+- 线上根因证据：Vercel 的 `/api/resume/extension-autofill` 日志在 10:29:21 与 10:29:48 出现 `reason: truncated`，返回内容长度分别为 12676 和 12804；同批另有 HTTP 200 请求记录 `discardedMalformed: 1`。偶发不完整同时来自大批次输出截断，以及异常映射被丢弃后仍被旧逻辑当作成功。
+- 实际改动：AI 请求按字段语义和预计输出量拆批，叙述题单独处理；每个字段必须返回 answered/manual/skip，缺项、重复、异常和截断会进入最多两轮定向修复，仍不完整则整次失败并保持页面零写入。请求与响应绑定操作、页面快照和批次身份，过期响应不会写入新页面。简历改为候选人事实知识库，开放题可基于证据归纳、改写和针对岗位组织表达，但不得虚构公司、经历、日期、技能、证书、数字或用户偏好。
+- ATS 适配：支持开放 Shadow DOM、JSON-LD JobPosting、页面 metadata、岗位职责和任职要求提取；供应商画像覆盖 Workday、Greenhouse、Lever、Moka、飞书招聘、北森和大易，公司画像补充字节跳动、腾讯、阿里、京东、美团、百度、拼多多、小红书、网易、哔哩哔哩、小米和华为。
+- 验证：隔离发布树基于 `origin/main@cc909dc`。`npm run typecheck` 通过；`npm test` 171/171；`npm run test:extension` 15/15；`npm run lint` 0 errors、1 条既有 warning；`npm run build -- --webpack` 成功生成 62 个静态页面；`npm run smoke`、`npm run build:extension`、`npm run verify:extension-package` 与 `git diff --check` 通过。安装包 `public/downloads/starjob-resume-assistant-v1.1.0.zip` 为 217465 bytes，SHA-256 `921bfedfce9cb6528cd802a11177b0b4f3589b8160414fb3bac93359a70ffdd2`，包内 12 个文件与扩展源码逐字节一致。`npm audit --omit=dev --audit-level=high` 仍报告依赖链中 8 个无可用修复的已知问题（6 moderate、2 high），本轮没有新增依赖。
+- 边界：本轮不新增数据库、migration、RLS、扩展权限或自动提交。真实第三方 ATS、携带用户真实简历的登录态 AI E2E 和用户设备最终提交仍是独立验收项；封闭 Shadow DOM、跨域 iframe 和复杂级联控件可能继续需要站点专用适配。
+
 ## 2026-09-08 网申助手 1.0.1 P0 回归修复（已上线）
 
 - 用户目标：修复 1.0.0 的三个 P0 回归——第一次触发 AI 时字段处理不完整、四段实习/两段项目被重复填成同一条、起止时间错位；按 `Scan → Semantic Page Model → AI → Resume Resolver → Action Planner → Element Resolver → Executor` 完整链路收紧字段身份，并发布 1.0.1。

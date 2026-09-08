@@ -77,6 +77,11 @@ const FIXTURES = [
     marker: "STARJOB_LATE_HYDRATION_TEST_PASS",
     label: "延迟 hydration 扫描夹具",
   },
+  {
+    path: "/browser-extension/tests/shadow-dom-company-fixture.html",
+    marker: "STARJOB_SHADOW_COMPANY_TEST_PASS",
+    label: "开放 Shadow DOM 与公司画像夹具",
+  },
 ];
 const MIME_TYPES = new Map([
   [".css", "text/css; charset=utf-8"],

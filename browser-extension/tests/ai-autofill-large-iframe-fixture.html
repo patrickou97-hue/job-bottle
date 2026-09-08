@@ -102,7 +102,7 @@
               return results;
             }
 
-            if (completedModelBatches !== 3) fillStartedBeforeAllBatches = true;
+            if (completedModelBatches !== 9) fillStartedBeforeAllBatches = true;
             const frameId = target.frameIds[0];
             const frameCase = FRAME_CASES.find((item) => item.frameId === frameId);
             const frame = document.querySelector(`#${frameCase.id}`);
@@ -160,11 +160,15 @@
           const body = JSON.parse(options.body);
           const requestIndex = modelRequests.length;
           modelRequests.push(body);
-          await new Promise((resolve) => setTimeout(resolve, [25, 5, 15][requestIndex]));
+          await new Promise((resolve) => setTimeout(resolve, [25, 5, 15, 8, 12, 4, 9, 6][requestIndex] || 1));
           completedModelBatches += 1;
           return {
             ok: true,
             json: async () => ({
+              operationId: body.operationId,
+              pageSnapshotId: body.pageSnapshotId,
+              batchId: body.batchId,
+              diagnostics: { complete: true, aiRawMappingCount: body.fields.length, validatedMappingCount: body.fields.length },
               mappings: body.fields.map((field) => {
                 const match = field.fieldKey.match(/^(\d+)::(\d+)::/);
                 return {
@@ -210,11 +214,11 @@
         const passed = actual.analysisCounts.length >= 4
           && actual.analysisCounts.length % 2 === 0
           && actual.analysisCounts.every((count, index) => count === (index % 2 === 0 ? 110 : 30))
-          && actual.modelBatchSizes.join(",") === "50,50,40"
+          && actual.modelBatchSizes.join(",") === "17,17,17,17,17,17,17,17,4"
           && actual.modelFieldCount === 140
           && actual.uniqueModelFieldCount === 140
           && actual.operationCount === 1
-          && actual.completedModelBatches === 3
+          && actual.completedModelBatches === 9
           && actual.fillStartedBeforeAllBatches === false
           && actual.fillFrameCount === 2
           && actual.totalFilled === 140

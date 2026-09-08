@@ -20,6 +20,17 @@
     .replace(/[\s\-_./\\:：,，()（）\[\]【】{}<>《》?？*]+/g, "");
   const asText = (value) => Array.isArray(value) ? value.filter(Boolean).join("；") : String(value ?? "").trim();
   const joinBullets = (value) => Array.isArray(value) ? value.filter(Boolean).join("\n") : "";
+  function getOpenRoots(root = document) {
+    const roots = [root];
+    for (let index = 0; index < roots.length; index += 1) {
+      const current = roots[index];
+      for (const node of current.querySelectorAll?.("*") || []) {
+        if (node.shadowRoot && !roots.includes(node.shadowRoot)) roots.push(node.shadowRoot);
+      }
+    }
+    return roots;
+  }
+  const queryAllRoots = (selector) => getOpenRoots().flatMap((root) => Array.from(root.querySelectorAll?.(selector) || []));
   const content = resume.content;
   const basics = content.basics || {};
   const education = Array.isArray(content.education) ? content.education : [];
@@ -493,7 +504,7 @@
   function getRadioGroupElements(element) {
     if (!(element instanceof HTMLInputElement) || element.type !== "radio") return [];
     if (!element.name) return [element];
-    return Array.from(document.querySelectorAll("input[type='radio']"))
+    return queryAllRoots("input[type='radio']")
       .filter((radio) => radio instanceof HTMLInputElement
         && radio.name === element.name
         && radio.form === element.form
@@ -525,7 +536,7 @@
     }));
     if (nativeOptions.length) return nativeOptions;
     const referencedIds = `${element.getAttribute("aria-controls") || ""} ${element.getAttribute("aria-owns") || ""}`.trim().split(/\s+/).filter(Boolean);
-    const roots = referencedIds.map((id) => document.getElementById(id)).filter(Boolean);
+    const roots = referencedIds.map((id) => queryAllRoots(`[id="${CSS.escape(id)}"]`)[0]).filter(Boolean);
     if (element.getAttribute("aria-expanded") === "true") roots.push(element.parentElement);
     const options = roots.flatMap((root) => Array.from(root?.querySelectorAll?.("[role='option'], [role='treeitem'], [data-value], [data-option-value]") || []))
       .filter((option) => option instanceof HTMLElement && isVisible(option))
@@ -1282,9 +1293,9 @@
     const hostname = window.location.hostname.toLowerCase();
     const pathname = window.location.pathname.toLowerCase();
     const scripts = Array.from(document.scripts).map((script) => script.src || "").filter(Boolean).slice(0, 80);
-    const iframeSources = Array.from(document.querySelectorAll("iframe")).map((frame) => frame.src || "").filter(Boolean).slice(0, 40);
+    const iframeSources = queryAllRoots("iframe").map((frame) => frame.src || "").filter(Boolean).slice(0, 40);
     const bodyMarkers = (document.body?.innerText || "").slice(0, 4_000).toLowerCase();
-    const domMarkers = Array.from(document.querySelectorAll("[data-testid], [data-qa], [class], [id]")).slice(0, 120)
+    const domMarkers = queryAllRoots("[data-testid], [data-qa], [class], [id]").slice(0, 120)
       .map((node) => `${node.id || ""} ${node.getAttribute("data-testid") || ""} ${node.getAttribute("data-qa") || ""} ${node.className || ""}`.slice(0, 180).toLowerCase());
     const rules = [
       { provider: "moka", tests: [() => /app\.mokahr\.com/.test(hostname), () => /mokahr\.com/.test(iframeSources.join(" ")), () => /\/apply\/|campus[_-]?apply|social[_-]?recruitment/.test(pathname), () => /mokahr/.test(scripts.join(" "))] },
@@ -1308,12 +1319,58 @@
         evidence: [hostname, pathname, ...scripts.filter((src) => rule.provider === "moka" ? /moka/ : new RegExp(rule.provider, "i").test(src)).slice(0, 2)],
       };
     }
-    const profiles = [
-      ["bytedance", /bytedance|byte-dance|douyin|tiktok/], ["tencent", /tencent|qq\.com/], ["jd", /zhaopin\.jd|campus\.jd/],
-      ["baidu", /baidu/], ["meituan", /meituan/], ["pdd", /pinduoduo|pdd/], ["alibaba", /alibaba|alibabagroup/], ["xiaohongshu", /xiaohongshu|xhs/],
+    const companyProfiles = [
+      { id: "bytedance", name: "字节跳动", pattern: /字节跳动|bytedance|byte-dance|douyin|tiktok|jobs\.bytedance/, providerHint: "feishu" },
+      { id: "tencent", name: "腾讯", pattern: /腾讯|tencent|joinqq|qq\.com/, providerHint: "generic" },
+      { id: "alibaba", name: "阿里巴巴", pattern: /阿里巴巴|alibaba|alibabagroup|talent\.alibaba/, providerHint: "generic" },
+      { id: "jd", name: "京东", pattern: /京东|zhaopin\.jd|campus\.jd|join\.jd/, providerHint: "moka" },
+      { id: "meituan", name: "美团", pattern: /美团|meituan|zhaopin\.meituan/, providerHint: "moka" },
+      { id: "baidu", name: "百度", pattern: /百度|baidu|talent\.baidu/, providerHint: "generic" },
+      { id: "pdd", name: "拼多多", pattern: /拼多多|pinduoduo|pdd|careers\.pdd/, providerHint: "moka" },
+      { id: "xiaohongshu", name: "小红书", pattern: /小红书|xiaohongshu|xhs|job\.xiaohongshu/, providerHint: "moka" },
+      { id: "netease", name: "网易", pattern: /网易|netease|163\.com|campus\.163/, providerHint: "generic" },
+      { id: "bilibili", name: "哔哩哔哩", pattern: /哔哩哔哩|bilibili|jobs\.bilibili/, providerHint: "generic" },
+      { id: "xiaomi", name: "小米", pattern: /小米|xiaomi|hr\.xiaomi/, providerHint: "feishu" },
+      { id: "huawei", name: "华为", pattern: /华为|huawei|career\.huawei/, providerHint: "generic" },
     ];
-    const company = profiles.find(([, pattern]) => pattern.test(`${hostname} ${pathname} ${bodyMarkers}`))?.[0] || "";
-    return { ...best, company, evidence: best.evidence.slice(0, 6) };
+    const profile = companyProfiles.find((item) => item.pattern.test(`${hostname} ${pathname} ${bodyMarkers}`));
+    if (profile && best.provider === "generic" && profile.providerHint !== "generic") best = { ...best, provider: profile.providerHint, confidence: Math.max(best.confidence, 0.68) };
+    return { ...best, company: profile?.id || "", companyName: profile?.name || "", profileId: profile?.id || "generic", evidence: best.evidence.slice(0, 6) };
+  }
+
+  function extractApplicationContext(provider) {
+    const jsonLd = Array.from(document.querySelectorAll('script[type="application/ld+json"]')).flatMap((script) => {
+      try {
+        const value = JSON.parse(script.textContent || "null");
+        return Array.isArray(value) ? value : [value];
+      } catch { return []; }
+    }).find((item) => item && (item["@type"] === "JobPosting" || item.jobLocation || item.hiringOrganization));
+    const visibleText = (document.body?.innerText || "").replace(/\n{3,}/g, "\n\n").slice(0, 20_000);
+    const meta = (name) => document.querySelector(`meta[name="${name}"], meta[property="${name}"]`)?.getAttribute("content") || "";
+    const stripHtml = (value) => String(value || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+    const sliceSection = (headings) => {
+      const pattern = new RegExp(`(?:^|\\n)(?:${headings.join("|")})[：:]?\\s*([\\s\\S]{0,3000}?)(?=\\n(?:岗位职责|工作职责|职位描述|任职要求|岗位要求|资格要求|加分项|优先条件|申请|投递|$))`, "i");
+      return visibleText.match(pattern)?.[1]?.trim().slice(0, 3000) || "";
+    };
+    const description = stripHtml(jsonLd?.description || meta("description") || meta("og:description")) || visibleText.slice(0, 6000);
+    const locationValue = jsonLd?.jobLocation;
+    const jobLocationText = stripHtml(Array.isArray(locationValue) ? locationValue.map((item) => item?.address?.addressLocality || item?.name).filter(Boolean).join("、") : locationValue?.address?.addressLocality || locationValue?.name || "");
+    const languageProbe = `${jsonLd?.title || ""} ${description}`;
+    const chineseCount = (languageProbe.match(/[\u4e00-\u9fff]/g) || []).length;
+    const latinCount = (languageProbe.match(/[A-Za-z]/g) || []).length;
+    return {
+      company: stripHtml(jsonLd?.hiringOrganization?.name) || provider.companyName || provider.company || "",
+      jobTitle: stripHtml(jsonLd?.title) || meta("og:title") || document.querySelector("h1")?.textContent?.trim() || document.title,
+      jobId: stripHtml(jsonLd?.identifier?.value || jsonLd?.identifier || ""),
+      jobDescription: description.slice(0, 6000),
+      location: jobLocationText.slice(0, 240),
+      responsibilities: sliceSection(["岗位职责", "工作职责", "职位描述", "Responsibilities"]),
+      requirements: sliceSection(["任职要求", "岗位要求", "资格要求", "Requirements", "Qualifications"]),
+      preferredQualifications: sliceSection(["加分项", "优先条件", "Preferred Qualifications"]).slice(0, 2000),
+      recruitingProgram: /校园招聘|校招|campus/i.test(visibleText.slice(0, 4000)) ? "校园招聘" : "",
+      sourceUrl: `${window.location.origin}${window.location.pathname}`,
+      language: chineseCount && latinCount ? "mixed" : chineseCount ? "zh" : latinCount ? "en" : "unknown",
+    };
   }
 
   function getExactStructuredValue(plan) {
@@ -1333,7 +1390,7 @@
   }
 
   if (!aiOnly) {
-    document.querySelectorAll("[data-starjob-filled='true']").forEach((element) => {
+    queryAllRoots("[data-starjob-filled='true']").forEach((element) => {
       element.dataset.starjobPreviouslyFilled = "true";
       element.style.outline = "";
       element.style.outlineOffset = "";
@@ -1353,7 +1410,7 @@
     return true;
   }
 
-  const candidates = Array.from(document.querySelectorAll("input, textarea, select, button, [contenteditable='true'], [role='textbox'], [role='combobox'], [role='radio'], [role='checkbox'], [role='switch'], [role='spinbutton'], [aria-haspopup], [aria-controls], [data-starjob-control], [data-starjob-search-select]"))
+  const candidates = queryAllRoots("input, textarea, select, button, [contenteditable='true'], [role='textbox'], [role='combobox'], [role='radio'], [role='checkbox'], [role='switch'], [role='spinbutton'], [aria-haspopup], [aria-controls], [data-starjob-control], [data-starjob-search-select]")
     .filter((element) => {
       if (!(element instanceof HTMLElement) || !isVisible(element) || !isFieldCandidate(element)) return false;
       if (element instanceof HTMLInputElement) {
@@ -1502,6 +1559,7 @@
   const fieldTraces = extractedFields.map((field) => createFieldTrace(field, plans.find((plan) => plan.fieldKey === field.fieldKey)));
 
   if (analysisOnly) {
+    const provider = detectProvider();
     return {
       scanned: candidates.length,
       identified: plans.filter((plan) => !plan.sensitive && plan.matchedDefinition && plan.bestScore >= 0.74).length,
@@ -1509,7 +1567,8 @@
         .filter((field) => !field.sensitive)
         .map(toAnalysisField),
       formSections: buildFormSections(extractedFields.filter((field) => !field.sensitive)),
-      provider: detectProvider(),
+      provider,
+      applicationContext: extractApplicationContext(provider),
       sensitive: sensitiveCount,
       pipelineDiagnostics: {
         checkpoint: "A",
@@ -1584,7 +1643,7 @@
   async function fillElementSafely(element, value, definition) {
     const elementIdentity = element?.dataset?.starjobFieldId || null;
     const matches = elementIdentity
-      ? Array.from(document.querySelectorAll(`[data-starjob-field-id="${CSS.escape(elementIdentity)}"]`))
+      ? queryAllRoots(`[data-starjob-field-id="${CSS.escape(elementIdentity)}"]`)
       : [];
     const resolvedElement = element?.isConnected ? element : matches.length === 1 ? matches[0] : null;
     const trace = fieldTraces.find((item) => item.elementIdentity === elementIdentity);

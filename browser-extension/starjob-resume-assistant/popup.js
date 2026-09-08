@@ -2,7 +2,9 @@ const STARJOB_HOME = "https://www.starjob.space";
 const SMART_MATCH_TIMEOUT_MS = 9_000;
 const SMART_MATCH_MAX_FIELDS = 12;
 const AI_AUTOFILL_TIMEOUT_MS = 85_000;
-const AI_AUTOFILL_BATCH_SIZE = 50;
+const AI_AUTOFILL_BATCH_FIELD_LIMIT = 18;
+const AI_AUTOFILL_BATCH_BUDGET = 1_700;
+const AI_AUTOFILL_MAX_BATCHES = 15;
 const AI_AUTOFILL_MAX_FIELDS = 750;
 const CONFIRM_WINDOW_MS = 8_000;
 const STORAGE_KEYS = ["starjobResumes", "activeResumeId", "fillMode", "lastSyncedAt", "matchToken", "matchTokenExpiresAt", "aiMatchingAvailable", "analysisOnly", "aiOnly", "aiFieldMappings", "aiAutofillOnly", "aiValueMappings"];
@@ -45,6 +47,7 @@ let activeFillAbortController = null;
 let progressStartedAt = 0;
 let progressClockTimer = null;
 let lastProgressAnnouncement = "";
+let activeAiOperationId = null;
 
 const progressDefaults = {
   extract: "等待开始",
@@ -251,7 +254,47 @@ function createOperationId() {
   return `${hex.slice(0, 4).join("")}-${hex.slice(4, 6).join("")}-${hex.slice(6, 8).join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10).join("")}`;
 }
 
-async function requestAiAutofillBatch({ batch, resume, token, operationId, taskSignal, formSections, applicationContext }) {
+function isNarrativeField(field) {
+  return /描述|介绍|评价|优势|胜任|动机|为什么|职业规划|申请原因|description|summary|profile|motivation|why|strength|career/i
+    .test(`${field.label || ""} ${field.accessibleName || ""} ${field.context || ""}`);
+}
+
+function estimateFieldOutputCost(field) {
+  if (isNarrativeField(field)) return 850;
+  if (["textarea", "contenteditable"].includes(field.inputType)) return 360;
+  if (Array.isArray(field.options) && field.options.length > 12) return 180;
+  return 95;
+}
+
+function buildSemanticAiBatches(fields) {
+  const batches = [];
+  let current = [];
+  let budget = 0;
+  let groupKey = "";
+  const flush = () => {
+    if (current.length) batches.push(current);
+    current = [];
+    budget = 0;
+    groupKey = "";
+  };
+  for (const field of fields) {
+    const nextGroup = `${field.sectionType || "generic"}:${field.pageRecordId || (field.recordIndex ?? "-")}`;
+    const cost = estimateFieldOutputCost(field);
+    if (isNarrativeField(field)) {
+      flush();
+      batches.push([field]);
+      continue;
+    }
+    if (current.length && (current.length >= AI_AUTOFILL_BATCH_FIELD_LIMIT || budget + cost > AI_AUTOFILL_BATCH_BUDGET || (groupKey && groupKey !== nextGroup && current.length >= 8))) flush();
+    current.push(field);
+    budget += cost;
+    groupKey = groupKey || nextGroup;
+  }
+  flush();
+  return batches;
+}
+
+async function requestAiAutofillBatch({ batch, resume, token, operationId, pageSnapshotId, batchId, taskSignal, formSections, applicationContext }) {
   const controller = new AbortController();
   const cancelFromTask = () => controller.abort(taskSignal.reason || "cancelled");
   taskSignal.addEventListener("abort", cancelFromTask, { once: true });
@@ -260,12 +303,16 @@ async function requestAiAutofillBatch({ batch, resume, token, operationId, taskS
     const response = await fetch(`${STARJOB_HOME}/api/resume/extension-autofill`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ resume, fields: batch, formSections, applicationContext, operationId }),
+      body: JSON.stringify({ resume, fields: batch, formSections, applicationContext, operationId, pageSnapshotId, batchId }),
       cache: "no-store",
       signal: controller.signal,
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(payload.error || "AI 智能填写暂时不可用");
+    if (payload.operationId && payload.operationId !== operationId) throw new Error("AI 操作已过期，请重新开始填写");
+    if (payload.pageSnapshotId && payload.pageSnapshotId !== pageSnapshotId) throw new Error("页面已变化，请重新扫描后填写");
+    if (payload.batchId && payload.batchId !== batchId) throw new Error("AI 批次已过期，请重新开始填写");
+    if (payload?.diagnostics?.complete !== true) throw new Error("AI 返回内容不完整，未写入页面");
     return payload;
   } finally {
     window.clearTimeout(timeout);
@@ -523,6 +570,7 @@ async function fillCurrentPage() {
     return;
   }
   const taskController = new AbortController();
+  let taskOperationId = null;
   activeFillAbortController = taskController;
   elements.fillButton.disabled = fillMode !== "ai";
   elements.fillButton.textContent = fillMode === "ai" ? "停止本次智能填写" : "正在逐项分析";
@@ -631,19 +679,25 @@ async function fillCurrentPage() {
       let validatedMappingCount = 0;
       const sanitizedResume = sanitizeResumeForAi(selectedResume, fields);
       const pageUrl = new URL(tab.url);
+      const extractedApplicationContext = analyses.find((entry) => entry.result?.applicationContext)?.result?.applicationContext || {};
       const applicationContext = {
-        company: analyses[0]?.result?.provider?.company || pageUrl.hostname.replace(/^www\./, ""),
-        jobTitle: tab.title || "",
+        ...extractedApplicationContext,
+        company: extractedApplicationContext.company || analyses[0]?.result?.provider?.company || pageUrl.hostname.replace(/^www\./, ""),
+        jobTitle: extractedApplicationContext.jobTitle || tab.title || "",
         sourceUrl: `${pageUrl.origin}${pageUrl.pathname}`,
         provider: analyses[0]?.result?.provider?.provider || "generic",
         providerConfidence: analyses[0]?.result?.provider?.confidence || 0,
       };
-      const batches = [];
-      for (let index = 0; index < fields.length; index += AI_AUTOFILL_BATCH_SIZE) {
-        batches.push(fields.slice(index, index + AI_AUTOFILL_BATCH_SIZE));
+      await chrome.storage.local.set({ starjobApplicationSession: { ...applicationContext, capturedAt: new Date().toISOString() } });
+      const batches = buildSemanticAiBatches(fields);
+      if (batches.length > AI_AUTOFILL_MAX_BATCHES) {
+        throw new Error(`当前页面需要拆分为 ${batches.length} 个 AI 批次，超过安全上限。请分步骤填写或收起部分表单区块后重试。`);
       }
       const totalTaskUnits = batches.length + 3;
       const operationId = createOperationId();
+      taskOperationId = operationId;
+      const pageSnapshotId = createOperationId();
+      activeAiOperationId = operationId;
       const sectionsForBatch = (batch) => {
         const keys = new Set(batch.map((field) => field.fieldKey));
         return formSections.map((section) => ({
@@ -651,35 +705,38 @@ async function fillCurrentPage() {
           fieldKeys: (section.fieldKeys || []).filter((fieldKey) => keys.has(fieldKey)),
         })).filter((section) => section.fieldKeys.length > 0);
       };
-      updateTaskProgress(1, totalTaskUnits, `已拆分为 ${batches.length} 批，正在并行分析`);
+      updateTaskProgress(1, totalTaskUnits, `已按表单结构拆分为 ${batches.length} 批，正在依次分析`);
       let completedBatches = 0;
-      const payloads = await Promise.all(batches.map(async (batch) => {
-        try {
-          const payload = await requestAiAutofillBatch({
-            batch,
-            resume: sanitizedResume,
-            token: stored.matchToken,
-            operationId,
-            taskSignal: taskController.signal,
-            formSections: sectionsForBatch(batch),
-            applicationContext,
-          });
-          completedBatches += 1;
-          updateProgress("match", "loading", `已完成 ${completedBatches}/${batches.length} 批，全部成功后再填写页面`);
-          updateTaskProgress(1 + completedBatches, totalTaskUnits, `已完成 ${completedBatches}/${batches.length} 批字段分析`);
-          return payload;
-        } catch (error) {
-          if (!taskController.signal.aborted) taskController.abort("batch_failed");
-          throw error;
-        }
-      }));
+      const payloads = [];
+      for (let index = 0; index < batches.length; index += 1) {
+        const batch = batches[index];
+        throwIfAborted(taskController.signal);
+        if (activeAiOperationId !== operationId) throw new DOMException("Stale operation", "AbortError");
+        const batchId = createOperationId();
+        const payload = await requestAiAutofillBatch({
+          batch,
+          resume: sanitizedResume,
+          token: stored.matchToken,
+          operationId,
+          pageSnapshotId,
+          batchId,
+          taskSignal: taskController.signal,
+          formSections: sectionsForBatch(batch),
+          applicationContext,
+        });
+        if (activeAiOperationId !== operationId) throw new DOMException("Stale operation", "AbortError");
+        payloads.push(payload);
+        completedBatches += 1;
+        updateProgress("match", "loading", `已完成 ${completedBatches}/${batches.length} 批，全部确认后再填写页面`);
+        updateTaskProgress(1 + completedBatches, totalTaskUnits, `已完成 ${completedBatches}/${batches.length} 批字段分析`);
+      }
       const acceptPayload = (payload) => {
         aiRawMappingCount += Number(payload?.diagnostics?.aiRawMappingCount || 0);
         validatedMappingCount += Number(payload?.diagnostics?.validatedMappingCount || 0);
         for (const mapping of payload.mappings || []) {
           if (mapping?.fieldKey && typeof mapping.value === "string" && mapping.value.trim()
             && !["manual", "skip"].includes(mapping.action)
-            && ["resume", "derived", "grounded_generation"].includes(mapping.basis) && Number(mapping.confidence) >= 0.82) {
+            && ["resume", "exact_fact", "normalized_fact", "derived", "semantic_inference", "grounded_generation", "user_preference"].includes(mapping.basis) && Number(mapping.confidence) >= 0.82) {
             aiValueMappings[mapping.fieldKey] = {
               value: mapping.value.trim(),
               displayValue: typeof mapping.displayValue === "string" ? mapping.displayValue.trim() : null,
@@ -697,27 +754,10 @@ async function fillCurrentPage() {
         }
       };
       for (const payload of payloads) acceptPayload(payload);
-
-      const missingDeterministicFields = fields.filter((field) => (
-        field.deterministicKey
-        && Number(field.deterministicConfidence) >= 0.9
-        && !aiValueMappings[field.fieldKey]
-      ));
-      if (missingDeterministicFields.length > 0 && batches.length < 15) {
-        const retryBatch = missingDeterministicFields.slice(0, 100);
-        updateProgress("match", "loading", `正在补齐首次遗漏的 ${retryBatch.length} 个字段`);
-        const retryPayload = await requestAiAutofillBatch({
-          batch: retryBatch,
-          resume: sanitizedResume,
-          token: stored.matchToken,
-          operationId,
-          taskSignal: taskController.signal,
-          formSections: sectionsForBatch(retryBatch),
-          applicationContext,
-        });
-        acceptPayload(retryPayload);
-      }
       console.info("[starjob_pipeline_checkpoint_B_C]", {
+        operationId,
+        pageSnapshotId,
+        batchCount: batches.length,
         aiPayloadFieldCount: fields.length,
         aiRawMappingCount,
         validatedMappingCount,
@@ -871,6 +911,7 @@ async function fillCurrentPage() {
     await chrome.storage.local.remove(["analysisOnly", "aiOnly", "aiFieldMappings", "aiAutofillOnly", "aiValueMappings"]);
     stopProgressClock();
     if (activeFillAbortController === taskController) activeFillAbortController = null;
+    if (taskOperationId && activeAiOperationId === taskOperationId) activeAiOperationId = null;
     elements.fillButton.disabled = false;
     resetOverwriteConfirmation();
   }

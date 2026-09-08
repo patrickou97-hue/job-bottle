@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>小米校园招聘</title>
+    <script type="application/ld+json">
+      {"@context":"https://schema.org","@type":"JobPosting","title":"数据分析实习生","description":"负责业务指标分析。任职要求：熟悉 SQL 和 Excel。","hiringOrganization":{"name":"小米"},"jobLocation":{"name":"北京"},"identifier":{"value":"MI-2027-01"}}
+    </script>
+    <style>body { font-family: sans-serif; padding: 24px; } input, textarea { width: 320px; min-height: 32px; }</style>
+  </head>
+  <body>
+    <h1>小米校园招聘 · 数据分析实习生</h1>
+    <p>岗位职责：负责业务指标分析与复盘。</p>
+    <p>任职要求：熟悉 SQL 和 Excel。</p>
+    <shadow-application></shadow-application>
+    <pre id="result">pending</pre>
+    <script>
+      const host = document.querySelector("shadow-application");
+      const root = host.attachShadow({ mode: "open" });
+      root.innerHTML = `
+        <section><h2>基本信息</h2><label>姓名 <input id="shadow-name" aria-label="姓名" /></label></section>
+        <section><h2>开放问题</h2><label>个人优势 <textarea id="shadow-strength" aria-label="个人优势"></textarea></label></section>`;
+      const resume = {
+        id: "shadow-resume", title: "数据分析版", targetRole: "数据分析",
+        content: {
+          basics: { name: "王睿", targetRole: "数据分析", phone: "", email: "", city: "", birthDate: "", gender: "", nationality: "", preferredLocations: "北京" },
+          education: [], work: [{ experienceType: "internship", company: "示例公司", title: "数据分析实习生", startDate: "2026-01", endDate: "2026-03", bullets: ["使用 SQL 和 Excel 分析业务指标"] }],
+          projects: [], skills: [{ category: "数据", skills: ["SQL", "Excel"] }], campus: [], awards: [], certifications: [], languages: [], customSections: [],
+        },
+      };
+      const storage = { starjobResumes: [resume], activeResumeId: resume.id, fillMode: "ai", analysisOnly: true, aiOnly: false, aiFieldMappings: {}, aiAutofillOnly: false, aiValueMappings: {} };
+      window.chrome = { storage: { local: { get: async () => ({ ...storage }) } } };
+
+      async function runFixture() {
+        const fillSource = await fetch("../starjob-resume-assistant/fill.js").then((response) => response.text());
+        const analysis = await window.eval(fillSource);
+        const nameField = analysis.fields.find((field) => field.attributes.includes("shadow-name"));
+        const strengthField = analysis.fields.find((field) => field.attributes.includes("shadow-strength"));
+        storage.aiValueMappings[nameField.fieldKey] = { value: "王睿", confidence: 0.99, basis: "exact_fact" };
+        storage.aiValueMappings[strengthField.fieldKey] = { value: "我能结合 SQL 与 Excel 梳理业务指标，并用结构化分析支持复盘。", confidence: 0.95, basis: "grounded_generation" };
+        storage.analysisOnly = false;
+        storage.aiAutofillOnly = true;
+        const summary = await window.eval(fillSource);
+        const actual = {
+          name: root.querySelector("#shadow-name").value,
+          strength: root.querySelector("#shadow-strength").value,
+          provider: analysis.provider,
+          applicationContext: analysis.applicationContext,
+          summary,
+        };
+        const passed = actual.name === "王睿"
+          && actual.strength.includes("SQL")
+          && actual.provider.company === "xiaomi"
+          && actual.provider.provider === "feishu"
+          && actual.applicationContext.jobTitle === "数据分析实习生"
+          && actual.applicationContext.company === "小米"
+          && actual.applicationContext.jobId === "MI-2027-01"
+          && actual.applicationContext.location === "北京";
+        document.querySelector("#result").textContent = JSON.stringify({ passed, actual });
+        document.title = passed ? "STARJOB_SHADOW_COMPANY_TEST_PASS" : "STARJOB_SHADOW_COMPANY_TEST_FAIL";
+      }
+      runFixture().catch((error) => {
+        document.querySelector("#result").textContent = JSON.stringify({ passed: false, error: String(error) });
+        document.title = "STARJOB_SHADOW_COMPANY_TEST_FAIL";
+      });
+    </script>
+  </body>
+</html>

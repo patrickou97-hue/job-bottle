@@ -1185,7 +1185,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "browser-extension/starjob-resume-assistant/manifest.json",
-    mustInclude: ["\"manifest_version\": 3", "\"version\": \"1.0.1\"", "\"activeTab\"", "\"scripting\"", "\"storage\"", "https://www.starjob.space/extension*", "https://www.starjob.space/*"],
+    mustInclude: ["\"manifest_version\": 3", "\"version\": \"1.1.0\"", "\"activeTab\"", "\"scripting\"", "\"storage\"", "https://www.starjob.space/extension*", "https://www.starjob.space/*"],
     mustNotInclude: ["\"cookies\"", "\"tabs\"", "<all_urls>", "localhost", "nowcoder", "牛客"],
     label: "拾星网申助手使用 Manifest V3 和用户触发的最小权限",
   },
@@ -1215,7 +1215,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/resume/extension-autofill/route.ts",
-    mustInclude: ["export const maxDuration = 90", "preferredRegion = \"hkg1\"", "REQUEST_TIMEOUT_MS = 75_000", "verifyExtensionMatchToken", "takeExtensionAutofillRateSlot", "DEEPSEEK_API_KEY", "DEEPSEEK_BASE_URL", "DEEPSEEK_MODEL", "https://api.deepseek.com", "deepseek-v4-flash", "thinking: { type: \"disabled\" }", "REQUEST_TIMEOUT_MS", "MIN_CONFIDENCE", "operationId", "rateSlotAllowed", "response_format", "json_object", "resumeSchema", "fieldSchema", "resultSchema", "basis", "derived", "recordIndex", "deriveRecordDateValue", "deriveRecordDescriptionValue", "getScopedFieldFacts", "hasFieldSpecificResumeBasis", "isEducationDescriptionField", "必须以第一人称“我”开头", "责任心强、执行力强", "沟通能力强、善于协作", "经历描述”本身绝不等同于自我描述", "只要存在课程、荣誉或职责内容就必须填写经历描述", "严禁交换开始和结束日期", "normalizeChoice", "field.options.some", "returnedByKey", "discardedUnknown", "discardedDuplicate", "fieldKey: `f${index}`", "originalFields", "collectResumeFacts", "collectResumeSummaryFacts", "hasResumeBasis", "isAllowedDerivedValue", "isSafeResumeSummary", "basics.birthDate", "自我描述", "deriveGraduationValue", "parseYearMonth", "不可信文本", "唯一事实来源", "从上到下逐字段处理", "中文姓名的无声调汉语拼音", "不得推断或填写身份证", "不得代答开放性申请题", "options 中已有", "所有能由简历明确回答的安全字段都应填写", "服务端会丢弃不安全、低置信度或无证据的映射", "Wang Xiaoxing", "Cache-Control", "no-store"],
+    mustInclude: ["export const maxDuration = 90", "preferredRegion = \"hkg1\"", "REQUEST_TIMEOUT_MS = 75_000", "verifyExtensionMatchToken", "takeExtensionAutofillRateSlot", "DEEPSEEK_API_KEY", "DEEPSEEK_BASE_URL", "DEEPSEEK_MODEL", "https://api.deepseek.com", "deepseek-v4-flash", "thinking: { type: \"disabled\" }", "REQUEST_TIMEOUT_MS", "MIN_CONFIDENCE", "MAX_REPAIR_PASSES = 2", "operationId", "pageSnapshotId", "batchId", "rateSlotAllowed", "response_format", "json_object", "resumeSchema", "fieldSchema", "resultSchema", "outcomes", "semantic_inference", "grounded_generation", "recordIndex", "deriveRecordDateValue", "deriveRecordDescriptionValue", "getScopedFieldFacts", "hasFieldSpecificResumeBasis", "isEducationDescriptionField", "简历是候选人的事实与能力证据", "允许重写、归纳、翻译和有证据的语义推断", "职位上下文只能决定表达重点", "只要存在课程、荣誉或职责内容就必须填写经历描述", "严禁交换开始和结束日期", "normalizeChoice", "field.options.some", "returnedByKey", "discardedUnknown", "discardedDuplicate", "discardedMalformed", "fieldKey: `f${index}`", "originalFields", "collectResumeFacts", "collectResumeSummaryFacts", "hasResumeBasis", "isAllowedDerivedValue", "isSafeResumeSummary", "basics.birthDate", "自我描述", "deriveGraduationValue", "parseYearMonth", "不可信文本", "中文姓名的无声调汉语拼音", "不得推断或填写身份证", "可以回答有事实证据的开放申请题", "每个 fieldKey 必须恰好返回一个 outcome", "不能填写时返回 manual 或 skip", "Wang Xiaoxing", "Cache-Control", "no-store"],
     mustNotInclude: ["MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL", "createAdminClient", "SUPABASE_SERVICE_ROLE_KEY", "document.cookie", "console.log"],
     label: "AI 智能填写使用受限令牌、结构化简历白名单和全表单保守规则调用 DeepSeek V4 Flash",
   },
@@ -1233,7 +1233,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "browser-extension/starjob-resume-assistant/popup.js",
-    mustInclude: ["正在读取可见表单字段", "analysisOnly", "aiOnly", "extension-match", "extension-autofill", "matchToken", "智能复核", "AI 智能填写", "会从页面顶部开始按每条记录和字段顺序逐项填写", "AI_AUTOFILL_TIMEOUT_MS = 85_000", "AI_AUTOFILL_BATCH_SIZE = 50", "AI_AUTOFILL_MAX_FIELDS = 750", "AI 单批分析超过 85 秒", "batches.push(fields.slice", "Promise.all", "所有批次成功后", "表单字段过多，未开始填写", "本次未调用 AI，也没有改动页面", "sanitizeResumeForAi", "includeBirthDate", "basics.birthDate", "basics.gender", "basics.nationality", "basics.preferredLocations", "experienceType", "url: text(item.url", "aiValueMappings", "SMART_MATCH_TIMEOUT_MS", "SMART_MATCH_MAX_FIELDS = 12", "deterministicConfidence", "AbortController", "activeFillAbortController", "updateTaskProgress", "停止本次智能填写", "正在安全写入页面", "立即填写", "后台复核", "aiFieldMappings", "qualifyFrameFieldKey", "executeMappedFillByFrame", "sourceFieldKey", "operationId", "部分未完成", "CONFIRM_WINDOW_MS", "再次点击，确认覆盖并填写", "再次点击确认清除", "unmatchedFields", "friendlyFillError", "扩展与当前页面的连接已失效"],
+    mustInclude: ["正在读取可见表单字段", "analysisOnly", "aiOnly", "extension-match", "extension-autofill", "matchToken", "智能复核", "AI 智能填写", "会从页面顶部开始按每条记录和字段顺序逐项填写", "AI_AUTOFILL_TIMEOUT_MS = 85_000", "AI_AUTOFILL_BATCH_FIELD_LIMIT = 18", "AI_AUTOFILL_BATCH_BUDGET = 1_700", "AI_AUTOFILL_MAX_BATCHES = 15", "AI_AUTOFILL_MAX_FIELDS = 750", "AI 单批分析超过 85 秒", "buildSemanticAiBatches", "for (let index = 0; index < batches.length; index += 1)", "所有批次成功后", "diagnostics?.complete !== true", "pageSnapshotId", "batchId", "表单字段过多，未开始填写", "本次未调用 AI，也没有改动页面", "sanitizeResumeForAi", "includeBirthDate", "basics.birthDate", "basics.gender", "basics.nationality", "basics.preferredLocations", "experienceType", "url: text(item.url", "applicationContext", "aiValueMappings", "SMART_MATCH_TIMEOUT_MS", "SMART_MATCH_MAX_FIELDS = 12", "deterministicConfidence", "AbortController", "activeFillAbortController", "updateTaskProgress", "停止本次智能填写", "正在安全写入页面", "立即填写", "后台复核", "aiFieldMappings", "qualifyFrameFieldKey", "executeMappedFillByFrame", "sourceFieldKey", "operationId", "部分未完成", "CONFIRM_WINDOW_MS", "再次点击，确认覆盖并填写", "再次点击确认清除", "unmatchedFields", "friendlyFillError", "扩展与当前页面的连接已失效"],
     mustNotInclude: ["MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL", "SUPABASE_SERVICE_ROLE_KEY", "document.cookie"],
     label: "扩展按字段提取、智能匹配、逐项填写和未填整理四阶段执行",
   },
@@ -1269,15 +1269,15 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/extension/ExtensionHubClient.tsx",
-    mustInclude: ["<span className=\"block\">一份简历，</span>", "<span className=\"block\">抵达更多坐标</span>", "把拾星简历同步到浏览器，在网申页面填写常用字段；你负责核对与提交。", "starjob-extension-paper-planes.png", "多架纸飞机沿不同虚线轨迹飞向远方", "查看安装教程", "安装后重新检测", "window.location.reload()", "LEGACY_COMPATIBLE_VERSIONS", "SHORT_TIMEOUT_AI_VERSIONS", "PREVIOUS_AI_VERSIONS", "new Set([\"0.1.7\", \"0.1.8\", \"0.1.9\"])", "new Set([\"0.2.0\"])", "\"1.0.0\"", "AI 智能填写需要升级到 1.0.1"],
+    mustInclude: ["<span className=\"block\">一份简历，</span>", "<span className=\"block\">抵达更多坐标</span>", "把拾星简历同步到浏览器，在网申页面填写常用字段；你负责核对与提交。", "starjob-extension-paper-planes.png", "多架纸飞机沿不同虚线轨迹飞向远方", "查看安装教程", "安装后重新检测", "window.location.reload()", "LEGACY_COMPATIBLE_VERSIONS", "SHORT_TIMEOUT_AI_VERSIONS", "PREVIOUS_AI_VERSIONS", "new Set([\"0.1.7\", \"0.1.8\", \"0.1.9\"])", "new Set([\"0.2.0\"])", "\"1.0.0\", \"1.0.1\"", "AI 智能填写需要升级到 1.1.0"],
     mustNotInclude: ["获取安装包", "DOWNLOAD_URL", "/downloads/starjob-resume-assistant-v0.2.8.zip", "一份简历，投向更多可能", "常见网申字段按页面顺序填入", "你只需检查，再决定提交", "简历写一次，网申少重复", "请升级到 0.1.8", "extensionVersion !==", "starjob-resume-assistant-popup.png", "https://pan.baidu.com/s/1q9gVenToSLL5x5tXZzYLig?pwd=SXZS", "https://pan.baidu.com/s/13sk2UUdep9S1zoJdEk_sSA?pwd=SXZS", "https://pan.baidu.com/s/1jl_OHVc_HxXbUrI1-IS56g?pwd=SXZS"],
     label: "网申助手首屏使用更克制的价值表达与纸飞机线稿引导",
   },
   {
     file: "src/components/extension/ExtensionGuide.tsx",
-    mustInclude: ["/downloads/starjob-resume-assistant-v1.0.1.zip", "下载 1.0.1 安装包", "当前版本 1.0.1", "下载后请完整解压。1.0.1 会先稳定扫描页面", "只填写你在拾星简历中明确保存的内容", "安装后刷新检测", "步骤 {String(index + 1).padStart(2, \"0\")}"],
+    mustInclude: ["/downloads/starjob-resume-assistant-v1.1.0.zip", "下载 1.1.0 安装包", "当前版本 1.1.0", "下载后请完整解压。1.1.0 会先稳定扫描页面", "AI 可以基于简历证据归纳表达", "安装后刷新检测", "步骤 {String(index + 1).padStart(2, \"0\")}"],
     mustNotInclude: ["获取安装包", "pan.baidu.com", "百度网盘提取码", "最新版本 0.1.9", "starjob-resume-assistant-popup-v026.png"],
-    label: "网申助手下载页与安装教程共用 1.0.1 官网安装包",
+    label: "网申助手下载页与安装教程共用 1.1.0 官网安装包",
   },
   {
     file: "scripts/build_resume_extension.mjs",
@@ -1387,6 +1387,7 @@ const REQUIRED_FILES = [
   "public/downloads/starjob-resume-assistant-v0.2.7.zip",
   "public/downloads/starjob-resume-assistant-v0.2.8.zip",
   "public/downloads/starjob-resume-assistant-v1.0.1.zip",
+  "public/downloads/starjob-resume-assistant-v1.1.0.zip",
   "browser-extension/starjob-resume-assistant/assets/icon16.png",
   "browser-extension/starjob-resume-assistant/assets/icon48.png",
   "browser-extension/starjob-resume-assistant/assets/icon128.png",

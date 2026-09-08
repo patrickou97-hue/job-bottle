@@ -66,11 +66,11 @@ test("新版批次共享操作额度且旧版请求保持兼容", () => {
   assert.match(popup, /const operationId = createOperationId\(\)/);
   assert.match(popup, /typeof crypto\.randomUUID === "function"/);
   assert.match(popup, /crypto\.getRandomValues\(new Uint8Array\(16\)\)/);
-  assert.match(popup, /JSON\.stringify\(\{ resume, fields: batch, formSections, applicationContext, operationId \}\)/);
+  assert.match(popup, /JSON\.stringify\(\{ resume, fields: batch, formSections, applicationContext, operationId, pageSnapshotId, batchId \}\)/);
   assert.match(route, /operationId:\s*z\.string\(\)\.uuid\(\)\.optional\(\)/);
   assert.match(route, /await takeExtensionAutofillRateSlot\(tokenPayload\.sub, parsed\.data\.operationId\)/);
   assert.match(rateLimitHelper, /p_operation_id:\s*operationId \?\? randomUUID\(\)/);
-  assert.match(route, /request\.signal\.addEventListener\("abort", abortForClientDisconnect/);
+  assert.match(route, /input\.requestSignal\.addEventListener\("abort", abortForClientDisconnect/);
   assert.doesNotMatch(route, /__starjobExtensionAutofillRate|operations:\s*new Map/);
   assert.match(durableRateMigration, /pg_advisory_xact_lock/);
   assert.match(durableRateMigration, /extension_autofill_rate_batches/);
@@ -88,22 +88,29 @@ test("新版批次共享操作额度且旧版请求保持兼容", () => {
   assert.match(durableRateMigration, /grant execute on function public\.take_extension_autofill_rate_slot\(uuid, uuid\) to service_role/);
 });
 
-test("AI 智能填写完整处理 750 字段并在超限时先于模型调用停止", () => {
-  assert.match(popup, /const AI_AUTOFILL_BATCH_SIZE = 50/);
+test("AI 智能填写按语义和输出预算分批，完整处理 750 字段并拦截陈旧响应", () => {
+  assert.match(popup, /const AI_AUTOFILL_BATCH_FIELD_LIMIT = 18/);
+  assert.match(popup, /const AI_AUTOFILL_BATCH_BUDGET = 1_700/);
+  assert.match(popup, /const AI_AUTOFILL_MAX_BATCHES = 15/);
   assert.match(popup, /const AI_AUTOFILL_MAX_FIELDS = 750/);
   assert.doesNotMatch(fill, /\.filter\(\(field\) => !field\.sensitive\)\s*\.slice\(0, 100\)/);
   assert.doesNotMatch(popup, /\)\)\.slice\(0, 100\)/);
   assert.match(popup, /fields\.length > AI_AUTOFILL_MAX_FIELDS/);
   assert.match(popup, /检测到 \$\{fields\.length\} 个安全字段，单页上限为 \$\{AI_AUTOFILL_MAX_FIELDS\} 个/);
   assert.match(popup, /本次未调用 AI，也没有改动页面/);
-  assert.match(popup, /for \(let index = 0; index < fields\.length; index \+= AI_AUTOFILL_BATCH_SIZE\)/);
-  assert.match(popup, /const payloads = await Promise\.all\(batches\.map/);
+  assert.match(popup, /function buildSemanticAiBatches\(fields\)/);
+  assert.match(popup, /if \(isNarrativeField\(field\)\)/);
+  assert.match(popup, /for \(let index = 0; index < batches\.length; index \+= 1\)/);
+  assert.match(popup, /batches\.length > AI_AUTOFILL_MAX_BATCHES/);
+  assert.doesNotMatch(popup, /const payloads = await Promise\.all\(batches\.map/);
+  assert.match(popup, /activeAiOperationId !== operationId/);
+  assert.match(popup, /payload\.pageSnapshotId !== pageSnapshotId/);
 
   const limitCheckIndex = popup.indexOf('fields.length > AI_AUTOFILL_MAX_FIELDS');
   const operationIdIndex = popup.indexOf('const operationId = createOperationId()');
   const modelCallIndex = popup.indexOf('const payload = await requestAiAutofillBatch({');
   const writeIndex = popup.indexOf('const aiFill = await executeMappedFillByFrame({');
-  const allBatchesIndex = popup.indexOf('const payloads = await Promise.all');
+  const allBatchesIndex = popup.indexOf('for (let index = 0; index < batches.length; index += 1)');
   assert.ok(limitCheckIndex >= 0 && limitCheckIndex < operationIdIndex, "750 字段检查必须早于创建模型操作");
   assert.ok(limitCheckIndex < modelCallIndex, "750 字段检查必须早于模型调用");
   assert.ok(allBatchesIndex >= 0 && allBatchesIndex < writeIndex, "必须等待全部模型批次成功后才写入页面");
@@ -131,7 +138,7 @@ test("常见网申字段按实习范围和安全边界处理", () => {
   assert.match(route, /recordScope=internship/);
 });
 
-test("1.0.1 使用记录身份、稳定扫描、动态控件和可追溯生成", () => {
+test("1.1.0 使用记录身份、稳定扫描、动态控件和可追溯生成", () => {
   assert.match(fill, /function detectProvider\(\)/);
   assert.match(fill, /data-starjob-field-id/);
   assert.match(fill, /`field-ordinal:\$\{index\}`/);
@@ -147,7 +154,7 @@ test("1.0.1 使用记录身份、稳定扫描、动态控件和可追溯生成",
   assert.match(popup, /async function scanStableForm/);
   assert.match(popup, /analysisFingerprint/);
   assert.match(popup, /字段身份发生冲突，本次未写入页面/);
-  assert.match(popup, /missingDeterministicFields/);
+  assert.match(route, /missingAfterRepair/);
   assert.match(popup, /sectionsForBatch/);
   assert.match(route, /grounded_generation/);
   assert.match(route, /evidence/);
@@ -173,8 +180,21 @@ test("AI 返回的可忽略格式差异不会让整批安全字段失败", () =>
   assert.match(route, /normalizeJsonCandidate\(content\)/);
   assert.match(route, /discardedMalformed/);
   assert.match(route, /finish_reason\?: string \| null/);
-  assert.match(route, /finish_reason === "length"/);
-  assert.match(route, /不能填写的字段可以省略/);
-  assert.match(route, /服务端会安全补成空映射/);
+  assert.match(route, /finishReason === "length"/);
+  assert.match(route, /每个输入 fieldKey 恰好出现一次/);
+  assert.match(route, /MAX_REPAIR_PASSES = 2/);
+  assert.match(route, /extension_autofill_model_trace/);
+  assert.match(route, /extension_autofill_incomplete_contract/);
   assert.match(route, /只返回 JSON/);
+});
+
+test("Smart Fill V2 使用候选人知识库、申请上下文与公司适配配置", () => {
+  assert.match(route, /简历是候选人的事实与能力证据，不是需要逐字复制的答案库/);
+  assert.match(route, /semantic_inference/);
+  assert.match(route, /user_preference/);
+  assert.match(fill, /function getOpenRoots/);
+  assert.match(fill, /function extractApplicationContext/);
+  for (const company of ["bytedance", "tencent", "alibaba", "jd", "meituan", "baidu", "pdd", "xiaohongshu", "netease", "bilibili", "xiaomi", "huawei"]) {
+    assert.match(fill, new RegExp(`id: "${company}"`));
+  }
 });

@@ -123,6 +123,10 @@
           return {
             ok: true,
             json: async () => ({
+              operationId: body.operationId,
+              pageSnapshotId: body.pageSnapshotId,
+              batchId: body.batchId,
+              diagnostics: { complete: true, aiRawMappingCount: body.fields.length, validatedMappingCount: body.fields.length },
               mappings: body.fields.map((field) => ({
                 fieldKey: field.fieldKey,
                 value: "来自简历的测试值",
@@ -146,7 +150,7 @@
           text: document.querySelector("#resultText").textContent,
           summaryText: document.querySelector('[data-step="summary"] p').textContent,
         };
-        const passed = actual.modelCalls === 3
+        const passed = actual.modelCalls === 2
           && actual.pageWriteCalls === 0
           && actual.title === "本次填写未完成"
           && actual.text === "模拟批次失败"
