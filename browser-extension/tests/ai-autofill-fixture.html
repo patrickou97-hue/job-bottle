@@ -133,15 +133,17 @@
         storage.analysisOnly = false;
         storage.aiAutofillOnly = true;
         storage.aiValueMappings = {
-          [pinyinField.fieldKey]: { value: "Wang Xiaoxing", confidence: 0.98, basis: "derived" },
+          [pinyinField.fieldKey]: { value: "Wang Xiaoxing", confidence: 0.70, basis: "derived" },
           [degreeField.fieldKey]: { value: "本科", confidence: 0.99, basis: "resume" },
           [emailField.fieldKey]: { value: "resume@example.com", confidence: 0.99, basis: "resume" },
           [selfDescriptionField.fieldKey]: { value: "我擅长使用 SQL 和 Excel 从数据中提炼重点，做事注重结构与细节，并能够围绕产品运营目标持续学习和推进任务。", confidence: 0.96, basis: "derived" },
-          // 故意交换模型返回日期，并完全省略经历描述；结构化字段必须由本地对应记录纠正和补齐。
-          [work1StartField.fieldKey]: { value: "2026-05", confidence: 0.99, basis: "resume" },
-          [work1EndField.fieldKey]: { value: "2026-03", confidence: 0.99, basis: "resume" },
-          [work2StartField.fieldKey]: { value: "2026-01", confidence: 0.99, basis: "resume" },
-          [work2EndField.fieldKey]: { value: "2025-10", confidence: 0.99, basis: "resume" },
+          // 合格的模型结果优先写入；未返回的教育描述仍由结构化简历兜底。
+          [work1StartField.fieldKey]: { value: "2026-03", confidence: 0.99, basis: "resume" },
+          [work1EndField.fieldKey]: { value: "2026-05", confidence: 0.99, basis: "resume" },
+          [work1DescriptionField.fieldKey]: { value: "通过 SQL 分析用户转化，并整理关键变化。", confidence: 0.93, basis: "grounded_generation" },
+          [work2StartField.fieldKey]: { value: "2025-10", confidence: 0.99, basis: "resume" },
+          [work2EndField.fieldKey]: { value: "2026-01", confidence: 0.99, basis: "resume" },
+          [work2DescriptionField.fieldKey]: { value: "整理经营指标，支持团队复盘。", confidence: 0.93, basis: "grounded_generation" },
           [birthDateField.fieldKey]: { value: "2000-02-03", confidence: 0.99, basis: "resume" },
           [graduationField.fieldKey]: { value: "在读", confidence: 0.97, basis: "derived" },
         };
@@ -185,18 +187,18 @@
           && actual.workDescriptionRecordIndices.join(",") === "0,1"
           && actual.work1Start === "2026-03-01"
           && actual.work1End === "2026-05-01"
-          && actual.work1Description === "使用 SQL 分析用户转化"
+          && actual.work1Description === "通过 SQL 分析用户转化，并整理关键变化。"
           && actual.work2Start === "2025-10-01"
           && actual.work2End === "2026-01-01"
-          && actual.work2Description === "整理经营指标并支持复盘"
+          && actual.work2Description === "整理经营指标，支持团队复盘。"
           && actual.birthDate === "2000-02-03"
           && actual.studentStatus === true
           && actual.nationalId === ""
           && actual.privacyConsent === false
           && actual.summary.filled === 16
           && actual.summary.preserved === 1
-          && actual.summary.derived === 3
-          && actual.summary.structured === 11
+          && actual.summary.derived === 5
+          && actual.summary.structured === 5
           && actual.summary.invalidDatesRepaired === 0
           && actual.summary.invalidDatesUnresolved === 0;
         document.querySelector("#result").textContent = JSON.stringify({ passed, actual });

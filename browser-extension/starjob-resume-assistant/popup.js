@@ -6,6 +6,7 @@ const AI_AUTOFILL_BATCH_FIELD_LIMIT = 18;
 const AI_AUTOFILL_BATCH_BUDGET = 1_700;
 const AI_AUTOFILL_MAX_BATCHES = 100;
 const AI_AUTOFILL_MAX_FIELDS = 1_500;
+const AI_AUTOFILL_MIN_CONFIDENCE = 0.68;
 const CONFIRM_WINDOW_MS = 8_000;
 const STORAGE_KEYS = ["starjobResumes", "activeResumeId", "fillMode", "lastSyncedAt", "matchToken", "matchTokenExpiresAt", "aiMatchingAvailable", "analysisOnly", "aiOnly", "aiFieldMappings", "aiAutofillOnly", "aiValueMappings"];
 
@@ -407,23 +408,73 @@ async function scanStableForm(tabId, taskSignal) {
 
 async function executeMappedFillByFrame({
   tabId,
-  frameIds,
   mappings,
   fieldAddressByQualifiedKey,
   storageState,
   mappingStorageKey,
+  taskSignal,
 }) {
-  const mappingsByFrame = new Map(frameIds.map((frameId) => [frameId, {}]));
-  const rawKeysByFrame = new Map(frameIds.map((frameId) => [frameId, new Set()]));
+  const normalizeIdentity = (value) => String(value ?? "").normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
+  const freshResults = await scanStableForm(tabId, taskSignal);
+  const freshFields = freshResults.flatMap((entry) => (entry.result?.fields || []).map((field) => ({
+    frameId: entry.frameId,
+    rawFieldKey: field.fieldKey,
+    field,
+  })));
+  const fieldScore = (original, candidate) => {
+    const current = candidate.field;
+    let score = 0;
+    if (original.elementIdentity && original.elementIdentity === current.elementIdentity) score += 12;
+    if (original.sourceFieldKey && original.sourceFieldKey === candidate.rawFieldKey) score += 10;
+    if (original.pageRecordId && original.pageRecordId === current.pageRecordId) score += 6;
+    if (original.deterministicKey && original.deterministicKey === current.deterministicKey) score += 5;
+    if (original.semanticKey && original.semanticKey === current.semanticKey) score += 4;
+    if (original.sectionType && original.sectionType === current.sectionType) score += 3;
+    if (Number.isInteger(original.recordIndex) && original.recordIndex === current.recordIndex) score += 4;
+    if ((original.recordScope || null) === (current.recordScope || null)) score += 1;
+    if ((original.datePart || null) === (current.datePart || null)) score += 2;
+    const originalLabel = normalizeIdentity(original.accessibleName || original.label);
+    const currentLabel = normalizeIdentity(current.accessibleName || current.label);
+    if (originalLabel && originalLabel === currentLabel) score += 4;
+    return score;
+  };
+  const resolveFreshAddress = (address) => {
+    const exact = freshFields.filter((candidate) => candidate.frameId === address.frameId && candidate.rawFieldKey === address.rawFieldKey);
+    if (exact.length === 1) return exact[0];
+    const ranked = freshFields
+      .map((candidate) => ({ candidate, score: fieldScore(address.field, candidate) }))
+      .filter((entry) => entry.score >= 10)
+      .sort((left, right) => right.score - left.score);
+    if (!ranked.length || (ranked[1] && ranked[0].score - ranked[1].score < 2)) return null;
+    return ranked[0].candidate;
+  };
+
+  const rebound = [];
+  let rebindFailedFields = 0;
   for (const [qualifiedKey, mapping] of Object.entries(mappings)) {
     const address = fieldAddressByQualifiedKey.get(qualifiedKey);
-    if (!address) continue;
-    const usedRawKeys = rawKeysByFrame.get(address.frameId);
-    if (!usedRawKeys || usedRawKeys.has(address.rawFieldKey)) {
+    if (!address) {
+      rebindFailedFields += 1;
+      continue;
+    }
+    const freshAddress = resolveFreshAddress(address);
+    if (!freshAddress) {
+      rebindFailedFields += 1;
+      continue;
+    }
+    rebound.push({ qualifiedKey, mapping, ...freshAddress });
+  }
+
+  const frameIds = [...new Set(rebound.map((entry) => entry.frameId))];
+  const mappingsByFrame = new Map(frameIds.map((frameId) => [frameId, {}]));
+  const rawKeysByFrame = new Map(frameIds.map((frameId) => [frameId, new Set()]));
+  for (const entry of rebound) {
+    const usedRawKeys = rawKeysByFrame.get(entry.frameId);
+    if (!usedRawKeys || usedRawKeys.has(entry.rawFieldKey)) {
       throw new Error("字段身份发生冲突，本次未写入页面");
     }
-    usedRawKeys.add(address.rawFieldKey);
-    mappingsByFrame.get(address.frameId)[address.rawFieldKey] = mapping;
+    usedRawKeys.add(entry.rawFieldKey);
+    mappingsByFrame.get(entry.frameId)[entry.rawFieldKey] = entry.mapping;
   }
 
   const results = [];
@@ -449,7 +500,13 @@ async function executeMappedFillByFrame({
       });
     }
   }
-  return { results, failedFrames, failedFields };
+  return {
+    results,
+    failedFrames,
+    failedFields: failedFields + rebindFailedFields,
+    reboundFieldCount: rebound.length,
+    rebindFailedFields,
+  };
 }
 
 function sanitizeResumeForAi(resume, fields) {
@@ -626,8 +683,8 @@ async function fillCurrentPage() {
     const fieldAddressByQualifiedKey = new Map(fields.map((field) => [field.fieldKey, {
       frameId: field.sourceFrameId,
       rawFieldKey: field.sourceFieldKey,
+      field,
     }]));
-    const frameIds = [...new Set(analyses.map((entry) => entry.frameId))];
     const extracted = analyses.reduce((sum, entry) => sum + (entry.result.scanned || 0), 0);
     const locallyIdentified = analyses.reduce((sum, entry) => sum + (entry.result.identified || 0), 0);
     const smartMatchFields = fields
@@ -736,7 +793,7 @@ async function fillCurrentPage() {
         for (const mapping of payload.mappings || []) {
           if (mapping?.fieldKey && typeof mapping.value === "string" && mapping.value.trim()
             && !["manual", "skip"].includes(mapping.action)
-            && ["resume", "exact_fact", "normalized_fact", "derived", "semantic_inference", "grounded_generation", "user_preference"].includes(mapping.basis) && Number(mapping.confidence) >= 0.82) {
+            && ["resume", "exact_fact", "normalized_fact", "derived", "semantic_inference", "grounded_generation", "user_preference"].includes(mapping.basis) && Number(mapping.confidence) >= AI_AUTOFILL_MIN_CONFIDENCE) {
             aiValueMappings[mapping.fieldKey] = {
               value: mapping.value.trim(),
               displayValue: typeof mapping.displayValue === "string" ? mapping.displayValue.trim() : null,
@@ -773,10 +830,10 @@ async function fillCurrentPage() {
       elements.fillButton.textContent = "正在安全写入页面";
       const aiFill = await executeMappedFillByFrame({
         tabId: tab.id,
-        frameIds,
         mappings: aiValueMappings,
         fieldAddressByQualifiedKey,
         mappingStorageKey: "aiValueMappings",
+        taskSignal: taskController.signal,
         storageState: {
           analysisOnly: false,
           aiOnly: false,
@@ -788,6 +845,8 @@ async function fillCurrentPage() {
       const total = summarizeFrameResults(aiFill.results);
       console.info("[starjob_pipeline_checkpoint_D]", {
         ...total,
+        reboundFieldCount: aiFill.reboundFieldCount,
+        rebindFailedFields: aiFill.rebindFailedFields,
         frames: aiFill.results.map(({ frameId, result }) => ({ frameId, diagnostics: result?.pipelineDiagnostics, fieldTraces: result?.fieldTraces })),
       });
       total.failed += aiFill.failedFields;
@@ -858,10 +917,10 @@ async function fillCurrentPage() {
         if (aiMatched > 0) {
           const aiFill = await executeMappedFillByFrame({
             tabId: tab.id,
-            frameIds,
             mappings: aiMappings,
             fieldAddressByQualifiedKey,
             mappingStorageKey: "aiFieldMappings",
+            taskSignal: taskController.signal,
             storageState: {
               analysisOnly: false,
               aiOnly: true,

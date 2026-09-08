@@ -46,19 +46,19 @@ export function ExtensionGuide() {
         <div className="max-w-4xl">
           <h1 className="page-title">安装拾星网申助手</h1>
           <div className="mt-5 max-w-3xl space-y-2 text-sm leading-7 text-ink-secondary">
-            <p>当前版本 1.1.1，适用于 Chrome、Edge 及其他 Chromium 浏览器。</p>
+            <p>当前版本 1.1.2，适用于 Chrome、Edge 及其他 Chromium 浏览器。</p>
             <div className="flex flex-wrap items-center gap-3 pt-3">
               <a
-                href="/downloads/starjob-resume-assistant-v1.1.1.zip"
+                href="/downloads/starjob-resume-assistant-v1.1.2.zip"
                 download
                 className="gold-button pressable inline-flex min-h-12 items-center gap-2 rounded-xl px-5 text-base font-semibold"
               >
                 <ArrowDownIcon aria-hidden="true" className="size-5" />
-                下载 1.1.1 安装包
+                下载 1.1.2 安装包
               </a>
               <span className="text-xs text-ink-muted">ZIP 安装包 · 下载后完整解压</span>
             </div>
-            <p>下载后请完整解压。1.1.1 会按顺序处理较长的网申表单，最多支持 100 个 AI 批次和 1500 个安全字段；所有批次确认完成后才会写入页面。日期和重复经历仍会绑定到所选简历的对应记录，并在写入后回读校验。验证码、密码和最终提交仍由你处理。</p>
+            <p>下载后请完整解压。1.1.2 会在 AI 分析完成后重新识别当前页面控件，再写入学校、日期和每一段经历，减少动态表单重渲染造成的失败。最多支持 100 个 AI 批次和 1500 个安全字段；验证码、密码和最终提交仍由你处理。</p>
           </div>
         </div>
       </section>

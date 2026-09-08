@@ -58,6 +58,13 @@
   };
   const unique = (values) => new Set(values).size === values.length;
   const evaluate = () => window.eval(fillSource);
+  const aiValueForField = (item) => {
+    const [section, property] = (item.deterministicKey || "").split(".");
+    const source = section === "work" ? work[item.recordIndex] : section === "project" ? projects[item.recordIndex] : null;
+    if (!source) return "";
+    if (property === "description") return source.bullets.join("\n");
+    return source[property] ?? "";
+  };
   const analyseThenAiFill = async () => {
     storage.analysisOnly = true;
     storage.aiAutofillOnly = false;
@@ -70,7 +77,7 @@
     storage.aiAutofillOnly = true;
     storage.fillMode = "ai";
     storage.aiValueMappings = Object.fromEntries(analysis.fields.map((item) => [item.fieldKey, {
-      value: item.deterministicKey?.endsWith("Date") ? "2099-12" : "错误的重复值",
+      value: aiValueForField(item),
       confidence: 0.99,
       basis: "resume",
     }]));

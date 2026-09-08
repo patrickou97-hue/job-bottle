@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [popup, popupHtml, popupCss, fill, route, rateLimitHelper, syncBridge] = await Promise.all([
+const [popup, popupHtml, popupCss, fill, route, rateLimitHelper, syncBridge, fieldCompat] = await Promise.all([
   readFile(new URL("../../browser-extension/starjob-resume-assistant/popup.js", import.meta.url), "utf8"),
   readFile(new URL("../../browser-extension/starjob-resume-assistant/popup.html", import.meta.url), "utf8"),
   readFile(new URL("../../browser-extension/starjob-resume-assistant/popup.css", import.meta.url), "utf8"),
@@ -10,6 +10,7 @@ const [popup, popupHtml, popupCss, fill, route, rateLimitHelper, syncBridge] = a
   readFile(new URL("../../src/app/api/resume/extension-autofill/route.ts", import.meta.url), "utf8"),
   readFile(new URL("../../src/lib/extension-autofill-rate-limit.ts", import.meta.url), "utf8"),
   readFile(new URL("../../browser-extension/starjob-resume-assistant/sync-bridge.js", import.meta.url), "utf8"),
+  readFile(new URL("../../src/lib/extension-autofill-field-compat.ts", import.meta.url), "utf8"),
 ]);
 
 test("真实 popup 与 Chrome 演示共享同一套面板结构和安全文案", () => {
@@ -58,16 +59,41 @@ test("扩展按 frameId 隔离智能字段映射", () => {
   assert.match(popup, /const prefix = `\$\{frameId\}::\$\{fieldIndex\}::`/);
   assert.match(popup, /sourceFieldKey:\s*field\.fieldKey/);
   assert.match(popup, /target:\s*\{ tabId, frameIds: \[frameId\] \}/);
-  assert.match(popup, /mappingsByFrame\.get\(address\.frameId\)\[address\.rawFieldKey\]/);
+  assert.match(popup, /mappingsByFrame\.get\(entry\.frameId\)\[entry\.rawFieldKey\]/);
   assert.match(popup, /failedFields \+= Object\.keys\(frameMappings\)\.length/);
+  assert.match(popup, /const freshResults = await scanStableForm\(tabId, taskSignal\)/);
+  assert.match(popup, /reboundFieldCount/);
+  assert.match(popup, /rebindFailedFields/);
 });
 
 test("单字段异常不会中断整页并会如实汇总", () => {
   assert.match(fill, /async function fillElementSafely/);
   assert.match(fill, /failed \+= 1/);
+  assert.match(fill, /if \(!verified\) failed \+= 1/);
   assert.match(fill, /failed,/);
   assert.match(popup, /部分未完成/);
   assert.match(popup, /页面控件异常写入失败/);
+});
+
+test("服务端和扩展统一接受阈值，合格 AI 结果优先于本地兜底", () => {
+  assert.match(popup, /const AI_AUTOFILL_MIN_CONFIDENCE = 0\.68/);
+  assert.match(fill, /const AI_AUTOFILL_MIN_CONFIDENCE = 0\.68/);
+  assert.match(popup, /Number\(mapping\.confidence\) >= AI_AUTOFILL_MIN_CONFIDENCE/);
+  assert.match(fill, /Number\(mapping\.confidence\) >= AI_AUTOFILL_MIN_CONFIDENCE/);
+  assert.match(route, /if \(hasUsableModelMapping\) return \{ field, mapping \}/);
+  const selectedValueIndex = fill.indexOf("const selectedValue = hasAcceptedMapping");
+  const exactFallbackIndex = fill.indexOf(": exactStructuredValue;", selectedValueIndex);
+  assert.ok(selectedValueIndex >= 0 && exactFallbackIndex > selectedValueIndex, "客户端必须先采用合格 AI 结果，再使用结构化兜底");
+});
+
+test("学校、日期、联系方式和链接使用字段级语义边界", () => {
+  assert.match(route, /function isFieldValueSemanticallyCompatible/);
+  assert.match(route, /FIELD_VALUE_TYPE_MISMATCH/);
+  assert.match(fieldCompat, /education\.school/);
+  assert.match(fieldCompat, /project\.url/);
+  assert.match(route, /isAutofillFieldValueSemanticallyCompatible/);
+  assert.match(route, /if \(property\) \{[\s\S]*collectResumeFacts\(selected\.map/);
+  assert.match(fill, /digits\.length === 13 && digits\.startsWith\("86"\)/);
 });
 
 test("新版批次共享操作额度且旧版请求保持兼容", () => {

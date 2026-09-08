@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { takeExtensionAutofillRateSlot } from "@/lib/extension-autofill-rate-limit";
+import { isAutofillFieldValueSemanticallyCompatible } from "@/lib/extension-autofill-field-compat";
 import { verifyExtensionMatchToken } from "@/lib/extension-match-token";
 import {
   analyzeOutcomeCompleteness,
@@ -595,12 +596,21 @@ function parseResult(
       const field = originalFields[index];
       const returned = returnedByKey.get(modelField.fieldKey) ?? mappingSchema.parse({ fieldKey: modelField.fieldKey });
       const mapping = { ...returned, fieldKey: field.fieldKey, confidence: returned.confidence ?? 0 };
+      const hasUsableModelMapping = !["manual", "skip"].includes(mapping.status || mapping.action || "")
+        && Boolean(mapping.value?.trim())
+        && Boolean(mapping.basis)
+        && mapping.confidence >= MIN_CONFIDENCE;
       const exactResumeValue = deriveExactResumeValue(field, resume);
       if (exactResumeValue?.failureCode === "AMBIGUOUS_RECORD") ambiguousRecordCount += 1;
       const recordDateValue = deriveRecordDateValue(field, resume);
       const recordDescriptionValue = deriveRecordDescriptionValue(field, resume);
       const derivedValue = deriveGraduationValue(field, resume);
       const ageValue = deriveAgeValue(field, resume);
+      // A validated model answer is the compiled plan. Deterministic values are
+      // fallbacks for omitted answers only; replacing the model answer here can
+      // turn an incorrectly inferred deterministicKey into a cross-field write
+      // (for example graduation date -> school name).
+      if (hasUsableModelMapping) return { field, mapping };
       if (exactResumeValue?.value) {
         return {
           field,
@@ -636,6 +646,7 @@ function parseResult(
       if (!mapping.value?.trim()) return reject("EMPTY_VALUE");
       if (!mapping.basis) return reject("MISSING_BASIS");
       if (mapping.confidence < MIN_CONFIDENCE) return reject("LOW_CONFIDENCE");
+      if (!isFieldValueSemanticallyCompatible(mapping.value, field)) return reject("FIELD_VALUE_TYPE_MISMATCH");
       if ((["select", "radio"].includes(field.inputType) || ["native_select", "native_radio", "search_select", "click_select"].includes(field.interactionType)) && field.options.length) {
         const normalizedValue = normalizeChoice(mapping.value);
         const optionTarget = mapping.optionMatch?.targetText || "";
@@ -795,6 +806,14 @@ function getSectionEntries(resume: z.infer<typeof resumeSchema>, section: string
 
 function getScopedFieldFacts(field: z.infer<typeof fieldSchema>, resume: z.infer<typeof resumeSchema>) {
   const [section, property] = (field.deterministicKey || "").split(".");
+  if (section === "basics" && property) {
+    const value = (resume.content.basics as Record<string, unknown>)[property]
+      ?? (property === "targetRole" ? resume.targetRole : null);
+    return collectResumeFacts(value);
+  }
+  if (field.deterministicKey === "skills") {
+    return collectResumeFacts(resume.content.skills.flatMap((group) => group.skills));
+  }
   const entries = getSectionEntries(resume, section, field.recordScope);
   if (!entries.length) return null;
   const selected = field.recordIndex === null
@@ -817,7 +836,20 @@ function getScopedFieldFacts(field: z.infer<typeof fieldSchema>, resume: z.infer
       return { bullets: record.bullets, keywords: record.keywords };
     }));
   }
+  if (property) {
+    return collectResumeFacts(selected.map((entry) => (entry as Record<string, unknown>)[property]));
+  }
   return null;
+}
+
+function isFieldValueSemanticallyCompatible(value: string, field: z.infer<typeof fieldSchema>) {
+  const descriptor = normalizeChoice(`${field.label} ${field.accessibleName} ${field.attributes} ${field.context} ${field.sectionPath.join(" ")}`);
+  return isAutofillFieldValueSemanticallyCompatible({
+    value,
+    deterministicKey: field.deterministicKey || "",
+    descriptor,
+    hasDatePart: Boolean(field.datePart),
+  });
 }
 
 function hasFieldSpecificResumeBasis(
@@ -985,7 +1017,7 @@ function deriveExactResumeValue(field: z.infer<typeof fieldSchema>, resume: z.in
     return value ? { value, resumePath: field.resumePath, failureCode: null } : null;
   }
 
-  if (section === "basic") {
+  if (section === "basics") {
     const rawValue = (resume.content.basics as Record<string, unknown>)[property] ?? (property === "targetRole" ? resume.targetRole : null);
     const value = Array.isArray(rawValue) ? rawValue.filter(Boolean).join("、") : String(rawValue ?? "").trim();
     return value ? { value, resumePath: `basics.${property}`, failureCode: null } : null;

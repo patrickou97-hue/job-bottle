@@ -9,6 +9,7 @@
   const aiFieldMappings = stored.aiFieldMappings && typeof stored.aiFieldMappings === "object" ? stored.aiFieldMappings : {};
   const aiAutofillOnly = stored.aiAutofillOnly === true;
   const aiValueMappings = stored.aiValueMappings && typeof stored.aiValueMappings === "object" ? stored.aiValueMappings : {};
+  const AI_AUTOFILL_MIN_CONFIDENCE = 0.68;
 
   if (!resume?.content) {
     return { scanned: 0, filled: 0, preserved: 0, manual: 0, error: "missing_resume" };
@@ -703,7 +704,7 @@
     return referenced.find((node) => visibleDynamicOptions(node).length) || fresh.at(-1) || candidates.find((node) => visibleDynamicOptions(node).length) || null;
   }
 
-  async function waitForDynamicOptions(control, beforeNodes = new Set(), timeout = 1_200) {
+  async function waitForDynamicOptions(control, beforeNodes = new Set(), timeout = 2_800) {
     const startedAt = Date.now();
     const immediate = findDynamicPopup(control, beforeNodes);
     if (immediate) return immediate;
@@ -753,7 +754,11 @@
     const beforeNodes = new Set(Array.from(document.querySelectorAll("[role='listbox'], [role='menu'], [role='tree'], [role='dialog'], [class*='dropdown'], [class*='popover']")));
     element.focus?.();
     dispatchActivation(element);
-    await wait(16);
+    await wait(60);
+    if (!findDynamicPopup(element, beforeNodes)) {
+      const trigger = element.closest("[role='combobox'], [aria-haspopup], [class*='select'], [class*='picker'], [class*='input']") || element.parentElement;
+      if (trigger instanceof HTMLElement && trigger !== element) dispatchActivation(trigger);
+    }
     if (element instanceof HTMLInputElement && !element.readOnly) {
       setNativeValue(element, asText(rawValue));
       dispatchInput(element);
@@ -1389,6 +1394,19 @@
     return value;
   }
 
+  function normalizeAiValueForField(plan, rawValue) {
+    const value = asText(rawValue);
+    const phoneField = plan.matchedDefinition?.key === "basics.phone"
+      || (plan.element instanceof HTMLInputElement && plan.element.type === "tel")
+      || /手机号|联系电话|mobile|phone|telephone/.test(normalize(`${plan.signals?.visible?.join(" ") || ""} ${plan.signals?.attributes?.join(" ") || ""}`));
+    if (!phoneField) return value;
+    const digits = value.replace(/\D/g, "");
+    // Most Chinese ATS pages expose the country calling code as a separate
+    // selector. Do not write +86 into the adjacent 11-digit mobile field.
+    if (digits.length === 13 && digits.startsWith("86") && /^1\d{10}$/.test(digits.slice(2))) return digits.slice(2);
+    return value;
+  }
+
   if (!aiOnly) {
     queryAllRoots("[data-starjob-filled='true']").forEach((element) => {
       element.dataset.starjobPreviouslyFilled = "true";
@@ -1668,6 +1686,7 @@
         verified,
         failureCode: verified ? null : "READBACK_MISMATCH",
       };
+      if (!verified) failed += 1;
       return verified;
     } catch (error) {
       failed += 1;
@@ -1752,24 +1771,25 @@
       const exactStructuredValue = getExactStructuredValue(plan);
       const hasAcceptedMapping = mapping && typeof mapping === "object"
         && !["manual", "skip"].includes(mapping.action)
-        && Number(mapping.confidence) >= 0.82;
+        && Number(mapping.confidence) >= AI_AUTOFILL_MIN_CONFIDENCE;
       if (exactStructuredValue === undefined && !hasAcceptedMapping) {
         manual += 1;
         rememberUnmatched(signals);
         continue;
       }
       matched += 1;
-      const replacePreviousExactDate = exactStructuredValue !== undefined
+      const selectedValue = hasAcceptedMapping
+        ? typeof mapping.value === "string" ? mapping.value.trim() : typeof mapping.displayValue === "string" ? mapping.displayValue.trim() : ""
+        : exactStructuredValue;
+      const replacePreviousExactDate = selectedValue !== undefined
         && Boolean(matchedDefinition?.date)
         && element.dataset.starjobPreviouslyFilled === "true"
-        && !dateValuesEquivalent(exactStructuredValue, currentValue(element));
+        && !dateValuesEquivalent(selectedValue, currentValue(element));
       if (currentValue(element) && !replacePreviousExactDate) {
         preserved += 1;
         continue;
       }
-      const value = exactStructuredValue === undefined
-        ? typeof mapping.value === "string" ? mapping.value.trim() : typeof mapping.displayValue === "string" ? mapping.displayValue.trim() : ""
-        : exactStructuredValue;
+      const value = normalizeAiValueForField(plan, selectedValue);
       const isCheckbox = element instanceof HTMLInputElement && element.type === "checkbox";
       if (!value && !(isCheckbox && value === false)) {
         empty += 1;
@@ -1778,8 +1798,8 @@
         continue;
       }
       const isDerived = matchedDefinition?.localDerived === true
-        || (exactStructuredValue === undefined && mapping.basis !== "resume");
-      if (exactStructuredValue !== undefined) structured += 1;
+        || (hasAcceptedMapping && mapping.basis !== "resume");
+      if (!hasAcceptedMapping && exactStructuredValue !== undefined) structured += 1;
       const checkboxValue = /^(true|1|yes|y|是|至今|仍在职)$/i.test(String(value));
       if (matchedDefinition?.date) plan.expectedDateValue = value;
       if (await fillElementSafely(element, isCheckbox ? checkboxValue : value, {

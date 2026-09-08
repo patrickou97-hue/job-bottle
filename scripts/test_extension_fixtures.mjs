@@ -82,6 +82,11 @@ const FIXTURES = [
     marker: "STARJOB_SHADOW_COMPANY_TEST_PASS",
     label: "开放 Shadow DOM 与公司画像夹具",
   },
+  {
+    path: "/browser-extension/tests/bilibili-controls-fixture.html",
+    marker: "STARJOB_BILIBILI_CONTROLS_TEST_PASS",
+    label: "哔哩哔哩式自定义控件与手机号区号夹具",
+  },
 ];
 const MIME_TYPES = new Map([
   [".css", "text/css; charset=utf-8"],
