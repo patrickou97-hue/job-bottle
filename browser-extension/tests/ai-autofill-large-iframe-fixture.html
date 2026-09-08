@@ -2,7 +2,7 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <title>拾星 AI 130+ 字段跨页面区域测试</title>
+    <title>拾星 AI 19 批跨页面区域测试</title>
   </head>
   <body>
     <main>
@@ -42,8 +42,8 @@
     <pre id="result">pending</pre>
     <script>
       const FRAME_CASES = [
-        { id: "frame-primary", frameId: 11, count: 110 },
-        { id: "frame-secondary", frameId: 22, count: 30 },
+        { id: "frame-primary", frameId: 11, count: 255 },
+        { id: "frame-secondary", frameId: 22, count: 68 },
       ];
       const resume = {
         id: "resume-large-iframe",
@@ -102,7 +102,7 @@
               return results;
             }
 
-            if (completedModelBatches !== 9) fillStartedBeforeAllBatches = true;
+            if (completedModelBatches !== 19) fillStartedBeforeAllBatches = true;
             const frameId = target.frameIds[0];
             const frameCase = FRAME_CASES.find((item) => item.frameId === frameId);
             const frame = document.querySelector(`#${frameCase.id}`);
@@ -186,7 +186,7 @@
         await waitFor(() => document.querySelector("#resumeSelect").value === resume.id);
         document.querySelector('input[name="fillMode"][value="ai"]').click();
         document.querySelector("#fillButton").click();
-        await waitFor(() => document.querySelector("#resultTitle").textContent.startsWith("AI 已填写"));
+        await waitFor(() => document.querySelector("#resultTitle").textContent.startsWith("AI 已填写"), 15_000);
 
         const allModelFields = modelRequests.flatMap((request) => request.fields);
         const operationIds = new Set(modelRequests.map((request) => request.operationId));
@@ -203,32 +203,32 @@
           fillFrameCount: fillSummaries.length,
           totalFilled,
           totalManual,
-          primaryTail: document.querySelector("#frame-primary").contentDocument.querySelector("#question-109").value,
-          secondaryTail: document.querySelector("#frame-secondary").contentDocument.querySelector("#question-29").value,
-          sentPrimaryTail: allModelFields.some((field) => field.fieldKey.startsWith("11::109::")),
-          sentSecondaryTail: allModelFields.some((field) => field.fieldKey.startsWith("22::29::")),
+          primaryTail: document.querySelector("#frame-primary").contentDocument.querySelector("#question-254").value,
+          secondaryTail: document.querySelector("#frame-secondary").contentDocument.querySelector("#question-67").value,
+          sentPrimaryTail: allModelFields.some((field) => field.fieldKey.startsWith("11::254::")),
+          sentSecondaryTail: allModelFields.some((field) => field.fieldKey.startsWith("22::67::")),
           resultTitle: document.querySelector("#resultTitle").textContent,
           progressLabel: document.querySelector("#progressLabel").textContent,
           summaryText: document.querySelector('[data-step="summary"] p').textContent,
         };
         const passed = actual.analysisCounts.length >= 4
           && actual.analysisCounts.length % 2 === 0
-          && actual.analysisCounts.every((count, index) => count === (index % 2 === 0 ? 110 : 30))
-          && actual.modelBatchSizes.join(",") === "17,17,17,17,17,17,17,17,4"
-          && actual.modelFieldCount === 140
-          && actual.uniqueModelFieldCount === 140
+          && actual.analysisCounts.every((count, index) => count === (index % 2 === 0 ? 255 : 68))
+          && actual.modelBatchSizes.join(",") === "17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17"
+          && actual.modelFieldCount === 323
+          && actual.uniqueModelFieldCount === 323
           && actual.operationCount === 1
-          && actual.completedModelBatches === 9
+          && actual.completedModelBatches === 19
           && actual.fillStartedBeforeAllBatches === false
           && actual.fillFrameCount === 2
-          && actual.totalFilled === 140
+          && actual.totalFilled === 323
           && actual.totalManual === 0
-          && actual.primaryTail === "value-11-109"
-          && actual.secondaryTail === "value-22-29"
+          && actual.primaryTail === "value-11-254"
+          && actual.secondaryTail === "value-22-67"
           && actual.sentPrimaryTail
           && actual.sentSecondaryTail
-          && actual.resultTitle === "AI 已填写 140 项"
-          && actual.progressLabel.includes("已填写 140 项")
+          && actual.resultTitle === "AI 已填写 323 项"
+          && actual.progressLabel.includes("已填写 323 项")
           && actual.progressLabel.includes("0 项需手动确认")
           && actual.summaryText.includes("0 项需手动确认");
         document.querySelector("#result").textContent = JSON.stringify({ passed, actual });

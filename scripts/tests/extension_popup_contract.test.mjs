@@ -44,6 +44,10 @@ const durableRateMigration = await readFile(
   new URL("../../supabase/migrations/20260810110000_extension_autofill_durable_rate_limit.sql", import.meta.url),
   "utf8",
 );
+const raisedBatchLimitMigration = await readFile(
+  new URL("../../supabase/migrations/20260908160000_raise_extension_autofill_batch_limit.sql", import.meta.url),
+  "utf8",
+);
 
 test("扩展按 frameId 隔离智能字段映射", () => {
   assert.match(popup, /qualifyFrameFieldKey\(frameId, fieldIndex, field\.fieldKey\)/);
@@ -86,13 +90,20 @@ test("新版批次共享操作额度且旧版请求保持兼容", () => {
   assert.match(durableRateMigration, /delete from public\.extension_autofill_rate_operations as operation[\s\S]*and not exists/);
   assert.match(durableRateMigration, /batch 15[\s\S]*batch 16 observes 15 and fails/);
   assert.match(durableRateMigration, /grant execute on function public\.take_extension_autofill_rate_slot\(uuid, uuid\) to service_role/);
+  assert.match(raisedBatchLimitMigration, /batch_count between 1 and 100/);
+  assert.match(raisedBatchLimitMigration, /current_batch_count >= 100/);
+  assert.match(raisedBatchLimitMigration, /active_operation_count >= 5/);
+  assert.match(raisedBatchLimitMigration, /active_batch_count >= 100/);
+  assert.match(raisedBatchLimitMigration, /batch 101 observes 100 and fails/);
+  assert.match(raisedBatchLimitMigration, /grant execute on function public\.take_extension_autofill_rate_slot\(uuid, uuid\) to service_role/);
+  assert.doesNotMatch(raisedBatchLimitMigration, /to anon|to authenticated/);
 });
 
-test("AI 智能填写按语义和输出预算分批，完整处理 750 字段并拦截陈旧响应", () => {
+test("AI 智能填写按语义和输出预算串行分批，允许 100 批与 1500 字段并拦截陈旧响应", () => {
   assert.match(popup, /const AI_AUTOFILL_BATCH_FIELD_LIMIT = 18/);
   assert.match(popup, /const AI_AUTOFILL_BATCH_BUDGET = 1_700/);
-  assert.match(popup, /const AI_AUTOFILL_MAX_BATCHES = 15/);
-  assert.match(popup, /const AI_AUTOFILL_MAX_FIELDS = 750/);
+  assert.match(popup, /const AI_AUTOFILL_MAX_BATCHES = 100/);
+  assert.match(popup, /const AI_AUTOFILL_MAX_FIELDS = 1_500/);
   assert.doesNotMatch(fill, /\.filter\(\(field\) => !field\.sensitive\)\s*\.slice\(0, 100\)/);
   assert.doesNotMatch(popup, /\)\)\.slice\(0, 100\)/);
   assert.match(popup, /fields\.length > AI_AUTOFILL_MAX_FIELDS/);
@@ -111,8 +122,8 @@ test("AI 智能填写按语义和输出预算分批，完整处理 750 字段并
   const modelCallIndex = popup.indexOf('const payload = await requestAiAutofillBatch({');
   const writeIndex = popup.indexOf('const aiFill = await executeMappedFillByFrame({');
   const allBatchesIndex = popup.indexOf('for (let index = 0; index < batches.length; index += 1)');
-  assert.ok(limitCheckIndex >= 0 && limitCheckIndex < operationIdIndex, "750 字段检查必须早于创建模型操作");
-  assert.ok(limitCheckIndex < modelCallIndex, "750 字段检查必须早于模型调用");
+  assert.ok(limitCheckIndex >= 0 && limitCheckIndex < operationIdIndex, "1500 字段检查必须早于创建模型操作");
+  assert.ok(limitCheckIndex < modelCallIndex, "1500 字段检查必须早于模型调用");
   assert.ok(allBatchesIndex >= 0 && allBatchesIndex < writeIndex, "必须等待全部模型批次成功后才写入页面");
 });
 

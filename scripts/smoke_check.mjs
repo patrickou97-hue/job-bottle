@@ -1185,7 +1185,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "browser-extension/starjob-resume-assistant/manifest.json",
-    mustInclude: ["\"manifest_version\": 3", "\"version\": \"1.1.0\"", "\"activeTab\"", "\"scripting\"", "\"storage\"", "https://www.starjob.space/extension*", "https://www.starjob.space/*"],
+    mustInclude: ["\"manifest_version\": 3", "\"version\": \"1.1.1\"", "\"activeTab\"", "\"scripting\"", "\"storage\"", "https://www.starjob.space/extension*", "https://www.starjob.space/*"],
     mustNotInclude: ["\"cookies\"", "\"tabs\"", "<all_urls>", "localhost", "nowcoder", "牛客"],
     label: "拾星网申助手使用 Manifest V3 和用户触发的最小权限",
   },
@@ -1226,6 +1226,12 @@ const SOURCE_INVARIANTS = [
     label: "网申助手额度由数据库按用户、操作和批次原子限制而非依赖单实例内存",
   },
   {
+    file: "supabase/migrations/20260908160000_raise_extension_autofill_batch_limit.sql",
+    mustInclude: ["batch_count between 1 and 100", "current_batch_count >= 100", "active_operation_count >= 5", "active_batch_count >= 100", "batch 101 observes 100 and fails", "to service_role"],
+    mustNotInclude: ["to anon", "to authenticated"],
+    label: "网申助手单次操作与十分钟滚动批次上限同步提升到 100",
+  },
+  {
     file: "src/lib/extension-match-token.ts",
     mustInclude: ["server-only", "createHmac", "timingSafeEqual", "TOKEN_SCOPE", "TOKEN_TTL_MS", "EXTENSION_MATCH_TOKEN_SECRET"],
     mustNotInclude: ["NEXT_PUBLIC_", "console.log", "SUPABASE_SERVICE_ROLE_KEY"],
@@ -1233,7 +1239,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "browser-extension/starjob-resume-assistant/popup.js",
-    mustInclude: ["正在读取可见表单字段", "analysisOnly", "aiOnly", "extension-match", "extension-autofill", "matchToken", "智能复核", "AI 智能填写", "会从页面顶部开始按每条记录和字段顺序逐项填写", "AI_AUTOFILL_TIMEOUT_MS = 85_000", "AI_AUTOFILL_BATCH_FIELD_LIMIT = 18", "AI_AUTOFILL_BATCH_BUDGET = 1_700", "AI_AUTOFILL_MAX_BATCHES = 15", "AI_AUTOFILL_MAX_FIELDS = 750", "AI 单批分析超过 85 秒", "buildSemanticAiBatches", "for (let index = 0; index < batches.length; index += 1)", "所有批次成功后", "diagnostics?.complete !== true", "pageSnapshotId", "batchId", "表单字段过多，未开始填写", "本次未调用 AI，也没有改动页面", "sanitizeResumeForAi", "includeBirthDate", "basics.birthDate", "basics.gender", "basics.nationality", "basics.preferredLocations", "experienceType", "url: text(item.url", "applicationContext", "aiValueMappings", "SMART_MATCH_TIMEOUT_MS", "SMART_MATCH_MAX_FIELDS = 12", "deterministicConfidence", "AbortController", "activeFillAbortController", "updateTaskProgress", "停止本次智能填写", "正在安全写入页面", "立即填写", "后台复核", "aiFieldMappings", "qualifyFrameFieldKey", "executeMappedFillByFrame", "sourceFieldKey", "operationId", "部分未完成", "CONFIRM_WINDOW_MS", "再次点击，确认覆盖并填写", "再次点击确认清除", "unmatchedFields", "friendlyFillError", "扩展与当前页面的连接已失效"],
+    mustInclude: ["正在读取可见表单字段", "analysisOnly", "aiOnly", "extension-match", "extension-autofill", "matchToken", "智能复核", "AI 智能填写", "会从页面顶部开始按每条记录和字段顺序逐项填写", "AI_AUTOFILL_TIMEOUT_MS = 85_000", "AI_AUTOFILL_BATCH_FIELD_LIMIT = 18", "AI_AUTOFILL_BATCH_BUDGET = 1_700", "AI_AUTOFILL_MAX_BATCHES = 100", "AI_AUTOFILL_MAX_FIELDS = 1_500", "AI 单批分析超过 85 秒", "buildSemanticAiBatches", "for (let index = 0; index < batches.length; index += 1)", "所有批次成功后", "diagnostics?.complete !== true", "pageSnapshotId", "batchId", "表单字段过多，未开始填写", "本次未调用 AI，也没有改动页面", "sanitizeResumeForAi", "includeBirthDate", "basics.birthDate", "basics.gender", "basics.nationality", "basics.preferredLocations", "experienceType", "url: text(item.url", "applicationContext", "aiValueMappings", "SMART_MATCH_TIMEOUT_MS", "SMART_MATCH_MAX_FIELDS = 12", "deterministicConfidence", "AbortController", "activeFillAbortController", "updateTaskProgress", "停止本次智能填写", "正在安全写入页面", "立即填写", "后台复核", "aiFieldMappings", "qualifyFrameFieldKey", "executeMappedFillByFrame", "sourceFieldKey", "operationId", "部分未完成", "CONFIRM_WINDOW_MS", "再次点击，确认覆盖并填写", "再次点击确认清除", "unmatchedFields", "friendlyFillError", "扩展与当前页面的连接已失效"],
     mustNotInclude: ["MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL", "SUPABASE_SERVICE_ROLE_KEY", "document.cookie"],
     label: "扩展按字段提取、智能匹配、逐项填写和未填整理四阶段执行",
   },
@@ -1269,15 +1275,15 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/extension/ExtensionHubClient.tsx",
-    mustInclude: ["<span className=\"block\">一份简历，</span>", "<span className=\"block\">抵达更多坐标</span>", "把拾星简历同步到浏览器，在网申页面填写常用字段；你负责核对与提交。", "starjob-extension-paper-planes.png", "多架纸飞机沿不同虚线轨迹飞向远方", "查看安装教程", "安装后重新检测", "window.location.reload()", "LEGACY_COMPATIBLE_VERSIONS", "SHORT_TIMEOUT_AI_VERSIONS", "PREVIOUS_AI_VERSIONS", "new Set([\"0.1.7\", \"0.1.8\", \"0.1.9\"])", "new Set([\"0.2.0\"])", "\"1.0.0\", \"1.0.1\"", "AI 智能填写需要升级到 1.1.0"],
+    mustInclude: ["<span className=\"block\">一份简历，</span>", "<span className=\"block\">抵达更多坐标</span>", "把拾星简历同步到浏览器，在网申页面填写常用字段；你负责核对与提交。", "starjob-extension-paper-planes.png", "多架纸飞机沿不同虚线轨迹飞向远方", "查看安装教程", "安装后重新检测", "window.location.reload()", "LEGACY_COMPATIBLE_VERSIONS", "SHORT_TIMEOUT_AI_VERSIONS", "PREVIOUS_AI_VERSIONS", "new Set([\"0.1.7\", \"0.1.8\", \"0.1.9\"])", "new Set([\"0.2.0\"])", "\"1.0.0\", \"1.0.1\", \"1.1.0\"", "AI 智能填写需要升级到 1.1.1"],
     mustNotInclude: ["获取安装包", "DOWNLOAD_URL", "/downloads/starjob-resume-assistant-v0.2.8.zip", "一份简历，投向更多可能", "常见网申字段按页面顺序填入", "你只需检查，再决定提交", "简历写一次，网申少重复", "请升级到 0.1.8", "extensionVersion !==", "starjob-resume-assistant-popup.png", "https://pan.baidu.com/s/1q9gVenToSLL5x5tXZzYLig?pwd=SXZS", "https://pan.baidu.com/s/13sk2UUdep9S1zoJdEk_sSA?pwd=SXZS", "https://pan.baidu.com/s/1jl_OHVc_HxXbUrI1-IS56g?pwd=SXZS"],
     label: "网申助手首屏使用更克制的价值表达与纸飞机线稿引导",
   },
   {
     file: "src/components/extension/ExtensionGuide.tsx",
-    mustInclude: ["/downloads/starjob-resume-assistant-v1.1.0.zip", "下载 1.1.0 安装包", "当前版本 1.1.0", "下载后请完整解压。1.1.0 会先稳定扫描页面", "AI 可以基于简历证据归纳表达", "安装后刷新检测", "步骤 {String(index + 1).padStart(2, \"0\")}"],
+    mustInclude: ["/downloads/starjob-resume-assistant-v1.1.1.zip", "下载 1.1.1 安装包", "当前版本 1.1.1", "下载后请完整解压。1.1.1 会按顺序处理较长的网申表单", "最多支持 100 个 AI 批次和 1500 个安全字段", "安装后刷新检测", "步骤 {String(index + 1).padStart(2, \"0\")}"],
     mustNotInclude: ["获取安装包", "pan.baidu.com", "百度网盘提取码", "最新版本 0.1.9", "starjob-resume-assistant-popup-v026.png"],
-    label: "网申助手下载页与安装教程共用 1.1.0 官网安装包",
+    label: "网申助手下载页与安装教程共用 1.1.1 官网安装包",
   },
   {
     file: "scripts/build_resume_extension.mjs",
@@ -1289,7 +1295,7 @@ const SOURCE_INVARIANTS = [
     file: "scripts/test_extension_fixtures.mjs",
     mustInclude: ["STARJOB_EXTENSION_TEST_PASS", "STARJOB_OVERWRITE_TEST_PASS", "STARJOB_AI_AUTOFILL_TEST_PASS", "STARJOB_COMMON_ATS_FIELDS_TEST_PASS", "STARJOB_COMMON_ATS_SAFETY_TEST_PASS", "STARJOB_AI_AUTOFILL_LARGE_IFRAME_TEST_PASS", "STARJOB_AI_AUTOFILL_LIMIT_TEST_PASS", "STARJOB_AI_AUTOFILL_BATCH_FAILURE_TEST_PASS", "--headless=new", "--dump-dom", "扩展浏览器夹具全部通过"],
     mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY", "MIMO_API_KEY", "DEEPSEEK_API_KEY", "https://www.starjob.space"],
-    label: "扩展七份本地表单夹具可通过无头浏览器自动执行",
+    label: "扩展 15 份本地表单夹具可通过无头浏览器自动执行",
   },
   {
     file: "scripts/build_resume_extension_dev.mjs",
@@ -1388,6 +1394,7 @@ const REQUIRED_FILES = [
   "public/downloads/starjob-resume-assistant-v0.2.8.zip",
   "public/downloads/starjob-resume-assistant-v1.0.1.zip",
   "public/downloads/starjob-resume-assistant-v1.1.0.zip",
+  "public/downloads/starjob-resume-assistant-v1.1.1.zip",
   "browser-extension/starjob-resume-assistant/assets/icon16.png",
   "browser-extension/starjob-resume-assistant/assets/icon48.png",
   "browser-extension/starjob-resume-assistant/assets/icon128.png",

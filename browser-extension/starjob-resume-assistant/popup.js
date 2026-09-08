@@ -4,8 +4,8 @@ const SMART_MATCH_MAX_FIELDS = 12;
 const AI_AUTOFILL_TIMEOUT_MS = 85_000;
 const AI_AUTOFILL_BATCH_FIELD_LIMIT = 18;
 const AI_AUTOFILL_BATCH_BUDGET = 1_700;
-const AI_AUTOFILL_MAX_BATCHES = 15;
-const AI_AUTOFILL_MAX_FIELDS = 750;
+const AI_AUTOFILL_MAX_BATCHES = 100;
+const AI_AUTOFILL_MAX_FIELDS = 1_500;
 const CONFIRM_WINDOW_MS = 8_000;
 const STORAGE_KEYS = ["starjobResumes", "activeResumeId", "fillMode", "lastSyncedAt", "matchToken", "matchTokenExpiresAt", "aiMatchingAvailable", "analysisOnly", "aiOnly", "aiFieldMappings", "aiAutofillOnly", "aiValueMappings"];
 

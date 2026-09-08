@@ -2,7 +2,7 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <title>拾星 AI 750 字段硬上限测试</title>
+    <title>拾星 AI 1500 字段硬上限测试</title>
   </head>
   <body>
     <main>
@@ -91,8 +91,8 @@
               return [];
             }
             return [
-              { frameId: 31, result: { scanned: 400, identified: 0, fields: createFields(400, "primary"), sensitive: 0 } },
-              { frameId: 32, result: { scanned: 351, identified: 0, fields: createFields(351, "secondary"), sensitive: 0 } },
+              { frameId: 31, result: { scanned: 800, identified: 0, fields: createFields(800, "primary"), sensitive: 0 } },
+              { frameId: 32, result: { scanned: 701, identified: 0, fields: createFields(701, "secondary"), sensitive: 0 } },
             ];
           },
         },
@@ -140,12 +140,12 @@
         const passed = actual.modelCalls === 0
           && actual.pageWriteCalls === 0
           && actual.title === "表单字段过多，未开始填写"
-          && actual.text.includes("检测到 751 个安全字段")
-          && actual.text.includes("上限为 750 个")
+          && actual.text.includes("检测到 1501 个安全字段")
+          && actual.text.includes("上限为 1500 个")
           && actual.text.includes("未调用 AI")
           && actual.text.includes("没有改动页面")
-          && actual.progressLabel.includes("751")
-          && actual.progressLabel.includes("750")
+          && actual.progressLabel.includes("1501")
+          && actual.progressLabel.includes("1500")
           && actual.matchText.includes("未调用 AI")
           && actual.fillText.includes("没有写入页面");
         document.querySelector("#result").textContent = JSON.stringify({ passed, actual });

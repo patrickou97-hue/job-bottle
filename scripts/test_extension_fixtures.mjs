@@ -35,12 +35,12 @@ const FIXTURES = [
   {
     path: "/browser-extension/tests/ai-autofill-large-iframe-fixture.html",
     marker: "STARJOB_AI_AUTOFILL_LARGE_IFRAME_TEST_PASS",
-    label: "AI 130+ 字段跨页面区域夹具",
+    label: "AI 19 批跨页面区域夹具",
   },
   {
     path: "/browser-extension/tests/ai-autofill-limit-fixture.html",
     marker: "STARJOB_AI_AUTOFILL_LIMIT_TEST_PASS",
-    label: "AI 750 字段硬上限夹具",
+    label: "AI 1500 字段硬上限夹具",
   },
   {
     path: "/browser-extension/tests/ai-autofill-batch-failure-fixture.html",
