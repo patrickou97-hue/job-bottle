@@ -122,12 +122,16 @@
         const selfDescriptionField = findField("自我描述");
         const findByAttribute = (id) => analysis.fields.find((field) => field.attributes.includes(id));
         const educationDescriptionField = findByAttribute("basicInfo_recruitEducationList_0_description");
+        const work1CompanyField = findByAttribute("basicInfo_recruitWorkingList_0_companyName");
+        const work1TitleField = findByAttribute("basicInfo_recruitWorkingList_0_jobTitle");
         const work1StartField = findByAttribute("basicInfo_recruitWorkingList_0_startDate");
         const work1EndField = findByAttribute("basicInfo_recruitWorkingList_0_endDate");
         const work1DescriptionField = findByAttribute("basicInfo_recruitWorkingList_0_description");
         const work2StartField = findByAttribute("basicInfo_recruitWorkingList_1_startDate");
         const work2EndField = findByAttribute("basicInfo_recruitWorkingList_1_endDate");
         const work2DescriptionField = findByAttribute("basicInfo_recruitWorkingList_1_description");
+        const work2CompanyField = findByAttribute("basicInfo_recruitWorkingList_1_companyName");
+        const work2TitleField = findByAttribute("basicInfo_recruitWorkingList_1_jobTitle");
         const birthDateField = findField("出生日期");
         const graduationField = analysis.fields.find((field) => field.inputType === "radio" && field.context.includes("毕业状态"));
         storage.analysisOnly = false;
@@ -137,10 +141,15 @@
           [degreeField.fieldKey]: { value: "本科", confidence: 0.99, basis: "resume" },
           [emailField.fieldKey]: { value: "resume@example.com", confidence: 0.99, basis: "resume" },
           [selfDescriptionField.fieldKey]: { value: "我擅长使用 SQL 和 Excel 从数据中提炼重点，做事注重结构与细节，并能够围绕产品运营目标持续学习和推进任务。", confidence: 0.96, basis: "derived" },
-          // 合格的模型结果优先写入；未返回的教育描述仍由结构化简历兜底。
+          [educationDescriptionField.fieldKey]: { value: "结合课程与荣誉改写后的教育经历。", confidence: 0.93, basis: "grounded_generation" },
+          // 模型即使给错硬事实，客户端也必须以所选简历的对应记录为准。
+          [work1CompanyField.fieldKey]: { value: "错误公司", confidence: 0.99, basis: "semantic_inference" },
+          [work1TitleField.fieldKey]: { value: "错误职位", confidence: 0.99, basis: "semantic_inference" },
           [work1StartField.fieldKey]: { value: "2026-03", confidence: 0.99, basis: "resume" },
           [work1EndField.fieldKey]: { value: "2026-05", confidence: 0.99, basis: "resume" },
           [work1DescriptionField.fieldKey]: { value: "通过 SQL 分析用户转化，并整理关键变化。", confidence: 0.93, basis: "grounded_generation" },
+          [work2CompanyField.fieldKey]: { value: "错误公司", confidence: 0.99, basis: "semantic_inference" },
+          [work2TitleField.fieldKey]: { value: "错误职位", confidence: 0.99, basis: "semantic_inference" },
           [work2StartField.fieldKey]: { value: "2025-10", confidence: 0.99, basis: "resume" },
           [work2EndField.fieldKey]: { value: "2026-01", confidence: 0.99, basis: "resume" },
           [work2DescriptionField.fieldKey]: { value: "整理经营指标，支持团队复盘。", confidence: 0.93, basis: "grounded_generation" },
@@ -161,9 +170,13 @@
           educationDescription: document.querySelector("#basicInfo_recruitEducationList_0_description").value,
           workDateRecordIndices: [work1StartField.recordIndex, work1EndField.recordIndex, work2StartField.recordIndex, work2EndField.recordIndex],
           workDescriptionRecordIndices: [work1DescriptionField.recordIndex, work2DescriptionField.recordIndex],
+          work1Company: document.querySelector("#basicInfo_recruitWorkingList_0_companyName").value,
+          work1Title: document.querySelector("#basicInfo_recruitWorkingList_0_jobTitle").value,
           work1Start: document.querySelector("#basicInfo_recruitWorkingList_0_startDate").value,
           work1End: document.querySelector("#basicInfo_recruitWorkingList_0_endDate").value,
           work1Description: document.querySelector("#basicInfo_recruitWorkingList_0_description").value,
+          work2Company: document.querySelector("#basicInfo_recruitWorkingList_1_companyName").value,
+          work2Title: document.querySelector("#basicInfo_recruitWorkingList_1_jobTitle").value,
           work2Start: document.querySelector("#basicInfo_recruitWorkingList_1_startDate").value,
           work2End: document.querySelector("#basicInfo_recruitWorkingList_1_endDate").value,
           work2Description: document.querySelector("#basicInfo_recruitWorkingList_1_description").value,
@@ -182,12 +195,16 @@
           && actual.structuredKeys.join(",") === "education.description,work.startDate,work.endDate,work.description,work.startDate,work.endDate,work.description"
           && actual.structuredConfidences.every((confidence) => confidence === 1)
           && actual.educationDescriptionRecordIndex === 0
-          && actual.educationDescription === "数据分析；数据库基础\n校级奖学金"
+          && actual.educationDescription === "结合课程与荣誉改写后的教育经历。"
           && actual.workDateRecordIndices.join(",") === "0,0,1,1"
           && actual.workDescriptionRecordIndices.join(",") === "0,1"
+          && actual.work1Company === "拾星科技"
+          && actual.work1Title === "产品运营实习生"
           && actual.work1Start === "2026-03-01"
           && actual.work1End === "2026-05-01"
           && actual.work1Description === "通过 SQL 分析用户转化，并整理关键变化。"
+          && actual.work2Company === "星河咨询"
+          && actual.work2Title === "商业分析实习生"
           && actual.work2Start === "2025-10-01"
           && actual.work2End === "2026-01-01"
           && actual.work2Description === "整理经营指标，支持团队复盘。"
@@ -197,8 +214,8 @@
           && actual.privacyConsent === false
           && actual.summary.filled === 16
           && actual.summary.preserved === 1
-          && actual.summary.derived === 5
-          && actual.summary.structured === 5
+          && actual.summary.derived === 6
+          && actual.summary.structured === 10
           && actual.summary.invalidDatesRepaired === 0
           && actual.summary.invalidDatesUnresolved === 0;
         document.querySelector("#result").textContent = JSON.stringify({ passed, actual });

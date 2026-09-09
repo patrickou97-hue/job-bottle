@@ -7,8 +7,9 @@ const AI_AUTOFILL_BATCH_BUDGET = 1_700;
 const AI_AUTOFILL_MAX_BATCHES = 100;
 const AI_AUTOFILL_MAX_FIELDS = 1_500;
 const AI_AUTOFILL_MIN_CONFIDENCE = 0.68;
+const LOCAL_EXACT_MIN_CONFIDENCE = 0.9;
 const CONFIRM_WINDOW_MS = 8_000;
-const STORAGE_KEYS = ["starjobResumes", "activeResumeId", "fillMode", "lastSyncedAt", "matchToken", "matchTokenExpiresAt", "aiMatchingAvailable", "analysisOnly", "aiOnly", "aiFieldMappings", "aiAutofillOnly", "aiValueMappings"];
+const STORAGE_KEYS = ["starjobResumes", "activeResumeId", "fillMode", "lastSyncedAt", "matchToken", "matchTokenExpiresAt", "aiMatchingAvailable", "analysisOnly", "aiOnly", "aiFieldMappings", "aiAutofillOnly", "aiValueMappings", "aiTargetFieldKeys"];
 
 const elements = {
   emptyState: document.querySelector("#emptyState"),
@@ -49,6 +50,11 @@ let progressStartedAt = 0;
 let progressClockTimer = null;
 let lastProgressAnnouncement = "";
 let activeAiOperationId = null;
+
+function isLocalExactFallbackField(field) {
+  return Number(field?.deterministicConfidence) >= LOCAL_EXACT_MIN_CONFIDENCE
+    && /^(?:basics\.(?:name|phone|email|birthDate|gender|city)|education\.(?:school|major|degree|startDate|endDate)|work\.(?:company|title|startDate|endDate)|project\.(?:name|role|startDate|endDate)|campus\.(?:title|role|date))$/.test(field?.deterministicKey || "");
+}
 
 const progressDefaults = {
   extract: "等待开始",
@@ -389,10 +395,10 @@ function analysisFingerprint(results) {
     .join("|");
 }
 
-async function scanStableForm(tabId, taskSignal) {
+async function scanStableForm(tabId, taskSignal, maxAttempts = 3) {
   let previousFingerprint = "";
   let latestResults = [];
-  for (let attempt = 0; attempt < 3; attempt += 1) {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     await waitForFormStability(tabId, taskSignal);
     latestResults = await chrome.scripting.executeScript({
       target: { tabId, allFrames: true },
@@ -413,9 +419,44 @@ async function executeMappedFillByFrame({
   storageState,
   mappingStorageKey,
   taskSignal,
+  scanAttempts = 2,
 }) {
   const normalizeIdentity = (value) => String(value ?? "").normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
-  const freshResults = await scanStableForm(tabId, taskSignal);
+  const fieldKind = (field) => {
+    const own = normalizeIdentity(field.ownDescriptor || `${field.label || ""} ${field.accessibleName || ""} ${field.attributes || ""}`);
+    if (/学校名称|毕业院校|院校名称|schoolname|universityname/.test(own)) return "education.school";
+    if (/专业名称|主修专业|majorname|fieldofstudy/.test(own)) return "education.major";
+    if (/学历|学位|degree|educationlevel/.test(own)) return "education.degree";
+    if (/公司类型|公司性质|所在行业|行业类型|companytype|industry/.test(own)) return "work.companyType";
+    if (/公司名称|单位名称|雇主名称|companyname|employername/.test(own)) return "work.company";
+    if (/职位名称|岗位名称|职务名称|jobtitle|positionname/.test(own)) return "work.title";
+    if (/项目名称|projectname|projecttitle/.test(own)) return "project.name";
+    if (/项目角色|担任角色|projectrole/.test(own)) return "project.role";
+    if (/手机号码|手机号|联系电话|mobilephone|phonenumber|telephone/.test(own)) return "basics.phone";
+    if (/邮箱地址|电子邮箱|emailaddress/.test(own)) return "basics.email";
+    if (/起止时间|就读时间|入学时间|毕业时间|开始时间|结束时间|日期|年月|startdate|enddate/.test(own)) return "date";
+    return field.deterministicKey || (field.datePart ? "date" : "");
+  };
+  const identitiesCompatible = (original, candidate) => {
+    const originalKind = fieldKind(original);
+    const candidateKind = fieldKind(candidate);
+    if (originalKind && candidateKind && originalKind !== candidateKind) {
+      const bothDates = (originalKind === "date" || /\.(?:startDate|endDate|date)$/.test(originalKind))
+        && (candidateKind === "date" || /\.(?:startDate|endDate|date)$/.test(candidateKind));
+      if (!bothDates) return false;
+    }
+    if (original.pageRecordId && candidate.pageRecordId && original.pageRecordId !== candidate.pageRecordId) return false;
+    return true;
+  };
+  await chrome.storage.local.set({
+    analysisOnly: true,
+    aiOnly: false,
+    aiFieldMappings: {},
+    aiAutofillOnly: false,
+    aiValueMappings: {},
+    aiTargetFieldKeys: [],
+  });
+  const freshResults = await scanStableForm(tabId, taskSignal, scanAttempts);
   const freshFields = freshResults.flatMap((entry) => (entry.result?.fields || []).map((field) => ({
     frameId: entry.frameId,
     rawFieldKey: field.fieldKey,
@@ -436,14 +477,19 @@ async function executeMappedFillByFrame({
     const originalLabel = normalizeIdentity(original.accessibleName || original.label);
     const currentLabel = normalizeIdentity(current.accessibleName || current.label);
     if (originalLabel && originalLabel === currentLabel) score += 4;
+    const originalOwn = normalizeIdentity(original.ownDescriptor);
+    const currentOwn = normalizeIdentity(current.ownDescriptor);
+    if (originalOwn && originalOwn === currentOwn) score += 8;
     return score;
   };
   const resolveFreshAddress = (address) => {
-    const exact = freshFields.filter((candidate) => candidate.frameId === address.frameId && candidate.rawFieldKey === address.rawFieldKey);
+    const exact = freshFields.filter((candidate) => candidate.frameId === address.frameId
+      && candidate.rawFieldKey === address.rawFieldKey
+      && identitiesCompatible(address.field, candidate.field));
     if (exact.length === 1) return exact[0];
     const ranked = freshFields
       .map((candidate) => ({ candidate, score: fieldScore(address.field, candidate) }))
-      .filter((entry) => entry.score >= 10)
+      .filter((entry) => identitiesCompatible(address.field, entry.candidate.field) && entry.score >= 10)
       .sort((left, right) => right.score - left.score);
     if (!ranked.length || (ranked[1] && ranked[0].score - ranked[1].score < 2)) return null;
     return ranked[0].candidate;
@@ -485,6 +531,7 @@ async function executeMappedFillByFrame({
     await chrome.storage.local.set({
       ...storageState,
       [mappingStorageKey]: frameMappings,
+      aiTargetFieldKeys: Object.keys(frameMappings),
     });
     try {
       results.push(...await chrome.scripting.executeScript({
@@ -507,6 +554,14 @@ async function executeMappedFillByFrame({
     reboundFieldCount: rebound.length,
     rebindFailedFields,
   };
+}
+
+async function executeMappedFillProgressively(options) {
+  throwIfAborted(options.taskSignal);
+  // One AI batch is also one execution unit. Re-scan before the batch, then
+  // write its small set of controls together. fill.js resolves a disconnected
+  // element by its stable identity if the host framework rerenders mid-batch.
+  return executeMappedFillByFrame({ ...options, scanAttempts: 1 });
 }
 
 function sanitizeResumeForAi(resume, fields) {
@@ -628,6 +683,7 @@ async function fillCurrentPage() {
   }
   const taskController = new AbortController();
   let taskOperationId = null;
+  let progressiveFilledOnPage = 0;
   activeFillAbortController = taskController;
   elements.fillButton.disabled = fillMode !== "ai";
   elements.fillButton.textContent = fillMode === "ai" ? "停止本次智能填写" : "正在逐项分析";
@@ -732,6 +788,7 @@ async function fillCurrentPage() {
 
       const aiValueMappings = {};
       let acceptedMappings = 0;
+      let localExactFallbacks = 0;
       let aiRawMappingCount = 0;
       let validatedMappingCount = 0;
       const sanitizedResume = sanitizeResumeForAi(selectedResume, fields);
@@ -764,7 +821,61 @@ async function fillCurrentPage() {
       };
       updateTaskProgress(1, totalTaskUnits, `已按表单结构拆分为 ${batches.length} 批，正在依次分析`);
       let completedBatches = 0;
-      const payloads = [];
+      const progressiveResults = [];
+      let progressiveFailedFrames = 0;
+      let progressiveFailedFields = 0;
+      let progressiveReboundFields = 0;
+      let progressiveRebindFailures = 0;
+      const acceptPayload = (payload, batch) => {
+        const batchMappings = {};
+        aiRawMappingCount += Number(payload?.diagnostics?.aiRawMappingCount || 0);
+        validatedMappingCount += Number(payload?.diagnostics?.validatedMappingCount || 0);
+        for (const mapping of payload.mappings || []) {
+          if (mapping?.fieldKey && typeof mapping.value === "string" && mapping.value.trim()
+            && !["manual", "skip"].includes(mapping.action)
+            && ["resume", "exact_fact", "normalized_fact", "derived", "semantic_inference", "grounded_generation", "user_preference"].includes(mapping.basis) && Number(mapping.confidence) >= AI_AUTOFILL_MIN_CONFIDENCE) {
+            const compiled = {
+              value: mapping.value.trim(),
+              displayValue: typeof mapping.displayValue === "string" ? mapping.displayValue.trim() : null,
+              confidence: Number(mapping.confidence),
+              basis: mapping.basis,
+              action: mapping.action || "fill",
+              evidence: Array.isArray(mapping.evidence) ? mapping.evidence : [],
+              source: mapping.source || null,
+              needsReview: mapping.needsReview === true,
+              controlType: mapping.controlType || null,
+              optionMatch: mapping.optionMatch || null,
+            };
+            aiValueMappings[mapping.fieldKey] = compiled;
+            batchMappings[mapping.fieldKey] = compiled;
+            acceptedMappings += 1;
+          }
+        }
+        // For hard resume facts the model is advisory. If it omits or marks a
+        // high-confidence field as manual, send the field to fill.js anyway.
+        // fill.js resolves the value from the selected resume and refuses the
+        // write if the freshly scanned field no longer has an exact match.
+        for (const field of batch) {
+          if (batchMappings[field.fieldKey] || !isLocalExactFallbackField(field)) continue;
+          const compiled = {
+            value: null,
+            displayValue: null,
+            confidence: 0.99,
+            basis: "exact_fact",
+            action: field.interactionType?.includes("select") ? "select" : "fill",
+            evidence: field.resumePath ? [field.resumePath] : [],
+            source: field.resumePath ? { type: "resume", path: field.resumePath } : null,
+            needsReview: false,
+            controlType: field.controlType || null,
+            optionMatch: null,
+            localExactOnly: true,
+          };
+          aiValueMappings[field.fieldKey] = compiled;
+          batchMappings[field.fieldKey] = compiled;
+          localExactFallbacks += 1;
+        }
+        return batchMappings;
+      };
       for (let index = 0; index < batches.length; index += 1) {
         const batch = batches[index];
         throwIfAborted(taskController.signal);
@@ -782,35 +893,34 @@ async function fillCurrentPage() {
           applicationContext,
         });
         if (activeAiOperationId !== operationId) throw new DOMException("Stale operation", "AbortError");
-        payloads.push(payload);
-        completedBatches += 1;
-        updateProgress("match", "loading", `已完成 ${completedBatches}/${batches.length} 批，全部确认后再填写页面`);
-        updateTaskProgress(1 + completedBatches, totalTaskUnits, `已完成 ${completedBatches}/${batches.length} 批字段分析`);
-      }
-      const acceptPayload = (payload) => {
-        aiRawMappingCount += Number(payload?.diagnostics?.aiRawMappingCount || 0);
-        validatedMappingCount += Number(payload?.diagnostics?.validatedMappingCount || 0);
-        for (const mapping of payload.mappings || []) {
-          if (mapping?.fieldKey && typeof mapping.value === "string" && mapping.value.trim()
-            && !["manual", "skip"].includes(mapping.action)
-            && ["resume", "exact_fact", "normalized_fact", "derived", "semantic_inference", "grounded_generation", "user_preference"].includes(mapping.basis) && Number(mapping.confidence) >= AI_AUTOFILL_MIN_CONFIDENCE) {
-            aiValueMappings[mapping.fieldKey] = {
-              value: mapping.value.trim(),
-              displayValue: typeof mapping.displayValue === "string" ? mapping.displayValue.trim() : null,
-              confidence: Number(mapping.confidence),
-              basis: mapping.basis,
-              action: mapping.action || "fill",
-              evidence: Array.isArray(mapping.evidence) ? mapping.evidence : [],
-              source: mapping.source || null,
-              needsReview: mapping.needsReview === true,
-              controlType: mapping.controlType || null,
-              optionMatch: mapping.optionMatch || null,
-            };
-            acceptedMappings += 1;
-          }
+        const batchMappings = acceptPayload(payload, batch);
+        updateProgress("match", "loading", `第 ${index + 1}/${batches.length} 批分析完成，正在写入并回读`);
+        if (Object.keys(batchMappings).length) {
+          const batchFill = await executeMappedFillProgressively({
+            tabId: tab.id,
+            mappings: batchMappings,
+            fieldAddressByQualifiedKey,
+            mappingStorageKey: "aiValueMappings",
+            taskSignal: taskController.signal,
+            storageState: {
+              analysisOnly: false,
+              aiOnly: false,
+              aiFieldMappings: {},
+              aiAutofillOnly: true,
+            },
+          });
+          progressiveResults.push(...batchFill.results);
+          progressiveFailedFrames += batchFill.failedFrames;
+          progressiveFailedFields += batchFill.failedFields;
+          progressiveReboundFields += batchFill.reboundFieldCount;
+          progressiveRebindFailures += batchFill.rebindFailedFields;
         }
-      };
-      for (const payload of payloads) acceptPayload(payload);
+        completedBatches += 1;
+        const runningTotal = summarizeFrameResults(progressiveResults);
+        progressiveFilledOnPage = runningTotal.filled;
+        updateProgress("fill", "loading", `已完成 ${completedBatches}/${batches.length} 批，当前写入 ${runningTotal.filled} 项`);
+        updateTaskProgress(1 + completedBatches, totalTaskUnits, `第 ${completedBatches}/${batches.length} 批已分析、写入并回读`);
+      }
       console.info("[starjob_pipeline_checkpoint_B_C]", {
         operationId,
         pageSnapshotId,
@@ -819,39 +929,25 @@ async function fillCurrentPage() {
         aiRawMappingCount,
         validatedMappingCount,
         compiledActionCount: Object.keys(aiValueMappings).length,
+        localExactFallbackCount: localExactFallbacks,
         missingDeterministicFieldCount: fields.filter((field) => field.deterministicKey && Number(field.deterministicConfidence) >= 0.9 && !aiValueMappings[field.fieldKey]).length,
       });
-      updateProgress("match", "success", `所有批次成功后，AI 找到 ${acceptedMappings} 个有简历依据或可追溯改写的值`);
-      updateProgress("fill", "loading", "正在按页面顺序填写并选择空白项");
-      updateTaskProgress(2 + batches.length, totalTaskUnits, `已确认 ${acceptedMappings} 个有简历依据的值，正在填写`);
+      updateProgress("match", "success", `${completedBatches} 批均已分析并写入，取得 ${acceptedMappings} 个 AI 答案${localExactFallbacks ? `，并补上 ${localExactFallbacks} 个简历确定值` : ""}`);
+      updateProgress("fill", "loading", "正在汇总每批写入回读结果");
+      updateTaskProgress(2 + batches.length, totalTaskUnits, `正在汇总 ${acceptedMappings} 个可用值`);
       throwIfAborted(taskController.signal);
       activeFillAbortController = null;
-      elements.fillButton.disabled = true;
-      elements.fillButton.textContent = "正在安全写入页面";
-      const aiFill = await executeMappedFillByFrame({
-        tabId: tab.id,
-        mappings: aiValueMappings,
-        fieldAddressByQualifiedKey,
-        mappingStorageKey: "aiValueMappings",
-        taskSignal: taskController.signal,
-        storageState: {
-          analysisOnly: false,
-          aiOnly: false,
-          aiFieldMappings: {},
-          aiAutofillOnly: true,
-        },
-      });
-      throwIfAborted(taskController.signal);
-      const total = summarizeFrameResults(aiFill.results);
+      const total = summarizeFrameResults(progressiveResults);
       console.info("[starjob_pipeline_checkpoint_D]", {
         ...total,
-        reboundFieldCount: aiFill.reboundFieldCount,
-        rebindFailedFields: aiFill.rebindFailedFields,
-        frames: aiFill.results.map(({ frameId, result }) => ({ frameId, diagnostics: result?.pipelineDiagnostics, fieldTraces: result?.fieldTraces })),
+        reboundFieldCount: progressiveReboundFields,
+        rebindFailedFields: progressiveRebindFailures,
+        frames: progressiveResults.map(({ frameId, result }) => ({ frameId, diagnostics: result?.pipelineDiagnostics, fieldTraces: result?.fieldTraces })),
       });
-      total.failed += aiFill.failedFields;
-      total.manual += aiFill.failedFields;
-      const frameFailureCopy = aiFill.failedFrames > 0 ? `（涉及 ${aiFill.failedFrames} 个页面区域）` : "";
+      total.failed += progressiveFailedFields;
+      total.manual = Math.max(0, fields.length - total.filled - total.preserved);
+      total.unmatched = [...new Set(total.unmatched)];
+      const frameFailureCopy = progressiveFailedFrames > 0 ? `（涉及 ${progressiveFailedFrames} 个页面区域）` : "";
       updateProgress("fill", total.failed > 0 ? "fallback" : "success", `已填写 ${total.filled} 项，其中 ${total.derived} 项为 AI 派生${total.failed > 0 ? `，${total.failed} 项写入失败${frameFailureCopy}` : ""}`);
       updateProgress("summary", total.failed > 0 ? "fallback" : "success", `保留已有内容 ${total.preserved} 项，${total.manual} 项需手动确认${total.failed > 0 ? `，其中 ${total.failed} 项写入失败` : ""}`);
       updateTaskProgress(totalTaskUnits, totalTaskUnits, `已填写 ${total.filled} 项，${total.manual} 项需手动确认${total.failed > 0 ? `，${total.failed} 项写入失败` : ""}`);
@@ -964,10 +1060,17 @@ async function fillCurrentPage() {
       total.unmatched,
     );
   } catch (error) {
+    console.error("[starjob_fill_failed]", {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : null,
+      operationId: taskOperationId,
+      progressiveFilledOnPage,
+    });
     updateProgress("summary", "fallback", "填写中断，请查看下方原因");
-    showResult(taskController.signal.reason === "cancelled" ? "本次填写已取消" : "本次填写未完成", friendlyFillError(error, taskController.signal.reason), taskController.signal.reason === "cancelled" ? "warning" : "error");
+    const partialWriteCopy = progressiveFilledOnPage > 0 ? `此前 ${progressiveFilledOnPage} 项已经写入并通过回读，可直接保留或手动修改。` : "";
+    showResult(taskController.signal.reason === "cancelled" ? "本次填写已取消" : "本次填写未完成", `${friendlyFillError(error, taskController.signal.reason)}${partialWriteCopy}`, taskController.signal.reason === "cancelled" ? "warning" : "error");
   } finally {
-    await chrome.storage.local.remove(["analysisOnly", "aiOnly", "aiFieldMappings", "aiAutofillOnly", "aiValueMappings"]);
+    await chrome.storage.local.remove(["analysisOnly", "aiOnly", "aiFieldMappings", "aiAutofillOnly", "aiValueMappings", "aiTargetFieldKeys"]);
     stopProgressClock();
     if (activeFillAbortController === taskController) activeFillAbortController = null;
     if (taskOperationId && activeAiOperationId === taskOperationId) activeAiOperationId = null;

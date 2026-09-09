@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "拾星网申助手",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "description": "把所选拾星简历作为事实依据，结合岗位与字段语义填写常见 ATS 表单；最终由你确认提交。",
   "action": {
     "default_popup": "popup.html",

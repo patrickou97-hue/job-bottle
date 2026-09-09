@@ -36,6 +36,7 @@ const FIXTURES = [
     path: "/browser-extension/tests/ai-autofill-large-iframe-fixture.html",
     marker: "STARJOB_AI_AUTOFILL_LARGE_IFRAME_TEST_PASS",
     label: "AI 19 批跨页面区域夹具",
+    virtualTimeBudget: 40_000,
   },
   {
     path: "/browser-extension/tests/ai-autofill-limit-fixture.html",
@@ -45,12 +46,17 @@ const FIXTURES = [
   {
     path: "/browser-extension/tests/ai-autofill-batch-failure-fixture.html",
     marker: "STARJOB_AI_AUTOFILL_BATCH_FAILURE_TEST_PASS",
-    label: "AI 批次失败零写入夹具",
+    label: "AI 后续批次失败时保留已写入结果夹具",
   },
   {
     path: "/browser-extension/tests/four-internships.html",
     marker: "STARJOB_FOUR_INTERNSHIPS_TEST_PASS",
     label: "四段实习记录身份夹具",
+  },
+  {
+    path: "/browser-extension/tests/local-exact-fallback.html",
+    marker: "STARJOB_LOCAL_EXACT_FALLBACK_TEST_PASS",
+    label: "AI 漏答确定事实时本地兜底夹具",
   },
   {
     path: "/browser-extension/tests/two-projects.html",
@@ -66,6 +72,11 @@ const FIXTURES = [
     path: "/browser-extension/tests/split-year-month.html",
     marker: "STARJOB_SPLIT_DATE_TEST_PASS",
     label: "年月拆分控件夹具",
+  },
+  {
+    path: "/browser-extension/tests/moka-nested-date-range.html",
+    marker: "STARJOB_MOKA_NESTED_DATE_RANGE_TEST_PASS",
+    label: "Moka 嵌套年月范围控件夹具",
   },
   {
     path: "/browser-extension/tests/rerender-after-first-record.html",
@@ -87,6 +98,11 @@ const FIXTURES = [
     marker: "STARJOB_BILIBILI_CONTROLS_TEST_PASS",
     label: "哔哩哔哩式自定义控件与手机号区号夹具",
   },
+  {
+    path: "/browser-extension/tests/visual-layout-fixture.html",
+    marker: "STARJOB_VISUAL_LAYOUT_TEST_PASS",
+    label: "可见标签、页面导航排除与硬事实优先夹具",
+  },
 ];
 const MIME_TYPES = new Map([
   [".css", "text/css; charset=utf-8"],
@@ -95,6 +111,11 @@ const MIME_TYPES = new Map([
   [".json", "application/json; charset=utf-8"],
   [".png", "image/png"],
 ]);
+const requestedFixture = process.argv[2]?.trim();
+const fixturesToRun = requestedFixture
+  ? FIXTURES.filter((fixture) => fixture.path.includes(requestedFixture) || fixture.marker === requestedFixture)
+  : FIXTURES;
+if (!fixturesToRun.length) throw new Error(`未找到扩展夹具：${requestedFixture}`);
 
 const chromePath = findChromePath();
 if (!chromePath) {
@@ -106,11 +127,12 @@ const server = createFixtureServer();
 
 try {
   const port = await listen(server);
-  for (const [index, fixture] of FIXTURES.entries()) {
+  for (const [index, fixture] of fixturesToRun.entries()) {
     const html = await runFixture({
       chromePath,
       profileDirectory: path.join(profileDirectory, String(index + 1)),
       url: `http://127.0.0.1:${port}${fixture.path}`,
+      virtualTimeBudget: fixture.virtualTimeBudget,
     });
     if (!html.includes(`<title>${fixture.marker}</title>`)) {
       const result = extractFixtureResult(html);
@@ -118,7 +140,7 @@ try {
     }
     console.log(`✓ ${fixture.label}通过`);
   }
-  console.log(`✓ 扩展浏览器夹具全部通过：${FIXTURES.length}/${FIXTURES.length}`);
+  console.log(`✓ 扩展浏览器夹具全部通过：${fixturesToRun.length}/${fixturesToRun.length}`);
 } finally {
   await close(server);
   await removeTemporaryDirectory(profileDirectory);
@@ -204,7 +226,7 @@ async function removeTemporaryDirectory(directory) {
   throw lastError;
 }
 
-function runFixture({ chromePath, profileDirectory, url }) {
+function runFixture({ chromePath, profileDirectory, url, virtualTimeBudget = 8_000 }) {
   return new Promise((resolve, reject) => {
     const child = spawn(chromePath, [
       "--headless=new",
@@ -217,7 +239,7 @@ function runFixture({ chromePath, profileDirectory, url }) {
       "--no-sandbox",
       "--remote-debugging-port=0",
       `--user-data-dir=${profileDirectory}`,
-      "--virtual-time-budget=8000",
+      `--virtual-time-budget=${virtualTimeBudget}`,
       "--dump-dom",
       url,
     ], { stdio: ["ignore", "pipe", "pipe"] });
@@ -229,7 +251,8 @@ function runFixture({ chromePath, profileDirectory, url }) {
     let resultReady = false;
     let forceKillTimer = null;
     let forceCompleteTimer = null;
-    const timeout = setTimeout(() => requestStop(new Error("浏览器夹具执行超过 20 秒")), 20_000);
+    const processTimeout = Math.max(20_000, virtualTimeBudget + 5_000);
+    const timeout = setTimeout(() => requestStop(new Error(`浏览器夹具执行超过 ${Math.round(processTimeout / 1_000)} 秒`)), processTimeout);
 
     child.stdout.on("data", (chunk) => {
       html += chunk.toString();

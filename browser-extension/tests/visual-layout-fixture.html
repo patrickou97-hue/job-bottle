@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>pending</title>
+    <style>
+      body { font-family: sans-serif; margin: 0; }
+      header { display: flex; gap: 12px; padding: 12px; background: #eef3f8; }
+      header input { width: 160px; }
+      main { padding: 24px; }
+      article { margin: 18px 0; padding: 18px; background: #f7fafc; }
+      .row { display: grid; grid-template-columns: 150px 260px; gap: 20px; align-items: center; margin: 12px 0; }
+      .range { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; }
+      input, select, textarea, button[role="combobox"] { min-height: 32px; width: 250px; }
+      .range input { width: 112px; }
+    </style>
+  </head>
+  <body>
+    <header class="global-job-search">
+      <a href="#jobs">职位列表</a>
+      <input id="header-search-one" placeholder="搜索职位" />
+      <input id="header-search-two" placeholder="搜索公司" />
+    </header>
+    <main>
+      <section>
+        <h2>基本信息</h2>
+        <div class="row"><div class="field-label">姓名</div><div><input id="field-a" /></div></div>
+        <div class="row">
+          <div class="field-label">手机号码</div>
+          <div><select id="field-b"><option>中国大陆 +86</option></select><input id="field-c" type="tel" /></div>
+        </div>
+      </section>
+      <section>
+        <h2>教育经历</h2>
+        <article class="education-card">
+          <div class="row"><div class="field-label">学校名称</div><div><input id="field-d" /></div></div>
+          <div class="row"><div class="field-label">起止时间</div><div class="range"><input id="field-e" type="date" /><span>至</span><input id="field-f" type="date" /></div></div>
+          <div class="row"><div class="field-label">专业</div><div><input id="field-g" /></div></div>
+          <div class="row"><div class="field-label">学历</div><div><select id="field-h"><option value="">请选择</option><option>本科</option><option>硕士</option></select></div></div>
+        </article>
+      </section>
+      <section>
+        <h2>实习/工作经历</h2>
+        <article class="work-card">
+          <div class="row"><div class="field-label">公司类型</div><div><select id="field-i"><option value="">请选择</option><option>民营企业</option></select></div></div>
+          <div class="row"><div class="field-label">公司名称</div><div><input id="field-j" /></div></div>
+          <div class="row"><div class="field-label">职位名称</div><div><input id="field-k" /></div></div>
+          <div class="row"><div class="field-label">起止时间</div><div class="range"><input id="field-l" type="date" /><span>至</span><input id="field-m" type="date" /></div></div>
+          <div class="row"><div class="field-label">工作描述</div><div><textarea id="field-n"></textarea></div></div>
+        </article>
+      </section>
+    </main>
+    <pre id="result">pending</pre>
+    <script>
+      const resume = {
+        id: "resume-visual-layout",
+        title: "校招简历",
+        content: {
+          basics: { name: "王小星", phone: "+86 18523103352", email: "star@example.com" },
+          education: [{ id: "edu-1", school: "西南财经大学", degree: "硕士", major: "金融学", startDate: "2025-09", endDate: "2027-08" }],
+          work: [{ id: "work-1", experienceType: "internship", company: "京东集团", title: "商业分析实习生", startDate: "2026-01", endDate: "2026-04", bullets: ["负责经营分析与指标拆解"] }],
+          projects: [], skills: [], campus: [], awards: [], certifications: [], languages: [],
+        },
+      };
+      const storage = {
+        starjobResumes: [resume], activeResumeId: resume.id, fillMode: "ai", analysisOnly: true,
+        aiOnly: false, aiFieldMappings: {}, aiAutofillOnly: false, aiValueMappings: {},
+      };
+      window.chrome = { storage: { local: { get: async () => ({ ...storage }) } } };
+
+      (async () => {
+        const fillSource = await fetch("../starjob-resume-assistant/fill.js").then((response) => response.text());
+        const analysis = await window.eval(fillSource);
+        const byId = (id) => analysis.fields.find((field) => field.attributes.split(" ").includes(id));
+        const expectedKeys = {
+          "field-a": "basics.name",
+          "field-c": "basics.phone",
+          "field-d": "education.school",
+          "field-e": "education.startDate",
+          "field-f": "education.endDate",
+          "field-g": "education.major",
+          "field-h": "education.degree",
+          "field-j": "work.company",
+          "field-k": "work.title",
+          "field-l": "work.startDate",
+          "field-m": "work.endDate",
+          "field-n": "work.description",
+        };
+        const identityCorrect = Object.entries(expectedKeys).every(([id, key]) => byId(id)?.deterministicKey === key);
+        const chromeExcluded = !byId("header-search-one") && !byId("header-search-two");
+        const countryNotPhone = byId("field-b")?.deterministicKey !== "basics.phone";
+        const companyTypeNotCompany = byId("field-i")?.deterministicKey !== "work.company";
+
+        storage.analysisOnly = false;
+        storage.aiAutofillOnly = true;
+        storage.aiValueMappings = Object.fromEntries(Object.keys(expectedKeys).map((id) => {
+          const field = byId(id);
+          const intentionallyWrong = id === "field-n" ? "结合岗位要求重写后的经历描述" : "2027.08";
+          return [field.fieldKey, { value: intentionallyWrong, confidence: 0.99, basis: id === "field-n" ? "grounded_generation" : "semantic_inference" }];
+        }));
+        const summary = await window.eval(fillSource);
+        const value = (id) => document.querySelector(`#${id}`).value;
+        const actual = {
+          identityCorrect, chromeExcluded, countryNotPhone, companyTypeNotCompany,
+          name: value("field-a"), phone: value("field-c"), school: value("field-d"),
+          educationStart: value("field-e"), educationEnd: value("field-f"), major: value("field-g"), degree: value("field-h"),
+          company: value("field-j"), title: value("field-k"), workStart: value("field-l"), workEnd: value("field-m"), description: value("field-n"),
+          summary,
+        };
+        actual.passed = identityCorrect && chromeExcluded && countryNotPhone && companyTypeNotCompany
+          && actual.name === "王小星" && actual.phone === "18523103352" && actual.school === "西南财经大学"
+          && actual.educationStart === "2025-09-01" && actual.educationEnd === "2027-08-01"
+          && actual.major === "金融学" && actual.degree === "硕士"
+          && actual.company === "京东集团" && actual.title === "商业分析实习生"
+          && actual.workStart === "2026-01-01" && actual.workEnd === "2026-04-01"
+          && actual.description === "结合岗位要求重写后的经历描述" && summary.failed === 0;
+        document.querySelector("#result").textContent = JSON.stringify(actual);
+        document.title = actual.passed ? "STARJOB_VISUAL_LAYOUT_TEST_PASS" : "STARJOB_VISUAL_LAYOUT_TEST_FAIL";
+      })().catch((error) => {
+        document.querySelector("#result").textContent = JSON.stringify({ passed: false, error: String(error), stack: error?.stack });
+        document.title = "STARJOB_VISUAL_LAYOUT_TEST_FAIL";
+      });
+    </script>
+  </body>
+</html>

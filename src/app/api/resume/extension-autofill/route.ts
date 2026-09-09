@@ -121,6 +121,7 @@ const fieldSchema = z.object({
   tag: z.string().max(24).optional().default(""),
   role: z.string().max(40).optional().default(""),
   accessibleName: z.string().max(180).optional().default(""),
+  ownDescriptor: z.string().max(240).optional().default(""),
   labelCandidates: z.array(labelCandidateSchema).max(12).optional().default([]),
   description: z.string().max(240).optional().default(""),
   sectionPath: z.array(z.string().max(120)).max(8).optional().default([]),
@@ -606,10 +607,41 @@ function parseResult(
       const recordDescriptionValue = deriveRecordDescriptionValue(field, resume);
       const derivedValue = deriveGraduationValue(field, resume);
       const ageValue = deriveAgeValue(field, resume);
-      // A validated model answer is the compiled plan. Deterministic values are
-      // fallbacks for omitted answers only; replacing the model answer here can
-      // turn an incorrectly inferred deterministicKey into a cross-field write
-      // (for example graduation date -> school name).
+      // Hard facts are compiled from the selected resume instead of being left
+      // to free-form model generation.  The scanner's direct descriptor is
+      // checked here and again in the extension before any value is written.
+      // Narrative answers still prefer the model so they can be adapted to the
+      // application instead of copied verbatim from the resume.
+      if (isHardResumeFactField(field)
+        && exactResumeValue?.value
+        && isFieldValueSemanticallyCompatible(exactResumeValue.value, field)) {
+        return {
+          field,
+          mapping: {
+            ...mapping,
+            action: field.interactionType.includes("select") ? "select" as const : "fill" as const,
+            value: exactResumeValue.value,
+            confidence: 0.99,
+            basis: "exact_fact" as const,
+            source: { type: "resume" as const, path: exactResumeValue.resumePath },
+            evidence: [exactResumeValue.resumePath],
+          },
+        };
+      }
+      if (isHardResumeFactField(field)
+        && recordDateValue
+        && isFieldValueSemanticallyCompatible(recordDateValue, field)) {
+        return {
+          field,
+          mapping: {
+            ...mapping,
+            action: field.interactionType.includes("select") ? "select" as const : "fill" as const,
+            value: recordDateValue,
+            confidence: 0.99,
+            basis: "exact_fact" as const,
+          },
+        };
+      }
       if (hasUsableModelMapping) return { field, mapping };
       if (exactResumeValue?.value) {
         return {
@@ -693,6 +725,13 @@ function parseResult(
     console.warn("[extension_autofill_rejected_result]", { reason: "invalid_json", contentLength: content.length });
     return null;
   }
+}
+
+function isHardResumeFactField(field: z.infer<typeof fieldSchema>) {
+  const ownDescriptor = normalizeChoice(field.ownDescriptor || `${field.label} ${field.accessibleName} ${field.attributes}`);
+  if (field.deterministicKey === "basics.name"
+    && /姓名拼音|名字拼音|拼音|pinyin|英文姓名|英文名|englishname|firstname|lastname|givenname|familyname|surname/.test(ownDescriptor)) return false;
+  return /^(?:basics\.(?:name|phone|email|birthDate|gender|city|address)|education\.(?:school|major|degree|startDate|endDate)|work\.(?:company|title|startDate|endDate)|project\.(?:name|role|startDate|endDate)|campus\.(?:organization|role|startDate|endDate))$/.test(field.deterministicKey || "");
 }
 
 function normalizeJsonCandidate(content: string) {
@@ -843,7 +882,7 @@ function getScopedFieldFacts(field: z.infer<typeof fieldSchema>, resume: z.infer
 }
 
 function isFieldValueSemanticallyCompatible(value: string, field: z.infer<typeof fieldSchema>) {
-  const descriptor = normalizeChoice(`${field.label} ${field.accessibleName} ${field.attributes} ${field.context} ${field.sectionPath.join(" ")}`);
+  const descriptor = normalizeChoice(field.ownDescriptor || `${field.label} ${field.accessibleName} ${field.attributes}`);
   return isAutofillFieldValueSemanticallyCompatible({
     value,
     deterministicKey: field.deterministicKey || "",
@@ -999,6 +1038,10 @@ function deriveRecordDateValue(field: z.infer<typeof fieldSchema>, resume: z.inf
 const REPEATABLE_SECTIONS = new Set(["education", "work", "project", "campus", "awards", "certifications", "languages"]);
 
 function deriveExactResumeValue(field: z.infer<typeof fieldSchema>, resume: z.infer<typeof resumeSchema>) {
+  if (field.deterministicKey === "skills" && field.deterministicConfidence >= 0.9) {
+    const value = resume.content.skills.flatMap((group) => group.skills).filter(Boolean).join("、");
+    return value ? { value, resumePath: "skills", failureCode: null } : null;
+  }
   const [section, property] = (field.deterministicKey || "").split(".");
   if (!section || !property || field.deterministicConfidence < 0.9) return null;
   if (REPEATABLE_SECTIONS.has(section)) {
@@ -1021,10 +1064,6 @@ function deriveExactResumeValue(field: z.infer<typeof fieldSchema>, resume: z.in
     const rawValue = (resume.content.basics as Record<string, unknown>)[property] ?? (property === "targetRole" ? resume.targetRole : null);
     const value = Array.isArray(rawValue) ? rawValue.filter(Boolean).join("、") : String(rawValue ?? "").trim();
     return value ? { value, resumePath: `basics.${property}`, failureCode: null } : null;
-  }
-  if (field.deterministicKey === "skills") {
-    const value = resume.content.skills.flatMap((group) => group.skills).filter(Boolean).join("、");
-    return value ? { value, resumePath: "skills", failureCode: null } : null;
   }
   return null;
 }
@@ -1138,5 +1177,6 @@ const SYSTEM_PROMPT = `你是拾星网申助手的保守型填写引擎。你只
 12. 原样事实用 exact_fact；格式或语言规范化用 normalized_fact；唯一计算用 derived；由多条事实归纳出的能力判断用 semantic_inference；针对问题组织的新叙述用 grounded_generation；简历中明确写过的偏好用 user_preference。后三者必须返回 evidence 路径。职位上下文只能决定表达重点，不能成为个人事实。
 13. 字段意义、记录序号或值有任何不确定时返回 null。不得把一段经历的值填到另一段经历。
 14. 必须逐一判断每个输入字段。每个 fieldKey 必须恰好返回一个 outcome；不能填写时返回 manual 或 skip，不得省略，不得因为字段多而停止处理后面的字段。
-15. 明确执行允许的低风险派生。例如简历姓名为“王小星”且字段为“姓名拼音”时应填写“Wang Xiaoxing”；教育结束日期晚于当前日期且字段询问是否应届毕业生时，应从“是/否”等给定选项中选择唯一等价项。
-16. 用户决策题、验证码、密码和登录验证返回 status=manual、action=manual、value=null；不得自动提交申请。不输出解释或 Markdown，只返回 JSON。返回前核对 outcomes 数量、fieldKey 集合和输入完全一致。`;
+15. 字段身份优先级固定为 ownDescriptor 与高置信 labelCandidates，其次是 deterministicKey / semanticKey，最后才是 context、nearbyText 和 sectionPath。周边区块出现“日期”“公司”等词，不能覆盖字段自己的“学校名称”“公司类型”“手机号”等标签；发生冲突时返回 manual。
+16. 明确执行允许的低风险派生。例如简历姓名为“王小星”且字段为“姓名拼音”时应填写“Wang Xiaoxing”；教育结束日期晚于当前日期且字段询问是否应届毕业生时，应从“是/否”等给定选项中选择唯一等价项。
+17. 用户决策题、验证码、密码和登录验证返回 status=manual、action=manual、value=null；不得自动提交申请。不输出解释或 Markdown，只返回 JSON。返回前核对 outcomes 数量、fieldKey 集合和输入完全一致。`;

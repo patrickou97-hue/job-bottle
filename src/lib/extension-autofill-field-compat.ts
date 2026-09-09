@@ -25,11 +25,18 @@ export function isAutofillFieldValueSemanticallyCompatible(input: {
   hasDatePart: boolean;
 }) {
   const { value, deterministicKey: key, descriptor, hasDatePart } = input;
+  const normalizedDescriptor = descriptor.toLowerCase();
+  const compactDescriptor = normalizedDescriptor.replace(/[\s\-_./\\:：,，()（）\[\]【】{}<>《》?？*]+/g, "");
+  const structuralField = ["education.school", "education.major", "education.degree", "work.company", "work.title", "project.name", "project.role"].includes(key)
+    || /学校名称|毕业院校|院校名称|专业名称|学历|公司名称|职位名称|项目名称|项目角色|school\s*name|company\s*name|job\s*title|project\s*name/.test(normalizedDescriptor);
+  const ownDateLabel = /开始时间|结束时间|起止时间|就读时间|入学时间|毕业时间|日期|年月|date|year|month/.test(normalizedDescriptor);
   const dateField = hasDatePart
     || /\.(?:startDate|endDate|date)$/.test(key)
-    || /开始时间|结束时间|入学时间|毕业时间|日期|年月|date|year|month/.test(descriptor);
+    || (!key && ownDateLabel);
+  if (structuralField && isAutofillDateLike(value)) return false;
   if (dateField && !isAutofillDateLike(value)) return false;
-  if (!dateField && ["education.school", "education.major", "education.degree", "work.company", "work.title", "project.name", "project.role"].includes(key) && isAutofillDateLike(value)) return false;
+  if (key === "work.company" && /公司类型|公司性质|所在行业|行业类型|company\s*type|industry/.test(normalizedDescriptor)) return false;
+  if (key === "basics.phone" && /国家地区|国家代码|区号|country|callingcode/.test(compactDescriptor)) return false;
   if (key === "basics.phone" || /手机号|联系电话|mobile|phone|telephone/.test(descriptor)) return isAutofillPhoneLike(value);
   if (key === "basics.email" || /邮箱|email/.test(descriptor)) return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
   if (["basics.linkedin", "basics.github", "basics.website", "project.url"].includes(key)

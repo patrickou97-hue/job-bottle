@@ -56,6 +56,14 @@
     document.querySelectorAll("select[data-part$='year']").forEach((select) => options(select, 2024, 2026));
     document.querySelectorAll("select[data-part$='month']").forEach((select) => options(select, 1, 12));
   };
+  const mokaDateControl = (part) => `<div class="picker-a"><div class="picker-b"><div class="picker-c"><div role="combobox">${field(part.endsWith("year") ? "年" : "月", "select", `data-part='${part}'`)}</div></div></div></div>`;
+  const mokaDateRange = () => `<div class="apply-field"><span>起止时间</span><div class="ctrl"><div class="date-range">
+    ${mokaDateControl("start-year")}
+    ${mokaDateControl("start-month")}
+    <span>-</span>
+    ${mokaDateControl("end-year")}
+    ${mokaDateControl("end-month")}
+  </div></div></div>`;
   const unique = (values) => new Set(values).size === values.length;
   const evaluate = () => window.eval(fillSource);
   const aiValueForField = (item) => {
@@ -65,7 +73,7 @@
     if (property === "description") return source.bullets.join("\n");
     return source[property] ?? "";
   };
-  const analyseThenAiFill = async () => {
+  const analyseThenAiFill = async ({ localExactOnly = false } = {}) => {
     storage.analysisOnly = true;
     storage.aiAutofillOnly = false;
     const analysis = await evaluate();
@@ -77,16 +85,32 @@
     storage.aiAutofillOnly = true;
     storage.fillMode = "ai";
     storage.aiValueMappings = Object.fromEntries(analysis.fields.map((item) => [item.fieldKey, {
-      value: aiValueForField(item),
+      value: localExactOnly ? null : aiValueForField(item),
       confidence: 0.99,
-      basis: "resume",
+      basis: localExactOnly ? "exact_fact" : "resume",
+      localExactOnly,
     }]));
     const summary = await evaluate();
     return { analysis, summary };
   };
 
   let actual = {};
-  if (scenario === "four-internships") {
+  if (scenario === "local-exact-fallback") {
+    document.querySelector("#form").innerHTML = `<section><p>请确保证件信息准确无误；中国籍请选择身份证。</p>${field("姓名")}${field("手机号", "input", "type='tel'")}</section><h2>实习经历</h2>${work.slice(0, 2).map(() => workRecord()).join("")}`;
+    const { summary } = await analyseThenAiFill({ localExactOnly: true });
+    const basics = [...document.querySelectorAll("#form > section label input")].map((input) => input.value);
+    const records = [...document.querySelectorAll(".record")];
+    actual = {
+      basics,
+      companies: records.map((record) => record.querySelector("input").value),
+      titles: records.map((record) => record.querySelectorAll("input")[1].value),
+      summary,
+    };
+    actual.passed = basics.join("|") === "王小星|13800000000"
+      && actual.companies.join("|") === work.slice(0, 2).map((item) => item.company).join("|")
+      && actual.titles.join("|") === work.slice(0, 2).map((item) => item.title).join("|")
+      && summary.filled >= 6;
+  } else if (scenario === "four-internships") {
     document.querySelector("#form").innerHTML = `<h2>实习经历</h2>${work.map(() => workRecord()).join("")}`;
     const { analysis, summary } = await analyseThenAiFill();
     const records = [...document.querySelectorAll(".record")];
@@ -131,6 +155,23 @@
     actual.passed = actual.values[0].join("|") === "2026|01|2026|02"
       && actual.values[1].join("|") === "2025|09|2025|12"
       && actual.dateParts.join("|") === "year|month|year|month|year|month|year|month";
+  } else if (scenario === "moka-nested-date-range") {
+    document.querySelector("#form").innerHTML = `<div class="moka-section-header"><span>实习经历</span><button type="button">添加</button></div><article class="record">${mokaDateRange()}${field("公司名称")}${field("职位名称")}</article>`;
+    setupSplitOptions();
+    const { analysis, summary } = await analyseThenAiFill({ localExactOnly: true });
+    const dateFields = analysis.fields.filter((item) => item.deterministicKey === "work.startDate" || item.deterministicKey === "work.endDate");
+    actual = {
+      values: [...document.querySelectorAll("select")].map((select) => select.value),
+      keys: dateFields.map((item) => item.deterministicKey),
+      dateParts: dateFields.map((item) => item.datePart),
+      recordIndices: dateFields.map((item) => item.recordIndex),
+      summary,
+    };
+    actual.passed = actual.values.join("|") === "2026|01|2026|02"
+      && actual.keys.join("|") === "work.startDate|work.startDate|work.endDate|work.endDate"
+      && actual.dateParts.join("|") === "year|month|year|month"
+      && actual.recordIndices.every((value) => value === 0)
+      && summary.filled >= 6;
   } else if (scenario === "rerender-after-first-record") {
     document.querySelector("#form").innerHTML = `<h2>实习经历</h2>${work.slice(0, 2).map(() => workRecord()).join("")}`;
     const form = document.querySelector("#form");

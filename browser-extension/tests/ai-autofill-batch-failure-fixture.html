@@ -2,7 +2,7 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <title>拾星 AI 批次失败零写入测试</title>
+    <title>拾星 AI 批次失败保留已写入结果测试</title>
   </head>
   <body>
     <main>
@@ -86,7 +86,8 @@
           executeScript: async ({ target }) => {
             if (!target.allFrames) {
               pageWriteCalls += 1;
-              return [];
+              const filled = Object.keys(storage.aiValueMappings || {}).length;
+              return [{ frameId: 41, result: { scanned: fields.length, matched: filled, filled, preserved: 0, empty: 0, manual: 0, derived: 0, failed: 0, unmatched: [] } }];
             }
             return [{ frameId: 41, result: { scanned: fields.length, identified: 0, fields, sensitive: 0 } }];
           },
@@ -151,9 +152,10 @@
           summaryText: document.querySelector('[data-step="summary"] p').textContent,
         };
         const passed = actual.modelCalls === 2
-          && actual.pageWriteCalls === 0
+          && actual.pageWriteCalls === 1
           && actual.title === "本次填写未完成"
-          && actual.text === "模拟批次失败"
+          && actual.text.includes("模拟批次失败")
+          && actual.text.includes("已经写入并通过回读")
           && actual.summaryText.includes("填写中断");
         document.querySelector("#result").textContent = JSON.stringify({ passed, actual });
         document.title = passed

@@ -61,7 +61,7 @@ test("扩展按 frameId 隔离智能字段映射", () => {
   assert.match(popup, /target:\s*\{ tabId, frameIds: \[frameId\] \}/);
   assert.match(popup, /mappingsByFrame\.get\(entry\.frameId\)\[entry\.rawFieldKey\]/);
   assert.match(popup, /failedFields \+= Object\.keys\(frameMappings\)\.length/);
-  assert.match(popup, /const freshResults = await scanStableForm\(tabId, taskSignal\)/);
+  assert.match(popup, /const freshResults = await scanStableForm\(tabId, taskSignal, scanAttempts\)/);
   assert.match(popup, /reboundFieldCount/);
   assert.match(popup, /rebindFailedFields/);
 });
@@ -75,15 +75,17 @@ test("单字段异常不会中断整页并会如实汇总", () => {
   assert.match(popup, /页面控件异常写入失败/);
 });
 
-test("服务端和扩展统一接受阈值，合格 AI 结果优先于本地兜底", () => {
+test("服务端和扩展统一接受阈值，硬事实优先取简历且叙述字段允许 AI 改写", () => {
   assert.match(popup, /const AI_AUTOFILL_MIN_CONFIDENCE = 0\.68/);
   assert.match(fill, /const AI_AUTOFILL_MIN_CONFIDENCE = 0\.68/);
   assert.match(popup, /Number\(mapping\.confidence\) >= AI_AUTOFILL_MIN_CONFIDENCE/);
   assert.match(fill, /Number\(mapping\.confidence\) >= AI_AUTOFILL_MIN_CONFIDENCE/);
-  assert.match(route, /if \(hasUsableModelMapping\) return \{ field, mapping \}/);
-  const selectedValueIndex = fill.indexOf("const selectedValue = hasAcceptedMapping");
-  const exactFallbackIndex = fill.indexOf(": exactStructuredValue;", selectedValueIndex);
-  assert.ok(selectedValueIndex >= 0 && exactFallbackIndex > selectedValueIndex, "客户端必须先采用合格 AI 结果，再使用结构化兜底");
+  assert.match(route, /function isHardResumeFactField/);
+  const hardFactIndex = route.indexOf("if (isHardResumeFactField(field)");
+  const modelMappingIndex = route.indexOf("if (hasUsableModelMapping) return { field, mapping }");
+  assert.ok(hardFactIndex >= 0 && modelMappingIndex > hardFactIndex, "姓名、手机号、学校、公司和日期等硬事实必须先取所选简历");
+  assert.match(fill, /const preferExactValue = exactStructuredValue !== undefined && isHardExactKey/);
+  assert.match(fill, /const selectedValue = preferExactValue[\s\S]*\? exactStructuredValue[\s\S]*: hasAcceptedMapping/);
 });
 
 test("学校、日期、联系方式和链接使用字段级语义边界", () => {
@@ -94,6 +96,9 @@ test("学校、日期、联系方式和链接使用字段级语义边界", () =>
   assert.match(route, /isAutofillFieldValueSemanticallyCompatible/);
   assert.match(route, /if \(property\) \{[\s\S]*collectResumeFacts\(selected\.map/);
   assert.match(fill, /digits\.length === 13 && digits\.startsWith\("86"\)/);
+  assert.match(fill, /function getVisualLabelCandidates/);
+  assert.match(fill, /function isLikelyPageChromeControl/);
+  assert.match(fill, /function isAiValueCompatibleWithPlan/);
 });
 
 test("新版批次共享操作额度且旧版请求保持兼容", () => {
@@ -145,6 +150,9 @@ test("AI 智能填写按语义和输出预算串行分批，允许 100 批与 15
   assert.match(popup, /检测到 \$\{fields\.length\} 个安全字段，单页上限为 \$\{AI_AUTOFILL_MAX_FIELDS\} 个/);
   assert.match(popup, /本次未调用 AI，也没有改动页面/);
   assert.match(popup, /function buildSemanticAiBatches\(fields\)/);
+  assert.match(popup, /function isLocalExactFallbackField\(field\)/);
+  assert.match(popup, /localExactOnly: true/);
+  assert.match(popup, /localExactFallbackCount/);
   assert.match(popup, /if \(isNarrativeField\(field\)\)/);
   assert.match(popup, /for \(let index = 0; index < batches\.length; index \+= 1\)/);
   assert.match(popup, /batches\.length > AI_AUTOFILL_MAX_BATCHES/);
@@ -155,11 +163,14 @@ test("AI 智能填写按语义和输出预算串行分批，允许 100 批与 15
   const limitCheckIndex = popup.indexOf('fields.length > AI_AUTOFILL_MAX_FIELDS');
   const operationIdIndex = popup.indexOf('const operationId = createOperationId()');
   const modelCallIndex = popup.indexOf('const payload = await requestAiAutofillBatch({');
-  const writeIndex = popup.indexOf('const aiFill = await executeMappedFillByFrame({');
+  const writeIndex = popup.indexOf('const batchFill = await executeMappedFillProgressively({');
   const allBatchesIndex = popup.indexOf('for (let index = 0; index < batches.length; index += 1)');
   assert.ok(limitCheckIndex >= 0 && limitCheckIndex < operationIdIndex, "1500 字段检查必须早于创建模型操作");
   assert.ok(limitCheckIndex < modelCallIndex, "1500 字段检查必须早于模型调用");
-  assert.ok(allBatchesIndex >= 0 && allBatchesIndex < writeIndex, "必须等待全部模型批次成功后才写入页面");
+  assert.ok(allBatchesIndex >= 0 && allBatchesIndex < writeIndex, "每批模型结果必须在批次循环内立即写入");
+  assert.match(popup, /function executeMappedFillProgressively/);
+  assert.match(popup, /return executeMappedFillByFrame\(\{ \.\.\.options, scanAttempts: 1 \}\)/);
+  assert.match(popup, /正在写入并回读/);
 });
 
 test("常见网申字段按实习范围和安全边界处理", () => {

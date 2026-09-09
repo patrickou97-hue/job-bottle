@@ -72,6 +72,9 @@
       const modelRequests = [];
       const analysisCounts = [];
       const fillSummaries = [];
+      const capturedErrors = [];
+      const originalConsoleError = console.error.bind(console);
+      console.error = (...args) => { capturedErrors.push(args); originalConsoleError(...args); };
       let completedModelBatches = 0;
       let fillStartedBeforeAllBatches = false;
 
@@ -90,7 +93,8 @@
           create: async () => ({}),
         },
         scripting: {
-          executeScript: async ({ target }) => {
+          executeScript: async ({ target, func }) => {
+            if (func) return FRAME_CASES.map((frameCase) => ({ frameId: frameCase.frameId, result: { quiet: true, mutations: 0 } }));
             if (target.allFrames) {
               const results = [];
               for (const frameCase of FRAME_CASES) {
@@ -186,7 +190,7 @@
         await waitFor(() => document.querySelector("#resumeSelect").value === resume.id);
         document.querySelector('input[name="fillMode"][value="ai"]').click();
         document.querySelector("#fillButton").click();
-        await waitFor(() => document.querySelector("#resultTitle").textContent.startsWith("AI 已填写"), 15_000);
+        await waitFor(() => document.querySelector("#resultTitle").textContent.startsWith("AI 已填写"), 30_000);
 
         const allModelFields = modelRequests.flatMap((request) => request.fields);
         const operationIds = new Set(modelRequests.map((request) => request.operationId));
@@ -219,8 +223,8 @@
           && actual.uniqueModelFieldCount === 323
           && actual.operationCount === 1
           && actual.completedModelBatches === 19
-          && actual.fillStartedBeforeAllBatches === false
-          && actual.fillFrameCount === 2
+          && actual.fillStartedBeforeAllBatches === true
+          && actual.fillFrameCount === 19
           && actual.totalFilled === 323
           && actual.totalManual === 0
           && actual.primaryTail === "value-11-254"
@@ -238,7 +242,18 @@
       }
 
       runFixture().catch((error) => {
-        document.querySelector("#result").textContent = JSON.stringify({ passed: false, error: String(error), stack: error?.stack });
+        document.querySelector("#result").textContent = JSON.stringify({
+          passed: false,
+          error: String(error),
+          stack: error?.stack,
+          resultTitle: document.querySelector("#resultTitle").textContent,
+          resultText: document.querySelector("#resultText").textContent,
+          progressLabel: document.querySelector("#progressLabel").textContent,
+          modelRequestCount: modelRequests.length,
+          completedModelBatches,
+          fillFrameCount: fillSummaries.length,
+          capturedErrors,
+        });
         document.title = "STARJOB_AI_AUTOFILL_LARGE_IFRAME_TEST_FAIL";
       });
     </script>
