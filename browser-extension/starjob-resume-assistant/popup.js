@@ -7,7 +7,11 @@ const AI_AUTOFILL_BATCH_BUDGET = 1_700;
 const AI_AUTOFILL_MAX_BATCHES = 100;
 const AI_AUTOFILL_MAX_FIELDS = 1_500;
 const AI_AUTOFILL_MIN_CONFIDENCE = 0.68;
-const LOCAL_EXACT_MIN_CONFIDENCE = 0.9;
+// Hard resume facts already pass the scanner's descriptor, section and control
+// compatibility checks at 0.74. Requiring 0.90 here caused plainly labelled
+// ATS fields such as school/company to be omitted whenever the label was
+// exposed only through a placeholder or a framework wrapper.
+const LOCAL_EXACT_MIN_CONFIDENCE = 0.74;
 const CONFIRM_WINDOW_MS = 8_000;
 const STORAGE_KEYS = ["starjobResumes", "activeResumeId", "fillMode", "lastSyncedAt", "matchToken", "matchTokenExpiresAt", "aiMatchingAvailable", "analysisOnly", "aiOnly", "aiFieldMappings", "aiAutofillOnly", "aiValueMappings", "aiTargetFieldKeys"];
 
@@ -930,7 +934,7 @@ async function fillCurrentPage() {
         validatedMappingCount,
         compiledActionCount: Object.keys(aiValueMappings).length,
         localExactFallbackCount: localExactFallbacks,
-        missingDeterministicFieldCount: fields.filter((field) => field.deterministicKey && Number(field.deterministicConfidence) >= 0.9 && !aiValueMappings[field.fieldKey]).length,
+        missingDeterministicFieldCount: fields.filter((field) => isLocalExactFallbackField(field) && !aiValueMappings[field.fieldKey]).length,
       });
       updateProgress("match", "success", `${completedBatches} 批均已分析并写入，取得 ${acceptedMappings} 个 AI 答案${localExactFallbacks ? `，并补上 ${localExactFallbacks} 个简历确定值` : ""}`);
       updateProgress("fill", "loading", "正在汇总每批写入回读结果");

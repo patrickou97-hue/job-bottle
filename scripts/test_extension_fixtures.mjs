@@ -54,9 +54,19 @@ const FIXTURES = [
     label: "四段实习记录身份夹具",
   },
   {
+    path: "/browser-extension/tests/numbered-ats-records.html",
+    marker: "STARJOB_NUMBERED_ATS_RECORDS_TEST_PASS",
+    label: "编号式 ATS 多记录身份夹具",
+  },
+  {
     path: "/browser-extension/tests/local-exact-fallback.html",
     marker: "STARJOB_LOCAL_EXACT_FALLBACK_TEST_PASS",
     label: "AI 漏答确定事实时本地兜底夹具",
+  },
+  {
+    path: "/browser-extension/tests/controlled-text-commit.html",
+    marker: "STARJOB_CONTROLLED_TEXT_COMMIT_TEST_PASS",
+    label: "受控文本框延迟提交与稳定回读夹具",
   },
   {
     path: "/browser-extension/tests/two-projects.html",

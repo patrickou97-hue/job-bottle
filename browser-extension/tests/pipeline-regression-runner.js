@@ -27,7 +27,8 @@
     title: "P0 回归简历",
     content: {
       basics: { name: "王小星", email: "star@example.com", phone: "13800000000" },
-      education: [], work, projects, skills: [], campus: [], awards: [], certifications: [], languages: [],
+      education: [{ id: "education-0", school: "星海大学", degree: "硕士", major: "应用经济学", startDate: "2023-09", endDate: "2027-08" }],
+      work, projects, skills: [], campus: [], awards: [], certifications: [], languages: [],
     },
   };
   const storage = {
@@ -47,6 +48,15 @@
   </article>`;
   const projectRecord = () => `<article class="record" data-section="project">
     ${field("项目名称")}${field("项目角色")}${field("项目开始时间", "input", "type='month'")}${field("项目结束时间", "input", "type='month'")}${field("项目描述", "textarea")}
+  </article>`;
+  const bilibiliTextField = (label, placeholder, kind = "input") => `<div class="bili-field"><div><span>${label} *</span></div><${kind} placeholder="${placeholder}"></${kind}></div>`;
+  const numberedAtsWorkRecord = (index) => `<article class="numbered-record">
+    <div>${String(index + 1).padStart(2, "0")}</div>
+    ${bilibiliTextField("公司名称", "请输入公司名称")}
+    <input type="month" aria-label="开始时间">
+    <input type="month" aria-label="结束时间">
+    ${bilibiliTextField("职位名称", "请输入职位名称")}
+    ${bilibiliTextField("工作描述", "请输入工作描述", "textarea")}
   </article>`;
   const options = (select, from, to) => {
     select.add(new Option("请选择", ""));
@@ -94,8 +104,39 @@
     return { analysis, summary };
   };
 
+  const installDelayedControlledModel = (root) => {
+    root.querySelectorAll("input:not([type='month']), textarea").forEach((input) => {
+      let pending = "";
+      let committed = "";
+      input.addEventListener("input", () => {
+        window.setTimeout(() => { pending = input.value; }, 32);
+      });
+      input.addEventListener("change", () => {
+        if (pending === input.value) committed = input.value;
+      });
+      input.addEventListener("blur", () => {
+        window.setTimeout(() => {
+          if (input.value !== committed) input.value = committed;
+        }, 80);
+      });
+    });
+  };
+
   let actual = {};
-  if (scenario === "local-exact-fallback") {
+  if (scenario === "controlled-text-commit") {
+    document.querySelector("#form").innerHTML = `<section>${field("姓名")}${field("手机号", "input", "type='tel'")}</section><h2>实习经历</h2>${workRecord()}`;
+    installDelayedControlledModel(document.querySelector("#form"));
+    const { summary } = await analyseThenAiFill({ localExactOnly: true });
+    await new Promise((resolve) => setTimeout(resolve, 140));
+    const values = [...document.querySelectorAll("input:not([type='month']), textarea")].map((input) => input.value);
+    actual = { values, summary };
+    actual.passed = values[0] === "王小星"
+      && values[1] === "13800000000"
+      && values[2] === work[0].company
+      && values[3] === work[0].title
+      && values[4] === work[0].bullets[0]
+      && summary.failed === 0;
+  } else if (scenario === "local-exact-fallback") {
     document.querySelector("#form").innerHTML = `<section><p>请确保证件信息准确无误；中国籍请选择身份证。</p>${field("姓名")}${field("手机号", "input", "type='tel'")}</section><h2>实习经历</h2>${work.slice(0, 2).map(() => workRecord()).join("")}`;
     const { summary } = await analyseThenAiFill({ localExactOnly: true });
     const basics = [...document.querySelectorAll("#form > section label input")].map((input) => input.value);
@@ -124,6 +165,29 @@
     actual.passed = actual.companies.join("|") === work.map((item) => item.company).join("|")
       && actual.descriptions.join("|") === work.map((item) => item.bullets[0]).join("|")
       && unique(actual.recordIds) && unique(actual.resumePaths) && summary.invalidDatesUnresolved === 0;
+  } else if (scenario === "numbered-ats-records") {
+    document.querySelector("#form").innerHTML = `<section><h2>教育经历</h2><article class="education-record"><div>01</div>${bilibiliTextField("学校名称", "请输入学校名称")}${bilibiliTextField("专业", "请输入专业")}${field("入学时间", "input", "type='month'")}${field("毕业时间", "input", "type='month'")}</article></section><section><h2>实习/工作经历</h2><div>公司名称 起止时间 职位名称 工作描述</div>${work.map((_, index) => numberedAtsWorkRecord(index)).join("")}</section>`;
+    const { analysis, summary } = await analyseThenAiFill({ localExactOnly: true });
+    const records = [...document.querySelectorAll(".numbered-record")];
+    const educationRecord = document.querySelector(".education-record");
+    actual = {
+      school: educationRecord.querySelector("input").value,
+      major: educationRecord.querySelectorAll("input")[1].value,
+      educationDates: [...educationRecord.querySelectorAll("input[type='month']")].map((input) => input.value),
+      companies: records.map((record) => record.querySelector("input[placeholder='请输入公司名称']").value),
+      titles: records.map((record) => record.querySelector("input[placeholder='请输入职位名称']").value),
+      dates: records.map((record) => [...record.querySelectorAll("input[type='month']")].map((input) => input.value)),
+      recordIds: analysis.fields.filter((item) => item.semanticKey === "company").map((item) => item.pageRecordId),
+      resumePaths: analysis.fields.filter((item) => item.semanticKey === "company").map((item) => item.resumePath),
+      summary,
+    };
+    actual.passed = actual.school === "星海大学"
+      && actual.major === "应用经济学"
+      && actual.educationDates.join("|") === "2023-09|2027-08"
+      && actual.companies.join("|") === work.map((item) => item.company).join("|")
+      && actual.titles.join("|") === work.map((item) => item.title).join("|")
+      && actual.dates.every((range, index) => range[0] === work[index].startDate && range[1] === work[index].endDate)
+      && unique(actual.recordIds) && unique(actual.resumePaths) && summary.failed === 0;
   } else if (scenario === "two-projects") {
     document.querySelector("#form").innerHTML = `<h2>项目经历</h2>${projects.map(() => projectRecord()).join("")}`;
     const { analysis, summary } = await analyseThenAiFill();

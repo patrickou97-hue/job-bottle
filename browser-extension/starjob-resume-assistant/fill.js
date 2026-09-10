@@ -496,11 +496,32 @@
     return false;
   }
 
+  function getRecordHeadingText(container, limit = 4_000) {
+    const clone = container.cloneNode(true);
+    clone.querySelectorAll("input, textarea, select, option, [contenteditable='true'], [role='textbox'], [role='combobox'], script, style")
+      .forEach((node) => node.remove());
+    return (clone.textContent || "").slice(0, limit);
+  }
+
+  function getVisibleRecordNumbers(container) {
+    return [...new Set([container, ...container.querySelectorAll("*")]
+      .filter((node) => node instanceof HTMLElement
+        && !node.matches("input, textarea, select, option, [contenteditable='true'], [role='textbox'], [role='combobox']")
+        && !node.closest("select, [role='combobox']")
+        && !node.querySelector("input, textarea, select, [contenteditable='true'], [role='textbox'], [role='combobox']")
+        && isVisible(node))
+      .map((node) => (node.textContent || "").replace(/\s+/g, " ").trim())
+      .map((text) => text.match(/^(?:第\s*)?(\d{1,2})$/)?.[1])
+      .filter(Boolean)
+      .map(Number)
+      .filter((value) => value >= 0 && value <= 50))];
+  }
+
   function hasMultipleRecordHeadings(container) {
-    const matches = (container.innerText || "")
-      .slice(0, 4_000)
-      .match(/(?:教育|学校|工作|实习|任职|项目|证书)?\s*经历\s*[-—_#第]?\s*\d+/gi) || [];
-    return new Set(matches.map(normalize)).size > 1;
+    const text = getRecordHeadingText(container);
+    const labelled = text.match(/(?:教育|学校|工作|实习|任职|项目|证书)?\s*经历\s*[-—_#第]?\s*\d+/gi) || [];
+    const standalone = getVisibleRecordNumbers(container);
+    return new Set([...labelled.map(normalize), ...standalone.map(String)]).size > 1;
   }
 
   function findRecordContainer(element, sectionHint) {
@@ -725,7 +746,8 @@
       }
       for (const signal of attributeSignals) {
         if (signal === normalizedAlias) score = Math.max(score, 0.9);
-        else if (signal.includes(normalizedAlias) && normalizedAlias.length >= 5) score = Math.max(score, 0.78);
+        else if (signal.includes(normalizedAlias)
+          && normalizedAlias.length >= (/[^\x00-\x7F]/.test(normalizedAlias) ? 2 : 5)) score = Math.max(score, 0.78);
         else if (normalizedAlias.includes(signal) && signal.length >= 5) score = Math.max(score, 0.7);
       }
     }
@@ -813,6 +835,31 @@
 
   function dispatchInput(element) {
     element.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText" }));
+  }
+
+  async function commitTextValue(element, value) {
+    element.focus?.({ preventScroll: true });
+    try {
+      element.dispatchEvent(new InputEvent("beforeinput", {
+        bubbles: true,
+        cancelable: true,
+        inputType: "insertText",
+        data: value,
+      }));
+    } catch {
+      // Older Chromium versions may not accept the full InputEvent init.
+    }
+    setNativeValue(element, value);
+    element.dispatchEvent(new InputEvent("input", {
+      bubbles: true,
+      inputType: "insertText",
+      data: value,
+    }));
+    // React/Vue ATS controls can commit their model state on a later task.
+    // Give that state update time to land before change/blur validation.
+    await wait(48);
+    element.dispatchEvent(new Event("change", { bubbles: true }));
+    element.blur?.();
   }
 
   function dispatchActivation(element) {
@@ -1164,8 +1211,12 @@
       return verifyReadback(element, matched[0].value);
     }
     if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
-      setNativeValue(element, value);
-      dispatchEvents(element);
+      if (definition.date) {
+        setNativeValue(element, value);
+        dispatchEvents(element);
+      } else {
+        await commitTextValue(element, value);
+      }
       if (definition.date) {
         await wait(24);
         const validDateReadback = definition.datePart
@@ -1259,23 +1310,26 @@
     return `${window.location.origin}|${window.location.pathname}|${fieldId}`;
   }
 
-  function getExplicitRecordNumber(element, signals, contextText) {
+  function getExplicitRecordInfo(element, signals, contextText) {
     let container = element.parentElement;
     for (let depth = 0; container && depth < 8; depth += 1, container = container.parentElement) {
       const controlCount = container.querySelectorAll("input, textarea, select, [contenteditable='true']").length;
       if (controlCount > 16) continue;
-      const humanMatch = (container.innerText || "").slice(0, 600)
+      const headingText = getRecordHeadingText(container, 600);
+      const humanMatch = headingText
         .match(/(?:教育|学校|工作|实习|任职|项目|证书)?\s*经历\s*[-—_#第]?\s*(\d+)/i);
-      if (humanMatch) return Number(humanMatch[1]);
+      if (humanMatch) return { number: Number(humanMatch[1]), source: "visible" };
+      const standaloneNumber = getVisibleRecordNumbers(container)[0];
+      if (Number.isInteger(standaloneNumber)) return { number: standaloneNumber, source: "visible" };
     }
 
     const contextMatch = contextText.match(/(?:教育|学校|工作|实习|任职|项目|证书)?\s*经历\s*[-—_#第]?\s*(\d+)/i);
-    if (contextMatch) return Number(contextMatch[1]);
+    if (contextMatch) return { number: Number(contextMatch[1]), source: "visible" };
 
     const attributes = signals.attributes.join(" ");
     const pathMatch = attributes.match(/(?:\[|\.)(\d+)(?:\]|\.|$)/);
-    if (pathMatch) return Number(pathMatch[1]);
-    return null;
+    if (pathMatch) return { number: Number(pathMatch[1]), source: "attribute" };
+    return { number: null, source: null };
   }
 
   function getRepeatableOccurrenceKey(definition, signals) {
@@ -1353,14 +1407,25 @@
           .filter((value) => Number.isInteger(value)))]
           .sort((left, right) => left - right);
         const explicitMap = new Map(explicitNumbers.map((number, index) => [number, index]));
+        const visibleNumbers = [...new Set(scopedPlans
+          .filter((plan) => plan.explicitRecordSource === "visible")
+          .map((plan) => plan.explicitRecordNumber)
+          .filter((value) => Number.isInteger(value)))]
+          .sort((left, right) => left - right);
+        const visibleMap = new Map(visibleNumbers.map((number, index) => [number, index]));
         const fallbackOccurrences = new Map();
         let currentRecordIndex = null;
 
         for (const plan of scopedPlans) {
           const isAnchor = plan.matchedDefinition.key === anchorKeys[section];
           let recordIndex = plan.structuredContract?.recordIndex;
+          if (!Number.isInteger(recordIndex) && plan.explicitRecordSource === "visible") {
+            recordIndex = visibleMap.get(plan.explicitRecordNumber);
+          }
           if (!Number.isInteger(recordIndex)) recordIndex = containerMap.get(plan.recordContainer);
-          if (!Number.isInteger(recordIndex)) recordIndex = explicitMap.get(plan.explicitRecordNumber);
+          if (!Number.isInteger(recordIndex) && plan.explicitRecordSource === "attribute") {
+            recordIndex = explicitMap.get(plan.explicitRecordNumber);
+          }
           if (!Number.isInteger(recordIndex) && !isAnchor && Number.isInteger(currentRecordIndex)) recordIndex = currentRecordIndex;
           if (!Number.isInteger(recordIndex)) {
             const occurrenceKey = plan.matchedDefinition.key;
@@ -1535,10 +1600,13 @@
 
   function getExactStructuredValue(plan) {
     if (!plan.matchedDefinition) return undefined;
-    const locallyExact = plan.matchedDefinition.localExact === true && plan.bestScore >= 0.9;
+    const hardExact = isHardExactKey(plan.matchedDefinition.key);
+    const locallyExact = plan.matchedDefinition.localExact === true
+      && plan.bestScore >= (hardExact ? 0.74 : 0.9);
     const recordAwareExact = Number.isInteger(plan.recordIndex)
       && plan.pageRecordId
-      && plan.bestScore >= 0.9
+      && plan.resumePath
+      && plan.bestScore >= (hardExact ? 0.74 : 0.9)
       && ["education", "work", "project", "campus", "awards", "certifications", "languages"].includes(plan.matchedDefinition.section);
     if (!locallyExact && !recordAwareExact) return undefined;
     const values = getDefinitionValues(plan.matchedDefinition, plan.recordScope);
@@ -1639,7 +1707,26 @@
     const sectionHint = structuredContract?.section || inferSectionHint(element, signals, contextText);
     const recordScope = inferWorkScope(element, sectionHint, contextText);
     const recordContainer = findRecordContainer(element, sectionHint);
-    const pairedDateKey = inferPairedDateKey(element, sectionHint);
+    const ownDateDescriptor = normalize([
+      ownDescriptor,
+      element.getAttribute("placeholder") || "",
+      element.getAttribute("aria-label") || "",
+      element.getAttribute("name") || "",
+      element.id || "",
+    ].join(" "));
+    const inputDateType = element instanceof HTMLInputElement
+      && ["date", "month", "datetime-local"].includes(element.type.toLowerCase());
+    const explicitDateCandidate = inputDateType
+      || /日期|时间|年月|年份|月份|date|month|year/.test(ownDateDescriptor)
+      || (element instanceof HTMLSelectElement && /年|月/.test(ownDateDescriptor))
+      || (element instanceof HTMLInputElement
+        && element.readOnly
+        && /start|end|valuea|valueb/.test(ownDateDescriptor));
+    // A date range often shares one parent with school/company/title inputs.
+    // Never infer start/end merely from the surrounding card; the individual
+    // control itself must carry a date signal. Otherwise ordinary text fields
+    // can be compiled as dates and then cleared by the ATS validator.
+    const pairedDateKey = explicitDateCandidate ? inferPairedDateKey(element, sectionHint) : null;
     const normalizedSignals = normalize(`${labelText} ${contextText}`);
     const normalizedOwnDescriptor = normalize(ownDescriptor);
     const hasStrongOwnDescriptor = (signals.labelCandidates || []).some((candidate) => Number(candidate.confidence) >= 0.8)
@@ -1718,6 +1805,7 @@
       optionState: getChoiceOptions(element).length ? "static" : (isDynamicControl(element) ? "dynamic" : "unknown"),
       sensitive,
     });
+    const explicitRecord = getExplicitRecordInfo(element, signals, contextText);
     plans.push({
       element,
       signals,
@@ -1730,7 +1818,8 @@
       recordScope,
       recordContainer,
       pairedDateKey,
-      explicitRecordNumber: getExplicitRecordNumber(element, signals, contextText),
+      explicitRecordNumber: explicitRecord.number,
+      explicitRecordSource: explicitRecord.source,
     });
   }
 
@@ -1840,6 +1929,7 @@
   let derived = 0;
   let structured = 0;
   let failed = 0;
+  const deferredTextReadbacks = [];
 
   function rememberUnmatched(signals) {
     const label = signals.visible.find(Boolean) || signals.attributes.find(Boolean);
@@ -1868,6 +1958,17 @@
     }
     try {
       const verified = await fillElement(resolvedElement, value, definition);
+      if (verified
+        && !definition.date
+        && (resolvedElement instanceof HTMLTextAreaElement
+          || (resolvedElement instanceof HTMLInputElement
+            && !["checkbox", "radio", "date", "month", "datetime-local", "file"].includes(resolvedElement.type)))) {
+        deferredTextReadbacks.push({
+          element: resolvedElement,
+          expected: asText(value),
+          trace,
+        });
+      }
       if (trace) trace.execution = {
         resolved: true,
         written: verified,
@@ -1892,6 +1993,34 @@
         message: error instanceof Error ? error.message : String(error),
       });
       return false;
+    }
+  }
+
+  async function auditDeferredTextReadbacks() {
+    if (!deferredTextReadbacks.length) return;
+    // The controls in one execution batch are already committed. Wait once
+    // for framework reconciliation, then audit them together instead of
+    // adding a full stability delay to every field in sequence.
+    await wait(120);
+    for (const pending of deferredTextReadbacks) {
+      const expected = normalize(pending.expected);
+      const actual = normalize(currentValue(pending.element) || pending.element.getAttribute("aria-label") || "");
+      if (expected && actual && (actual === expected || actual.includes(expected) || expected.includes(actual))) continue;
+      failed += 1;
+      filled = Math.max(0, filled - 1);
+      manual += 1;
+      delete pending.element.dataset.starjobFilled;
+      delete pending.element.dataset.starjobAiDerived;
+      pending.element.style.outline = "2px solid rgba(180, 56, 56, 0.82)";
+      pending.element.style.outlineOffset = "2px";
+      pending.element.title = "拾星写入后被页面恢复，请手动确认";
+      if (pending.trace) pending.trace.execution = {
+        resolved: true,
+        written: false,
+        readback: currentValue(pending.element).slice(0, 180),
+        verified: false,
+        failureCode: "CONTROLLED_VALUE_ROLLBACK",
+      };
     }
   }
 
@@ -1946,7 +2075,21 @@
     return { repaired, unresolved, labels };
   }
 
-  for (const plan of plans) {
+  const executionPlans = aiAutofillOnly
+    ? [...plans].sort((left, right) => {
+        const priority = (plan) => {
+          const element = plan.element;
+          if (plan.matchedDefinition?.date || isDynamicControl(element)
+            || element instanceof HTMLSelectElement
+            || (element instanceof HTMLInputElement && ["checkbox", "radio", "date", "month", "datetime-local"].includes(element.type))) return 0;
+          if (element instanceof HTMLTextAreaElement) return 2;
+          return 1;
+        };
+        return priority(left) - priority(right);
+      })
+    : plans;
+
+  for (const plan of executionPlans) {
     const { element, signals, fieldKey, matchedDefinition, bestScore, sensitive, recordContainer, explicitRecordNumber } = plan;
     if (aiOnly && !aiFieldMappings[fieldKey]) continue;
     if (sensitive) {
@@ -2086,6 +2229,7 @@
     }
   }
 
+  await auditDeferredTextReadbacks();
   const invalidDateRanges = await repairInvalidFilledDateRanges();
   filled = Math.max(0, filled - invalidDateRanges.unresolved);
   manual += invalidDateRanges.unresolved;

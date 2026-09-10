@@ -1037,13 +1037,18 @@ function deriveRecordDateValue(field: z.infer<typeof fieldSchema>, resume: z.inf
 
 const REPEATABLE_SECTIONS = new Set(["education", "work", "project", "campus", "awards", "certifications", "languages"]);
 
+function isHardExactKey(key: string | null | undefined) {
+  return /^(?:basics\.(?:name|phone|email|birthDate|gender|city)|education\.(?:school|major|degree|startDate|endDate)|work\.(?:company|title|startDate|endDate)|project\.(?:name|role|startDate|endDate)|campus\.(?:title|role|date))$/.test(key || "");
+}
+
 function deriveExactResumeValue(field: z.infer<typeof fieldSchema>, resume: z.infer<typeof resumeSchema>) {
   if (field.deterministicKey === "skills" && field.deterministicConfidence >= 0.9) {
     const value = resume.content.skills.flatMap((group) => group.skills).filter(Boolean).join("、");
     return value ? { value, resumePath: "skills", failureCode: null } : null;
   }
   const [section, property] = (field.deterministicKey || "").split(".");
-  if (!section || !property || field.deterministicConfidence < 0.9) return null;
+  const exactConfidence = isHardExactKey(field.deterministicKey) ? 0.74 : 0.9;
+  if (!section || !property || field.deterministicConfidence < exactConfidence) return null;
   if (REPEATABLE_SECTIONS.has(section)) {
     if (field.recordIndex === null || !field.pageRecordId || !field.resumePath) {
       return { value: null, resumePath: "", failureCode: "AMBIGUOUS_RECORD" as const };
