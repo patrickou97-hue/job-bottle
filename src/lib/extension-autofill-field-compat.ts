@@ -18,6 +18,53 @@ export function isAutofillPhoneLike(value: string) {
   return digits.length >= 7 && digits.length <= 15;
 }
 
+const RECORD_PATH_PATTERN = /^(education|work|projects|campus|awards|certifications|languages)\[(\d+)\](?:\.|$)/;
+const GENERIC_NARRATIVE_BIGRAMS = new Set([
+  "参与", "负责", "协助", "完成", "通过", "基于", "进行", "相关", "工作", "项目", "支持", "提供", "分析", "数据", "能力", "以及",
+]);
+
+export function getAutofillRecordRoot(path: string | null | undefined) {
+  const match = String(path || "").match(RECORD_PATH_PATTERN);
+  return match ? `${match[1]}[${match[2]}]` : null;
+}
+
+function narrativeBigrams(value: string) {
+  const compact = value.normalize("NFKC").toLocaleLowerCase("zh-CN").replace(/[^\p{L}\p{N}]+/gu, "");
+  const result = new Set<string>();
+  for (let index = 0; index + 1 < compact.length; index += 1) {
+    const token = compact.slice(index, index + 2);
+    if (!GENERIC_NARRATIVE_BIGRAMS.has(token)) result.add(token);
+  }
+  return result;
+}
+
+export function hasAutofillRecordNarrativeAnchor(value: string, scopedFacts: string[]) {
+  const valueTokens = narrativeBigrams(value);
+  if (!valueTokens.size) return false;
+  const factTokens = new Set(scopedFacts.flatMap((fact) => [...narrativeBigrams(fact)]));
+  let shared = 0;
+  for (const token of valueTokens) {
+    if (factTokens.has(token)) shared += 1;
+    if (shared >= 3) return true;
+  }
+  return false;
+}
+
+export function isAutofillRecordNarrativeMappingCompatible(input: {
+  deterministicKey: string | null | undefined;
+  resumePath: string | null | undefined;
+  evidence: string[];
+  value: string;
+  scopedFacts: string[];
+}) {
+  if (!/^(?:work|project|campus|awards)\.description$/.test(input.deterministicKey || "")) return true;
+  const expectedRoot = getAutofillRecordRoot(input.resumePath);
+  if (!expectedRoot || input.evidence.length === 0) return false;
+  const evidenceRoots = input.evidence.map(getAutofillRecordRoot);
+  if (evidenceRoots.some((root) => root !== expectedRoot)) return false;
+  return hasAutofillRecordNarrativeAnchor(input.value, input.scopedFacts);
+}
+
 export function isAutofillFieldValueSemanticallyCompatible(input: {
   value: string;
   deterministicKey: string;

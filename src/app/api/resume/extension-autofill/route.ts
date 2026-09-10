@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { takeExtensionAutofillRateSlot } from "@/lib/extension-autofill-rate-limit";
-import { isAutofillFieldValueSemanticallyCompatible } from "@/lib/extension-autofill-field-compat";
+import {
+  isAutofillFieldValueSemanticallyCompatible,
+  isAutofillRecordNarrativeMappingCompatible,
+} from "@/lib/extension-autofill-field-compat";
 import { verifyExtensionMatchToken } from "@/lib/extension-match-token";
 import {
   analyzeOutcomeCompleteness,
@@ -605,6 +608,14 @@ function parseResult(
       if (exactResumeValue?.failureCode === "AMBIGUOUS_RECORD") ambiguousRecordCount += 1;
       const recordDateValue = deriveRecordDateValue(field, resume);
       const recordDescriptionValue = deriveRecordDescriptionValue(field, resume);
+      const scopedFacts = getScopedFieldFacts(field, resume) || [];
+      const recordNarrativeMappingCompatible = !recordDescriptionValue || isAutofillRecordNarrativeMappingCompatible({
+        deterministicKey: field.deterministicKey,
+        resumePath: field.resumePath,
+        evidence: mapping.evidence || [],
+        value: mapping.value || "",
+        scopedFacts,
+      });
       const derivedValue = deriveGraduationValue(field, resume);
       const ageValue = deriveAgeValue(field, resume);
       // Hard facts are compiled from the selected resume instead of being left
@@ -642,7 +653,7 @@ function parseResult(
           },
         };
       }
-      if (hasUsableModelMapping) return { field, mapping };
+      if (hasUsableModelMapping && recordNarrativeMappingCompatible) return { field, mapping };
       if (exactResumeValue?.value) {
         return {
           field,

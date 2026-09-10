@@ -82,10 +82,23 @@ test("服务端和扩展统一接受阈值，硬事实优先取简历且叙述�
   assert.match(fill, /Number\(mapping\.confidence\) >= AI_AUTOFILL_MIN_CONFIDENCE/);
   assert.match(route, /function isHardResumeFactField/);
   const hardFactIndex = route.indexOf("if (isHardResumeFactField(field)");
-  const modelMappingIndex = route.indexOf("if (hasUsableModelMapping) return { field, mapping }");
+  const modelMappingIndex = route.indexOf("if (hasUsableModelMapping && recordNarrativeMappingCompatible) return { field, mapping }");
   assert.ok(hardFactIndex >= 0 && modelMappingIndex > hardFactIndex, "姓名、手机号、学校、公司和日期等硬事实必须先取所选简历");
   assert.match(fill, /const preferExactValue = exactStructuredValue !== undefined && isHardExactKey/);
   assert.match(fill, /const selectedValue = preferExactValue[\s\S]*\? exactStructuredValue[\s\S]*: hasAcceptedMapping/);
+});
+
+test("重复经历叙述按当前记录裁剪输入并校验返回证据", () => {
+  assert.match(popup, /recordNarrativeBatch/);
+  assert.match(popup, /resume: sanitizeResumeForAi\(selectedResume, batch\)/);
+  assert.match(route, /isAutofillRecordNarrativeMappingCompatible/);
+  assert.match(route, /recordNarrativeMappingCompatible/);
+  const guardedModelIndex = route.indexOf("if (hasUsableModelMapping && recordNarrativeMappingCompatible)");
+  const exactFallbackIndex = route.indexOf("if (exactResumeValue?.value)", guardedModelIndex);
+  const recordFallbackIndex = route.indexOf("if (recordDescriptionValue)", guardedModelIndex);
+  assert.ok(guardedModelIndex >= 0, "跨记录叙述必须先经过当前记录兼容校验");
+  assert.ok(exactFallbackIndex > guardedModelIndex, "校验失败后必须回退到当前记录的精确简历值");
+  assert.ok(recordFallbackIndex > exactFallbackIndex, "精确值不可用时必须继续回退到当前记录叙述");
 });
 
 test("学校、日期、联系方式和链接使用字段级语义边界", () => {

@@ -574,6 +574,15 @@ function sanitizeResumeForAi(resume, fields) {
   const text = (value) => typeof value === "string" ? value : "";
   const bullets = (value) => Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
   const mapEntries = (value, mapper) => Array.isArray(value) ? value.map(mapper) : [];
+  const recordRoots = new Set((Array.isArray(fields) ? fields : [])
+    .map((field) => String(field?.resumePath || "").match(/^(education|work|projects|campus|awards|certifications|languages)\[(\d+)\]/))
+    .filter(Boolean)
+    .map((match) => `${match[1]}[${match[2]}]`));
+  const recordNarrativeBatch = Array.isArray(fields) && fields.length > 0 && fields.every((field) => (
+    /^(?:work|project|campus|awards)\.description$/.test(field?.deterministicKey || "")
+    && recordRoots.has(String(field?.resumePath || "").replace(/\..*$/, ""))
+  ));
+  const visibleRecord = (collection, index) => !recordNarrativeBatch || recordRoots.has(`${collection}[${index}]`);
   const customEntry = (item = {}) => ({
     title: text(item.title),
     role: text(item.role),
@@ -609,30 +618,30 @@ function sanitizeResumeForAi(resume, fields) {
         website: text(basics.website),
         targetRole: text(basics.targetRole),
       },
-      education: mapEntries(content.education, (item = {}) => ({
+      education: mapEntries(content.education, (item = {}, index) => visibleRecord("education", index) ? ({
         school: text(item.school), degree: text(item.degree), major: text(item.major),
         startDate: text(item.startDate), endDate: text(item.endDate), gpa: text(item.gpa),
         courses: text(item.courses), honors: text(item.honors),
-      })),
-      work: mapEntries(content.work, (item = {}) => ({
+      }) : ({})),
+      work: mapEntries(content.work, (item = {}, index) => visibleRecord("work", index) ? ({
         experienceType: ["internship", "employment", "other"].includes(item.experienceType) ? item.experienceType : "other",
         company: text(item.company), title: text(item.title), location: text(item.location),
         startDate: text(item.startDate), endDate: text(item.endDate), current: item.current === true,
         bullets: bullets(item.bullets),
-      })),
-      projects: mapEntries(content.projects, (item = {}) => ({
+      }) : ({ experienceType: ["internship", "employment", "other"].includes(item.experienceType) ? item.experienceType : "other" })),
+      projects: mapEntries(content.projects, (item = {}, index) => visibleRecord("projects", index) ? ({
         name: text(item.name), role: text(item.role), url: text(item.url), startDate: text(item.startDate),
         endDate: text(item.endDate), bullets: bullets(item.bullets), keywords: text(item.keywords),
-      })),
-      skills: mapEntries(content.skills, (item = {}) => ({
+      }) : ({})),
+      skills: recordNarrativeBatch ? [] : mapEntries(content.skills, (item = {}) => ({
         category: text(item.category),
         skills: Array.isArray(item.skills) ? item.skills.filter((skill) => typeof skill === "string") : [],
       })),
-      campus: mapEntries(content.campus, customEntry),
-      awards: mapEntries(content.awards, customEntry),
-      certifications: mapEntries(content.certifications, customEntry),
-      languages: mapEntries(content.languages, customEntry),
-      customSections: mapEntries(content.customSections, customEntry),
+      campus: mapEntries(content.campus, (item, index) => visibleRecord("campus", index) ? customEntry(item) : {}),
+      awards: mapEntries(content.awards, (item, index) => visibleRecord("awards", index) ? customEntry(item) : {}),
+      certifications: mapEntries(content.certifications, (item, index) => visibleRecord("certifications", index) ? customEntry(item) : {}),
+      languages: mapEntries(content.languages, (item, index) => visibleRecord("languages", index) ? customEntry(item) : {}),
+      customSections: recordNarrativeBatch ? [] : mapEntries(content.customSections, customEntry),
     },
   };
 }
@@ -795,7 +804,6 @@ async function fillCurrentPage() {
       let localExactFallbacks = 0;
       let aiRawMappingCount = 0;
       let validatedMappingCount = 0;
-      const sanitizedResume = sanitizeResumeForAi(selectedResume, fields);
       const pageUrl = new URL(tab.url);
       const extractedApplicationContext = analyses.find((entry) => entry.result?.applicationContext)?.result?.applicationContext || {};
       const applicationContext = {
@@ -887,7 +895,7 @@ async function fillCurrentPage() {
         const batchId = createOperationId();
         const payload = await requestAiAutofillBatch({
           batch,
-          resume: sanitizedResume,
+          resume: sanitizeResumeForAi(selectedResume, batch),
           token: stored.matchToken,
           operationId,
           pageSnapshotId,

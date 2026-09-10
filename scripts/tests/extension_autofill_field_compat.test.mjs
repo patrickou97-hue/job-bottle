@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  getAutofillRecordRoot,
+  hasAutofillRecordNarrativeAnchor,
   isAutofillFieldValueSemanticallyCompatible,
+  isAutofillRecordNarrativeMappingCompatible,
   isAutofillUrlLike,
 } from "../../src/lib/extension-autofill-field-compat.ts";
 
@@ -32,4 +35,28 @@ test("手机号与邮箱保留格式边界", () => {
   assert.equal(compatible("西南财经大学", "basics.phone", "手机号"), false);
   assert.equal(compatible("ray@example.com", "basics.email", "邮箱"), true);
   assert.equal(compatible("2027-08", "basics.email", "邮箱"), false);
+});
+
+test("重复经历叙述只接受同一条记录的证据和内容锚点", () => {
+  const ciccFacts = ["参与债券募集说明书与受托管理事务报告撰写，使用 Wind 完成区域债券市场分析"];
+  const jdDescription = "围绕 GMV、LTV 和优惠券渠道评估业务增长，并使用 SQL 清洗用户数据";
+  const ciccDescription = "使用 Wind 分析区域债券市场，并参与债券募集说明书和受托管理事务报告撰写";
+
+  assert.equal(getAutofillRecordRoot("work[1].bullets[0]"), "work[1]");
+  assert.equal(hasAutofillRecordNarrativeAnchor(ciccDescription, ciccFacts), true);
+  assert.equal(hasAutofillRecordNarrativeAnchor(jdDescription, ciccFacts), false);
+  assert.equal(isAutofillRecordNarrativeMappingCompatible({
+    deterministicKey: "work.description",
+    resumePath: "work[1].description",
+    evidence: ["work[0].bullets[0]"],
+    value: jdDescription,
+    scopedFacts: ciccFacts,
+  }), false);
+  assert.equal(isAutofillRecordNarrativeMappingCompatible({
+    deterministicKey: "work.description",
+    resumePath: "work[1].description",
+    evidence: ["work[1].bullets[0]"],
+    value: ciccDescription,
+    scopedFacts: ciccFacts,
+  }), true);
 });

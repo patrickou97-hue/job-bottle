@@ -46,19 +46,19 @@ export function ExtensionGuide() {
         <div className="max-w-4xl">
           <h1 className="page-title">安装拾星网申助手</h1>
           <div className="mt-5 max-w-3xl space-y-2 text-sm leading-7 text-ink-secondary">
-            <p>当前版本 1.1.3，适用于 Chrome、Edge 及其他 Chromium 浏览器。</p>
+            <p>当前版本 1.1.4，适用于 Chrome、Edge 及其他 Chromium 浏览器。</p>
             <div className="flex flex-wrap items-center gap-3 pt-3">
               <a
-                href="/downloads/starjob-resume-assistant-v1.1.3.zip"
+                href="/downloads/starjob-resume-assistant-v1.1.4.zip"
                 download
                 className="gold-button pressable inline-flex min-h-12 items-center gap-2 rounded-xl px-5 text-base font-semibold"
               >
                 <ArrowDownIcon aria-hidden="true" className="size-5" />
-                下载 1.1.3 安装包
+                下载 1.1.4 安装包
               </a>
               <span className="text-xs text-ink-muted">ZIP 安装包 · 下载后完整解压</span>
             </div>
-            <p>下载后请完整解压。1.1.3 会按批次完成分析、重新识别当前控件、写入并回读结果。姓名、手机号、学校、公司和日期等事实字段以所选简历为准，开放描述由 AI 结合岗位改写。最多支持 100 个 AI 批次和 1500 个安全字段；验证码、密码和最终提交仍由你处理。</p>
+            <p>下载后请完整解压。1.1.4 会按批次完成分析、重新识别当前控件、写入并回读结果；每段工作和项目描述只使用当前记录的证据，无法确认时回退为该记录的简历原文。姓名、手机号、学校、公司和日期等事实字段以所选简历为准。最多支持 100 个 AI 批次和 1500 个安全字段；验证码、密码和最终提交仍由你处理。</p>
           </div>
         </div>
       </section>
