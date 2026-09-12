@@ -15,9 +15,15 @@
   <body>
     <form>
       <section><h2>基本信息</h2>
+        <label>性别
+          <span class="ant-select" id="gender-trigger">
+            <input id="gender" role="combobox" aria-haspopup="listbox" aria-controls="gender-options" readonly />
+          </span>
+        </label>
         <label>国家/地区 <select id="country"><option selected>中国大陆 +86</option></select></label>
         <label>手机号 <input id="phone" type="tel" autocomplete="tel-national" /></label>
       </section>
+      <section><h2>自我描述</h2><label>自我描述 <textarea id="self-description"></textarea></label></section>
       <section><h2>教育经历</h2>
         <article>
           <label>学校名称 <input id="school" name="basicInfo_recruitEducationList_0_schoolName" /></label>
@@ -31,6 +37,12 @@
           <label>专业 <input id="major" name="basicInfo_recruitEducationList_0_majorName" /></label>
         </article>
       </section>
+      <section><h2>实习/工作经历</h2>
+        <article>
+          <label>公司名称 <input id="work-company" name="basicInfo_recruitWorkingList_0_companyName" /></label>
+          <label>结束时间 <input id="work-end-date" name="basicInfo_recruitWorkingList_0_endDate" placeholder="请选择日期" aria-haspopup="dialog" readonly /></label>
+        </article>
+      </section>
     </form>
     <pre id="result">pending</pre>
     <script>
@@ -40,7 +52,8 @@
         content: {
           basics: { name: "王小星", phone: "18523103352", email: "star@example.com" },
           education: [{ school: "西南财经大学", degree: "硕士", major: "金融学", startDate: "2025-09", endDate: "2027-08" }],
-          work: [], projects: [], skills: [], campus: [], awards: [], certifications: [], languages: [],
+          work: [{ company: "恒丰银行", title: "公司金融部", startDate: "2025.07", endDate: "2025.08", bullets: [], experienceType: "internship" }],
+          projects: [], skills: [], campus: [], awards: [], certifications: [], languages: [],
         },
       };
       const storage = {
@@ -49,22 +62,23 @@
       };
       window.chrome = { storage: { local: { get: async () => ({ ...storage }) } } };
 
-      const trigger = document.querySelector("#degree-trigger");
-      trigger.addEventListener("click", () => {
-        if (document.querySelector("#degree-options")) return;
+      const installCustomSelect = (triggerId, inputId, popupId, values) => {
+        const trigger = document.querySelector(`#${triggerId}`);
+        trigger.addEventListener("click", () => {
+        if (document.querySelector(`#${popupId}`)) return;
         window.setTimeout(() => {
           const popup = document.createElement("div");
-          popup.id = "degree-options";
+          popup.id = popupId;
           popup.className = "ant-select-dropdown";
           popup.setAttribute("role", "listbox");
-          for (const value of ["本科", "硕士", "博士"]) {
+          for (const value of values) {
             const option = document.createElement("button");
             option.type = "button";
             option.setAttribute("role", "option");
             option.dataset.value = value;
             option.textContent = value;
             option.addEventListener("click", () => {
-              document.querySelector("#degree").value = value;
+              document.querySelector(`#${inputId}`).value = value;
               option.setAttribute("aria-selected", "true");
               popup.remove();
             });
@@ -73,39 +87,56 @@
           document.body.append(popup);
         }, 180);
       });
+      };
+      installCustomSelect("gender-trigger", "gender", "gender-options", ["男", "女"]);
+      installCustomSelect("degree-trigger", "degree", "degree-options", ["本科", "硕士", "博士"]);
 
       (async () => {
         const fillSource = await fetch("../starjob-resume-assistant/fill.js").then((response) => response.text());
         const analysis = await window.eval(fillSource);
         const find = (id) => analysis.fields.find((field) => field.attributes.includes(id));
         const degreeField = analysis.fields.find((field) => field.label.includes("学历"));
+        const genderField = analysis.fields.find((field) => field.label.includes("性别"));
+        const selfDescriptionField = analysis.fields.find((field) => field.label.includes("自我描述"));
         storage.analysisOnly = false;
         storage.aiAutofillOnly = true;
         storage.aiValueMappings = {
+          [genderField.fieldKey]: { value: "男", confidence: 0.72, basis: "exact_fact", optionMatch: { targetText: "男" } },
           [find("phone").fieldKey]: { value: "+86 18523103352", confidence: 0.92, basis: "normalized_fact" },
+          [selfDescriptionField.fieldKey]: { value: "我能够结合已有教育与实践经历梳理任务重点，并根据岗位要求组织相关经验和技能信息。", confidence: 0.72, basis: "grounded_generation", needsReview: true },
           [find("schoolName").fieldKey]: { value: "西南财经大学", confidence: 0.99, basis: "resume" },
           [degreeField.fieldKey]: { value: "硕士", confidence: 0.99, basis: "resume", optionMatch: { targetText: "硕士" } },
           [find("startDate").fieldKey]: { value: "2025-09", confidence: 0.99, basis: "resume" },
           [find("endDate").fieldKey]: { value: "2027-08", confidence: 0.99, basis: "resume" },
           [find("majorName").fieldKey]: { value: "金融学", confidence: 0.99, basis: "resume" },
+          [find("companyName").fieldKey]: { value: "恒丰银行", confidence: 0.99, basis: "resume" },
+          [find("work-end-date").fieldKey]: { value: "2025.08", confidence: 0.99, basis: "resume" },
         };
         const summary = await window.eval(fillSource);
         const actual = {
+          gender: document.querySelector("#gender").value,
           phone: document.querySelector("#phone").value,
+          selfDescription: document.querySelector("#self-description").value,
           school: document.querySelector("#school").value,
           degree: document.querySelector("#degree").value,
           educationStart: document.querySelector("#education-start").value,
           educationEnd: document.querySelector("#education-end").value,
           major: document.querySelector("#major").value,
+          workCompany: document.querySelector("#work-company").value,
+          workEndDate: document.querySelector("#work-end-date").value,
           summary,
         };
-        actual.passed = actual.phone === "18523103352"
+        actual.passed = actual.gender === "男"
+          && actual.phone === "18523103352"
+          && actual.selfDescription.includes("结合已有教育与实践经历")
           && actual.school === "西南财经大学"
           && actual.degree === "硕士"
           && actual.educationStart === "2025-09"
           && actual.educationEnd === "2027-08"
           && actual.major === "金融学"
-          && summary.filled === 6
+          && actual.workCompany === "恒丰银行"
+          && actual.workEndDate === "2025-08-31"
+          && summary.filled === 10
           && summary.failed === 0;
         document.querySelector("#result").textContent = JSON.stringify(actual);
         document.title = actual.passed ? "STARJOB_BILIBILI_CONTROLS_TEST_PASS" : "STARJOB_BILIBILI_CONTROLS_TEST_FAIL";

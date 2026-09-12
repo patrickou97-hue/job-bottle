@@ -109,10 +109,10 @@
         };
         actual.passed = identityCorrect && chromeExcluded && countryNotPhone && companyTypeNotCompany
           && actual.name === "王小星" && actual.phone === "18523103352" && actual.school === "西南财经大学"
-          && actual.educationStart === "2025-09-01" && actual.educationEnd === "2027-08-01"
+          && actual.educationStart === "2025-09-01" && actual.educationEnd === "2027-08-31"
           && actual.major === "金融学" && actual.degree === "硕士"
           && actual.company === "京东集团" && actual.title === "商业分析实习生"
-          && actual.workStart === "2026-01-01" && actual.workEnd === "2026-04-01"
+          && actual.workStart === "2026-01-01" && actual.workEnd === "2026-04-30"
           && actual.description === "结合岗位要求重写后的经历描述" && summary.failed === 0;
         document.querySelector("#result").textContent = JSON.stringify(actual);
         document.title = actual.passed ? "STARJOB_VISUAL_LAYOUT_TEST_PASS" : "STARJOB_VISUAL_LAYOUT_TEST_FAIL";

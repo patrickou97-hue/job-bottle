@@ -11,6 +11,11 @@
   const aiValueMappings = stored.aiValueMappings && typeof stored.aiValueMappings === "object" ? stored.aiValueMappings : {};
   const aiTargetFieldKeys = Array.isArray(stored.aiTargetFieldKeys) ? new Set(stored.aiTargetFieldKeys) : null;
   const AI_AUTOFILL_MIN_CONFIDENCE = 0.68;
+  // A semantic match is only a candidate until the control/value compatibility
+  // checks below pass. Keep this aligned with the AI executor so a modestly
+  // uncertain ordinary field can still receive a grounded value and be shown
+  // for human confirmation instead of being left blank.
+  const DETERMINISTIC_MATCH_MIN_CONFIDENCE = 0.68;
 
   if (!resume?.content) {
     return { scanned: 0, filled: 0, preserved: 0, manual: 0, error: "missing_resume" };
@@ -773,19 +778,33 @@
 
   function formatDate(value, element) {
     const text = asText(value);
-    const match = text.match(/(19|20)\d{2}[^0-9]?([01]?\d)?[^0-9]?([0-3]?\d)?/);
+    const match = text.match(/((?:19|20)\d{2})[^0-9]?([01]?\d)?[^0-9]?([0-3]?\d)?/);
     if (!match) return text;
-    const year = match[0].slice(0, 4);
-    const monthMatch = text.slice(4).match(/([01]?\d)/);
-    const month = monthMatch ? monthMatch[1].padStart(2, "0") : "01";
+    const year = match[1];
+    const month = (match[2] || "1").padStart(2, "0");
+    const day = (match[3] || "1").padStart(2, "0");
     if (element instanceof HTMLInputElement && element.type === "month") return `${year}-${month}`;
-    if (element instanceof HTMLInputElement && element.type === "date") return `${year}-${month}-01`;
+    if (element instanceof HTMLInputElement && element.type === "date") return `${year}-${month}-${day}`;
     if (element instanceof HTMLInputElement) {
       const dateSignal = normalize(`${element.placeholder} ${element.getAttribute("aria-label") || ""}`);
-      if (/日期|年月日|yyyymmdd|date/.test(dateSignal)) return `${year}-${month}-01`;
+      if (/日期|年月日|yyyymmdd|date/.test(dateSignal)) return `${year}-${month}-${day}`;
       if (/月份|年月|yyyymm|month/.test(dateSignal)) return `${year}-${month}`;
     }
     return text;
+  }
+
+  function normalizeMonthBoundaryDate(value, definitionKey, element) {
+    const text = asText(value).trim();
+    if (!/(?:^|\.)(?:startDate|endDate)$/.test(definitionKey || "")) return text;
+    if (element instanceof HTMLInputElement && element.type === "month") return text;
+    const match = text.match(/^\s*((?:19|20)\d{2})[^0-9]?(0?[1-9]|1[0-2])(?:\s*)$/);
+    if (!match) return text;
+    const year = Number(match[1]);
+    const month = Math.max(1, Math.min(12, Number(match[2])));
+    const day = /(?:^|\.)endDate$/.test(definitionKey || "")
+      ? new Date(Date.UTC(year, month, 0)).getUTCDate()
+      : 1;
+    return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
   }
 
   function inferDatePart(element, signals) {
@@ -1163,7 +1182,10 @@
   }
 
   async function fillElement(element, rawValue, definition) {
-    const value = definition.date ? valueForDatePart(rawValue, definition.datePart, element) : asText(rawValue);
+    const normalizedRawValue = definition.date
+      ? normalizeMonthBoundaryDate(rawValue, definition.key, element)
+      : rawValue;
+    const value = definition.date ? valueForDatePart(normalizedRawValue, definition.datePart, element) : asText(rawValue);
     if (definition.checkbox && element instanceof HTMLInputElement && element.type === "checkbox") {
       if (rawValue === undefined || rawValue === null || rawValue === "") return false;
       element.checked = rawValue === true || /^(true|1|yes|y|是|至今|仍在职)$/i.test(String(rawValue));
@@ -1175,7 +1197,13 @@
     // Readonly ATS date pickers are also comboboxes. Date resolution must run
     // before the generic dynamic-select state machine or a month/day option can
     // be selected from the wrong popup.
-    if (definition.date && !definition.datePart && await tryExactDatePickerSelection(element, rawValue)) return true;
+    if (definition.date && !definition.datePart && await tryExactDatePickerSelection(element, normalizedRawValue)) return true;
+    if (definition.date && !definition.datePart && element instanceof HTMLInputElement && element.readOnly) {
+      setNativeValue(element, value);
+      dispatchEvents(element);
+      await wait(24);
+      if (dateValuesEquivalent(normalizedRawValue, currentValue(element))) return true;
+    }
 
     if (isDynamicControl(element) && !(element instanceof HTMLInputElement && ["date", "month", "datetime-local"].includes(element.type))) {
       return fillDynamicControl(element, value, definition);
@@ -1221,7 +1249,7 @@
         await wait(24);
         const validDateReadback = definition.datePart
           ? normalize(value) === normalize(currentValue(element))
-          : dateValuesEquivalent(rawValue, currentValue(element));
+          : dateValuesEquivalent(normalizedRawValue, currentValue(element));
         if (!validDateReadback) {
           setNativeValue(element, "");
           dispatchEvents(element);
@@ -1390,7 +1418,7 @@
     };
     for (const section of sections) {
       const sectionPlans = plans.filter((plan) => plan.matchedDefinition?.section === section
-        && plan.bestScore >= 0.74
+        && plan.bestScore >= DETERMINISTIC_MATCH_MIN_CONFIDENCE
         && plan.matchedDefinition.repeatable !== false);
       const scopes = [...new Set(sectionPlans.map((plan) => plan.recordScope || "default"))];
       for (const scope of scopes) {
@@ -1602,11 +1630,11 @@
     if (!plan.matchedDefinition) return undefined;
     const hardExact = isHardExactKey(plan.matchedDefinition.key);
     const locallyExact = plan.matchedDefinition.localExact === true
-      && plan.bestScore >= (hardExact ? 0.74 : 0.9);
+      && plan.bestScore >= (hardExact ? DETERMINISTIC_MATCH_MIN_CONFIDENCE : 0.9);
     const recordAwareExact = Number.isInteger(plan.recordIndex)
       && plan.pageRecordId
       && plan.resumePath
-      && plan.bestScore >= (hardExact ? 0.74 : 0.9)
+      && plan.bestScore >= (hardExact ? DETERMINISTIC_MATCH_MIN_CONFIDENCE : 0.9)
       && ["education", "work", "project", "campus", "awards", "certifications", "languages"].includes(plan.matchedDefinition.section);
     if (!locallyExact && !recordAwareExact) return undefined;
     const values = getDefinitionValues(plan.matchedDefinition, plan.recordScope);
@@ -1737,8 +1765,11 @@
       && blockedChoiceTerms.some((term) => normalize(labelText).includes(normalize(term)));
     const birthDateField = birthDateTerms.some((term) => normalizedSignals.includes(normalize(term)))
       || /(?:^|[^a-z])dob(?:[^a-z]|$)/i.test(`${labelText} ${contextText}`);
-    const sensitive = !labelText
-      || blockedCheckbox
+    // Some ATS controls expose their semantics only through placeholder,
+    // aria/name metadata, or the surrounding record structure. Missing visible
+    // label text alone must not discard an otherwise resolvable ordinary field;
+    // truly unknown controls still remain unmatched and therefore unwritten.
+    const sensitive = blockedCheckbox
       || sensitiveTerms.some((term) => (hasStrongOwnDescriptor ? normalizedOwnDescriptor : normalizedSignals).includes(normalize(term)))
       || (birthDateField && !asText(basics.birthDate));
 
@@ -1761,7 +1792,7 @@
     }
 
     const aiMapping = aiFieldMappings[fieldKey];
-    if (!sensitive && aiMapping && typeof aiMapping === "object" && Number(aiMapping.confidence) >= 0.78) {
+    if (!sensitive && aiMapping && typeof aiMapping === "object" && Number(aiMapping.confidence) >= AI_AUTOFILL_MIN_CONFIDENCE) {
       const aiDefinition = definitions.find((definition) => definition.key === aiMapping.key);
       if (aiDefinition && (!sectionHint || aiDefinition.section === sectionHint)
         && isDefinitionControlCompatible(aiDefinition, element)
@@ -1778,7 +1809,7 @@
       attributes: signals.attributes.join(" ").slice(0, 160),
       context: [sectionHint, contextText].filter(Boolean).join(" ").replace(/\s+/g, " ").trim().slice(0, 160),
       inputType,
-      deterministicKey: matchedDefinition && bestScore >= 0.74 ? matchedDefinition.key : null,
+      deterministicKey: matchedDefinition && bestScore >= DETERMINISTIC_MATCH_MIN_CONFIDENCE ? matchedDefinition.key : null,
       deterministicConfidence: Number(bestScore.toFixed(2)),
       recordIndex: structuredContract?.recordIndex ?? null,
       recordScope,
@@ -1794,7 +1825,7 @@
       controlType: getControlType(element),
       interactionType: getInteractionType(element),
       elementIdentity: element.dataset.starjobFieldId || fieldKey,
-      datePart: matchedDefinition?.date ? inferDatePart(element, signals) : null,
+      datePart: matchedDefinition?.date && !inputDateType ? inferDatePart(element, signals) : null,
       required: element.hasAttribute("required") || element.getAttribute("aria-required") === "true",
       constraints: {
         maxLength: Number.isFinite(element.maxLength) && element.maxLength >= 0 ? element.maxLength : null,
@@ -1858,7 +1889,7 @@
     const provider = detectProvider();
     return {
       scanned: candidates.length,
-      identified: plans.filter((plan) => !plan.sensitive && plan.matchedDefinition && plan.bestScore >= 0.74).length,
+      identified: plans.filter((plan) => !plan.sensitive && plan.matchedDefinition && plan.bestScore >= DETERMINISTIC_MATCH_MIN_CONFIDENCE).length,
       fields: extractedFields
         .filter((field) => !field.sensitive)
         .map(toAnalysisField),
@@ -1957,14 +1988,28 @@
       return false;
     }
     try {
-      const verified = await fillElement(resolvedElement, value, definition);
+      let verified = false;
+      let activeElement = resolvedElement;
+      for (let attempt = 0; attempt < 2 && !verified; attempt += 1) {
+        if (attempt > 0) {
+          document.activeElement?.dispatchEvent?.(new KeyboardEvent("keydown", { key: "Escape", code: "Escape", bubbles: true }));
+          await wait(80);
+          const retryMatches = elementIdentity
+            ? queryAllRoots(`[data-starjob-field-id="${CSS.escape(elementIdentity)}"]`)
+            : [];
+          if (element?.isConnected) activeElement = element;
+          else if (retryMatches.length === 1) activeElement = retryMatches[0];
+          else break;
+        }
+        verified = await fillElement(activeElement, value, definition);
+      }
       if (verified
         && !definition.date
-        && (resolvedElement instanceof HTMLTextAreaElement
-          || (resolvedElement instanceof HTMLInputElement
-            && !["checkbox", "radio", "date", "month", "datetime-local", "file"].includes(resolvedElement.type)))) {
+        && (activeElement instanceof HTMLTextAreaElement
+          || (activeElement instanceof HTMLInputElement
+            && !["checkbox", "radio", "date", "month", "datetime-local", "file"].includes(activeElement.type)))) {
         deferredTextReadbacks.push({
-          element: resolvedElement,
+          element: activeElement,
           expected: asText(value),
           trace,
         });
@@ -1972,7 +2017,7 @@
       if (trace) trace.execution = {
         resolved: true,
         written: verified,
-        readback: currentValue(resolvedElement).slice(0, 180),
+        readback: currentValue(activeElement).slice(0, 180),
         verified,
         failureCode: verified ? null : "READBACK_MISMATCH",
       };
@@ -2079,11 +2124,16 @@
     ? [...plans].sort((left, right) => {
         const priority = (plan) => {
           const element = plan.element;
-          if (plan.matchedDefinition?.date || isDynamicControl(element)
+          // Fill ordinary text and narrative fields before slower picker state
+          // machines. A stubborn date or custom selector must not prevent a
+          // later self-summary or other writable field from being attempted.
+          if (!plan.matchedDefinition?.date && !isDynamicControl(element)
+            && !(element instanceof HTMLSelectElement)
+            && !(element instanceof HTMLInputElement && ["checkbox", "radio", "date", "month", "datetime-local"].includes(element.type))) return 0;
+          if (!plan.matchedDefinition?.date && (isDynamicControl(element)
             || element instanceof HTMLSelectElement
-            || (element instanceof HTMLInputElement && ["checkbox", "radio", "date", "month", "datetime-local"].includes(element.type))) return 0;
-          if (element instanceof HTMLTextAreaElement) return 2;
-          return 1;
+            || (element instanceof HTMLInputElement && ["checkbox", "radio"].includes(element.type)))) return 1;
+          return 2;
         };
         return priority(left) - priority(right);
       })
@@ -2144,6 +2194,7 @@
       const checkboxValue = /^(true|1|yes|y|是|至今|仍在职)$/i.test(String(value));
       if (matchedDefinition?.date) plan.expectedDateValue = value;
       if (await fillElementSafely(element, isCheckbox ? checkboxValue : value, {
+        key: matchedDefinition?.key || extractedFields.find((field) => field.fieldKey === fieldKey)?.semanticKey || "",
         date: Boolean(matchedDefinition?.date) || (!matchedDefinition && isLikelyDateControl(element)),
         datePart: extractedFields.find((field) => field.fieldKey === fieldKey)?.datePart || null,
         checkbox: isCheckbox,
@@ -2163,7 +2214,7 @@
       continue;
     }
 
-    if (!matchedDefinition || bestScore < 0.74) {
+    if (!matchedDefinition || bestScore < DETERMINISTIC_MATCH_MIN_CONFIDENCE) {
       manual += 1;
       rememberUnmatched(signals);
       continue;

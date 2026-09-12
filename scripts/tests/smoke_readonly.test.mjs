@@ -42,7 +42,7 @@ test("Supabase 冒烟探针只发起公开岗位 GET 读取", () => {
 test("页面冒烟始终启动随机端口的当前独立 dev server", () => {
   assert.doesNotMatch(smokeSource, /findReusableServer|SMOKE_BASE_URL/u);
   assert.match(smokeSource, /const runId = randomUUID\(\)/u);
-  assert.match(smokeSource, /\["dev", "--hostname", "127\.0\.0\.1", "--port", String\(port\)\]/u);
+  assert.match(smokeSource, /\["dev", "--webpack", "--hostname", "127\.0\.0\.1", "--port", String\(port\)\]/u);
   assert.match(smokeSource, /WATCHPACK_POLLING: "true"/u);
   assert.match(smokeSource, /未复用 3000\/3001 上的未知进程/u);
 });

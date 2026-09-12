@@ -246,10 +246,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "AI 智能填写请求较频繁，请稍后重试" }, { status: 429, headers: { "Retry-After": "600" } });
   }
 
-  const apiKey = process.env.DEEPSEEK_API_KEY?.trim();
-  const baseUrl = process.env.DEEPSEEK_BASE_URL?.trim() || "https://api.deepseek.com";
-  const model = process.env.DEEPSEEK_MODEL?.trim() || "deepseek-v4-flash";
-  if (!apiKey) return NextResponse.json({ error: "AI 智能填写服务尚未配置" }, { status: 503 });
+  const deepSeekApiKey = process.env.DEEPSEEK_API_KEY?.trim();
+  const mimoApiKey = process.env.MIMO_API_KEY?.trim();
+  const provider = mimoApiKey ? "mimo" : "deepseek";
+  const apiKey = mimoApiKey || deepSeekApiKey;
+  const baseUrl = provider === "mimo"
+    ? process.env.MIMO_BASE_URL?.trim() || ""
+    : process.env.DEEPSEEK_BASE_URL?.trim() || "https://api.deepseek.com";
+  const model = provider === "mimo"
+    ? process.env.MIMO_MODEL?.trim() || ""
+    : process.env.DEEPSEEK_MODEL?.trim() || "deepseek-v4-flash";
+  if (!apiKey || !baseUrl || !model) return NextResponse.json({ error: "AI 智能填写服务尚未配置" }, { status: 503 });
 
   try {
     const modelFields = parsed.data.fields.map((field, index) => ({ ...field, fieldKey: `f${index}` }));
@@ -284,6 +291,7 @@ export async function POST(request: NextRequest) {
             apiKey,
             baseUrl,
             model,
+            provider,
             requestSignal: request.signal,
             resume: parsed.data.resume,
             fields: attemptFields,
@@ -421,6 +429,7 @@ async function callAutofillModel(input: {
   apiKey: string;
   baseUrl: string;
   model: string;
+  provider: "deepseek" | "mimo";
   requestSignal: AbortSignal;
   resume: z.infer<typeof resumeSchema>;
   fields: z.infer<typeof fieldSchema>[];
@@ -445,7 +454,9 @@ async function callAutofillModel(input: {
         model: input.model,
         temperature: input.repairPass === 0 ? 0.15 : 0,
         stream: false,
-        thinking: { type: "disabled" },
+        ...(input.provider === "mimo"
+          ? { chat_template_kwargs: { enable_thinking: false } }
+          : { thinking: { type: "disabled" } }),
         max_tokens: outputBudget,
         response_format: { type: "json_object" },
         messages: [
@@ -618,6 +629,7 @@ function parseResult(
       });
       const derivedValue = deriveGraduationValue(field, resume);
       const ageValue = deriveAgeValue(field, resume);
+      const selfSummaryFallback = deriveSafeSelfSummaryValue(field, resume);
       // Hard facts are compiled from the selected resume instead of being left
       // to free-form model generation.  The scanner's direct descriptor is
       // checked here and again in the extension before any value is written.
@@ -653,7 +665,14 @@ function parseResult(
           },
         };
       }
-      if (hasUsableModelMapping && recordNarrativeMappingCompatible) return { field, mapping };
+      const modelSelfSummaryIsSafe = !isSelfSummaryField(field) || isGroundedGenerationAllowed(
+        mapping.value || "",
+        field,
+        mapping.evidence || [],
+        resume,
+        summaryFacts,
+      );
+      if (hasUsableModelMapping && recordNarrativeMappingCompatible && modelSelfSummaryIsSafe) return { field, mapping };
       if (exactResumeValue?.value) {
         return {
           field,
@@ -673,6 +692,21 @@ function parseResult(
       }
       if (recordDescriptionValue) {
         return { field, mapping: { ...mapping, value: recordDescriptionValue, confidence: 0.99, basis: "resume" as const } };
+      }
+      if (selfSummaryFallback) {
+        return {
+          field,
+          mapping: {
+            ...mapping,
+            status: "answered" as const,
+            action: "generate" as const,
+            value: selfSummaryFallback.value,
+            confidence: 0.72,
+            basis: "grounded_generation" as const,
+            evidence: selfSummaryFallback.evidence,
+            needsReview: true,
+          },
+        };
       }
       const safeDerivedValue = derivedValue || ageValue;
       return { field, mapping: safeDerivedValue ? { ...mapping, value: safeDerivedValue, confidence: 0.99, basis: "derived" as const } : mapping };
@@ -872,7 +906,11 @@ function getScopedFieldFacts(field: z.infer<typeof fieldSchema>, resume: z.infer
   if (!selected.length) return [];
 
   if (["startDate", "endDate"].includes(property)) {
-    return collectResumeFacts(selected.map((entry) => (entry as Record<string, unknown>)[property]));
+    return collectResumeFacts(selected.flatMap((entry) => {
+      const value = (entry as Record<string, unknown>)[property];
+      if (typeof value !== "string" || !value.trim()) return [];
+      return [value, normalizeMonthBoundaryDate(value, property)];
+    }));
   }
   if (field.deterministicKey === "education.description") {
     return collectResumeFacts(selected.map((entry) => {
@@ -994,6 +1032,30 @@ function isSelfSummaryField(field: z.infer<typeof fieldSchema>) {
     || /(?:^|[^a-z])profile(?:[^a-z]|$)/.test(`${field.label} ${field.attributes} ${field.context}`.toLowerCase());
 }
 
+function deriveSafeSelfSummaryValue(
+  field: z.infer<typeof fieldSchema>,
+  resume: z.infer<typeof resumeSchema>,
+) {
+  if (!isSelfSummaryField(field)) return null;
+  const evidence: string[] = [];
+  const add = (path: string, value: unknown) => {
+    if (evidence.length >= 4) return;
+    const facts: string[] = [];
+    collectResumeFacts(value, facts);
+    if (facts.some((fact) => normalizeFact(fact).length >= 2)) evidence.push(path);
+  };
+  add("education[0]", resume.content.education[0]);
+  add("work[0]", resume.content.work[0]);
+  add("projects[0]", resume.content.projects[0]);
+  add("skills[0]", resume.content.skills[0]);
+  add("campus[0]", resume.content.campus[0]);
+  if (!evidence.length) return null;
+  return {
+    value: "我能够结合已有教育、实习与项目经历梳理任务重点，并根据岗位要求组织相关经验和技能信息，完成明确的工作目标。",
+    evidence,
+  };
+}
+
 function isEducationDescriptionField(field: z.infer<typeof fieldSchema>) {
   if (field.deterministicKey === "education.description") return true;
   const descriptor = normalizeChoice(`${field.label} ${field.attributes} ${field.context}`);
@@ -1043,7 +1105,18 @@ function deriveRecordDateValue(field: z.infer<typeof fieldSchema>, resume: z.inf
   const entry = getSectionEntries(resume, section, field.recordScope)[field.recordIndex];
   if (!entry || typeof entry !== "object") return null;
   const value = (entry as Record<string, unknown>)[property];
-  return typeof value === "string" && value.trim() ? value.trim() : null;
+  return typeof value === "string" && value.trim() ? normalizeMonthBoundaryDate(value, property) : null;
+}
+
+function normalizeMonthBoundaryDate(value: string, property: string) {
+  const text = value.trim();
+  if (!["startDate", "endDate"].includes(property)) return text;
+  const match = text.match(/^\s*((?:19|20)\d{2})[^0-9]?(0?[1-9]|1[0-2])(?:\s*)$/);
+  if (!match) return text;
+  const year = Number(match[1]);
+  const month = Math.max(1, Math.min(12, Number(match[2])));
+  const day = property === "endDate" ? new Date(Date.UTC(year, month, 0)).getUTCDate() : 1;
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
 const REPEATABLE_SECTIONS = new Set(["education", "work", "project", "campus", "awards", "certifications", "languages"]);
@@ -1072,7 +1145,9 @@ function deriveExactResumeValue(field: z.infer<typeof fieldSchema>, resume: z.in
       if (section === "education") rawValue = [record.courses, record.honors].filter(Boolean).join("\n");
       else rawValue = Array.isArray(record.bullets) ? record.bullets.join("\n") : "";
     }
-    const value = Array.isArray(rawValue) ? rawValue.filter(Boolean).join("、") : String(rawValue ?? "").trim();
+    const value = Array.isArray(rawValue)
+      ? rawValue.filter(Boolean).join("、")
+      : normalizeMonthBoundaryDate(String(rawValue ?? ""), property);
     return value ? { value, resumePath: field.resumePath, failureCode: null } : null;
   }
 
@@ -1186,7 +1261,7 @@ const SYSTEM_PROMPT = `你是拾星网申助手的保守型填写引擎。你只
 5. 只有当 basics.birthDate 明确非空时，才可为出生日期/生日字段填写该日期或做等价日期格式转换，并可按当前日期唯一计算整数周岁；绝不能根据年龄、教育时间、证件号等反推出生日期，也不得在 birthDate 缺失时猜测年龄。
 6. 自我评价、个人优势、经历描述、项目介绍、Why company/role、求职动机等叙述题允许生成。先识别题目意图，再从 evidence 中选最相关的 2–4 项证据组织答案；针对 JD 调整重点，但不要复述 JD，也不要虚构认同、热情或长期承诺。用户没有表达过的可入职时间、薪资、调剂、地点和其他决定仍必须 manual。
 7. 当 deterministicKey=education.description，或字段明确位于教育背景且名称为“经历描述/教育描述”时，只能填写同一条教育记录中的课程、学术训练和校内荣誉；不得写工作、实习、项目经历，也不得使用第一人称自我评价口吻。对应记录只要存在课程、荣誉或职责内容就必须填写经历描述，不得因为它不是自我描述而返回 null。
-8. 当 deterministicKey 以 .startDate、.endDate 或 .date 结尾时，只能使用同一 recordIndex 对应记录的同名日期；recordScope=internship 时只可取实习记录，recordScope=employment 时只可取正式工作记录。严禁交换开始和结束日期，也不得跨经历或跨板块取值。
+8. 当 deterministicKey 以 .startDate、.endDate 或 .date 结尾时，只能使用同一 recordIndex 对应记录的同名日期；recordScope=internship 时只可取实习记录，recordScope=employment 时只可取正式工作记录。严禁交换开始和结束日期，也不得跨经历或跨板块取值。源日期只有年月时，开始日期规范为当月 1 日，结束日期规范为当月最后一天，例如 2025.07–2025.08 应写为 2025-07-01–2025-08-31。
 9. 性别、国籍/地区和期望工作地点只有在 basics.gender、basics.nationality、basics.preferredLocations 明确非空时才可等价填写或选择；不得从姓名、学校、所在地等其他信息推断。不得推断或填写身份证/护照等证件信息、婚姻、民族、户籍、政治面貌、宗教、健康/残疾、退伍信息、薪资、家庭成员、验证码、密码、账号、安全问题、法律声明、隐私同意或提交确认。
 10. 可以回答有事实证据的开放申请题；性格测评、法律声明，以及可入职时间、薪资、调剂等需要用户作决定的问题必须 manual。
 11. select 或 radio 字段只能返回 options 中已有的 value 或 text，优先返回可见 text；没有唯一匹配则返回 null。

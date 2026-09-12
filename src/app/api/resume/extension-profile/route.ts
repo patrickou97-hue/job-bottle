@@ -46,7 +46,10 @@ export async function GET() {
         version: 1,
         resumes,
         syncedAt: new Date().toISOString(),
-        aiMatchingAvailable: Boolean(matchToken && process.env.MIMO_API_KEY && process.env.MIMO_BASE_URL && process.env.MIMO_MODEL),
+        aiMatchingAvailable: Boolean(matchToken && (
+          (process.env.MIMO_API_KEY && process.env.MIMO_BASE_URL && process.env.MIMO_MODEL)
+          || process.env.DEEPSEEK_API_KEY
+        )),
         matchToken: matchToken?.token || null,
         matchTokenExpiresAt: matchToken?.expiresAt || null,
       },

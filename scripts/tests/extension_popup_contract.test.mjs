@@ -82,7 +82,7 @@ test("服务端和扩展统一接受阈值，硬事实优先取简历且叙述�
   assert.match(fill, /Number\(mapping\.confidence\) >= AI_AUTOFILL_MIN_CONFIDENCE/);
   assert.match(route, /function isHardResumeFactField/);
   const hardFactIndex = route.indexOf("if (isHardResumeFactField(field)");
-  const modelMappingIndex = route.indexOf("if (hasUsableModelMapping && recordNarrativeMappingCompatible) return { field, mapping }");
+  const modelMappingIndex = route.indexOf("if (hasUsableModelMapping && recordNarrativeMappingCompatible && modelSelfSummaryIsSafe) return { field, mapping }");
   assert.ok(hardFactIndex >= 0 && modelMappingIndex > hardFactIndex, "姓名、手机号、学校、公司和日期等硬事实必须先取所选简历");
   assert.match(fill, /const preferExactValue = exactStructuredValue !== undefined && isHardExactKey/);
   assert.match(fill, /const selectedValue = preferExactValue[\s\S]*\? exactStructuredValue[\s\S]*: hasAcceptedMapping/);
@@ -93,12 +93,24 @@ test("重复经历叙述按当前记录裁剪输入并校验返回证据", () =>
   assert.match(popup, /resume: sanitizeResumeForAi\(selectedResume, batch\)/);
   assert.match(route, /isAutofillRecordNarrativeMappingCompatible/);
   assert.match(route, /recordNarrativeMappingCompatible/);
-  const guardedModelIndex = route.indexOf("if (hasUsableModelMapping && recordNarrativeMappingCompatible)");
+  const guardedModelIndex = route.indexOf("if (hasUsableModelMapping && recordNarrativeMappingCompatible && modelSelfSummaryIsSafe)");
   const exactFallbackIndex = route.indexOf("if (exactResumeValue?.value)", guardedModelIndex);
   const recordFallbackIndex = route.indexOf("if (recordDescriptionValue)", guardedModelIndex);
   assert.ok(guardedModelIndex >= 0, "跨记录叙述必须先经过当前记录兼容校验");
   assert.ok(exactFallbackIndex > guardedModelIndex, "校验失败后必须回退到当前记录的精确简历值");
   assert.ok(recordFallbackIndex > exactFallbackIndex, "精确值不可用时必须继续回退到当前记录叙述");
+});
+
+test("普通字段先写入，动态控件单字段重试，自我描述有安全回退", () => {
+  assert.match(fill, /for \(let attempt = 0; attempt < 2 && !verified; attempt \+= 1\)/);
+  assert.match(fill, /A stubborn date or custom selector must not prevent/);
+  assert.match(fill, /const DETERMINISTIC_MATCH_MIN_CONFIDENCE = 0\.68/);
+  assert.doesNotMatch(fill, /const sensitive = !labelText/);
+  assert.match(route, /function deriveSafeSelfSummaryValue/);
+  assert.match(route, /needsReview: true/);
+  const summaryFallbackIndex = route.indexOf("if (selfSummaryFallback)");
+  const derivedFallbackIndex = route.indexOf("const safeDerivedValue = derivedValue || ageValue", summaryFallbackIndex);
+  assert.ok(summaryFallbackIndex >= 0 && derivedFallbackIndex > summaryFallbackIndex, "自我描述回退必须在最终人工确认前执行");
 });
 
 test("学校、日期、联系方式和链接使用字段级语义边界", () => {
@@ -242,6 +254,16 @@ test("日期字段先走日期解析且年月拆分不构造虚假日", () => {
   assert.match(fill, /function inferDatePart/);
   assert.match(fill, /function valueForDatePart/);
   assert.match(fill, /datePart: extractedFields\.find/);
+  assert.match(fill, /function normalizeMonthBoundaryDate\(value, definitionKey, element\)/);
+  assert.match(fill, /element instanceof HTMLInputElement && element\.type === "month"/);
+  assert.match(fill, /key: matchedDefinition\?\.key \|\| extractedFields\.find\(\(field\) => field\.fieldKey === fieldKey\)\?\.semanticKey \|\| ""/);
+  assert.match(fill, /datePart: matchedDefinition\?\.date && !inputDateType \? inferDatePart\(element, signals\) : null/);
+  assert.match(fill, /\(\?:\^\|\\\.\)endDate\$/);
+  assert.match(fill, /return `\$\{year\}-\$\{month\}-\$\{day\}`/);
+  assert.match(fill, /element instanceof HTMLInputElement && element\.readOnly/);
+  assert.match(route, /function normalizeMonthBoundaryDate/);
+  assert.match(route, /new Date\(Date\.UTC\(year, month, 0\)\)\.getUTCDate\(\)/);
+  assert.match(route, /2025-07-01–2025-08-31/);
 });
 
 test("AI 返回的可忽略格式差异不会让整批安全字段失败", () => {

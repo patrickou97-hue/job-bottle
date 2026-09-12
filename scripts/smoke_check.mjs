@@ -1185,7 +1185,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "browser-extension/starjob-resume-assistant/manifest.json",
-    mustInclude: ["\"manifest_version\": 3", "\"version\": \"1.1.4\"", "\"activeTab\"", "\"scripting\"", "\"storage\"", "https://www.starjob.space/extension*", "https://www.starjob.space/*"],
+    mustInclude: ["\"manifest_version\": 3", "\"version\": \"1.1.5\"", "\"activeTab\"", "\"scripting\"", "\"storage\"", "https://www.starjob.space/extension*", "https://www.starjob.space/*"],
     mustNotInclude: ["\"cookies\"", "\"tabs\"", "<all_urls>", "localhost", "nowcoder", "牛客"],
     label: "拾星网申助手使用 Manifest V3 和用户触发的最小权限",
   },
@@ -1215,9 +1215,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/resume/extension-autofill/route.ts",
-    mustInclude: ["export const maxDuration = 90", "preferredRegion = \"hkg1\"", "REQUEST_TIMEOUT_MS = 75_000", "verifyExtensionMatchToken", "takeExtensionAutofillRateSlot", "DEEPSEEK_API_KEY", "DEEPSEEK_BASE_URL", "DEEPSEEK_MODEL", "https://api.deepseek.com", "deepseek-v4-flash", "thinking: { type: \"disabled\" }", "REQUEST_TIMEOUT_MS", "MIN_CONFIDENCE = 0.68", "MAX_REPAIR_PASSES = 2", "pendingGroups", "repairGroupIndex", "repair_upstream_error", "modelCallCount", "MAX_MODEL_OUTPUT_TOKENS = 5_000", "MIN_MODEL_OUTPUT_TOKENS = 1_200", "extractPartialOutcomeRows(content)", "normalizeModelOutcomeCandidate(row)", "isHardBlockedApplicationField(field)", "isHardResumeFactField(field)", "ownDescriptor", "deriveExactResumeValue", "extension_autofill_partial_contract", "AI_RESPONSE_INCOMPLETE", "degraded: missingAfterRepair.length > 0", "operationId", "pageSnapshotId", "batchId", "rateSlotAllowed", "response_format", "json_object", "resumeSchema", "fieldSchema", "resultSchema", "outcomes", "semantic_inference", "grounded_generation", "recordIndex", "deriveRecordDateValue", "deriveRecordDescriptionValue", "getScopedFieldFacts", "hasFieldSpecificResumeBasis", "isEducationDescriptionField", "简历是候选人的事实与能力证据", "允许重写、归纳、翻译和有证据的语义推断", "职位上下文只能决定表达重点", "只要存在课程、荣誉或职责内容就必须填写经历描述", "严禁交换开始和结束日期", "normalizeChoice", "field.options.some", "returnedByKey", "discardedUnknown", "discardedDuplicate", "discardedMalformed", "fieldKey: `f${index}`", "originalFields", "collectResumeFacts", "collectResumeSummaryFacts", "hasResumeBasis", "isAllowedDerivedValue", "isSafeResumeSummary", "basics.birthDate", "自我描述", "deriveGraduationValue", "parseYearMonth", "不可信文本", "中文姓名的无声调汉语拼音", "不得推断或填写身份证", "可以回答有事实证据的开放申请题", "每个 fieldKey 必须恰好返回一个 outcome", "不能填写时返回 manual 或 skip", "Wang Xiaoxing", "Cache-Control", "no-store"],
-    mustNotInclude: ["MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL", "createAdminClient", "SUPABASE_SERVICE_ROLE_KEY", "document.cookie", "console.log"],
-    label: "AI 智能填写使用受限令牌、结构化简历白名单和全表单保守规则调用 DeepSeek V4 Flash",
+    mustInclude: ["export const maxDuration = 90", "preferredRegion = \"hkg1\"", "REQUEST_TIMEOUT_MS = 75_000", "verifyExtensionMatchToken", "takeExtensionAutofillRateSlot", "MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL", "DEEPSEEK_API_KEY", "DEEPSEEK_BASE_URL", "DEEPSEEK_MODEL", "https://api.deepseek.com", "deepseek-v4-flash", "chat_template_kwargs: { enable_thinking: false }", "thinking: { type: \"disabled\" }", "REQUEST_TIMEOUT_MS", "MIN_CONFIDENCE = 0.68", "MAX_REPAIR_PASSES = 2", "pendingGroups", "repairGroupIndex", "repair_upstream_error", "modelCallCount", "MAX_MODEL_OUTPUT_TOKENS = 5_000", "MIN_MODEL_OUTPUT_TOKENS = 1_200", "extractPartialOutcomeRows(content)", "normalizeModelOutcomeCandidate(row)", "isHardBlockedApplicationField(field)", "isHardResumeFactField(field)", "ownDescriptor", "deriveExactResumeValue", "extension_autofill_partial_contract", "AI_RESPONSE_INCOMPLETE", "degraded: missingAfterRepair.length > 0", "operationId", "pageSnapshotId", "batchId", "rateSlotAllowed", "response_format", "json_object", "resumeSchema", "fieldSchema", "resultSchema", "outcomes", "semantic_inference", "grounded_generation", "recordIndex", "deriveRecordDateValue", "deriveRecordDescriptionValue", "getScopedFieldFacts", "hasFieldSpecificResumeBasis", "isEducationDescriptionField", "normalizeMonthBoundaryDate", "简历是候选人的事实与能力证据", "允许重写、归纳、翻译和有证据的语义推断", "职位上下文只能决定表达重点", "只要存在课程、荣誉或职责内容就必须填写经历描述", "严禁交换开始和结束日期", "结束日期规范为当月最后一天", "normalizeChoice", "field.options.some", "returnedByKey", "discardedUnknown", "discardedDuplicate", "discardedMalformed", "fieldKey: `f${index}`", "originalFields", "collectResumeFacts", "collectResumeSummaryFacts", "hasResumeBasis", "isAllowedDerivedValue", "isSafeResumeSummary", "basics.birthDate", "自我描述", "deriveGraduationValue", "parseYearMonth", "不可信文本", "中文姓名的无声调汉语拼音", "不得推断或填写身份证", "可以回答有事实证据的开放申请题", "每个 fieldKey 必须恰好返回一个 outcome", "不能填写时返回 manual 或 skip", "Wang Xiaoxing", "Cache-Control", "no-store"],
+    mustNotInclude: ["createAdminClient", "SUPABASE_SERVICE_ROLE_KEY", "document.cookie", "console.log"],
+    label: "AI 智能填写优先使用 MiMo，并在未配置 MiMo 时兼容 DeepSeek，同时保留受限令牌、结构化简历白名单和全表单保守规则",
   },
   {
     file: "supabase/migrations/20260810110000_extension_autofill_durable_rate_limit.sql",
@@ -1281,15 +1281,15 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/extension/ExtensionHubClient.tsx",
-    mustInclude: ["<span className=\"block\">一份简历，</span>", "<span className=\"block\">抵达更多坐标</span>", "把拾星简历同步到浏览器，在网申页面填写常用字段；你负责核对与提交。", "starjob-extension-paper-planes.png", "多架纸飞机沿不同虚线轨迹飞向远方", "查看安装教程", "安装后重新检测", "window.location.reload()", "LEGACY_COMPATIBLE_VERSIONS", "SHORT_TIMEOUT_AI_VERSIONS", "PREVIOUS_AI_VERSIONS", "\"1.1.1\", \"1.1.2\", \"1.1.3\"", "AI 智能填写需要升级到 1.1.4"],
+    mustInclude: ["<span className=\"block\">一份简历，</span>", "<span className=\"block\">抵达更多坐标</span>", "把拾星简历同步到浏览器，在网申页面填写常用字段；你负责核对与提交。", "starjob-extension-paper-planes.png", "多架纸飞机沿不同虚线轨迹飞向远方", "查看安装教程", "安装后重新检测", "window.location.reload()", "LEGACY_COMPATIBLE_VERSIONS", "SHORT_TIMEOUT_AI_VERSIONS", "PREVIOUS_AI_VERSIONS", "\"1.1.3\", \"1.1.4\"", "AI 智能填写需要升级到 1.1.5"],
     mustNotInclude: ["获取安装包", "DOWNLOAD_URL", "/downloads/starjob-resume-assistant-v0.2.8.zip", "一份简历，投向更多可能", "常见网申字段按页面顺序填入", "你只需检查，再决定提交", "简历写一次，网申少重复", "请升级到 0.1.8", "extensionVersion !==", "starjob-resume-assistant-popup.png", "https://pan.baidu.com/s/1q9gVenToSLL5x5tXZzYLig?pwd=SXZS", "https://pan.baidu.com/s/13sk2UUdep9S1zoJdEk_sSA?pwd=SXZS", "https://pan.baidu.com/s/1jl_OHVc_HxXbUrI1-IS56g?pwd=SXZS"],
     label: "网申助手首屏使用更克制的价值表达与纸飞机线稿引导",
   },
   {
     file: "src/components/extension/ExtensionGuide.tsx",
-    mustInclude: ["/downloads/starjob-resume-assistant-v1.1.4.zip", "下载 1.1.4 安装包", "当前版本 1.1.4", "每段工作和项目描述只使用当前记录的证据", "最多支持 100 个 AI 批次和 1500 个安全字段", "安装后刷新检测", "步骤 {String(index + 1).padStart(2, \"0\")}"],
+    mustInclude: ["/downloads/starjob-resume-assistant-v1.1.5.zip", "下载 1.1.5 安装包", "当前版本 1.1.5", "结束月写为当月最后一天", "每段工作和项目描述仍只使用当前记录的证据", "最多支持 100 个 AI 批次和 1500 个安全字段", "安装后刷新检测", "步骤 {String(index + 1).padStart(2, \"0\")}"],
     mustNotInclude: ["获取安装包", "pan.baidu.com", "百度网盘提取码", "最新版本 0.1.9", "starjob-resume-assistant-popup-v026.png"],
-    label: "网申助手下载页与安装教程共用 1.1.4 官网安装包",
+    label: "网申助手下载页与安装教程共用 1.1.5 官网安装包",
   },
   {
     file: "scripts/build_resume_extension.mjs",
@@ -1402,7 +1402,7 @@ const REQUIRED_FILES = [
   "public/downloads/starjob-resume-assistant-v1.1.0.zip",
   "public/downloads/starjob-resume-assistant-v1.1.1.zip",
   "public/downloads/starjob-resume-assistant-v1.1.2.zip",
-  "public/downloads/starjob-resume-assistant-v1.1.4.zip",
+  "public/downloads/starjob-resume-assistant-v1.1.5.zip",
   "browser-extension/starjob-resume-assistant/assets/icon16.png",
   "browser-extension/starjob-resume-assistant/assets/icon48.png",
   "browser-extension/starjob-resume-assistant/assets/icon128.png",
@@ -2188,7 +2188,7 @@ async function main() {
   const runId = randomUUID();
   const child = spawn(
     NEXT_BIN.pathname,
-    ["dev", "--hostname", "127.0.0.1", "--port", String(port)],
+    ["dev", "--webpack", "--hostname", "127.0.0.1", "--port", String(port)],
     {
       cwd: ROOT,
       env: {
