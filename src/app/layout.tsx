@@ -5,6 +5,7 @@ import { AppMotionProvider } from "@/components/layout/AppMotionProvider";
 import { WelcomeNotice } from "@/components/onboarding/WelcomeNotice";
 import { DEFAULT_SHARE_IMAGE, SITE_NAME, SITE_URL } from "@/lib/seo";
 import "./globals.css";
+import "@/styles/interface.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

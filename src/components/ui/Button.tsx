@@ -13,6 +13,8 @@ export function Button({
 }: ButtonProps) {
   return (
     <button
+      data-slot="button"
+      data-variant={variant}
       type={type}
       className={cn(
         "pressable inline-flex min-h-11 w-auto items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 text-sm font-medium transition disabled:pointer-events-none disabled:opacity-45",

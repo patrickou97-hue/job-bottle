@@ -856,15 +856,9 @@ export function ResumeBuilderClient({
 
 function ResumePageTitle() {
   return (
-    <div className="relative inline-flex pb-7 pr-16 sm:pr-20">
+    <div>
       <h1 className="page-title">简历制作</h1>
-      <span
-        className="pointer-events-none absolute bottom-0 right-0 inline-block whitespace-nowrap bg-[linear-gradient(90deg,#879fc8,#dce7f8)] bg-clip-text px-2 text-base font-semibold italic text-transparent drop-shadow-[0_0_10px_rgba(185,200,229,0.3)] sm:text-lg"
-        style={{ fontFamily: '"Snell Roundhand", "Brush Script MT", "Segoe Script", cursive' }}
-        aria-label="AI-Powered"
-      >
-        AI-Powered
-      </span>
+      <p className="page-subtitle mt-3">整理经历，打磨表达，为下一次机会做好准备。</p>
     </div>
   );
 }

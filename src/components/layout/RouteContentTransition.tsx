@@ -26,7 +26,12 @@ export function RouteContentTransition({
         className,
       )}
       variants={reducedMotion ? undefined : pageVariants}
-      initial={reducedMotion ? false : "initial"}
+      // A route shell can be restored from Safari's back-forward cache after
+      // its first animation frame has already been skipped. Starting from an
+      // invisible state then leaves the whole page readable to AX but absent
+      // from the painted surface. The shell should be visible immediately;
+      // the small transition remains available to components inside pages.
+      initial={false}
       animate={reducedMotion ? { opacity: 1 } : "enter"}
       transition={{
         duration: reducedMotion ? motionDuration.instant : motionDuration.fast,

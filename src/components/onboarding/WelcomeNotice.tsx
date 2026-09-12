@@ -266,7 +266,7 @@ function UserWelcomeContent() {
 
 function PrivacySection({ children }: { children: React.ReactNode }) {
   return (
-    <section className="border-l-2 border-[color:var(--aurora)]/55 pl-4 sm:pl-5">
+    <section className="ui-notice border-[color:var(--aurora)]/55 pl-4 sm:pl-5">
       <h3 className="text-sm font-semibold text-ink-primary">关于隐私与数据安全</h3>
       <div className="mt-2 space-y-2 text-xs leading-6 text-ink-muted sm:text-sm sm:leading-6">{children}</div>
     </section>

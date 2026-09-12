@@ -542,7 +542,7 @@ export function AdminBillingClient() {
             {message ? (
               <p
                 className={cn(
-                  "border-l-2 pl-3 text-sm leading-6",
+                  "ui-notice pl-3 text-sm leading-6",
                   messageTone === "error" && "border-[color:var(--text-danger)] text-[color:var(--text-danger)]",
                   messageTone === "success" && "border-[color:var(--aurora)] text-ink-primary",
                   messageTone === "info" && "border-aurum/70 text-ink-secondary",

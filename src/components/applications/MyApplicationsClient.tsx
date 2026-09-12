@@ -195,12 +195,12 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
   const endedOpen = endedExpanded || stageGroup === "ended";
 
   return (
-    <div className="observatory-page space-y-7">
+    <div className="observatory-page application-workspace space-y-7">
       <section className="page-hero">
         <div>
           <p className="page-kicker">投递总览</p>
           <h1 className="page-title">投递管理</h1>
-          <p className="page-description">一条投递对应一家公司与一个岗位，进度和跟进信息独立保存。</p>
+          <p className="page-description">记录投递进度，安排下一步跟进。</p>
         </div>
         <div className="progress-summary grid grid-cols-2 gap-x-6 gap-y-5 px-4 py-3 md:grid-cols-4 md:px-5">
           <StatBlock value={applications.length} label="全部岗位" />
@@ -281,7 +281,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
                     </div>
                     <span className="text-xs tabular-nums text-ink-muted">{activeApplications.length} 条投递</span>
                   </div>
-                  <div className="mt-4 divide-y divide-[color:var(--line-ghost)] border-y border-[color:var(--line-ghost)]">
+                  <div className="application-records mt-4">
                     {activeApplications.map((application) => (
                       <motion.div key={application.id} layout="position" transition={layoutTransition}>
                         <ApplicationListRow
@@ -368,7 +368,7 @@ function ApplicationListRow({ application, ended = false, onOpen, onEditWorkflow
   const appliedPosition = getApplicationDisplayPosition(application);
   const officialUrl = isValidHttpUrl(application.job.apply_url) ? sanitizeApplicationUrl(application.job.apply_url) : undefined;
   return (
-    <article className={`data-row grid gap-4 px-3 py-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(250px,1fr)_minmax(215px,0.75fr)] lg:items-center lg:px-4 ${ended ? "opacity-80" : ""}`}>
+    <article className={`data-row application-record grid gap-4 px-3 py-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(250px,1fr)_minmax(215px,0.75fr)] lg:items-center lg:px-4 ${ended ? "opacity-80" : ""}`}>
       <button type="button" className="min-w-0 text-left" onClick={onOpen}>
         <span className="block truncate text-lg font-semibold leading-6 tracking-tight text-ink-primary">{application.job.company_name}</span>
         <span className="mt-0.5 block min-h-5 truncate text-sm font-normal leading-5 text-ink-secondary">{appliedPosition}</span>

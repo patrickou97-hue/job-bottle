@@ -114,7 +114,7 @@ export function ApplicationPrepPanel({
                 <SummaryMetric label="经历记录" value={`${summary.sectionCounts.education + summary.sectionCounts.experience + summary.sectionCounts.projects}`} detail="教育、实习/工作与项目" />
                 <SummaryMetric label="技能分类" value={`${summary.sectionCounts.skills}`} detail="来自当前简历" />
               </div>
-              <p className="mt-4 border-l-2 border-[color:var(--aurora)] pl-3 text-xs leading-6 text-ink-muted">选定后，下面所有信息都会保存到「{resume.title || "未命名简历"}」，不会写进其他简历。</p>
+              <p className="mt-4 ui-notice border-[color:var(--aurora)] pl-3 text-xs leading-6 text-ink-muted">选定后，下面所有信息都会保存到「{resume.title || "未命名简历"}」，不会写进其他简历。</p>
             </div>
           </div>
         ) : null}
@@ -129,7 +129,7 @@ export function ApplicationPrepPanel({
               <PrepField label="所在城市" value={resume.content.basics.city} onChange={(value) => patchBasics("city", value)} placeholder="例如：上海" />
               <PrepField label="目标岗位" value={resume.content.basics.targetRole || resume.targetRole} onChange={(value) => patchBasics("targetRole", value)} placeholder="例如：产品经理实习生" />
             </div>
-            <p className="border-l-2 border-[color:var(--aurora)] pl-3 text-xs leading-6 text-ink-muted">带 * 的项目只是建议优先完善，不是网申助手的使用门槛。</p>
+            <p className="ui-notice border-[color:var(--aurora)] pl-3 text-xs leading-6 text-ink-muted">带 * 的项目只是建议优先完善，不是网申助手的使用门槛。</p>
           </div>
         ) : null}
 
@@ -144,7 +144,9 @@ export function ApplicationPrepPanel({
                   <option value="">不填写</option>
                   <option value="男">男</option>
                   <option value="女">女</option>
+                  <option value="非二元性别">非二元性别</option>
                   <option value="其他">其他</option>
+                  <option value="不愿透露">不愿透露</option>
                 </Select>
               </label>
               <PrepField label="国籍/地区" value={resume.content.basics.nationality} onChange={(value) => patchBasics("nationality", value)} placeholder="例如：中国" />

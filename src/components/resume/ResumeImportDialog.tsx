@@ -243,7 +243,7 @@ export function ResumeImportDialog({
           </section>
         ) : null}
 
-        {error ? <p className="border-l-2 border-[#9f2d3f] pl-3 text-sm leading-6 text-[color:var(--text-danger)]">{error}</p> : null}
+        {error ? <p className="ui-notice border-[#9f2d3f] pl-3 text-sm leading-6 text-[color:var(--text-danger)]">{error}</p> : null}
 
         <footer className="mt-6 flex flex-wrap items-center justify-end gap-3 border-t border-[color:var(--line-ghost)] pt-5">
           <Button variant="secondary" onClick={stage === "reviewing" ? cancelReview : closeDialog} disabled={stage === "reading"}>{stage === "reviewing" ? "停止复核" : "取消"}</Button>

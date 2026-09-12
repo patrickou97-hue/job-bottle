@@ -92,7 +92,7 @@ export function JobDetailActions({
       const user = await getCurrentUserOrNull(supabase);
       if (!user) {
         applyWindow?.close();
-        setMessage("登录后，即可收录岗位。");
+        setMessage("请先登录，再收录岗位。");
         return;
       }
       if (!application) {
@@ -211,7 +211,7 @@ export function JobDetailActions({
           </div>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          {message === "登录后，即可收录岗位。" ? (
+          {message === "请先登录，再收录岗位。" ? (
             <Link
               href={loginHref}
               className="muted-button pressable inline-flex h-10 items-center justify-center rounded-lg px-4 text-sm font-medium"
@@ -255,7 +255,7 @@ export function JobDetailActions({
           />
         ) : null}
       </AnimatePresence>
-        {message && message !== "登录后，即可收录岗位。" ? (
+        {message && message !== "请先登录，再收录岗位。" ? (
         <p className="mt-3 text-xs text-nebula-silver">{message}</p>
       ) : null}
     </div>

@@ -184,7 +184,7 @@ export function ResumePolishDialog({
             <ResultBlock title="建议补充" items={result.suggestions} empty="暂无" />
             <ResultBlock title="风险提示" items={result.warnings} empty="暂无" warning />
             {result.verificationItems.length > 0 ? (
-              <section className="border-l-2 border-[#b78845] bg-[#b78845]/10 px-4 py-3 text-[#744013]">
+              <section className="ui-notice border-[#b78845] bg-[#b78845]/10 px-4 py-3 text-[#744013]">
                 <div className="flex items-start gap-2">
                   <AlertTriangle aria-hidden="true" className="mt-1 size-4 shrink-0" />
                   <div>
@@ -218,7 +218,7 @@ export function ResumePolishDialog({
           </div>
         ) : null}
 
-        {error ? <p className="mt-5 border-l-2 border-[#9f2d3f] pl-3 text-sm text-[color:var(--text-danger)]">{error}</p> : null}
+        {error ? <p className="mt-5 ui-notice border-[#9f2d3f] pl-3 text-sm text-[color:var(--text-danger)]">{error}</p> : null}
 
         <footer className="mt-6 flex flex-wrap items-center justify-end gap-3 border-t border-[color:var(--line-ghost)] pt-5">
           <CommunityHelpLink className="mr-auto" onClick={closeDialog} />

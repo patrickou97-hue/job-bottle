@@ -1,0 +1,46 @@
+.orbital-home { --orbit-scale: 1; position: relative; width: 100%; height: 100svh; min-height: 500px; overflow: hidden; isolation: isolate; background: #10151f; color: #ced8e6; }
+.orbital-home::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg,#10151f26,#10151f80),url('/assets/space/home-deep-space-v2.png') center 30% / cover no-repeat; opacity: .88; }
+.orbital-home::after { content: ""; position: absolute; inset: 18px; pointer-events: none; z-index: 2; opacity: .3; background: linear-gradient(#94a6bf,#94a6bf) left bottom / 24px 1px no-repeat,linear-gradient(#94a6bf,#94a6bf) left bottom / 1px 24px no-repeat,linear-gradient(#94a6bf,#94a6bf) right bottom / 24px 1px no-repeat,linear-gradient(#94a6bf,#94a6bf) right bottom / 1px 24px no-repeat; }
+@media (max-width: 639px) { .orbital-home::before { background-image: linear-gradient(180deg,#10151f26,#10151f80),url('/assets/space/home-deep-space-v2.png'); } }
+.orbital-home-header { position: absolute; z-index: 3000; top: 28px; left: 36px; right: 36px; display: flex; justify-content: space-between; align-items: center; pointer-events: none; }
+.orbital-home-header > * { pointer-events: auto; }
+.orbital-home-brand img { width: 74px; height: auto; opacity: .92; }
+.orbital-home-controls { display: flex; align-items: center; gap: 8px; }
+.orbital-home-controls > * { display: inline-flex; min-width: 40px; min-height: 40px; align-items: center; justify-content: center; padding: 8px 12px; border: 1px solid #a1b2ce26; border-radius: 13px; background: #1d263480; color: #b8c6da; font-size: 12px; }
+.orbital-home-controls > *:hover { background: #2c374b; }
+.orbital-home-controls button:disabled { opacity: .45; }
+.orbital-home-navigation { position: absolute; z-index: 3100; top: 80px; right: 36px; width: 200px; padding: 8px; border-radius: 18px; border: 1px solid #46536b; background: #192230; box-shadow: 0 16px 48px #0005; }
+.orbital-home-navigation a { display: flex; align-items: center; justify-content: space-between; padding: 13px 14px; border-radius: 11px; font-size: 13px; }
+.orbital-home-navigation a:hover { background: #2d394c; }
+.orbital-home :is(a,button):focus-visible { outline: 2px solid #d7bd8d; outline-offset: 5px; }
+.orbital-home-dust { position: absolute; inset: 0; z-index: 0; pointer-events: none; opacity: .5; background-image: radial-gradient(circle at 13% 35%,#b9c8dc 0 1px,transparent 1.6px), radial-gradient(circle at 82% 76%,#b9c8dc 0 1px,transparent 1.6px), radial-gradient(circle at 42% 16%,#8a9db8 0 .7px,transparent 1.2px); background-size: 439px 397px, 617px 557px, 331px 283px; }
+.orbital-home-paths { position: absolute; left: 50%; top: 50%; width: calc(1800px * var(--orbit-scale)); height: calc(1800px * var(--orbit-scale)); transform: translate(-50%,-50%); z-index: 1; overflow: visible; pointer-events: none; }
+.orbital-home-paths path { fill: none; stroke: #8a9bb6; stroke-opacity: .14; stroke-width: .8; vector-effect: non-scaling-stroke; }
+.orbital-home-paths path:nth-child(even) { stroke-dasharray: 2 9; stroke-opacity: .17; }
+.orbital-home-paths path.orbital-home-gold-orbit { stroke: #d2c09a; stroke-opacity: .48; stroke-width: 1; }
+.orbital-home-star-orb { position: absolute; z-index: 999; top: 50%; left: 50%; width: calc(224px * var(--orbit-scale)); height: calc(224px * var(--orbit-scale)); transform: translate(-50%,-50%); pointer-events: auto; background-image: url('/assets/space/orbital-material-atlas.png'); background-repeat: no-repeat; background-size: calc(722px * var(--orbit-scale)) calc(722px * var(--orbit-scale)); background-position: calc(-14px * var(--orbit-scale)) calc(-161px * var(--orbit-scale)); filter: brightness(.62) saturate(.68) contrast(1.06); }
+.orbital-home-star { position: absolute; z-index: 1000; top: 50%; left: 50%; width: calc(660px * var(--orbit-scale)); height: calc(440px * var(--orbit-scale)); transform: translate(-50%,-50%); overflow: visible; pointer-events: none; }
+.orbital-home-planet { position: absolute; top: 0; left: 0; width: 0; height: 0; will-change: transform; --planet-light: #9eadbe; --planet-mid: #40506a; }
+.orbital-home-planet-body { position: absolute; left: -23px; top: -23px; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; color: #dee5ef; background-image: url('/assets/space/orbital-material-atlas.png'); background-repeat: no-repeat; box-shadow: 0 0 0 1px #c5d3e71c, 0 4px 12px #0004; transition: transform 180ms ease; }
+.orbital-home-planet--jobs .orbital-home-planet-body { background-size: 237px 237px; background-position: -83px -70px; }
+.orbital-home-planet--resume .orbital-home-planet-body { background-size: 232px 232px; background-position: -131px -67px; }
+.orbital-home-planet--applications .orbital-home-planet-body { background-size: 233px 233px; background-position: -183px -68px; }
+.orbital-home-planet--extension .orbital-home-planet-body { background-size: 211px 211px; background-position: -6px -121px; }
+.orbital-home-planet--bottle .orbital-home-planet-body { background-size: 214px 214px; background-position: -59px -123px; }
+.orbital-home-planet--forum .orbital-home-planet-body { background-size: 215px 215px; background-position: -111px -123px; }
+.orbital-home-planet--admin .orbital-home-planet-body { background-size: 212px 212px; background-position: -161px -122px; }
+.orbital-home-planet:hover .orbital-home-planet-body, .orbital-home-planet:focus-visible .orbital-home-planet-body { transform: scale(1.08); }
+.orbital-home-planet-label { position: absolute; display: flex; gap: 6px; align-items: center; justify-content: center; top: 32px; left: -70px; width: 140px; padding: 6px; border-radius: 10px; font-size: 12px; white-space: nowrap; color: #bcc9dc; opacity: var(--label-opacity,1); pointer-events: none; text-shadow: 0 2px 6px #10151f; }
+.orbital-home-planet--resume { --planet-light: #c1b9a2; --planet-mid: #625a49; }
+.orbital-home-planet--applications { --planet-light: #c2a99e; --planet-mid: #654b46; }
+.orbital-home-planet--extension { --planet-light: #adc6c6; --planet-mid: #42616c; }
+.orbital-home-planet--bottle { --planet-light: #d6c197; --planet-mid: #776344; }
+.orbital-home-planet--forum { --planet-light: #b3b6ca; --planet-mid: #4d526d; }
+@media (max-width: 767px) {
+  .orbital-home-header { top: 20px; left: 20px; right: 20px; }
+  .orbital-home-brand img { width: 64px; }
+  .orbital-home-navigation { right: 20px; top: 72px; }
+  .orbital-home-planet-body { width: 42px; height: 42px; left: -21px; top: -21px; }
+  .orbital-home-planet-label { top: 28px; font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) { .orbital-home * { transition: none !important; } }

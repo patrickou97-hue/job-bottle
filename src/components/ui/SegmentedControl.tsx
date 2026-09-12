@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +22,8 @@ export function SegmentedControl<T extends string>({
   options: readonly SegmentedOption<T>[];
   value: T;
 }) {
+  const indicatorId = useId();
+
   return (
     <div className={cn("apple-segmented", className)} role="group" aria-label={ariaLabel}>
       {options.map((option) => {
@@ -35,7 +38,7 @@ export function SegmentedControl<T extends string>({
           >
             {active ? (
               <motion.span
-                layoutId={`${ariaLabel}-segment`}
+                layoutId={`${indicatorId}-segment`}
                 className="apple-segmented__indicator"
                 transition={{ type: "spring", stiffness: 430, damping: 38, mass: 0.8 }}
               />

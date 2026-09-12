@@ -140,7 +140,10 @@ export const MotionDialog = forwardRef<HTMLElement, MotionDialogProps>(function 
       )}
       role="presentation"
       variants={modalBackdropVariants}
-      initial="initial"
+      // Safari can restore a dialog from bfcache after the initial opacity
+      // frame without replaying Motion's enter animation. Keep the overlay
+      // paintable on first mount instead of leaving it at opacity: 0.
+      initial={false}
       animate="enter"
       exit="exit"
       transition={{
@@ -158,6 +161,8 @@ export const MotionDialog = forwardRef<HTMLElement, MotionDialogProps>(function 
         tabIndex={-1}
         className={cn("apple-sheet max-h-[92svh] w-full overflow-y-auto overscroll-contain", className)}
         variants={reducedMotion ? modalBackdropVariants : modalPanelVariants}
+        initial={false}
+        animate="enter"
         transition={{
           duration: reducedMotion ? motionDuration.instant : motionDuration.normal,
           ease: reducedMotion ? motionEase.standard : motionEase.enter,

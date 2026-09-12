@@ -209,7 +209,7 @@ export function ExtensionHubClient() {
                 ["基本资料", "补充当前简历的常见字段"],
                 ["经历检查", "确认当前简历的经历与技能"],
               ].map(([title, detail]) => (
-                <div key={title} className="border-l-2 border-[color:var(--surface-selected-bg)] pl-3">
+                <div key={title} className="ui-notice border-[color:var(--surface-selected-bg)] pl-3">
                   <p className="text-sm font-semibold text-ink-primary">{title}</p>
                   <p className="mt-1 text-xs leading-5 text-ink-muted">{detail}</p>
                 </div>

@@ -658,7 +658,7 @@ export function AdminUsersClient() {
         </div>
       </section>
 
-      {message ? <p className="border-l-2 border-nebula-blue/70 pl-3 text-sm leading-6 text-ink-secondary" role="status">{message}</p> : null}
+      {message ? <p className="ui-notice border-nebula-blue/70 pl-3 text-sm leading-6 text-ink-secondary" role="status">{message}</p> : null}
 
       {users.length === 0 ? (
         <div className="empty-state">

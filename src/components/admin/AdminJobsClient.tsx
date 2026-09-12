@@ -187,7 +187,7 @@ export function AdminJobsClient() {
 
           <section className="form-section">
             {duplicateGroups.length > 0 ? (
-              <div className="mb-5 border-l-2 border-[#b86b28] px-4 py-1 text-sm leading-6 text-[#704018]">
+              <div className="mb-5 ui-notice border-[#b86b28] px-4 py-1 text-sm leading-6 text-[#704018]">
                 发现 {duplicateGroups.length} 组疑似重复岗位。当前筛选不会删除数据，你可以逐条核验并保留一条。
               </div>
             ) : null}

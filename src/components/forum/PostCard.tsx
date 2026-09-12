@@ -145,7 +145,7 @@ export function PostCard({
       layout
       transition={reducedMotion ? { duration: 0 } : { layout: { duration: 0.22, ease: [0.16, 1, 0.3, 1] } }}
       data-pinned={post.is_pinned}
-      className={`border-b transition ${post.is_pinned ? "border-[#d8b08b] bg-[#fff8f1] shadow-[inset_3px_0_0_#c9864f]" : "border-[color:var(--line-ghost)] hover:bg-[color:var(--surface-hover-bg)]"}`}
+      className={`border-b transition ${post.is_pinned ? "border-[#d8b08b] bg-[#fff8f1]" : "border-[color:var(--line-ghost)] hover:bg-[color:var(--surface-hover-bg)]"}`}
     >
       <button
         type="button"

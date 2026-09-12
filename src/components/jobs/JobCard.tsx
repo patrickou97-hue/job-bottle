@@ -41,7 +41,7 @@ export const JobCard = memo(function JobCard({
     <div
       id={`job-row-${job.id}`}
       className={cn(
-        "data-row group grid grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-3 px-3 py-3 text-sm sm:grid-cols-[34px_minmax(0,1fr)_auto] sm:px-4",
+        "data-row discovery-job-row group grid grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-3 px-3 py-3 text-sm sm:grid-cols-[34px_minmax(0,1fr)_auto] sm:px-4",
         highlighted ? "selected" : "",
       )}
       onMouseEnter={() => onHover?.(job)}
@@ -52,7 +52,7 @@ export const JobCard = memo(function JobCard({
       </span>
 
       <div className="min-w-0">
-        <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+        <div className="discovery-job-identity flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
           <Link
             href={`/jobs/${job.id}`}
             className="truncate text-[15px] font-semibold leading-6 text-[color:var(--text-primary)] transition hover:text-[color:var(--aurora)]"
@@ -62,7 +62,7 @@ export const JobCard = memo(function JobCard({
           >
             {job.company_name}
           </Link>
-          <span className="truncate text-xs text-[color:var(--text-secondary)]">{job.job_titles || "岗位待补充"}</span>
+          <span title={job.job_titles || "岗位待补充"} className="discovery-job-title truncate text-xs text-[color:var(--text-secondary)]">{job.job_titles || "岗位待补充"}</span>
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[color:var(--text-muted)]">
           <span>{job.industry || "暂无行业"}</span>
@@ -82,6 +82,7 @@ export const JobCard = memo(function JobCard({
         <button
           type="button"
           className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-md px-2 text-xs text-ink-muted transition hover:bg-[color:var(--surface-hover-bg)] hover:text-ink-primary"
+          aria-label={`查看${job.company_name}内推码`}
           onClick={() => onOpenReferral?.(job)}
         >
           <KeyRound aria-hidden="true" className="size-3.5" />

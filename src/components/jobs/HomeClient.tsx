@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence } from "motion/react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Archive, KeyRound, Sparkles } from "lucide-react";
+import { Archive, KeyRound, Sparkles, Search, ChevronDown } from "lucide-react";
 import { EMPTY_JOB_FILTERS } from "@/lib/constants";
 import { parseJobCategoriesParam, serializeJobCategories } from "@/lib/categories";
 import {
@@ -23,11 +23,14 @@ import { queueBottleDrop } from "@/lib/bottle-drop";
 import { fetchMyResumes, isMissingResumeTableError } from "@/lib/resume-sync";
 import { track } from "@/lib/track";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
-import { cn, isValidHttpUrl, safeOpenUrl, formatDateTime, sanitizeApplicationUrl } from "@/lib/utils";
+import { isValidHttpUrl, safeOpenUrl, formatDateTime, sanitizeApplicationUrl } from "@/lib/utils";
 import { JobFilterBar } from "@/components/jobs/JobFilterBar";
 import { ApplyReturnConfirm } from "@/components/jobs/ApplyReturnConfirm";
 import { ProgressDrawer } from "@/components/applications/ProgressDrawer";
 import { StatusPill } from "@/components/applications/StatusPill";
+import "./discovery.css";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { EmptyConstellation } from "@/components/visuals/EmptyConstellation";
 import { ChinaJobMap } from "@/components/jobs/ChinaJobMap";
@@ -501,7 +504,7 @@ export function HomeClient() {
   }
 
   return (
-    <div className="observatory-page space-y-6 lg:space-y-8">
+    <div className="observatory-page discovery-workspace">
       {loadError && jobs.length > 0 ? (
         <div className="info-banner flex flex-wrap items-center justify-between gap-3 text-sm" role="alert">
           <span>{loadError}</span>
@@ -539,12 +542,20 @@ export function HomeClient() {
         onClear={clearAllFilters}
       />
 
-      <section id="job-map" className="job-map-section border-t border-[color:var(--line-ghost)] pt-4 lg:pt-6">
+      <label className="discovery-search">
+        <span>搜索岗位</span>
+        <div className="discovery-search__field">
+          <Search aria-hidden="true" size={20} />
+          <Input value={filters.keyword} onChange={(event) => handleFiltersChange({ ...filters, keyword: event.target.value })} placeholder="搜索公司或岗位名称" />
+        </div>
+      </label>
+
+      <section id="job-map" className="job-map-section discovery-map">
         <div className="section-heading items-end">
           <div>
             <h2 className="section-title">岗位分布</h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-secondary">
-              按省份查看当前筛选下的岗位分布，点选地图后，右侧预览和下方清单会同步更新。
+              按省份查看，同步筛选岗位清单。
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-3">
@@ -553,16 +564,17 @@ export function HomeClient() {
             ) : null}
             <button
               type="button"
-              className="text-action pressable px-2 py-1 text-xs md:hidden"
+              className="discovery-map__toggle text-action pressable"
               aria-expanded={mapExpanded}
               aria-controls="job-map-body"
               onClick={() => setMapExpanded((current) => !current)}
             >
-              {mapExpanded ? "收起地图" : "打开地图"}
+              {mapExpanded ? "收起地图" : "展开地图"}
+              <ChevronDown aria-hidden="true" size={16} style={{ transform: mapExpanded ? "rotate(180deg)" : undefined }} />
             </button>
           </div>
         </div>
-        <div id="job-map-body" className={cn("job-map-body", !mapExpanded && "hidden md:block")}>
+        <div id="job-map-body" className="job-map-body" hidden={!mapExpanded}>
           {loading ? (
             <div className="grid min-h-[320px] place-items-center border-y border-[color:var(--line-ghost)] text-sm text-ink-muted md:min-h-[360px] lg:min-h-[390px]">
               <span className="loading-line">正在绘制岗位地图</span>
@@ -589,7 +601,7 @@ export function HomeClient() {
         </div>
       </section>
 
-      <div className="grid gap-8 xl:grid-cols-[300px_minmax(0,1fr)]">
+      <div className="discovery-results">
         <JobFilterBar
           filters={filters}
           facets={facets}
@@ -615,7 +627,7 @@ export function HomeClient() {
                 </span>
               )}
             </div>
-            <MiniBottleSvg />
+            <span className="discovery-list-hint">选择公司查看详情</span>
           </div>
 
           {loading ? (
@@ -754,21 +766,22 @@ function JobRadarHeader({
   ];
 
   return (
-    <section className="page-hero page-hero--radar">
+    <section className="page-hero page-hero--radar discovery-header">
       <div className="min-w-0">
         <h1 className="page-title">岗位坐标</h1>
+        <p className="discovery-intro">找到下一站，从一个合适的岗位开始。</p>
       </div>
 
-      <div className="progress-summary px-4 py-2 md:px-5 md:py-3">
+      <div className="progress-summary discovery-stats">
         <div className="grid grid-cols-2 gap-x-4 gap-y-3 lg:grid-cols-4">
-          <StatNumber value={stats.visibleJobs} label="开放岗位" />
+          <StatNumber value={stats.visibleJobs} label="当前岗位" />
           <StatNumber value={stats.companyCount} label="覆盖公司" />
           <StatNumber value={stats.savedJobs} label="已收入星瓶" />
           <StatNumber value={stats.recentJobs} label="近 7 日新增" />
         </div>
       </div>
 
-      <div className="md:col-span-2">
+      <div className="md:col-span-2 discovery-toolbar">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
           {activeFilterChips.length > 0 ? (
@@ -776,7 +789,7 @@ function JobRadarHeader({
               {activeFilterChips.map((chip) => (
                 <span
                   key={chip}
-                  className="status-pill whitespace-nowrap rounded-md px-2.5 py-1 text-xs text-ink-secondary"
+                  className="status-pill rounded-md px-2.5 py-1 text-xs text-ink-secondary discovery-filter-chip"
                 >
                   {chip}
                 </span>
@@ -793,24 +806,7 @@ function JobRadarHeader({
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="inline-grid grid-cols-3 rounded-lg bg-[color:var(--apple-control-bg)] p-1" role="group" aria-label="岗位视图">
-            {modes.map((mode) => (
-              <button
-                key={mode.value}
-                type="button"
-                className={cn(
-                  "pressable rounded-md px-3 py-1.5 text-xs transition",
-                  jobView === mode.value
-                    ? "bg-[#E8EDF4] text-[#12294E]"
-                    : "text-ink-muted hover:text-ink-secondary",
-                )}
-                aria-pressed={jobView === mode.value}
-                onClick={() => onJobViewChange(mode.value)}
-              >
-                {mode.label}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl ariaLabel="岗位视图" options={modes} value={jobView} onChange={onJobViewChange} />
 
           <div className="flex gap-2">
             <Link
@@ -897,36 +893,5 @@ function EmptyState({
       <p className="mx-auto max-w-md">{body}</p>
       {action ? <div className="mt-5">{action}</div> : null}
     </div>
-  );
-}
-
-/* ── Miniature decorative bottle icon ── */
-function MiniBottleSvg() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 40"
-      className="size-6 shrink-0 text-nebula-blue/40"
-      fill="none"
-    >
-      <path
-        d="M10 4C10 2.5 11 1 12 1C13 1 14 2.5 14 4V8C14 9 15.5 10.5 17 12C20.5 15.5 22 20 22 26C22 34 18 38 12 38C6 38 2 34 2 26C2 20 3.5 15.5 7 12C8.5 10.5 10 9 10 8V4Z"
-        fill="currentColor"
-        fillOpacity="0.12"
-        stroke="currentColor"
-        strokeOpacity="0.35"
-        strokeWidth="0.8"
-      />
-      <rect x="9.5" y="0.5" width="5" height="2" rx="1" fill="currentColor" fillOpacity="0.25" />
-      <path
-        d="M5 18C8 16 11 15.5 15 17C18 18.5 20 17 21 15"
-        stroke="currentColor"
-        strokeOpacity="0.12"
-        strokeWidth="0.5"
-      />
-      <circle cx="8" cy="24" r="0.8" fill="currentColor" fillOpacity="0.3" />
-      <circle cx="14" cy="28" r="1" fill="currentColor" fillOpacity="0.25" />
-      <circle cx="11" cy="32" r="0.7" fill="currentColor" fillOpacity="0.2" />
-    </svg>
   );
 }

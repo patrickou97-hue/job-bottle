@@ -90,7 +90,7 @@ export function ResumeEditor({
   return (
     <div className="space-y-5">
       {undo ? (
-        <div className="flex items-center justify-between gap-3 border-l-2 border-[color:var(--aurora)] bg-[#E8EDF4] px-4 py-3 text-sm text-ink-secondary">
+        <div className="flex items-center justify-between gap-3 ui-notice border-[color:var(--aurora)] bg-[#E8EDF4] px-4 py-3 text-sm text-ink-secondary">
           <span>{undo.label}已应用</span>
           <button type="button" className="text-action inline-flex items-center gap-2" onClick={() => { undo.run(); setUndo(null); }}>
             <RotateCcw aria-hidden="true" className="size-4" />撤销
@@ -124,7 +124,14 @@ export function ResumeEditor({
             <SelectField
               label="性别（可选，仅用于网申助手）"
               value={resume.content.basics.gender}
-              options={[{ value: "", label: "不填写" }, { value: "男", label: "男" }, { value: "女", label: "女" }, { value: "其他", label: "其他" }]}
+              options={[
+                { value: "", label: "不填写" },
+                { value: "男", label: "男" },
+                { value: "女", label: "女" },
+                { value: "非二元性别", label: "非二元性别" },
+                { value: "其他", label: "其他" },
+                { value: "不愿透露", label: "不愿透露" },
+              ]}
               onChange={(value) => patchBasics("gender", value)}
             />
             <TextField label="国籍/地区（可选，仅用于网申助手）" value={resume.content.basics.nationality} onChange={(value) => patchBasics("nationality", value)} />

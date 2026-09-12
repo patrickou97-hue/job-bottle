@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { BriefcaseIcon, FileTextIcon, FlaskIcon, ListChecksIcon, ShieldCheckIcon, SignOutIcon, UserCircleIcon } from "@phosphor-icons/react";
 import { BookOpen, ChevronDown } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
@@ -24,8 +24,9 @@ const navItems = [
   { href: "/feedback", label: "反馈" },
 ];
 
-const tabletPrimaryNavItems = navItems.slice(0, 3);
-const tabletMoreNavItems = navItems.slice(3);
+const primaryNavItems = navItems.filter((item) => !["/forum", "/profile", "/feedback"].includes(item.href));
+const moreNavItems = navItems.filter((item) => ["/forum", "/profile", "/feedback"].includes(item.href));
+const compactMoreNavItems = primaryNavItems.slice(3);
 
 const mobileNavItems = [
   { href: "/explore", label: "岗位", icon: BriefcaseIcon },
@@ -41,6 +42,21 @@ type NavbarProfile = Pick<Profile, "id" | "display_name" | "role">;
 export function Navbar({ appearance = "work" }: { appearance?: "scene" | "work" }) {
   const pathname = usePathname();
   const router = useRouter();
+  const moreRef = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    function dismiss(event: PointerEvent | KeyboardEvent) {
+      if (event instanceof KeyboardEvent) {
+        if (event.key === "Escape" && moreRef.current?.open) {
+          moreRef.current.open = false;
+          moreRef.current.querySelector("summary")?.focus();
+        }
+      } else if (event.target instanceof Node && !moreRef.current?.contains(event.target) && moreRef.current) moreRef.current.open = false;
+    }
+    document.addEventListener("pointerdown", dismiss);
+    document.addEventListener("keydown", dismiss);
+    return () => { document.removeEventListener("pointerdown", dismiss); document.removeEventListener("keydown", dismiss); };
+  }, []);
+  useEffect(() => { if (moreRef.current) moreRef.current.open = false; }, [pathname]);
   const [profile, setProfile] = useState<NavbarProfile | null>(null);
 
   useEffect(() => {
@@ -85,7 +101,7 @@ export function Navbar({ appearance = "work" }: { appearance?: "scene" | "work" 
   function navClass(itemHref: string) {
     const active = pathname.startsWith(itemHref);
     return cn(
-      "relative inline-flex h-10 items-center px-2.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--star-apricot)]",
+      "ui-nav-link relative inline-flex h-10 items-center px-2.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--star-apricot)]",
       active
         ? "text-ink-primary"
         : "text-ink-secondary hover:text-ink-primary",
@@ -116,14 +132,14 @@ export function Navbar({ appearance = "work" }: { appearance?: "scene" | "work" 
           </Link>
         </div>
 
-        <nav className="hidden min-w-0 flex-1 items-center gap-1 lg:flex" aria-label="主导航">
-          {navItems.map((item) => {
+        <nav className="hidden min-w-0 items-center gap-1 md:flex" aria-label="主导航">
+          {primaryNavItems.map((item, index) => {
             const active = pathname.startsWith(item.href);
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={navClass(item.href)}
+                className={cn(navClass(item.href), index >= 3 && "hidden lg:inline-flex")}
                 aria-label={item.beta ? `${item.label} Beta` : item.label}
                 aria-current={active ? "page" : undefined}
                 onClick={(event) => handleSceneLink(event, item.href)}
@@ -135,7 +151,7 @@ export function Navbar({ appearance = "work" }: { appearance?: "scene" | "work" 
                 {active ? (
                   <motion.span
                     layoutId="primary-nav-indicator"
-                    className="absolute inset-x-2.5 bottom-0 h-0.5 bg-[color:var(--aurora)]"
+                    className="ui-nav-indicator"
                     transition={{ type: "spring", stiffness: 420, damping: 38 }}
                   />
                 ) : null}
@@ -144,33 +160,11 @@ export function Navbar({ appearance = "work" }: { appearance?: "scene" | "work" 
           })}
         </nav>
 
-        <nav className="relative hidden min-w-0 flex-1 items-center gap-1 md:flex lg:hidden" aria-label="平板主导航">
-          {tabletPrimaryNavItems.map((item) => {
-            const active = pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={navClass(item.href)}
-                aria-current={active ? "page" : undefined}
-                onClick={(event) => handleSceneLink(event, item.href)}
-              >
-                {item.label}
-                {active ? (
-                  <motion.span
-                    layoutId="tablet-nav-indicator"
-                    className="absolute inset-x-2.5 bottom-0 h-0.5 bg-[color:var(--aurora)]"
-                    transition={{ type: "spring", stiffness: 420, damping: 38 }}
-                  />
-                ) : null}
-              </Link>
-            );
-          })}
-          <details className="group relative">
+          <details ref={moreRef} className="group relative ml-auto md:ml-0">
             <summary
               className={cn(
                 "pressable flex h-10 cursor-pointer list-none items-center gap-1 rounded-md px-2.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--star-apricot)] [&::-webkit-details-marker]:hidden",
-                tabletMoreNavItems.some((item) => pathname.startsWith(item.href))
+                moreNavItems.some((item) => pathname.startsWith(item.href))
                   ? "text-ink-primary"
                   : "text-ink-secondary hover:text-ink-primary",
               )}
@@ -178,8 +172,8 @@ export function Navbar({ appearance = "work" }: { appearance?: "scene" | "work" 
               更多
               <ChevronDown aria-hidden="true" className="size-3.5 transition-transform group-open:rotate-180" />
             </summary>
-            <div className="absolute left-0 top-[calc(100%+.35rem)] z-50 min-w-40 overflow-hidden rounded-xl border border-[color:var(--line-ghost)] bg-[color:var(--surface-read-bg-strong)] p-1.5 shadow-[0_18px_48px_rgba(0,0,0,0.16)]">
-              {tabletMoreNavItems.map((item) => {
+            <div className="absolute right-0 top-[calc(100%+.35rem)] z-50 min-w-40 overflow-hidden rounded-xl border border-[color:var(--line-ghost)] bg-[color:var(--surface-read-bg-strong)] p-1.5 shadow-[0_18px_48px_rgba(0,0,0,0.16)]">
+              {[...compactMoreNavItems, ...moreNavItems].map((item) => {
                 const active = pathname.startsWith(item.href);
                 return (
                   <Link
@@ -187,6 +181,7 @@ export function Navbar({ appearance = "work" }: { appearance?: "scene" | "work" 
                     href={item.href}
                     className={cn(
                       "pressable flex min-h-10 items-center justify-between rounded-lg px-3 text-sm transition",
+                      compactMoreNavItems.some((entry) => entry.href === item.href) && "lg:hidden",
                       active ? "bg-[color:var(--surface-selected-bg)] text-ink-primary" : "text-ink-secondary hover:bg-[color:var(--surface-hover-bg)] hover:text-ink-primary",
                     )}
                     aria-current={active ? "page" : undefined}
@@ -199,7 +194,6 @@ export function Navbar({ appearance = "work" }: { appearance?: "scene" | "work" 
               })}
             </div>
           </details>
-        </nav>
 
         <div className="nav-account ml-auto hidden items-center gap-1 border-l pl-3 md:flex">
           {profile ? (
@@ -210,10 +204,6 @@ export function Navbar({ appearance = "work" }: { appearance?: "scene" | "work" 
                   管理
                 </Link>
               ) : null}
-              <Link href="/profile" className="text-action pressable h-9 px-2.5 text-sm" onClick={(event) => handleSceneLink(event, "/profile")}>
-                <UserCircleIcon aria-hidden="true" className="size-4" weight="regular" />
-                {profile.display_name || "资料"}
-              </Link>
               <button type="button" className="text-action pressable h-9 px-2.5 text-sm" onClick={handleLogout}>
                 <SignOutIcon aria-hidden="true" className="size-4" weight="regular" />
                 退出
@@ -224,23 +214,8 @@ export function Navbar({ appearance = "work" }: { appearance?: "scene" | "work" 
           )}
         </div>
 
-        <div className="ml-auto flex items-center gap-3 text-sm md:hidden">
-          <Link
-            href="/feedback"
-            className={cn("transition", pathname.startsWith("/feedback") ? "text-ink-primary" : "text-ink-secondary")}
-            onClick={(event) => handleSceneLink(event, "/feedback")}
-          >
-            反馈
-          </Link>
-          <span aria-hidden="true" className="h-3 w-px bg-[color:var(--line-ghost)]" />
-          <Link
-            href={profile ? "/profile" : "/login"}
-            className={cn("transition", pathname.startsWith("/profile") ? "text-ink-primary" : "text-ink-secondary")}
-            onClick={(event) => handleSceneLink(event, profile ? "/profile" : "/login")}
-          >
-            {profile ? "个人中心" : "登录"}
-          </Link>
-        </div>
+        {!profile ? <div className="md:hidden"><Link href="/login" className="text-action text-sm">登录</Link></div> : null}
+
         </div>
       </header>
       <nav

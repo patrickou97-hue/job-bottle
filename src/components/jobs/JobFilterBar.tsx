@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, Search } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { EMPTY_JOB_FILTERS } from "@/lib/constants";
@@ -11,7 +11,6 @@ import {
   getProvinceForCity,
   type LocationFilterLevel,
 } from "@/lib/locations";
-import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { cn } from "@/lib/utils";
@@ -184,22 +183,6 @@ export function JobFilterBar({
         </div>
 
         <label className="block">
-          <span className="mb-2 block text-sm text-ink-secondary">关键词</span>
-          <div className="relative">
-            <Search
-              aria-hidden="true"
-              className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-nebula-blue/70"
-            />
-            <Input
-              className="pl-11"
-              value={filters.keyword}
-              onChange={(event) => setFilter({ keyword: event.target.value })}
-              placeholder="搜索公司或岗位名称"
-            />
-          </div>
-        </label>
-
-        <label className="block">
           <span className="mb-2 block text-sm text-ink-secondary">所在行业</span>
           <Select
             value={filters.industry}
@@ -272,6 +255,7 @@ export function JobFilterBar({
                   key={category}
                   type="button"
                   data-active={active}
+                  aria-pressed={active}
                   className={cn("chip-button", active && "shadow-star-sm")}
                   onClick={() => toggleCategory(category)}
                 >

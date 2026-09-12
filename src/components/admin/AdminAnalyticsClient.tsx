@@ -163,7 +163,7 @@ export function AdminAnalyticsClient() {
       </div>
 
       {data.warnings.length > 0 ? (
-        <div className="border-l-2 border-[#b27b2c] bg-[#fff8eb] px-4 py-3 text-sm leading-6 text-[#704018]" role="status">
+        <div className="ui-notice border-[#b27b2c] bg-[#fff8eb] px-4 py-3 text-sm leading-6 text-[#704018]" role="status">
           部分数据源未纳入统计：{data.warnings.join(" ")}
         </div>
       ) : null}

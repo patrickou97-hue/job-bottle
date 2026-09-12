@@ -32,7 +32,7 @@ type VirtualJobListProps = {
   onFocusJob: (job: Job) => void;
 };
 
-const ESTIMATED_ROW_HEIGHT = 118;
+const ESTIMATED_ROW_HEIGHT = 76;
 
 /**
  * Keeps the browser's native window scroll while mounting only the rows near
@@ -77,7 +77,14 @@ export const VirtualJobList = forwardRef<VirtualJobListHandle, VirtualJobListPro
 
       updateScrollMargin();
       window.addEventListener("resize", updateScrollMargin, { passive: true });
-      return () => window.removeEventListener("resize", updateScrollMargin);
+      // Expanding the map or filters above the list changes its document offset.
+      const observer = new ResizeObserver(updateScrollMargin);
+      const workspace = node.closest(".observatory-page");
+      if (workspace) observer.observe(workspace);
+      return () => {
+        window.removeEventListener("resize", updateScrollMargin);
+        observer.disconnect();
+      };
     }, []);
 
     useLayoutEffect(() => {
@@ -122,7 +129,7 @@ export const VirtualJobList = forwardRef<VirtualJobListHandle, VirtualJobListPro
               key={virtualRow.key}
               data-index={virtualRow.index}
               ref={virtualizer.measureElement}
-              className="absolute left-0 top-0 w-full"
+              className="absolute left-0 top-0 w-full pb-2"
             >
               <JobCard
                 job={job}
