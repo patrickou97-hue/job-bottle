@@ -48,6 +48,10 @@ dist
 tsconfig.tsbuildinfo
 /backups
 
+# local companion projects and generated exports
+/promo-video/node_modules/
+/promo-video/out/
+
 # explicit env files
 .env
 .env.local

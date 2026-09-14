@@ -1,5 +1,13 @@
 # Job Bottle / 未来星瓶 — Complete Project Brief
 
+## Current production snapshot (2026-09-14)
+
+This brief contains historical planning sections below. For current work, use `origin/main` at `06e73c3` and `docs/handoff/WORKSPACE_STATE_2026-09-14.md` first.
+
+- Runtime brand: 拾星 StarJob. The current primary routes are `/`, `/explore`, `/my`, `/bottle`, `/resume`, `/forum`, `/extension`, `/login`, `/profile`, `/feedback`, and `/referrals`.
+- The production extension is version 1.1.5. Older ZIP archives and the retired star-bottle sharing poster are no longer part of the current workspace.
+- The visual baseline is the light silver-blue work interface plus the preserved orbital homepage. Do not use the historical dark dashboard route descriptions below as implementation instructions.
+
 > Generated 2026-07-03. For consumption by a redesign model.
 > Based on full codebase inspection. No assumptions made.
 

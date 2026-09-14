@@ -1,5 +1,11 @@
 # 交接说明
 
+## 2026-09-14 整理后的基线
+
+正式开发基线为 origin/main / 06e73c3，生产扩展版本为 1.1.5。旧版安装包和废弃分享 QA 已从工作区清理；正式站旧版直链仍返回 200，待下一次发布同步删除。受保护资料与清理边界见 WORKSPACE_STATE_2026-09-14.md。
+
+当前实现入口为 `/explore`、`/my`、`/bottle`、`/resume`、`/extension`、`/forum`、`/profile`、`/feedback` 和 `/referrals`；本文后续较早的 `/jobs`、`/my-applications`、`/my-bottle` 记录仅用于追溯历史。
+
 ## 当前状态
 
 项目已经从 Phase 1 扩展到完整 MVP 功能闭环，包含用户端、个人投递、星瓶、管理员岗位管理和 CSV 导入。

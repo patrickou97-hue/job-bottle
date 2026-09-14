@@ -1,5 +1,9 @@
 # 需求审计
 
+## 2026-09-14 当前证据边界
+
+审计以 origin/main / 06e73c3 为正式基线，线上扩展入口为 1.1.5。旧版下载包已从工作区移除，但正式站旧版直链仍返回 200；受保护资料和未做真实账号 E2E 的边界见 WORKSPACE_STATE_2026-09-14.md。
+
 ## 已由当前工作区证据验证
 
 - Next.js App Router、TypeScript、Tailwind CSS 已建立。

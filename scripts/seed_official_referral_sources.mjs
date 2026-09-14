@@ -41,7 +41,10 @@ async function main() {
   });
 
   if (APPLY_CHANGES && (inserts.length > 0 || updates.length > 0)) {
-    const payload = desired.map(({ created_at: _createdAt, ...row }) => row);
+    const payload = desired.map(({ created_at: _createdAt, ...row }) => {
+      void _createdAt;
+      return row;
+    });
     const { error } = await supabase
       .from("official_referral_sources")
       .upsert(payload, { onConflict: "source_key" });

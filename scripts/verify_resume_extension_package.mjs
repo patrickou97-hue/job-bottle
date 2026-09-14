@@ -25,17 +25,8 @@ for (const file of sourceFiles) {
   assert.ok(entries.get(name)?.equals(await readFile(file.absolute)), `安装包文件不是当前源码：${name}`);
 }
 
-const legacyArchive = parseStoredZip(
-  await readFile(path.join(ROOT, "public", "downloads", "starjob-resume-assistant-v0.2.5.zip")),
-);
-const legacyManifest = JSON.parse(readArchiveText(legacyArchive, "starjob-resume-assistant/manifest.json"));
-const legacyPopup = readArchiveText(legacyArchive, "starjob-resume-assistant/popup.js");
-assert.equal(legacyManifest.version, "0.2.5", "0.2.5 兼容归档版本号异常");
-assert.match(legacyPopup, /JSON\.stringify\(\{ resume, fields: batch \}\)/, "0.2.5 归档载荷不再符合旧请求契约");
-assert.doesNotMatch(legacyPopup, /operationId/, "0.2.5 归档不应依赖新版 operationId");
-
 console.log(`扩展安装包一致性通过：${manifest.version}，${expectedNames.length}/${expectedNames.length} 个文件与源码逐字节一致。`);
-console.log("旧版兼容载荷通过：0.2.5 继续使用不含 operationId 的 { resume, fields } 请求。");
+console.log("已移除旧版安装包归档；生产下载入口仅保留当前版本。");
 
 async function collectFiles(directory, prefix = "") {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -76,10 +67,4 @@ function parseStoredZip(archive) {
   }
   assert.ok(entries.size > 0, "ZIP 内没有文件");
   return entries;
-}
-
-function readArchiveText(entries, name) {
-  const value = entries.get(name);
-  assert.ok(value, `ZIP 缺少文件：${name}`);
-  return value.toString("utf8");
 }
