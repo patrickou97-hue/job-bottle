@@ -239,7 +239,7 @@ export function ProfileClient() {
             <h1 className="page-title">个人中心</h1>
           </div>
         </section>
-        {message ? <div className="info-banner text-sm" role={authFailed ? "alert" : "status"}>{message}</div> : null}
+        {authFailed && message ? <div className="info-banner text-sm" role="alert">{message}</div> : null}
         <section className="empty-state border-y border-[color:var(--line-ghost)]">
           <div>
             <h2>{authFailed ? "个人资料暂时无法读取" : "登录后继续"}</h2>

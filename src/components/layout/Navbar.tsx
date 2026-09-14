@@ -160,7 +160,17 @@ export function Navbar({ appearance = "work" }: { appearance?: "scene" | "work" 
           })}
         </nav>
 
-          <details ref={moreRef} className="group relative ml-auto md:ml-0">
+          <details ref={moreRef} className="group relative ml-auto md:ml-0" onKeyDown={(event) => {
+            if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+            const details = event.currentTarget;
+            details.open = true;
+            const links = Array.from(details.querySelectorAll<HTMLAnchorElement>("a")).filter((link) => link.getClientRects().length > 0);
+            if (!links.length) return;
+            event.preventDefault();
+            const current = links.indexOf(document.activeElement as HTMLAnchorElement);
+            const next = event.key === "Home" ? 0 : event.key === "End" ? links.length - 1 : current === -1 ? (event.key === "ArrowDown" ? 0 : links.length - 1) : (current + (event.key === "ArrowDown" ? 1 : -1) + links.length) % links.length;
+            links[next].focus();
+          }}>
             <summary
               className={cn(
                 "pressable flex h-10 cursor-pointer list-none items-center gap-1 rounded-md px-2.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--star-apricot)] [&::-webkit-details-marker]:hidden",

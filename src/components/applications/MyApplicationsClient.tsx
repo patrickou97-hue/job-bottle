@@ -395,16 +395,16 @@ function ApplicationListRow({ application, ended = false, onOpen, onEditWorkflow
 
       <div className="grid grid-cols-2 items-center gap-x-3 gap-y-1 lg:justify-items-end">
         {officialUrl ? (
-          <a href={officialUrl} target="_blank" rel="noreferrer" className="gold-button inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-semibold">
+          <a href={officialUrl} target="_blank" rel="noreferrer" className="gold-button row-span-2 self-center inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-semibold">
             <ExternalLink aria-hidden="true" className="size-3.5" />打开官网
           </a>
         ) : (
-          <span className="inline-flex min-h-9 items-center justify-center rounded-lg bg-[color:var(--surface-subtle-bg)] px-3 text-center text-[10px] text-ink-muted">官网链接待补充</span>
+          <span className="row-span-2 self-center inline-flex min-h-9 items-center justify-center rounded-lg bg-[color:var(--surface-subtle-bg)] px-3 text-center text-[10px] text-ink-muted">官网链接待补充</span>
         )}
         <button type="button" className="text-action inline-flex min-h-9 justify-center gap-1.5 rounded-lg px-2 text-xs" onClick={onOpen} aria-label={`查看 ${application.job.company_name}${appliedPosition ? ` ${appliedPosition}` : ""} 详情`}>
           查看详情<ArrowRight aria-hidden="true" className="size-3.5" />
         </button>
-        <button type="button" className="text-action col-span-2 justify-self-end px-2 text-[11px]" onClick={onEditWorkflow}>
+        <button type="button" className="text-action col-start-2 justify-self-end whitespace-nowrap px-2 text-[11px]" onClick={onEditWorkflow}>
           <Settings2 aria-hidden="true" className="size-3.5" />编辑当前岗位流程
         </button>
       </div>

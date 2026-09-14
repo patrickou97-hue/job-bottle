@@ -24,6 +24,7 @@ export function JobFilterBar({
   onDiscoveryScopeChange,
   recentCount,
   recentPreferenceCount,
+  withReferralCount,
   hasPreferences,
   isAuthenticated,
   resetVersion,
@@ -41,6 +42,7 @@ export function JobFilterBar({
   onDiscoveryScopeChange: (scope: JobDiscoveryScope) => void;
   recentCount: number;
   recentPreferenceCount: number;
+  withReferralCount: number;
   hasPreferences: boolean;
   isAuthenticated: boolean;
   resetVersion: number;
@@ -162,6 +164,9 @@ export function JobFilterBar({
             <option value="recent">近 7 日新增 · {recentCount}</option>
             <option value="recent_preference" disabled={!hasPreferences}>
               近 7 日新增 · 符合偏好 · {recentPreferenceCount}
+            </option>
+            <option value="with_referral">
+              有内推码企业 · {withReferralCount}
             </option>
           </Select>
           <p className="mt-2 text-xs leading-5 text-ink-muted">

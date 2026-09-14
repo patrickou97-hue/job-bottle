@@ -19,6 +19,7 @@ export const JobCard = memo(function JobCard({
   onApply,
   onOpenProgress,
   onOpenReferral,
+  hasReferralCode = false,
   onHover,
   onFocusJob,
 }: {
@@ -32,6 +33,7 @@ export const JobCard = memo(function JobCard({
   onApply: (job: Job) => Promise<void>;
   onOpenProgress?: (job: Job) => void;
   onOpenReferral?: (job: Job) => void;
+  hasReferralCode?: boolean;
   onHover?: (job: Job | null) => void;
   onFocusJob?: (job: Job) => void;
 }) {
@@ -79,7 +81,7 @@ export const JobCard = memo(function JobCard({
       </div>
 
       <div className="flex shrink-0 items-center gap-1">
-        <button
+        {hasReferralCode && <button
           type="button"
           className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-md px-2 text-xs text-ink-muted transition hover:bg-[color:var(--surface-hover-bg)] hover:text-ink-primary"
           aria-label={`查看${job.company_name}内推码`}
@@ -87,7 +89,7 @@ export const JobCard = memo(function JobCard({
         >
           <KeyRound aria-hidden="true" className="size-3.5" />
           <span className="hidden md:inline">内推码</span>
-        </button>
+        </button>}
         {primaryAction.kind === "progress" ? (
           <button
             type="button"

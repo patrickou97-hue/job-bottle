@@ -20,9 +20,10 @@ export function RouteContentTransition({
     <motion.main
       key={pathname}
       id="main-content"
+      data-ui-route={pathname}
       tabIndex={-1}
       className={cn(
-        "mx-auto w-full max-w-[1320px] px-4 pb-24 pt-8 sm:px-6 md:pb-10 lg:px-8 lg:py-10",
+        "ui-route-motion mx-auto w-full max-w-[1320px] px-4 pb-24 pt-8 sm:px-6 md:pb-10 lg:px-8 lg:py-10",
         className,
       )}
       variants={reducedMotion ? undefined : pageVariants}

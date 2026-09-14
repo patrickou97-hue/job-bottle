@@ -38,6 +38,7 @@ import { VirtualJobList, type VirtualJobListHandle } from "@/components/jobs/Vir
 import { CaptureAnimation } from "@/components/capture/CaptureAnimation";
 import { useCaptureMotion } from "@/components/capture/useCaptureMotion";
 import { ReferralCodeDrawer } from "@/components/referrals/ReferralCodeHub";
+import { fetchReferralCodes, isReferralCodeExpired } from "@/lib/referral-codes";
 import type {
   ApplicationWithJob,
   Job,
@@ -80,6 +81,20 @@ export function HomeClient() {
   const [drawerApplication, setDrawerApplication] =
     useState<ApplicationWithJob | null>(null);
   const [referralJob, setReferralJob] = useState<Job | null>(null);
+  const [referralCompanies, setReferralCompanies] = useState<ReadonlySet<string>>(new Set());
+  useEffect(() => {
+    if (!jobs.length || !isSupabaseConfigured()) return;
+    let cancelled = false;
+    void fetchReferralCodes(createClient(), undefined, jobs).then((codes) => {
+      if (cancelled) return;
+      setReferralCompanies(new Set(codes
+        .filter((code) => !code.isPreview && code.code.trim() && !isReferralCodeExpired(code))
+        .map((code) => code.company_name.trim())));
+    }).catch(() => {
+      if (!cancelled) setReferralCompanies(new Set());
+    });
+    return () => { cancelled = true; };
+  }, [jobs]);
   const [hoveredJobId, setHoveredJobId] = useState<string | null>(null);
   const [focusedJobId, setFocusedJobId] = useState<string | null>(null);
   const [mapExpanded, setMapExpanded] = useState(false);
@@ -206,11 +221,17 @@ export function HomeClient() {
     () => recentJobs.filter((job) => jobMatchesProfilePreferences(job, profile)),
     [profile, recentJobs],
   );
+  const withReferralJobs = useMemo(
+    () => jobs.filter((job) => referralCompanies.has(job.company_name.trim())),
+    [jobs, referralCompanies],
+  );
   const discoveryJobs = discoveryScope === "recent"
     ? recentJobs
     : discoveryScope === "recent_preference"
       ? recentPreferenceJobs
-      : jobs;
+      : discoveryScope === "with_referral"
+        ? withReferralJobs
+        : jobs;
   const matchingJobs = useMemo(
     () => filterJobs(discoveryJobs, filters),
     [discoveryJobs, filters],
@@ -610,6 +631,7 @@ export function HomeClient() {
           onDiscoveryScopeChange={setDiscoveryScope}
           recentCount={recentJobs.length}
           recentPreferenceCount={recentPreferenceJobs.length}
+          withReferralCount={withReferralJobs.length}
           hasPreferences={preferenceAvailable}
           isAuthenticated={Boolean(currentUserId)}
           resetVersion={filterResetVersion}
@@ -658,6 +680,7 @@ export function HomeClient() {
             />
           ) : (
             <VirtualJobList
+              referralCompanies={referralCompanies}
               ref={virtualJobListRef}
               jobs={filteredJobs}
               applicationByJobId={applicationByJobId}
@@ -872,6 +895,7 @@ function getActiveFilterChips(
   if (filters.sortBy === "company_asc") chips.push("按公司名称");
   if (discoveryScope === "recent") chips.push("近 7 日新增");
   if (discoveryScope === "recent_preference") chips.push("近 7 日新增 · 符合偏好");
+  if (discoveryScope === "with_referral") chips.push("有内推码企业");
   if (jobView === "unapplied") chips.push("只看未投递");
   if (jobView === "applied") chips.push("只看已投递");
   return chips;

@@ -1,0 +1,15 @@
+.ink-orb { --ink-x: 2.8%; --ink-y: 33%; --ink-period: 120s; position: relative; isolation: isolate; border-radius: 50%; overflow: hidden; background: #283343; }
+.ink-orb::before { content: ""; position: absolute; inset: -1px; border-radius: inherit; background: url('/assets/space/orbital-ink-atlas-v2.png') var(--ink-x) var(--ink-y) / 442% 442% no-repeat; transform: scale(1.09); animation: ink-cloud-drift calc(var(--ink-period) * .24) ease-in-out infinite alternate; pointer-events: none; }
+.ink-orb::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: radial-gradient(ellipse at 28% 24%, #eee5c617, transparent 52%), linear-gradient(120deg, transparent 35%, #10232a38 100%); box-shadow: inset -3px -2px 8px #101b2920; pointer-events: none; }
+.ink-orb > svg { position: relative; z-index: 1; filter: drop-shadow(0 1px 3px #101b29); }
+.ink-orb--blue { --ink-x: 34.4%; --ink-period: 100s; }
+.ink-orb--jade { --ink-x: 66%; --ink-period: 135s; }
+.ink-orb--clay { --ink-x: 97.5%; --ink-period: 155s; }
+.ink-orb--silver { --ink-y: 67.5%; --ink-period: 110s; }
+.ink-orb--gold { --ink-x: 34.4%; --ink-y: 67.5%; --ink-period: 140s; }
+.ink-orb--indigo { --ink-x: 66%; --ink-y: 67.5%; --ink-period: 165s; }
+.ink-orb--teal { --ink-x: 97.5%; --ink-y: 67.5%; --ink-period: 180s; }
+/* Keep the light direction fixed: broad cloud bands drift inside a stable sphere. */
+@keyframes ink-cloud-drift { from { transform: scale(1.09) translate(-1.4%, -.5%); } to { transform: scale(1.09) translate(1.4%, .5%); } }
+[data-motion-paused="true"] .ink-orb::before { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .ink-orb::before { animation: none; } }

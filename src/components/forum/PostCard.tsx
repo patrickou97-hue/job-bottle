@@ -237,7 +237,7 @@ export function PostCard({
                 </div>
               </form>
             ) : (
-              <div className="max-w-3xl whitespace-pre-wrap text-[15px] leading-8 text-ink-secondary">
+              <div className="guide-post-content max-w-3xl whitespace-pre-wrap text-[15px] leading-8 text-ink-secondary">
                 {post.content}
               </div>
             )}

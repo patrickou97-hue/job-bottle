@@ -1,7 +1,7 @@
 "use client";
 
 import { useId } from "react";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { cn } from "@/lib/utils";
 
 export type SegmentedOption<T extends string> = {
@@ -23,6 +23,7 @@ export function SegmentedControl<T extends string>({
   value: T;
 }) {
   const indicatorId = useId();
+  const reducedMotion = useReducedMotion();
 
   return (
     <div className={cn("apple-segmented", className)} role="group" aria-label={ariaLabel}>
@@ -35,12 +36,21 @@ export function SegmentedControl<T extends string>({
             aria-pressed={active}
             className="apple-segmented__item"
             onClick={() => onChange(option.value)}
+            onKeyDown={(event) => {
+              const direction = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
+              if (!direction && event.key !== "Home" && event.key !== "End") return;
+              event.preventDefault();
+              const index = options.indexOf(option);
+              const next = event.key === "Home" ? 0 : event.key === "End" ? options.length - 1 : (index + direction + options.length) % options.length;
+              onChange(options[next].value);
+              event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>("button")[next]?.focus();
+            }}
           >
             {active ? (
               <motion.span
                 layoutId={`${indicatorId}-segment`}
                 className="apple-segmented__indicator"
-                transition={{ type: "spring", stiffness: 430, damping: 38, mass: 0.8 }}
+                transition={reducedMotion ? { duration: 0 } : { type: "spring", stiffness: 430, damping: 38, mass: 0.8 }}
               />
             ) : null}
             <span className="relative z-10">{option.label}</span>

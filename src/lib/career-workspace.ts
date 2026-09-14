@@ -200,7 +200,7 @@ export function getPipelineColumns(applications: ApplicationWithJob[]): Pipeline
   const columns: PipelineColumn[] = [
     { id: "review", label: "待确认", description: "已浏览，决定是否投递", applications: [] },
     { id: "applied", label: "已投递", description: "等待测评或下一步通知", applications: [] },
-    { id: "process", label: "笔试与面试", description: "持续准备和记录反馈", applications: [] },
+    { id: "process", label: "笔试与面试", description: "准备面试，记下反馈", applications: [] },
     { id: "outcome", label: "结果归档", description: "Offer、结束或主动放弃", applications: [] },
   ];
 

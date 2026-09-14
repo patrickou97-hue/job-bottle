@@ -2,6 +2,7 @@
 
 import { CheckCircle2, LifeBuoy, Send, MessageSquareText, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
+import { motion, useReducedMotion } from "motion/react";
 import { Textarea } from "@/components/ui/Textarea";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
@@ -11,6 +12,7 @@ const FEEDBACK_EMAIL = "raywang6688@outlook.com";
 const FEEDBACK_TYPES = ["岗位数据", "简历导出", "投递流程", "视觉体验", "其他建议"];
 
 export function FeedbackClient() {
+  const reducedMotion = useReducedMotion();
   const [feedbackType, setFeedbackType] = useState(FEEDBACK_TYPES[0]);
   const [feedbackText, setFeedbackText] = useState("");
   const [userEmail, setUserEmail] = useState("");
@@ -58,7 +60,7 @@ export function FeedbackClient() {
   }
 
   return (
-    <div className="observatory-page">
+    <div className="observatory-page feedback-workspace">
       <section className="page-hero border-b border-[color:var(--line-ghost)] pb-7">
         <div className="max-w-3xl">
           <p className="mb-3 flex items-center gap-2 text-sm font-medium text-ink-muted">
@@ -77,7 +79,7 @@ export function FeedbackClient() {
           <h2 className="text-xl font-semibold text-ink-primary">问题类型</h2>
           <p className="mt-2 text-sm leading-6 text-ink-muted">选择最接近的问题类型，方便我们更快定位。</p>
         </header>
-        <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="feedback-categories" role="group" aria-label="问题类型">
           {FEEDBACK_TYPES.map((type) => {
             const selected = feedbackType === type;
             return (
@@ -85,7 +87,7 @@ export function FeedbackClient() {
                 key={type}
                 type="button"
                 className={cn(
-                  "pressable min-h-11 rounded-lg border px-3 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--star-apricot)]",
+                  "feedback-category pressable relative isolate min-h-11 rounded-lg border px-3 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--star-apricot)]",
                   selected
                     ? "border-[color:var(--aurora)] bg-[color:var(--surface-read-bg)] text-ink-primary"
                     : "border-[color:var(--line-ghost)] text-ink-secondary hover:border-[color:var(--line-strong)] hover:text-ink-primary",
@@ -93,7 +95,8 @@ export function FeedbackClient() {
                 aria-pressed={selected}
                 onClick={() => setFeedbackType(type)}
               >
-                {type}
+                {selected ? <motion.span aria-hidden="true" className="feedback-category__selection" layoutId="feedback-category-selection" transition={reducedMotion ? { duration: 0 } : { type: "spring", stiffness: 420, damping: 36 }} /> : null}
+                <span className="relative">{type}</span>
               </button>
             );
           })}
@@ -118,7 +121,7 @@ export function FeedbackClient() {
             />
           </label>
           <div className="mt-4 flex flex-wrap items-center gap-4">
-            <button type="button" onClick={() => void submitFeedback()} disabled={submitting} className="gold-button inline-flex h-10 items-center gap-2 rounded-lg px-4 text-sm font-medium disabled:opacity-60">
+            <button type="button" onClick={() => void submitFeedback()} disabled={submitting} aria-busy={submitting} className="gold-button inline-flex h-10 items-center gap-2 rounded-lg px-4 text-sm font-medium disabled:opacity-60">
               <Send aria-hidden="true" className="size-4" />
               {submitting ? "正在提交" : "提交反馈"}
             </button>

@@ -87,22 +87,23 @@ export async function fetchReferralCodes(
     .select(PUBLIC_REFERRAL_COLUMNS)
     .order("created_at", { ascending: false });
   if (companyName?.trim()) query = query.eq("company_name", companyName.trim());
+  const remoteSourcesPromise = fetchRemoteSourceReferralCodes(companyName);
   let result: Awaited<typeof query>;
   try {
     result = await withReferralReadTimeout(query);
   } catch (error) {
     if (isReferralReadTimeoutError(error) && canUseLocalPreview()) {
-      return mergeSourceReferralCodes(getLocalPreviewCodes(), sourceJobs, companyName);
+      return mergeSourceReferralCodes(getLocalPreviewCodes(), sourceJobs, companyName, await remoteSourcesPromise);
     }
     throw error;
   }
   const { data, error } = result;
   if (!error) {
-    const remoteSources = await fetchRemoteSourceReferralCodes(companyName);
+    const remoteSources = await remoteSourcesPromise;
     return mergeSourceReferralCodes((data ?? []) as unknown as ReferralCodeListItem[], sourceJobs, companyName, remoteSources);
   }
   if (isMissingReferralTableError(error) && canUseLocalPreview()) {
-    return mergeSourceReferralCodes(getLocalPreviewCodes(), sourceJobs, companyName);
+    return mergeSourceReferralCodes(getLocalPreviewCodes(), sourceJobs, companyName, await remoteSourcesPromise);
   }
   throw error;
 }

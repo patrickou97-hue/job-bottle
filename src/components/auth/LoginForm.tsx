@@ -3,10 +3,12 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { ensureProfile, translateAuthError } from "@/lib/auth";
 import {
@@ -40,6 +42,7 @@ export function LoginForm() {
   const [wechatCode, setWechatCode] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [passwordVisible, setPasswordVisible] = useState(false);
   const {
     register,
     handleSubmit,
@@ -164,10 +167,7 @@ export function LoginForm() {
 
   return (
     <div className="login-form mx-auto w-full max-w-md py-4 sm:py-8 lg:py-10">
-      <h1 className={cn(
-        "login-form__title text-center text-3xl font-semibold tracking-[-0.02em] text-ink-primary",
-        !isRegister && "sr-only",
-      )}>
+      <h1 className="login-form__title text-3xl font-semibold tracking-[-0.02em] text-ink-primary">
         {isRegister ? "创建拾星账号" : "登录拾星"}
       </h1>
       <p className="login-form__subtitle mt-3 text-center text-sm leading-6 text-ink-secondary">
@@ -179,29 +179,8 @@ export function LoginForm() {
       </p>
 
       {!isRegister ? (
-        <div className="login-form__method-switch mt-7 grid grid-cols-2 rounded-xl bg-[color:var(--surface-hover-bg)] p-1">
-          <button
-            type="button"
-            aria-pressed={loginMethod === "email"}
-            className={cn(
-              "login-form__method min-h-10 rounded-lg px-3 text-sm font-medium transition",
-              loginMethod === "email" ? "bg-[color:var(--surface-read-bg-strong)] text-ink-primary shadow-sm" : "text-ink-muted",
-            )}
-            onClick={() => { setLoginMethod("email"); setMessage(""); }}
-          >
-            邮箱登录
-          </button>
-          <button
-            type="button"
-            aria-pressed={loginMethod === "wechat"}
-            className={cn(
-              "login-form__method min-h-10 rounded-lg px-3 text-sm font-medium transition",
-              loginMethod === "wechat" ? "bg-[color:var(--surface-read-bg-strong)] text-ink-primary shadow-sm" : "text-ink-muted",
-            )}
-            onClick={() => { setLoginMethod("wechat"); setMessage(""); }}
-          >
-            微信登录
-          </button>
+        <div className="login-form__method-switch">
+          <SegmentedControl ariaLabel="登录方式" value={loginMethod} options={[{value: "email", label: "邮箱登录"}, {value: "wechat", label: "微信登录"}]} onChange={(value) => { setLoginMethod(value); setMessage(""); }} />
         </div>
       ) : null}
 
@@ -222,7 +201,7 @@ export function LoginForm() {
             />
           </label>
           {message ? <p className="info-banner text-sm" role="status" aria-live="polite">{message}</p> : null}
-          <Button type="submit" className="w-full" disabled={busy || wechatCode.length !== 8}>
+          <Button type="submit" className="w-full" aria-busy={busy} disabled={busy || wechatCode.length !== 8}>
             使用微信账户登录
           </Button>
         </form>
@@ -247,7 +226,9 @@ export function LoginForm() {
         </label>
 
         {isRegister ? (
-          <div className="grid gap-5 sm:grid-cols-2">
+          <details className="auth-profile-details">
+            <summary>补充求职资料 <span>选填，也可以稍后完善</span></summary>
+            <div className="grid gap-5 sm:grid-cols-2 pt-5">
             <label className="block">
               <span className="mb-2 block text-sm text-ink-secondary">所在城市</span>
               <Input type="text" {...register("city")} />
@@ -310,27 +291,37 @@ export function LoginForm() {
                 <span className="mt-2 block text-xs text-[color:var(--text-danger)]">{errors.targetRoles.message}</span>
               ) : null}
             </label>
-          </div>
+            </div>
+          </details>
         ) : null}
 
-        <label className="block">
-          <span className="mb-2 block text-sm text-ink-secondary">密码</span>
-          <Input
-            type="password"
+        <div className="block">
+          <label htmlFor="auth-password" className="mb-2 block text-sm text-ink-secondary">密码</label>
+          <div className="relative">
+            <Input
+            id="auth-password"
+            className="pr-12"
+            type={passwordVisible ? "text" : "password"}
             autoComplete={isRegister ? "new-password" : "current-password"}
+            aria-invalid={Boolean(errors.password)}
+            aria-describedby={errors.password ? "auth-password-error" : undefined}
             {...register("password")}
-          />
+            />
+            <button type="button" className="auth-password-toggle" aria-label={passwordVisible ? "隐藏密码" : "显示密码"} aria-pressed={passwordVisible} onClick={() => setPasswordVisible((visible) => !visible)}>
+              {passwordVisible ? <EyeOff size={17} aria-hidden="true" /> : <Eye size={17} aria-hidden="true" />}
+            </button>
+          </div>
           {errors.password ? (
-            <span className="mt-2 block text-xs text-[color:var(--text-danger)]">
+            <span id="auth-password-error" className="mt-2 block text-xs text-[color:var(--text-danger)]">
               {errors.password.message}
             </span>
           ) : null}
-        </label>
+        </div>
 
         {message ? <p className="info-banner text-sm" role="status" aria-live="polite">{message}</p> : null}
 
-        <Button type="submit" className="w-full" disabled={busy}>
-          {isRegister ? "注册" : "登录"}
+        <Button type="submit" className="w-full" aria-busy={busy} disabled={busy}>
+          {busy ? (isRegister ? "正在创建账号…" : "正在登录…") : (isRegister ? "创建账号" : "登录")}
         </Button>
       </form>
       )}

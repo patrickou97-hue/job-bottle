@@ -213,9 +213,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/galaxy/SpaceHome.tsx",
-    mustInclude: ["MOBILE_PLANET_LAYOUT", "OrbitLines", "selectedPlanetId", "router.prefetch(href)", "window.setTimeout", "setIsLeaving(true)", "encodeURIComponent(planet.href)", "/brand/shi-xing-wordmark.png", "desktopOrbitScale", "mobileOrbitScale", "planetScale={0.82}", "<CorePlanet compact />", "href: user ? '/profile' : '/login'", "requestAnimationFrame(updateViewport)", "返回拾星主页"],
-    mustNotInclude: ["router.push(planet.href)", "href: user ? '/my' : '/login'", "href: user ? '/my-applications' : '/login'", "HomeWorkspace", "bg-white", "rounded-2xl", "<PlanetLabel", "blur(3px)", "if (!authResolved)", "rotate: ["],
-    label: "所有用户主页均保留拾星字标、运行星系和轻量行星进入转场",
+    mustInclude: ["HOME_ORBITS", "orbitPosition", "requestAnimationFrame(tick)", "visibilitychange", "ResizeObserver", "isBehindStar", "hrefFor", "encodeURIComponent(planet.href)", "全部功能", "useReducedMotion"],
+    mustNotInclude: ["StartPage", "start-title", "setInterval", "canvas"],
+    label: "主页按倾斜轨道运行并处理遮挡、低动态偏好和全部功能导航",
   },
   {
     file: "src/components/galaxy/FloatingPlanet.tsx",
@@ -309,9 +309,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/styles/tokens.css",
-    mustInclude: ["--night-0: #000001", "--night-1: #12294E", "--night-3: #1D2F4F", "--dusk: #244A7C", ".theme-work", "--background: #e9ebef", "--surface-read-bg: #f6f7f9", "--text-primary: #1d1d1f", "--aurora: var(--brand-blue)", "--apple-radius-control: 8px", ".theme-scene"],
+    mustInclude: ["--night-0: #000001", "--night-1: #12294E", "--night-3: #1D2F4F", "--dusk: #244A7C", ".theme-work", "--background: #f3f5f8", "--surface-read-bg: #f6f7f9", "--text-primary: #1d1d1f", "--aurora: var(--brand-blue)", "--apple-radius-control: 12px", "--surface-selected-edge: none", ".theme-scene"],
     mustNotInclude: ["--arcane: #8F86F0", "--star-apricot: #D9ADA9", "--aurora: #62D9FF"],
-    label: "全站使用林深星渡五色基调和更轻的半透明工作面",
+    label: "全站使用浅银蓝工作面、圆角控件与无侧线选中态",
   },
   {
     file: "src/components/ui/FiligreeDivider.tsx",
@@ -375,7 +375,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/resume/ResumeBuilderClient.tsx",
-    mustInclude: ["ResumeEditor", "ResumePreview", "ResumePdfExportButton", "ResumePageTitle", "AI-Powered", "Snell Roundhand", "inline-block", "px-2", "新建简历", "实时预览", "共用同一套 A4 排版坐标", "resume-version-rail", "切换版本，下方继续编辑并实时对照", "xl:grid-cols-[minmax(0,1.08fr)_minmax(500px,0.92fr)]", "prepareTargetResume", "创建岗位版本", "打开岗位版本", "linkedJobId: targetJob.id", "primaryRole", "targetRole: primaryRole", "linkedJobContext={targetJob}", "saveLocalResumes", "adoptLocalResumesForUser", "fetchMyResumes", "upsertMyResume", "MAX_BACKGROUND_SYNC_ATTEMPTS", "isResumeOwnershipConflictError", "onAuthStateChange", "visibilitychange", "正在合并本地与账户中的简历", "已同步至账户", "请谨慎审核 AI 输出的简历信息"],
+    mustInclude: ["ResumeEditor", "ResumePreview", "ResumePdfExportButton", "ResumePageTitle", "整理经历，打磨表达", "新建简历", "实时预览", "共用同一套 A4 排版坐标", "resume-version-rail", "切换版本，下方继续编辑并实时对照", "xl:grid-cols-[minmax(0,1.08fr)_minmax(500px,0.92fr)]", "prepareTargetResume", "创建岗位版本", "打开岗位版本", "linkedJobId: targetJob.id", "primaryRole", "targetRole: primaryRole", "linkedJobContext={targetJob}", "saveLocalResumes", "adoptLocalResumesForUser", "fetchMyResumes", "upsertMyResume", "MAX_BACKGROUND_SYNC_ATTEMPTS", "isResumeOwnershipConflictError", "onAuthStateChange", "visibilitychange", "正在合并本地与账户中的简历", "已同步至账户", "请谨慎审核 AI 输出的简历信息"],
     mustNotInclude: ["requestAnimationFrame"],
     label: "简历制作器提供列表、编辑、预览、本地保存和账号同步",
   },
@@ -387,7 +387,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/layout/Navbar.tsx",
-    mustInclude: ["岗位坐标", "投递管理", "简历制作", "href: \"/extension\"", "label: \"网申助手\"", "BETA", "nav-beta", "拾星指南", "星瓶", "个人中心", "href: \"/feedback\"", "label: \"反馈\"", "mobileNavItems", "grid-cols-6", "移动主导航", "bottom-0", "primary-nav-indicator", "mobile-nav-indicator", "profile ? \"个人中心\" : \"登录\"", "href=\"/\"", "aria-label=\"返回首页\""],
+    mustInclude: ["岗位坐标", "投递管理", "简历制作", "href: \"/extension\"", "label: \"网申助手\"", "BETA", "nav-beta", "拾星指南", "星瓶", "个人中心", "href: \"/feedback\"", "label: \"反馈\"", "mobileNavItems", "grid-cols-6", "移动主导航", "ui-nav-indicator", "primary-nav-indicator", "mobile-nav-indicator", "moreNavItems", "moreRef", "pointerdown", "href=\"/\"", "aria-label=\"返回首页\""],
     mustNotInclude: ["找岗位", "求职交流", "label: \"我的\"", "label: \"首页\"", "/interview?preview=recruitment", "发现诘星", "star-interview-signal"],
     label: "桌面顶部保留清晰品牌入口与反馈入口、移除已下线彩蛋且移动端保持原六项主导航",
   },
@@ -423,7 +423,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/login/page.tsx",
-    mustInclude: ["alt=\"拾星 StarJob\"", "把明日的", "收进星瓶", "让岗位、简历与每一步进展，都有迹可循。"],
+    mustInclude: ["StarJob", "auth-gateway__form", "账户登录与注册", "先看看岗位"],
     mustNotInclude: ["Job Bottle", "Starjob", "求职工作台", "欢迎回来"],
     label: "登录页使用 StarJob 品牌名与减法后的新版文案",
   },
@@ -715,15 +715,15 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/layout/Navbar.tsx",
-    mustInclude: ["tabletPrimaryNavItems", "tabletMoreNavItems", "lg:hidden", "更多", "--app-safe-bottom"],
+    mustInclude: ["primaryNavItems", "compactMoreNavItems", "lg:hidden", "更多", "--app-safe-bottom"],
     mustNotInclude: [],
     label: "顶部导航在平板宽度收纳次要入口并为移动端底栏预留安全区",
   },
   {
     file: "src/components/galaxy/SpaceHome.tsx",
-    mustInclude: ["compactDesktopHeight", "desktopVerticalReserve", "desktopMinimumScale"],
+    mustInclude: ["height / 740", "width / 1160", "--orbit-scale", "y < 80", "height - 44", "node.tabIndex"],
     mustNotInclude: [],
-    label: "低高度桌面视口压缩星轨并避让导航与底部安全区",
+    label: "轨道按视口缩放，越界入口退出键盘序列并保留固定导航",
   },
   {
     file: "src/components/forum/PostCard.tsx",
@@ -793,7 +793,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/jobs/JobFilterBar.tsx",
-    mustInclude: ["start_date_desc", "最新开放", "最近更新", "最早开放", "岗位类别", "toggleCategory", "地点层级", "不限", "全国", "省级", "市级", "选择省级地区", "请选择城市", "buildLocationGroups", "left-4", "pl-11", "清空所有岗位筛选"],
+    mustInclude: ["start_date_desc", "最新开放", "最近更新", "最早开放", "岗位类别", "toggleCategory", "地点层级", "不限", "全国", "省级", "市级", "选择省级地区", "请选择城市", "buildLocationGroups", "清空所有岗位筛选"],
     mustNotInclude: ["deadline_asc", "downloadDeadlineDigest", "digest_generate", "岗位标签", "toggleTag"],
     label: "探索筛选默认最新开启且不再提供下线日期入口",
   },
@@ -835,7 +835,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/MyApplicationsClient.tsx",
-    mustInclude: ["application.job.company_name", "getApplicationDisplayPosition", "min-h-5", "StatusPill", "handleApplicationChanged", "handleApplicationDeleted", "type StageGroup", "type FreshnessFilter", "getApplicationWorkflow(application)", "activeApplications", "endedApplications", "一条投递对应一家公司与一个岗位", "每一行就是一条投递", "endedExpanded", "打开官网", "查看详情", "编辑当前岗位流程", "7 天以上无进展", "需要关注优先", "text-lg font-semibold leading-6 tracking-tight text-ink-primary", "text-sm font-normal leading-5 text-ink-secondary"],
+    mustInclude: ["application.job.company_name", "getApplicationDisplayPosition", "min-h-5", "StatusPill", "handleApplicationChanged", "handleApplicationDeleted", "type StageGroup", "type FreshnessFilter", "getApplicationWorkflow(application)", "activeApplications", "endedApplications", "记录投递进度，安排下一步跟进。", "每一行就是一条投递", "endedExpanded", "打开官网", "查看详情", "编辑当前岗位流程", "7 天以上无进展", "需要关注优先", "text-lg font-semibold leading-6 tracking-tight text-ink-primary", "text-sm font-normal leading-5 text-ink-secondary"],
     mustNotInclude: ["DeadlineChip", "ApplicationStageSelect", "ApplicationCompanyGroup", "groupApplications", "按公司归组，每个岗位的进度单独记录", "onChanged={loadData}", "type WorkspaceView", "现在要做", "材料准备", "ApplicationOrbitSystem", 'text-xs font-medium text-ink-muted">{application.job.company_name}', 'text-sm font-semibold text-ink-primary">{jobTitle}'],
     label: "投递管理只显示用户明确填写的实际投递岗位并保留空白状态",
   },
@@ -882,7 +882,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/MyApplicationsClient.tsx",
-    mustInclude: ["投递管理", "一条投递对应一家公司与一个岗位", "application.applied_position", "按投递进程筛选", "按最近进展筛选", "最近进展按该投递最后一次状态或信息更新时间计算"],
+    mustInclude: ["投递管理", "记录投递进度，安排下一步跟进。", "application.applied_position", "按投递进程筛选", "按最近进展筛选", "最近进展按该投递最后一次状态或信息更新时间计算"],
     mustNotInclude: ["HomeWorkspace", "SUPABASE_SERVICE_ROLE_KEY", "getWorkspaceTasks", "getTaskSummary", "我的投递星轨"],
     label: "投递管理将单条岗位投递和跟进时效集中到一张清单",
   },
@@ -1443,7 +1443,7 @@ const REQUIRED_FILES = [
 const REQUIRED_TEXT = {
   "/": ["拾星"],
   "/explore": ["岗位坐标", "正在整理岗位"],
-  "/my": ["投递管理", "一条投递对应一家公司与一个岗位"],
+  "/my": ["投递管理", "记录投递进度，安排下一步跟进。"],
   "/referrals": ["内推码广场", "内推码由用户自行分享", "按公司查找", "登录后上传"],
   "/profile": ["个人中心"],
   "/feedback": ["帮助与反馈", "把遇到的问题或想到的建议告诉我们，每一条都会被认真阅读。", "问题类型", "提交反馈"],
@@ -1453,7 +1453,7 @@ const REQUIRED_TEXT = {
   "/galaxy/region": ["地区星系", "北京星云", "上海星云"],
   "/galaxy/industry": ["行业星系", "互联网星云", "金融星云"],
   "/jobs": ["岗位坐标", "正在整理岗位"],
-  "/login": ["正在为你打开拾星"],
+  "/login": ["正在打开登录表单"],
   "/forum": ["拾星指南"],
   "/extension": ["一份简历，", "抵达更多坐标", "把拾星简历同步到浏览器", "查看安装教程", "正在检测网申助手"],
   "/extension/guide": ["安装拾星网申助手", "加载已解压的扩展", "同步简历"],

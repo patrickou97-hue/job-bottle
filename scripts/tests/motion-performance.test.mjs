@@ -9,7 +9,7 @@ async function source(relativePath) {
   return readFile(resolve(root, relativePath), "utf8");
 }
 
-test("主页轨道持续运动使用 compositor-friendly CSS 而不是 Motion keyframe 循环", async () => {
+test("轨道组件持续运动使用 compositor-friendly CSS 而不是 Motion keyframe 循环", async () => {
   const component = await source("src/components/galaxy/FloatingPlanet.tsx");
   const styles = await source("src/app/globals.css");
 
@@ -25,28 +25,22 @@ test("主页首屏不再等待认证态，认证与公告在首屏之后处理",
   const notice = await source("src/components/onboarding/WelcomeNotice.tsx");
 
   assert.doesNotMatch(home, /if\s*\(\s*!authResolved\s*\)/);
-  assert.match(home, /requestAnimationFrame\(updateViewport\)/);
+  assert.match(home, /orbitPosition/);
   assert.match(notice, /setTimeout\(\(\) => void resolveNotice\(\), 900\)/);
 });
 
-test("主页转场使用目标行星轻微强调和内容淡出，不创建全屏遮罩", async () => {
+test("倾斜轨道使用单一时钟并处理不可见页面和减少动态效果", async () => {
   const home = await source("src/components/galaxy/SpaceHome.tsx");
-  const planet = await source("src/components/galaxy/FloatingPlanet.tsx");
-  const route = await source("src/components/layout/RouteContentTransition.tsx");
-  const styles = await source("src/app/globals.css");
-
-  assert.match(home, /TRANSITION_MS = 180/);
-  assert.match(home, /selectedPlanetId/);
-  assert.match(home, /setIsLeaving\(true\)/);
-  assert.doesNotMatch(home, /PlanetTransitionOverlay|markSceneDeparture\(href\)/);
-  assert.match(planet, /selected: boolean/);
-  assert.match(planet, /selected \? 1\.08 : 0\.94/);
-  assert.match(planet, /selected \? 1 : 0\.16/);
-  assert.match(route, /initial=\{reducedMotion \? false : "initial"\}/);
-  assert.doesNotMatch(styles, /planet-transition-overlay|clip-path: polygon\(50% 0%/);
+  assert.match(home, /useReducedMotion/);
+  assert.match(home, /cancelAnimationFrame/);
+  assert.match(home, /visibilitychange/);
+  assert.match(home, /!document.hidden && !reducedMotion/);
+  assert.match(home, /focusRef/);
+  assert.match(home, /hoverRef/);
+  assert.doesNotMatch(home, /setInterval|canvas|start-title/);
 });
 
-test("主页把网申助手放入求职主路径并使用独立的太阳系色彩", async () => {
+test("既有星球组件保留网申助手映射和独立材质", async () => {
   const routes = await source("src/lib/planet-routes.ts");
   const planet = await source("src/components/galaxy/FloatingPlanet.tsx");
   const core = await source("src/components/galaxy/CorePlanet.tsx");
@@ -100,7 +94,7 @@ test("网申助手演示复刻 Chrome 插件点击链路且动效只作用于小
   assert.match(styles, /@layer base \{[\s\S]*button,[\s\S]*font: inherit;/);
 });
 
-test("非主页共享页脚接入且登录 slogan 保持动效降级入口", async () => {
+test("非主页共享页脚接入且登录入口不依赖装饰动画", async () => {
   const shell = await source("src/components/layout/UserShell.tsx");
   const footer = await source("src/components/layout/SiteFooter.tsx");
   const login = await source("src/app/login/page.tsx");
@@ -109,12 +103,12 @@ test("非主页共享页脚接入且登录 slogan 保持动效降级入口", asy
 
   assert.match(shell, /<SiteFooter\s*\/>/);
   assert.match(footer, /site-footer__logo brand-wordmark/);
-  assert.match(login, /<KineticWord/);
-  assert.match(login, /login-page__story-word-group/);
-  assert.match(login, /<br aria-hidden="true" \/>/);
+  assert.match(login, /auth-gateway__form/);
+  assert.match(login, /<LoginForm/);
+  assert.doesNotMatch(login, /<KineticWord|login-page__bottle-frames/);
   assert.doesNotMatch(login, /求职工作台/);
   assert.doesNotMatch(login, /欢迎回来/);
-  assert.match(login, /登录拾星/);
+  assert.match(login, /账户登录与注册/);
   assert.match(styles, /starjob-login-bottle-frames-v2\.png/);
   assert.match(styles, /login-bottle-frames 2s steps\(1, end\) infinite/);
   assert.match(kineticWord, /useReducedMotion/);

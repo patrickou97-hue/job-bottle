@@ -118,3 +118,94 @@
     .theme-work :is(.gold-button,.muted-button,.chip-button,.job-row-action):active { transform: none; }
   }
 }
+
+/* Shared motion keeps high-frequency content stable; controls carry feedback. */
+@media screen and (prefers-reduced-motion: no-preference) {
+  .ui-route-motion > :first-child { animation: ui-arrive 360ms cubic-bezier(.2,.8,.2,1); }
+  :is(.theme-work,.auth-gateway) :is(.gold-button,.muted-button,.chip-button,.job-row-action) {
+    transition: transform 240ms cubic-bezier(.2,.8,.2,1), background-color 180ms, border-color 180ms, box-shadow 240ms;
+  }
+  :is(.theme-work,.auth-gateway) :is(.gold-button,.muted-button,.chip-button,.job-row-action):active:not(:disabled) { transform: scale(.97); }
+  .theme-work .field-shell { transition: border-color 180ms, background-color 180ms, box-shadow 180ms; }
+  .theme-work .app-navbar details[open] > div { animation: ui-menu-arrive 180ms ease-out; transform-origin: top right; }
+  @media (hover: hover) {
+    :is(.theme-work,.auth-gateway) :is(.gold-button,.muted-button,.job-row-action):hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 16px -10px #22314960; }
+    .theme-work :is(.data-row,.resume-version-item) { transition: background-color 200ms, border-color 200ms; }
+    .theme-work .text-action svg, .auth-gateway__explore svg { transition: transform 240ms; }
+    .theme-work .text-action:hover svg, .auth-gateway__explore:hover svg { transform: translate(2px,-2px); }
+  }
+}
+@keyframes ui-arrive { from { transform: translateY(7px); } to { transform: translateY(0); } }
+@keyframes ui-menu-arrive { from { opacity: .5; transform: translateY(-4px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+[data-motion-paused="true"] :is(.voyage-float,.voyage-moon) { animation-play-state: paused; }
+
+/* Task surfaces: compact controls, open hierarchy, no decorative selection rails. */
+@media screen {
+  .theme-work :is(.page-subtitle,.page-description) { max-width: 62ch; text-wrap: pretty; }
+  .theme-work .ui-route-motion { --ui-feedback-ease: cubic-bezier(.22,.8,.25,1); }
+  .theme-work .empty-state { border-style: solid; background: var(--surface-read-bg); padding: clamp(24px,4vw,44px); }
+  .theme-work .empty-state h2 { font-size: 18px; line-height: 1.5; }
+  .theme-work .empty-state p { max-width: 48ch; margin-inline: auto; line-height: 1.8; }
+  .theme-work .field-shell:disabled { opacity: .6; cursor: not-allowed; }
+  .theme-work .apple-segmented__item { min-height: 40px; }
+  .theme-work .apple-segmented__item:focus-visible { z-index: 1; }
+  .theme-work .data-row:focus-within { background: var(--surface-hover-bg); }
+  .theme-work :is(.message-banner,[role="status"]):empty { display: none; }
+  .feedback-workspace { max-width: 1040px; margin-inline: auto; }
+  .feedback-workspace > section:not(:first-child) { padding-block: 28px; gap: 20px; }
+  .feedback-categories { display: flex; flex-wrap: wrap; align-content: start; gap: 8px; }
+  .feedback-category { flex: 0 1 auto; border-color: transparent !important; background: var(--surface-subtle-bg) !important; }
+  .feedback-category__selection { position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: #e2eaf2; box-shadow: inset 0 0 0 1px #9eafc3; }
+  .feedback-workspace textarea { min-height: 180px; resize: vertical; }
+  [data-ui-route="/profile"] .observatory-page > section[id] { padding-block: 28px; gap: 24px; }
+  [data-ui-route="/profile"] .observatory-page > section[id] h2 { font-size: 18px; }
+  [data-ui-route="/forum"] .observatory-page { max-width: 1080px; margin-inline: auto; }
+  [data-ui-route="/forum"] #guide-shortcuts-title + span { text-align: right; }
+  [data-ui-route="/forum"] .list-surface article:last-child { border-bottom: 0; }
+  [data-ui-route="/forum"] .list-surface article[data-pinned="true"] { background: #f8f7f3; border-color: var(--line-ghost); }
+  [data-ui-route="/forum"] .list-surface article > button { padding-block: 16px; }
+  [data-ui-route="/forum"] .guide-post-content { max-width: 72ch; line-height: 1.9; }
+  [data-ui-route="/resume"] .resume-version-rail { gap: 10px; }
+  [data-ui-route="/resume"] .resume-version-item { padding: 16px; }
+  [data-ui-route="/resume"] .page-hero { align-items: start; }
+  [data-ui-route="/guide"] .observatory-page { max-width: 1080px; margin-inline: auto; }
+  [data-ui-route="/extension"] .extension-page > section + section { margin-top: 44px; }
+  [data-ui-route="/extension"] .extension-hero { gap: 32px; padding-bottom: 36px; }
+  [data-ui-route="/extension/guide"] .extension-guide { max-width: 1120px; margin-inline: auto; }
+  [data-ui-route="/extension/guide"] .extension-guide > section + section { margin-top: 36px; }
+  [data-ui-route="/referrals"] .observatory-page { max-width: 1120px; margin-inline: auto; }
+  [data-ui-route="/referrals"] .progress-summary { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; padding-inline: 0; }
+  [data-ui-route^="/galaxy/"] .page-hero { padding-bottom: 20px; }
+  [data-ui-route^="/jobs/"] .page-title { max-width: 30ch; line-height: 1.35; }
+  .application-workspace .application-records { gap: 8px; }
+  .application-workspace .application-record { box-shadow: none; }
+  .theme-work .admin-shell__nav-link { border-radius: 12px; }
+  .theme-work .site-footer__logo { width: 84px; height: auto; }
+  .theme-work .site-footer__english { width: 86px; }
+  .theme-work .site-footer__brand-lockup { align-items: center; gap: 14px; }
+  @media (max-width: 639px) {
+    .feedback-workspace .page-hero { padding-bottom: 16px; }
+    .feedback-workspace > section:not(:first-child) { padding-block: 22px; gap: 14px; }
+    .feedback-workspace h2 { font-size: 17px; }
+    .feedback-workspace textarea { min-height: 160px; }
+    [data-ui-route="/extension"] .extension-page > section + section { margin-top: 32px; }
+    [data-ui-route="/profile"] .observatory-page > section[id] { padding-block: 24px; gap: 16px; }
+    [data-ui-route="/referrals"] .data-row { grid-template-columns: minmax(0,1fr) auto; gap: 8px 12px; padding-block: 16px; }
+    [data-ui-route="/referrals"] .data-row > :nth-child(3) { grid-column: 1 / -1; }
+    [data-ui-route="/referrals"] .data-row > :last-child { justify-self: end; }
+  }
+}
+@media screen and (prefers-reduced-motion: no-preference) {
+  .theme-work :is(.apple-segmented__item,.feedback-category) { transition: color 160ms, transform 180ms; }
+  .theme-work :is(.apple-segmented__item,.feedback-category):active { transform: scale(.97); }
+  .theme-work .filter-disclosure[data-open="true"] .filter-disclosure__content { animation: ui-arrive 220ms ease-out; }
+  .theme-work details[open] > :not(summary) { animation: ui-arrive 220ms ease-out; }
+  .theme-work :is(.info-banner,.message-banner) { animation: ui-menu-arrive 220ms ease-out; }
+  .theme-work .apple-dock a > span { transition: transform 240ms cubic-bezier(.22,.8,.25,1); }
+  .theme-work .apple-dock a:active > span { transform: translateY(-3px) scale(.94); }
+  .theme-work :is(.admin-shell__nav-link,.resume-version-item,.application-record) { transition: background-color 180ms,border-color 180ms,box-shadow 220ms; }
+  @media (hover: hover) {
+    .theme-work :is(.resume-version-item,.application-record):hover { box-shadow: 0 4px 14px -10px #233c6060; }
+    [data-ui-route="/forum"] a.group:hover { background: var(--surface-hover-bg); }
+  }
+}

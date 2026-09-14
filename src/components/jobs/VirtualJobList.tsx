@@ -19,6 +19,7 @@ export type VirtualJobListHandle = {
 };
 
 type VirtualJobListProps = {
+  referralCompanies: ReadonlySet<string>;
   jobs: Job[];
   applicationByJobId: Map<string, UserApplication>;
   profile: Profile | null;
@@ -41,6 +42,7 @@ const ESTIMATED_ROW_HEIGHT = 76;
  */
 export const VirtualJobList = forwardRef<VirtualJobListHandle, VirtualJobListProps>(
   function VirtualJobList({
+    referralCompanies,
     jobs,
     applicationByJobId,
     profile,
@@ -132,6 +134,7 @@ export const VirtualJobList = forwardRef<VirtualJobListHandle, VirtualJobListPro
               className="absolute left-0 top-0 w-full pb-2"
             >
               <JobCard
+                hasReferralCode={referralCompanies.has(job.company_name.trim())}
                 job={job}
                 index={virtualRow.index}
                 application={applicationByJobId.get(job.id) ?? null}

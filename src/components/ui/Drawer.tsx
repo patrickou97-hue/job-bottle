@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useId } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { XIcon } from "@phosphor-icons/react";
 import { motionDuration } from "@/lib/motion";
@@ -23,6 +23,7 @@ export function Drawer({
   size?: "default" | "wide";
 }) {
   const panelRef = useRef<HTMLElement>(null);
+  const titleId = useId();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const reducedMotion = useReducedMotion();
@@ -67,16 +68,16 @@ export function Drawer({
             ref={panelRef}
             role="dialog"
             aria-modal="true"
-            aria-labelledby="drawer-title"
+            aria-labelledby={titleId}
             className={`apple-sheet absolute inset-x-0 bottom-0 flex max-h-[88svh] w-full flex-col overflow-hidden md:bottom-4 md:left-auto md:right-4 md:top-4 md:h-[calc(100svh-2rem)] md:max-h-[calc(100svh-2rem)] ${size === "wide" ? "md:max-w-3xl xl:max-w-4xl" : "md:max-w-xl"}`}
             initial={{ y: reducedMotion ? 0 : "100%", x: 0, opacity: reducedMotion ? 0 : 1 }}
-            animate={{ y: 0, x: 0 }}
+            animate={{ y: 0, x: 0, opacity: 1 }}
             exit={{ y: reducedMotion ? 0 : "100%", x: 0, opacity: reducedMotion ? 0 : 1 }}
             transition={reducedMotion ? { duration: motionDuration.instant } : { type: "spring", stiffness: 340, damping: 34, mass: 0.9 }}
           >
             <div className="flex shrink-0 justify-center pt-3 md:hidden"><span className="apple-sheet-handle" /></div>
             <div className="flex shrink-0 items-center justify-between gap-4 px-5 pb-5 pt-3 md:px-7 md:pb-6 md:pt-7">
-              <h2 id="drawer-title" className="text-xl font-semibold text-ink-primary">{title}</h2>
+              <h2 id={titleId} className="text-xl font-semibold text-ink-primary">{title}</h2>
               <button
                 ref={closeButtonRef}
                 type="button"
