@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Activity, ChevronRight, Coins, Database, KeyRound, MessageSquareText, Rows3, Users } from "lucide-react";
-import { AdminShell } from "@/components/layout/AdminShell";
 
 const adminActions = [
   {
@@ -57,7 +56,6 @@ const adminTools = [
 
 export default function AdminPage() {
   return (
-    <AdminShell>
       <div className="observatory-page admin-hub">
         <section className="admin-hub__hero">
           <div>
@@ -132,6 +130,5 @@ export default function AdminPage() {
           </div>
         </details>
       </div>
-    </AdminShell>
   );
 }

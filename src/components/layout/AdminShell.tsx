@@ -12,6 +12,7 @@ import {
   KeyRound,
   LogOut,
   MessageSquareText,
+  MoreHorizontal,
   Rows3,
   Settings,
   Users,
@@ -37,11 +38,11 @@ const primaryNavItems: AdminNavItem[] = [
   { href: "/admin/analytics", label: "数据分析", icon: Activity },
   { href: "/admin/feedback", label: "反馈管理", icon: MessageSquareText },
   { href: "/admin/jobs", label: "岗位管理", icon: Rows3 },
-  { href: "/admin/referrals", label: "内推码", icon: KeyRound },
   { href: "/admin/users", label: "用户管理", icon: Users },
 ];
 
 const utilityNavItems: AdminNavItem[] = [
+  { href: "/admin/referrals", label: "内推码", icon: KeyRound },
   { href: "/admin/import", label: "批量导入", icon: Database },
   { href: "/admin/billing", label: "诘星计费", icon: Coins },
 ];
@@ -53,7 +54,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const isUtilityRoute = utilityNavItems.some((item) => isNavActive(pathname, item.href));
-  const [utilityOpen, setUtilityOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
@@ -106,7 +107,6 @@ export function AdminShell({ children }: { children: ReactNode }) {
   }
 
   const activeItem = [...primaryNavItems, ...utilityNavItems].find((item) => isNavActive(pathname, item.href)) ?? primaryNavItems[0];
-  const utilityExpanded = utilityOpen || isUtilityRoute;
 
   function renderNavLink(item: AdminNavItem, mobile = false) {
     const Icon = item.icon;
@@ -140,7 +140,41 @@ export function AdminShell({ children }: { children: ReactNode }) {
             <span className="admin-shell__brand-section">管理空间</span>
           </Link>
 
-          <div className="admin-shell__account nav-account">
+          <div className="admin-shell__header-actions">
+            <div className="admin-shell__more">
+              <button
+                type="button"
+                className={cn("admin-shell__more-trigger", isUtilityRoute && "admin-shell__more-trigger--active")}
+                aria-expanded={moreOpen}
+                aria-haspopup="menu"
+                onClick={() => setMoreOpen((current) => !current)}
+              >
+                <MoreHorizontal aria-hidden="true" className="size-4" />
+                <span>更多</span>
+                <ChevronDown aria-hidden="true" className={cn("size-3.5", moreOpen && "rotate-180")} />
+              </button>
+              {moreOpen ? (
+                <div className="admin-shell__more-menu" role="menu" aria-label="更多管理工具">
+                  {utilityNavItems.map((item) => {
+                    const Icon = item.icon;
+                    const active = isNavActive(pathname, item.href);
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        role="menuitem"
+                        className={cn("admin-shell__more-link", active && "admin-shell__more-link--active")}
+                        onClick={() => setMoreOpen(false)}
+                      >
+                        <Icon aria-hidden="true" className="size-4" />
+                        <span>{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </div>
+            <div className="admin-shell__account nav-account">
             <Link href="/" className="text-action admin-shell__account-action">
               <ArrowLeft aria-hidden="true" className="size-4" />
               <span className="admin-shell__account-label">返回首页</span>
@@ -149,6 +183,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
               <LogOut aria-hidden="true" className="size-4" />
               <span className="admin-shell__account-label">退出</span>
             </button>
+            </div>
           </div>
         </div>
       </header>
@@ -162,18 +197,6 @@ export function AdminShell({ children }: { children: ReactNode }) {
           <nav className="admin-shell__nav" aria-label="管理导航">
             <span className="admin-shell__nav-label">工作台</span>
             {primaryNavItems.map((item) => renderNavLink(item))}
-            <span className="admin-shell__nav-divider" />
-            <button
-              type="button"
-              className={cn("admin-shell__nav-group-toggle", utilityExpanded && "admin-shell__nav-group-toggle--open")}
-              aria-expanded={utilityExpanded}
-              aria-controls="admin-utility-nav"
-              onClick={() => setUtilityOpen((current) => !current)}
-            >
-              <span>更多工具</span>
-              <ChevronDown aria-hidden="true" className="admin-shell__nav-chevron" />
-            </button>
-            {utilityExpanded ? <div id="admin-utility-nav" className="admin-shell__nav-group">{utilityNavItems.map((item) => renderNavLink(item))}</div> : null}
           </nav>
         </aside>
 

@@ -1639,6 +1639,80 @@ textarea:focus-visible {
   border-left: 0;
 }
 
+.admin-shell__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.admin-shell__more {
+  position: relative;
+}
+
+.admin-shell__more-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.25rem;
+  padding: 0 0.7rem;
+  border: 1px solid transparent;
+  border-radius: 0.7rem;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  transition: background-color 180ms var(--ease-snap), color 180ms var(--ease-snap), border-color 180ms var(--ease-snap);
+}
+
+.admin-shell__more-trigger:hover,
+.admin-shell__more-trigger--active {
+  border-color: var(--admin-line-soft);
+  background: var(--surface-hover-bg);
+  color: var(--text-primary);
+}
+
+.admin-shell__more-trigger:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--admin-accent) 70%, transparent);
+  outline-offset: 2px;
+}
+
+.admin-shell__more-menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  z-index: 60;
+  display: grid;
+  min-width: 10rem;
+  gap: 0.2rem;
+  padding: 0.4rem;
+  border: 1px solid var(--admin-line-soft);
+  border-radius: 0.85rem;
+  background: var(--surface-read-bg-strong);
+  box-shadow: 0 14px 30px rgba(29, 47, 79, 0.12);
+  animation: admin-menu-in 160ms ease-out both;
+}
+
+.admin-shell__more-link {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 2.35rem;
+  padding: 0 0.7rem;
+  border-radius: 0.6rem;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  transition: background-color 160ms var(--ease-snap), color 160ms var(--ease-snap);
+}
+
+.admin-shell__more-link:hover,
+.admin-shell__more-link--active {
+  background: var(--surface-hover-bg);
+  color: var(--text-primary);
+}
+
+@keyframes admin-menu-in {
+  from { opacity: 0; transform: translateY(-0.3rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .admin-shell__account-action {
   min-height: 2.25rem;
   padding-inline: 0.65rem;
@@ -2403,6 +2477,188 @@ textarea:focus-visible {
 
   .admin-shell__mobile-panel {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Admin workflow refinements: keep the list in focus and move long edits into a spatial drawer. */
+.admin-shell {
+  --admin-line-soft: color-mix(in srgb, var(--admin-accent) 11%, transparent);
+}
+
+.admin-shell .form-section,
+.admin-shell .table-surface,
+.admin-shell .visualization-boundary {
+  border-color: var(--admin-line-soft);
+  box-shadow: 0 12px 32px rgba(29, 47, 79, 0.035);
+}
+
+.admin-shell .table-surface {
+  border-radius: 14px;
+}
+
+.admin-shell .table-surface thead {
+  background: color-mix(in srgb, var(--admin-accent) 5%, var(--surface-read-bg-strong));
+}
+
+.admin-shell .table-surface tbody tr {
+  min-height: 3.5rem;
+}
+
+.admin-shell .table-surface tbody tr:last-child {
+  border-bottom: 0;
+}
+
+.admin-shell .table-surface tbody tr:hover {
+  background: color-mix(in srgb, var(--admin-accent) 4%, var(--surface-read-bg-strong));
+}
+
+.admin-jobs-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.admin-jobs-toolbar__count {
+  flex: 0 0 auto;
+  color: var(--text-meta);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.admin-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 0.85rem;
+  color: var(--text-meta);
+  font-size: 0.75rem;
+}
+
+.admin-pagination__actions {
+  display: inline-flex;
+  gap: 0.45rem;
+}
+
+.admin-pagination__actions button,
+.admin-drawer__close {
+  display: inline-grid;
+  place-items: center;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  border: 1px solid var(--admin-line-soft);
+  border-radius: 0.7rem;
+  background: var(--surface-read-bg-strong);
+  color: var(--text-secondary);
+  transition: background-color 180ms var(--ease-snap), color 180ms var(--ease-snap), transform 180ms var(--ease-snap);
+}
+
+.admin-pagination__actions button:hover:not(:disabled),
+.admin-drawer__close:hover {
+  background: var(--surface-hover-bg);
+  color: var(--text-primary);
+}
+
+.admin-pagination__actions button:active:not(:disabled),
+.admin-drawer__close:active {
+  transform: scale(0.97);
+}
+
+.admin-pagination__actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.admin-pagination__actions button:focus-visible,
+.admin-drawer__close:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--admin-accent) 70%, transparent);
+  outline-offset: 2px;
+}
+
+.admin-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(29, 47, 79, 0.18);
+  backdrop-filter: blur(3px);
+  animation: admin-drawer-backdrop-in 180ms ease-out both;
+}
+
+.admin-drawer {
+  width: min(100%, 42rem);
+  height: 100%;
+  overflow-y: auto;
+  padding: clamp(1rem, 3vw, 2rem);
+  background: var(--surface-read-bg-strong);
+  box-shadow: -16px 0 42px rgba(29, 47, 79, 0.12);
+  animation: admin-drawer-in 240ms cubic-bezier(.22, 1, .36, 1) both;
+}
+
+.admin-drawer__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--admin-line-soft);
+}
+
+.admin-drawer__header h2 {
+  margin-top: 0.35rem;
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  font-weight: 650;
+}
+
+.admin-drawer .form-section {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+@keyframes admin-drawer-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes admin-drawer-in {
+  from { opacity: 0; transform: translateX(1.5rem); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-drawer-backdrop,
+  .admin-drawer,
+  .admin-shell__more-menu {
+    animation: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-jobs-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .admin-jobs-toolbar__count {
+    align-self: flex-end;
+  }
+
+  .admin-shell__more-trigger span,
+  .admin-shell__more-trigger > svg:last-child {
+    display: none;
+  }
+
+  .admin-drawer {
+    width: 100%;
+    padding: 1rem;
   }
 }
 

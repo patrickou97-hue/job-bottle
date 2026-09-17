@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Filter, Search, Upload } from "lucide-react";
+import { ChevronLeft, ChevronRight, Filter, Plus, Search, Upload, X } from "lucide-react";
 import { fetchAllJobsForAdmin } from "@/lib/jobs";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { findDuplicateJobGroups } from "@/lib/job-dedupe";
@@ -14,6 +14,8 @@ import { AdminJobForm } from "@/components/admin/AdminJobForm";
 import { AdminJobTable } from "@/components/admin/AdminJobTable";
 import type { Job } from "@/lib/types";
 
+const PAGE_SIZE = 40;
+
 export function AdminJobsClient() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [editing, setEditing] = useState<Job | null>(null);
@@ -22,6 +24,8 @@ export function AdminJobsClient() {
   const [loading, setLoading] = useState(true);
   const [duplicateOnly, setDuplicateOnly] = useState(false);
   const [message, setMessage] = useState("");
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [page, setPage] = useState(1);
 
   async function loadData() {
     setLoading(true);
@@ -88,6 +92,21 @@ export function AdminJobsClient() {
     () => (duplicateOnly ? filtered.filter((job) => duplicateJobIds.has(job.id)) : filtered),
     [duplicateJobIds, duplicateOnly, filtered],
   );
+  const totalPages = Math.max(1, Math.ceil(visibleJobs.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pagedJobs = useMemo(
+    () => visibleJobs.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE),
+    [safePage, visibleJobs],
+  );
+
+  useEffect(() => {
+    if (!editorOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setEditorOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [editorOpen]);
 
   async function saveJob(payload: Omit<Job, "id" | "created_at" | "updated_at">, id?: string) {
     if (!isSupabaseConfigured()) {
@@ -108,6 +127,7 @@ export function AdminJobsClient() {
       if (error) throw error;
     }
     setEditing(null);
+    setEditorOpen(false);
     await loadData();
   }
 
@@ -122,7 +142,7 @@ export function AdminJobsClient() {
       setMessage("删除失败，请稍后再试。");
       return;
     }
-    await loadData();
+    setJobs((current) => current.filter((item) => item.id !== job.id));
   }
 
   async function toggleActive(job: Job) {
@@ -139,7 +159,7 @@ export function AdminJobsClient() {
       setMessage("状态更新失败，请稍后再试。");
       return;
     }
-    await loadData();
+    setJobs((current) => current.map((item) => item.id === job.id ? { ...item, is_active: !item.is_active } : item));
   }
 
   return (
@@ -151,11 +171,15 @@ export function AdminJobsClient() {
             <h1 className="page-title">岗位管理</h1>
           </div>
           <div className="flex flex-wrap gap-3">
+            <Button className="gap-2" disabled={!isAdmin} onClick={() => { setEditing(null); setEditorOpen(true); }}>
+              <Plus aria-hidden="true" className="size-4" />
+              新增岗位
+            </Button>
             <Button
               variant={duplicateOnly ? "primary" : "secondary"}
               className="gap-2"
               disabled={!isAdmin || duplicateGroups.length === 0}
-              onClick={() => setDuplicateOnly((current) => !current)}
+              onClick={() => { setDuplicateOnly((current) => !current); setPage(1); }}
               title={
                 duplicateGroups.length > 0
                   ? `仅查看 ${duplicateGroups.length} 组重复岗位`
@@ -166,7 +190,7 @@ export function AdminJobsClient() {
               {duplicateOnly ? "显示全部岗位" : "筛选重复岗位"}
             </Button>
             <Link href="/admin/import">
-              <Button className="gap-2">
+              <Button variant="secondary" className="gap-2">
                 <Upload aria-hidden="true" className="size-4" />
                 批量导入
               </Button>
@@ -183,7 +207,28 @@ export function AdminJobsClient() {
 
       {isAdmin ? (
         <>
-          <AdminJobForm job={editing} onSubmit={saveJob} onCancel={() => setEditing(null)} />
+          {editorOpen ? (
+            <div
+              className="admin-drawer-backdrop"
+              role="presentation"
+              onMouseDown={(event) => {
+                if (event.currentTarget === event.target) setEditorOpen(false);
+              }}
+            >
+              <aside className="admin-drawer" role="dialog" aria-modal="true" aria-labelledby="admin-job-editor-title">
+                <div className="admin-drawer__header">
+                  <div>
+                    <p className="page-kicker">岗位内容</p>
+                    <h2 id="admin-job-editor-title">{editing ? "编辑岗位" : "新增岗位"}</h2>
+                  </div>
+                  <button type="button" className="admin-drawer__close" onClick={() => setEditorOpen(false)} aria-label="关闭岗位编辑">
+                    <X aria-hidden="true" className="size-5" />
+                  </button>
+                </div>
+                <AdminJobForm job={editing} onSubmit={saveJob} onCancel={() => setEditorOpen(false)} />
+              </aside>
+            </div>
+          ) : null}
 
           <section className="form-section">
             {duplicateGroups.length > 0 ? (
@@ -191,17 +236,22 @@ export function AdminJobsClient() {
                 发现 {duplicateGroups.length} 组疑似重复岗位。当前筛选不会删除数据，你可以逐条核验并保留一条。
               </div>
             ) : null}
-            <div className="relative">
-              <Search
-                aria-hidden="true"
-                className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-nebula-blue/70"
-              />
-              <Input
-                className="pl-11"
-                value={keyword}
-                onChange={(event) => setKeyword(event.target.value)}
-                placeholder="搜索公司、岗位、行业或地点"
-              />
+            <div className="admin-jobs-toolbar">
+              <div className="relative min-w-0 flex-1">
+                <Search
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-nebula-blue/70"
+                />
+                <Input
+                  className="pl-11"
+                  value={keyword}
+                  onChange={(event) => { setKeyword(event.target.value); setPage(1); }}
+                  placeholder="搜索公司、岗位、行业或地点"
+                />
+              </div>
+              <span className="admin-jobs-toolbar__count">
+                {visibleJobs.length === jobs.length ? `${jobs.length} 个岗位` : `${visibleJobs.length} / ${jobs.length} 个岗位`}
+              </span>
             </div>
           </section>
 
@@ -241,13 +291,27 @@ export function AdminJobsClient() {
             </div>
           ) : (
             <AdminJobTable
-              jobs={visibleJobs}
+              jobs={pagedJobs}
               duplicateJobIds={duplicateJobIds}
-              onEdit={setEditing}
+              onEdit={(job) => { setEditing(job); setEditorOpen(true); }}
               onDelete={deleteJob}
               onToggleActive={toggleActive}
             />
           )}
+
+          {!loading && visibleJobs.length > 0 ? (
+            <div className="admin-pagination" aria-label="岗位分页">
+              <span>第 {safePage} / {totalPages} 页</span>
+              <div className="admin-pagination__actions">
+                <button type="button" onClick={() => setPage((current) => Math.max(1, Math.min(current, totalPages) - 1))} disabled={safePage <= 1} aria-label="上一页">
+                  <ChevronLeft aria-hidden="true" className="size-4" />
+                </button>
+                <button type="button" onClick={() => setPage((current) => Math.min(totalPages, Math.min(current, totalPages) + 1))} disabled={safePage >= totalPages} aria-label="下一页">
+                  <ChevronRight aria-hidden="true" className="size-4" />
+                </button>
+              </div>
+            </div>
+          ) : null}
         </>
       ) : null}
     </div>
