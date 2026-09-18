@@ -1,19 +1,12 @@
 # PROJECT_CONTEXT.md — 秋招星瓶 (Job Bottle)
 
-## 2026-09-19 管理后台超级功能台重构（开发中）
+## 2026-09-19 管理后台超级功能台重构与反馈 RLS（已执行，待部署）
 
-- 用户目标：将管理员后台从单一导航页重构为可持续运营的“超级功能台”，沿用已有克制边界、状态层级、移动端兜底和 reduced-motion 规则，同时保留全部现有路由、权限校验与业务操作。
-- 实际改动：`AdminShell` 改为按“核心运营 / 内容与用户 / 增长与财务 / 系统工具”分组导航，增加生产环境与权限状态提示；管理员总览改为 Command Center，提供快速入口、核心工作模块、权限边界与低频工具收纳；新增对应响应式样式，桌面与移动端共用同一信息架构。
-- 兼容边界：未改变管理员鉴权、API、数据库、岗位/用户/反馈/内推码/计费业务逻辑；不把静态说明当作实时指标；所有原有管理路由继续可达。
-- 当前验证：`npm run typecheck` 已通过；lint、测试、Webpack 构建与部署将在本轮代码定稿后统一执行。
-- 外部状态：反馈 RLS migration 已在已登录的 Supabase SQL Editor 中载入，尚未点击 Run；托管数据库没有新增权限写入，等待用户在执行前确认。
-
-
-## 2026-09-19 内推码性能、反馈解决与后台状态体验（已上线）
-
-- 内推码广场首屏改为只读取内推码与公开来源，移除服务端全量 active jobs 查询；岗位选项在用户打开上传抽屉时按需读取，公司详情抽屉也先显示数据库/缓存数据，再后台合并公开来源。公开来源改用 Next 缓存、并发请求合并、4.5 秒超时和浏览器/边缘 stale-while-revalidate，保留公司筛选、来源追溯和上传权限边界。
-- 反馈解决保留 `requireAdminAccess` 与 caller-scoped Supabase 写入；新增管理员 RLS 策略和 `resolved_at` 更新列权限。PATCH 对已解决记录幂等返回，对更新未落库的权限/迁移问题返回可诊断错误；后台成功后立即更新列表与指标并刷新。
-- 后台反馈列表补充成功状态播报、柔和列表容器和轻量悬停层次，继续支持移动端与 reduced-motion。`npm test -- --runInBand` 183/183、`npm run typecheck`、`npm run lint`、Webpack 构建和 `git diff --check` 均通过；最终提交 `9d863ef` 已推送，Vercel 部署 `DY1RQGYEFjaHNtgmHm4eGayMV6em` 完成。线上 `/referrals`、`/admin` 返回 200，匿名 `/api/admin/feedback` 与 `/api/admin/users` 返回 401，公开来源接口返回 200 并有 176 条来源；Supabase migration 尚未在托管环境执行，管理员真实登录态解决反馈仍待验收。
+- 用户目标：将管理员后台完全重构为高信息密度、可执行的“超级功能台”，沿用既有权限边界与移动端兜底，去除大面积说明卡和偏 AI 生成感的软性表达。
+- 实际改动：`AdminShell` 按“核心运营 / 内容与用户 / 增长与财务 / 系统工具”分组，使用深蓝侧栏、紧凑工作区和生产环境状态；管理员总览改为运营控制台，增加工作台概览、工作模块队列、快捷入口和系统状态面板；桌面与移动端共用信息架构，保留全部现有管理路由和业务逻辑。
+- Supabase 状态：已在生产项目 `uzzdcjdjlbnxmhvilldj` 的 SQL Editor 执行反馈权限 migration；页面结果显示 `Success. No rows returned`。本次授予 `authenticated` 对 `feedback_submissions` 的读取与 `resolved_at` 更新权限，并创建管理员 select/update RLS 策略。
+- 验证：`npm run typecheck`、`npm run lint`、`npm test -- --runInBand`（183/183）、带正式环境变量的 `npm run build -- --webpack`（63 个路由）和 `git diff --check` 均通过；代码提交 `1f1b73a` 与视觉重构提交 `6ed3190` 已生成，尚未推送或部署。
+- 兼容边界：未改变管理员鉴权、API、数据库业务表结构、岗位/用户/反馈/内推码/计费逻辑；生产 migration 已执行，管理员真实登录态解决反馈与新后台视觉仍需随部署后一起验收。
 
 ## 2026-09-14 工作区整理状态
 
