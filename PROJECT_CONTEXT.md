@@ -1,5 +1,12 @@
 # PROJECT_CONTEXT.md — 秋招星瓶 (Job Bottle)
 
+## 2026-09-19 管理后台 v3 全局重构与权限首屏修复（已发布）
+
+- 七个管理路由完成全局重构：冷白纸面、深蓝主色、紧凑栅格、细边界和高信息密度操作层级替代松散的 AI 卡片布局；表格、列表、筛选器、按钮、空状态和加载态统一。
+- 反馈/内推码列表在桌面宽度使用四列，在平板与移动端自动收敛，修复 P1 内容截断；反馈加载改为结构化行骨架，修复 P2 三个孤立圆点。
+- `src/app/admin/layout.tsx` 服务端先核验管理员权限并把 `initialAccess` 传给 `AdminShell`，后台切换首屏不再等待客户端权限请求；提交 `142cff3`、`f28b993`、`ee653a9`、`41cecde` 已推送 `origin/main`。
+- typecheck、lint、Webpack 生产构建、diff check 和 183/183 测试通过；Safari 登录态页面与匿名 401 权限边界均已复核。
+
 ## 2026-09-19 管理后台全局视觉审计与加载态修复（已上线）
 
 - 审计范围：在已登录 Safari 中复核 `/admin/analytics`、`/admin/feedback`、`/admin/jobs`、`/admin/users`、`/admin/referrals`、`/admin/billing` 与 `/admin/import`；所有页面均可加载，未发现错误品牌素材引用，后台使用的 `public/brand/shi-xing-wordmark-lockup.png` 已核验存在。

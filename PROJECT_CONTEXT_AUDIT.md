@@ -1,5 +1,12 @@
 # PROJECT_CONTEXT_AUDIT
 
+## 2026-09-19 管理后台 v3 全局重构与权限首屏修复（已发布）
+
+- 审计范围：七个后台路由及共享 `AdminShell` 的桌面、平板和手机断点；重点检查反馈列表截断、反馈页“三个点”加载态、按钮/筛选器层级、错误素材和空白比例。
+- 修复结果：统一紧凑运营工作区视觉系统，补齐结构化骨架加载态和状态边界；反馈、内推码列表在桌面宽度使用四列，在平板与手机安全降级；服务端首屏注入管理员权限，避免 hydration 期间出现孤立加载点。
+- 发布提交：`142cff3`、`f28b993`、`ee653a9`、`41cecde` 已推送 `origin/main`；未新增业务数据写入。
+- 验证：typecheck、lint、Webpack 生产构建、diff check 和 183/183 测试通过；Safari 登录态缓存破除 URL 的反馈页正常渲染，匿名管理 API 401 边界保持有效。
+
 ## 2026-09-19 管理后台全局视觉审计与加载态修复（已上线）
 
 - 审计范围：已登录 Safari 复核 `/admin/analytics`、`/admin/feedback`、`/admin/jobs`、`/admin/users`、`/admin/referrals`、`/admin/billing` 与 `/admin/import`；页面均可加载，品牌字标素材路径存在且未发现错误素材引用。
