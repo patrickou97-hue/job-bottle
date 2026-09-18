@@ -103,7 +103,7 @@ export function AdminFeedbackClient() {
   }
 
   return (
-    <div className="observatory-page space-y-7">
+    <div className="admin-page admin-page--feedback observatory-page space-y-7">
       <section className="page-hero">
         <div>
           <p className="page-kicker">产品支持</p>

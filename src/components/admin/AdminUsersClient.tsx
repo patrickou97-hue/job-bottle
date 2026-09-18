@@ -509,7 +509,7 @@ export function AdminUsersClient() {
     return (
       <div className="space-y-5">
         {recoveryPanel}
-        <div className="empty-state"><span className="loading-line">正在汇总全部用户账户</span></div>
+        <UsersLoadingState />
       </div>
     );
   }
@@ -534,7 +534,7 @@ export function AdminUsersClient() {
   ];
 
   return (
-    <div className="space-y-5">
+    <div className="admin-page admin-page--users space-y-5">
       {recoveryPanel}
 
       <section aria-label="用户概览" className="grid gap-px overflow-hidden rounded-xl border border-[color:var(--line-ghost)] bg-[color:var(--line-ghost)] sm:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))_minmax(210px,1.2fr)]">
@@ -764,6 +764,25 @@ export function AdminUsersClient() {
             下一页<ChevronRight aria-hidden="true" className="size-4" />
           </Button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function UsersLoadingState() {
+  return (
+    <div className="admin-users-loading" aria-label="正在汇总全部用户账户" aria-busy="true">
+      <div className="admin-users-loading__metrics">
+        {Array.from({ length: 5 }, (_, index) => <span key={index} className="admin-skeleton-block admin-users-loading__metric" />)}
+      </div>
+      <div className="admin-users-loading__filters">
+        <span className="admin-skeleton-block admin-users-loading__filter-title" />
+        <div className="admin-users-loading__filter-grid">
+          {Array.from({ length: 6 }, (_, index) => <span key={index} className="admin-skeleton-block admin-users-loading__filter" />)}
+        </div>
+      </div>
+      <div className="admin-users-loading__list">
+        {Array.from({ length: 5 }, (_, index) => <span key={index} className="admin-skeleton-block admin-users-loading__row" />)}
       </div>
     </div>
   );

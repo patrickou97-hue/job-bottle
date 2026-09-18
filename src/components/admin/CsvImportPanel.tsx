@@ -117,7 +117,7 @@ export function CsvImportPanel() {
   }
 
   return (
-    <div className="observatory-page space-y-8">
+    <div className="admin-page admin-page--import observatory-page space-y-8">
       <section className="page-hero">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>

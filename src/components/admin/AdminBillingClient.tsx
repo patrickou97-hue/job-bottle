@@ -241,7 +241,7 @@ export function AdminBillingClient() {
   }
 
   return (
-    <div className="mx-auto max-w-[1180px] space-y-9 pb-16">
+    <div className="admin-page admin-page--billing mx-auto max-w-[1180px] space-y-9 pb-16">
       <header className="border-b border-[color:var(--line-ghost)] px-1 pb-8 sm:px-2">
         <Link
           href="/admin"

@@ -122,7 +122,7 @@ export function AdminAnalyticsClient() {
   const periodLabel = RANGE_OPTIONS.find((option) => option.value === data.period.rangeDays)?.label ?? "统计周期";
 
   return (
-    <div className="space-y-7 pb-12">
+    <div className="admin-page admin-page--analytics space-y-7 pb-12">
       <section className="flex flex-col gap-5 border-b border-[#dfe4eb] pb-6 xl:flex-row xl:items-end xl:justify-between">
         <div>
           <p className="page-kicker">数据洞察</p>
@@ -235,7 +235,7 @@ export function AdminAnalyticsClient() {
 
 function MetricCard({ icon: Icon, label, value, note, comparison }: { icon: LucideIcon; label: string; value: string; note: string; comparison?: Comparison }) {
   return (
-    <article className="rounded-[14px] border border-[#dde3eb] bg-white px-5 py-5 shadow-[0_8px_24px_rgba(18,41,78,0.04)]">
+    <article className="admin-analytics-metric rounded-[14px] border border-[#dde3eb] bg-white px-5 py-5 shadow-[0_8px_24px_rgba(18,41,78,0.04)]">
       <div className="flex items-start justify-between gap-3">
         <span className="text-sm font-medium text-[#626b78]">{label}</span>
         <span className="flex size-8 items-center justify-center rounded-lg bg-[#E8EDF4] text-[#1D2F4F]"><Icon aria-hidden="true" className="size-4" /></span>
@@ -390,7 +390,7 @@ function EventPanel({ events }: { events: AdminAnalyticsResponse["events"] }) {
 
 function Panel({ title, icon: Icon, meta, children }: { title: string; icon: LucideIcon; meta: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-[14px] border border-[#dde3eb] bg-white px-5 py-5 shadow-[0_8px_24px_rgba(18,41,78,0.04)] sm:px-6">
+    <section className="admin-analytics-panel rounded-[14px] border border-[#dde3eb] bg-white px-5 py-5 shadow-[0_8px_24px_rgba(18,41,78,0.04)] sm:px-6">
       <div className="mb-5 flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
           <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[#E8EDF4] text-[#1D2F4F]"><Icon aria-hidden="true" className="size-4" /></span>
@@ -433,10 +433,13 @@ function EmptyPanel({ text }: { text: string }) {
 
 function AnalyticsSkeleton() {
   return (
-    <div className="space-y-7" aria-label="正在读取分析数据" aria-busy="true">
-      <div className="flex items-end justify-between border-b border-[#dfe4eb] pb-6"><div className="space-y-3"><div className="h-3 w-16 animate-pulse rounded bg-[#dfe4eb]" /><div className="h-9 w-40 animate-pulse rounded bg-[#dfe4eb]" /><div className="h-4 w-72 animate-pulse rounded bg-[#e8ebf0]" /></div><div className="hidden h-10 w-28 animate-pulse rounded-lg bg-[#e8ebf0] sm:block" /></div>
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">{Array.from({ length: 4 }, (_, index) => <div key={index} className="h-36 animate-pulse rounded-[14px] border border-[#e5e9ef] bg-white" />)}</div>
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.65fr)_minmax(320px,0.85fr)]"><div className="h-[430px] animate-pulse rounded-[14px] border border-[#e5e9ef] bg-white" /><div className="h-[430px] animate-pulse rounded-[14px] border border-[#e5e9ef] bg-white" /></div>
+    <div className="admin-page admin-page--analytics admin-analytics-loading space-y-7" aria-label="正在读取分析数据" aria-busy="true">
+      <div className="admin-analytics-loading__hero">
+        <div><span className="admin-skeleton-block admin-analytics-loading__eyebrow" /><span className="admin-skeleton-block admin-analytics-loading__title" /><span className="admin-skeleton-block admin-analytics-loading__description" /></div>
+        <span className="admin-skeleton-block admin-analytics-loading__actions" />
+      </div>
+      <div className="admin-analytics-loading__metrics">{Array.from({ length: 4 }, (_, index) => <span key={index} className="admin-skeleton-block admin-analytics-loading__metric" />)}</div>
+      <div className="admin-analytics-loading__panels"><span className="admin-skeleton-block admin-analytics-loading__panel admin-analytics-loading__panel--wide" /><span className="admin-skeleton-block admin-analytics-loading__panel" /></div>
     </div>
   );
 }

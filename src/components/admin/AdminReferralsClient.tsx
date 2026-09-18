@@ -46,7 +46,7 @@ export function AdminReferralsClient() {
   }, [codes, keyword, status]);
 
   return (
-    <div className="observatory-page space-y-7">
+    <div className="admin-page admin-page--referrals observatory-page space-y-7">
       <section className="page-hero">
         <div><p className="page-kicker">社区安全</p><h1 className="page-title">内推码管理</h1><p className="page-description">查看单次智能审核结果、举报数量，并人工下架不合规内容。</p></div>
         <div className="progress-summary grid grid-cols-3 gap-6 px-5 py-3">
@@ -63,7 +63,7 @@ export function AdminReferralsClient() {
         </Select>
       </section>
 
-      {loading ? <div className="empty-state"><span className="loading-line">正在读取内推码审核记录</span></div>
+      {loading ? <ReferralLoadingState />
         : error ? <div className="empty-state" role="alert"><div><h2>记录读取失败</h2><p>{error}</p></div></div>
         : filtered.length === 0 ? <div className="empty-state"><div><h2>没有符合条件的记录</h2><p>可以更换关键词或审核状态。</p></div></div>
         : <div className="divide-y divide-[color:var(--line-ghost)] border-y border-[color:var(--line-ghost)]">{filtered.map((item) => (
@@ -128,4 +128,19 @@ function confidenceText(value: number | null) {
 
 function AdminStat({ label, value }: { label: string; value: number }) {
   return <div><div className="font-display text-2xl font-semibold tabular-nums text-ink-primary">{value}</div><div className="mt-1 text-xs text-ink-muted">{label}</div></div>;
+}
+
+function ReferralLoadingState() {
+  return (
+    <div className="admin-referral-loading" aria-label="正在读取内推码审核记录" aria-busy="true">
+      {Array.from({ length: 4 }, (_, index) => (
+        <div key={index} className="admin-referral-loading__row">
+          <span className="admin-skeleton-block admin-referral-loading__primary" />
+          <span className="admin-skeleton-block admin-referral-loading__secondary" />
+          <span className="admin-skeleton-block admin-referral-loading__meta" />
+          <span className="admin-skeleton-block admin-referral-loading__action" />
+        </div>
+      ))}
+    </div>
+  );
 }

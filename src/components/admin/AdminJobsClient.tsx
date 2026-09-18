@@ -163,7 +163,7 @@ export function AdminJobsClient() {
   }
 
   return (
-    <div className="observatory-page space-y-8">
+    <div className="admin-page admin-page--jobs observatory-page space-y-8">
       <section className="page-hero">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
@@ -286,9 +286,7 @@ export function AdminJobsClient() {
           ) : null}
 
           {loading ? (
-            <div className="empty-state">
-              <span className="loading-line">正在读取岗位</span>
-            </div>
+            <JobsLoadingState />
           ) : (
             <AdminJobTable
               jobs={pagedJobs}
@@ -314,6 +312,21 @@ export function AdminJobsClient() {
           ) : null}
         </>
       ) : null}
+    </div>
+  );
+}
+
+function JobsLoadingState() {
+  return (
+    <div className="admin-jobs-loading" aria-label="正在读取岗位" aria-busy="true">
+      <div className="admin-jobs-loading__toolbar">
+        <span className="admin-skeleton-block" />
+        <span className="admin-skeleton-block" />
+      </div>
+      <div className="admin-jobs-loading__table">
+        <span className="admin-skeleton-block admin-jobs-loading__header" />
+        {Array.from({ length: 8 }, (_, index) => <span key={index} className="admin-skeleton-block admin-jobs-loading__row" />)}
+      </div>
     </div>
   );
 }

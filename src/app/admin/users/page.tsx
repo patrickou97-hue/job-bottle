@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function AdminUsersPage() {
   return (
-    <div className="observatory-page space-y-7">
+    <div className="admin-page admin-page--users-page observatory-page space-y-7">
       <section className="page-hero">
         <div>
           <p className="page-kicker">账户、状态与产品权限</p>
