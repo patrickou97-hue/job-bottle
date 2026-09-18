@@ -2883,6 +2883,483 @@ textarea:focus-visible {
   }
 }
 
+/* Admin console v2: dense operations desk with a restrained editorial grid. */
+.admin-shell {
+  --admin-accent: #17375e;
+  --admin-accent-soft: rgba(23, 55, 94, 0.08);
+  --admin-surface: #eef0f3;
+  --admin-line: #d7dce4;
+}
+
+.admin-shell__header {
+  background: #f8f9fa;
+  box-shadow: 0 1px 0 rgba(23, 55, 94, 0.08);
+}
+
+.admin-shell__header-inner {
+  min-height: 3.8rem;
+  padding-block: 0.55rem;
+}
+
+.admin-shell__brand-section {
+  color: var(--admin-accent);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-shell__more-trigger,
+.admin-shell__account-action {
+  color: #4a5565;
+}
+
+.admin-shell__layout {
+  grid-template-columns: 236px minmax(0, 1fr);
+  width: 100%;
+  max-width: 1600px;
+}
+
+.admin-shell__sidebar {
+  min-height: calc(100dvh - 3.8rem);
+  padding: 1.25rem 0.85rem 1.5rem;
+  background: #132b49;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.admin-shell__sidebar-intro {
+  padding: 0 0.7rem 1.15rem;
+  border-bottom-color: rgba(255, 255, 255, 0.12);
+}
+
+.admin-shell__sidebar-overline,
+.admin-shell__sidebar-intro > span:last-child,
+.admin-shell__nav-label,
+.admin-shell__sidebar-footer {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.admin-shell__sidebar-overline svg,
+.admin-shell__sidebar-status {
+  color: #9bb8d8;
+}
+
+.admin-shell__sidebar-intro strong {
+  color: #fff;
+  font-size: 1.02rem;
+  letter-spacing: 0.01em;
+}
+
+.admin-shell__nav {
+  top: 4.9rem;
+  gap: 1rem;
+  padding-top: 1.15rem;
+}
+
+.admin-shell__nav-label {
+  padding-inline: 0.7rem;
+  font-size: 0.61rem;
+  letter-spacing: 0.14em;
+}
+
+.admin-shell__nav-link {
+  min-height: 2.35rem;
+  border-radius: 0.45rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.78rem;
+}
+
+.admin-shell__nav-link:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.admin-shell__nav-link--active {
+  background: #f4f7fb;
+  color: #17375e;
+  font-weight: 700;
+}
+
+.admin-shell__nav-icon,
+.admin-shell__nav-link--active .admin-shell__nav-icon {
+  color: currentColor;
+}
+
+.admin-shell__nav-dot {
+  background: #4c86bd;
+}
+
+.admin-shell__sidebar-footer {
+  margin-top: 1.6rem;
+  border-top-color: rgba(255, 255, 255, 0.12);
+}
+
+.admin-shell__sidebar-status i {
+  background: #6eb38c;
+  box-shadow: 0 0 0 3px rgba(110, 179, 140, 0.14);
+}
+
+.admin-shell__main {
+  padding: clamp(1.25rem, 2.4vw, 2.5rem) clamp(1rem, 3vw, 3.5rem) 3.5rem;
+}
+
+.admin-shell .observatory-page {
+  max-width: 1280px;
+}
+
+.admin-console__topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--admin-line);
+  color: #6d7787;
+  font-size: 0.61rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.admin-console__topline-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #3f6f57;
+}
+
+.admin-console__topline-status i {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: #4f9a70;
+}
+
+.admin-console__hero {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 2rem;
+  padding: 1.8rem 0 1.35rem;
+}
+
+.admin-console__hero .page-title {
+  letter-spacing: -0.045em;
+}
+
+.admin-console__hero-meta {
+  display: grid;
+  min-width: 14rem;
+  gap: 0.25rem;
+  padding-left: 1rem;
+  border-left: 2px solid #7c9abd;
+}
+
+.admin-console__hero-meta span,
+.admin-console__hero-meta small {
+  color: #6d7787;
+  font-size: 0.63rem;
+  letter-spacing: 0.12em;
+}
+
+.admin-console__hero-meta strong {
+  color: #213957;
+  font-size: 0.8rem;
+}
+
+.admin-console__hero-meta small {
+  letter-spacing: 0;
+  line-height: 1.5;
+}
+
+.admin-console__metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-block: 1px solid var(--admin-line);
+}
+
+.admin-console__metric {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  column-gap: 0.6rem;
+  row-gap: 0.1rem;
+  min-height: 5.4rem;
+  padding: 0.85rem 1rem;
+}
+
+.admin-console__metric + .admin-console__metric {
+  border-left: 1px solid var(--admin-line);
+}
+
+.admin-console__metric strong {
+  grid-row: span 2;
+  color: #17375e;
+  font-size: 1.8rem;
+  font-weight: 680;
+  letter-spacing: -0.06em;
+  line-height: 1;
+}
+
+.admin-console__metric span {
+  color: #263b56;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.admin-console__metric small {
+  color: #778294;
+  font-size: 0.64rem;
+}
+
+.admin-console__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(270px, 0.72fr);
+  gap: 1.25rem;
+  margin-top: 1.35rem;
+}
+
+.admin-console__queue,
+.admin-console__panel {
+  border: 1px solid var(--admin-line);
+  background: rgba(249, 250, 251, 0.78);
+}
+
+.admin-console__section-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.1rem 0.85rem;
+  border-bottom: 1px solid var(--admin-line);
+}
+
+.admin-console__section-head--compact {
+  align-items: center;
+}
+
+.admin-console__section-head h2 {
+  margin-top: 0.18rem;
+  color: #1d304a;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.admin-console__section-head > span {
+  color: #7a8492;
+  font-size: 0.67rem;
+}
+
+.admin-console__section-index {
+  color: #72849b;
+  font-size: 0.59rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.admin-console__queue-row {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr) auto 1rem;
+  align-items: center;
+  gap: 0.8rem;
+  min-height: 5.2rem;
+  padding: 0.8rem 1.1rem;
+  color: inherit;
+  transition: background-color 180ms var(--ease-snap), transform 180ms var(--ease-snap);
+}
+
+.admin-console__queue-row + .admin-console__queue-row {
+  border-top: 1px solid var(--admin-line);
+}
+
+.admin-console__queue-row:hover {
+  background: #fff;
+  transform: translateX(2px);
+}
+
+.admin-console__queue-icon {
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border: 1px solid #c6d1df;
+  color: #315985;
+}
+
+.admin-console__queue-icon svg {
+  width: 1rem;
+  height: 1rem;
+  stroke-width: 1.65;
+}
+
+.admin-console__queue-copy {
+  display: grid;
+  min-width: 0;
+  gap: 0.12rem;
+}
+
+.admin-console__queue-eyebrow {
+  color: #77879b;
+  font-size: 0.59rem;
+  letter-spacing: 0.05em;
+}
+
+.admin-console__queue-copy strong {
+  color: #1c314e;
+  font-size: 0.85rem;
+}
+
+.admin-console__queue-copy small {
+  overflow: hidden;
+  color: #718094;
+  font-size: 0.68rem;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-console__queue-note {
+  color: #54779d;
+  font-size: 0.65rem;
+  white-space: nowrap;
+}
+
+.admin-console__queue-arrow {
+  width: 0.9rem;
+  height: 0.9rem;
+  color: #8190a1;
+}
+
+.admin-console__rail {
+  display: grid;
+  align-content: start;
+  gap: 1.25rem;
+}
+
+.admin-console__tool-list {
+  display: grid;
+}
+
+.admin-console__tool-list a {
+  display: grid;
+  grid-template-columns: 1rem minmax(0, 1fr) 0.9rem;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 3.7rem;
+  padding: 0.7rem 1.1rem;
+  color: #1d314d;
+  transition: background-color 180ms var(--ease-snap);
+}
+
+.admin-console__tool-list a + a {
+  border-top: 1px solid var(--admin-line);
+}
+
+.admin-console__tool-list a:hover {
+  background: #fff;
+}
+
+.admin-console__tool-list a > svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  color: #54779d;
+  stroke-width: 1.65;
+}
+
+.admin-console__tool-list a > svg:last-child {
+  color: #8291a1;
+}
+
+.admin-console__tool-list span {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.admin-console__tool-list strong {
+  font-size: 0.76rem;
+}
+
+.admin-console__tool-list small {
+  color: #7a8796;
+  font-size: 0.65rem;
+}
+
+.admin-console__ok-icon {
+  width: 1rem;
+  height: 1rem;
+  color: #4f8b69;
+  stroke-width: 1.7;
+}
+
+.admin-console__status-list {
+  display: grid;
+  margin: 0;
+  padding: 0.35rem 1.1rem 0.75rem;
+}
+
+.admin-console__status-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--admin-line);
+  font-size: 0.68rem;
+}
+
+.admin-console__status-list div:last-child {
+  border-bottom: 0;
+}
+
+.admin-console__status-list dt {
+  color: #778394;
+}
+
+.admin-console__status-list dd {
+  margin: 0;
+  color: #2d4d72;
+  font-weight: 650;
+}
+
+@media (max-width: 767px) {
+  .admin-shell__sidebar {
+    background: var(--admin-surface);
+  }
+
+  .admin-console__hero {
+    align-items: start;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .admin-console__hero-meta {
+    width: 100%;
+  }
+
+  .admin-console__metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-console__metric:nth-child(3) {
+    border-top: 1px solid var(--admin-line);
+    border-left: 0;
+  }
+
+  .admin-console__metric:nth-child(4) {
+    border-top: 1px solid var(--admin-line);
+  }
+
+  .admin-console__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-console__queue-row {
+    grid-template-columns: 2.1rem minmax(0, 1fr) 0.9rem;
+  }
+
+  .admin-console__queue-note {
+    display: none;
+  }
+}
+
 /* Login page: a focused split layout with a calm, tactile motion layer. */
 .login-route-content {
   max-width: none !important;
