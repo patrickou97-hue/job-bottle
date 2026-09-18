@@ -81,8 +81,16 @@ export function ReferralCodeDrawer({
       setLoading(true);
       setError("");
       setMessage("");
-      void fetchReferralCodes(createClient(), companyName, jobs)
-        .then((rows) => { if (active) setCodes(rows); })
+      const supabase = createClient();
+      void fetchReferralCodes(supabase, companyName, jobs, { includeRemoteSources: false })
+        .then((rows) => {
+          if (!active) return;
+          setCodes(rows);
+          setLoading(false);
+          void fetchReferralSourceCodes(companyName).then((remoteRows) => {
+            if (active && remoteRows.length > 0) setCodes((current) => mergeReferralCodeRows(current, remoteRows));
+          });
+        })
         .catch(() => { if (active) setError("内推码暂时无法读取，请稍后重试。"); })
         .finally(() => { if (active) setLoading(false); });
     }, 0);
