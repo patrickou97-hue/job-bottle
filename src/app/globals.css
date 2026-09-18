@@ -2003,6 +2003,49 @@ textarea:focus-visible {
   }
 }
 
+.admin-referral-row {
+  display: grid;
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (min-width: 720px) {
+  .admin-referral-row {
+    grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.25fr);
+    align-items: center;
+  }
+
+  .admin-referral-row > :nth-child(3) {
+    grid-column: 1;
+    padding-top: 0.8rem;
+    border-top: 1px solid var(--admin-line);
+  }
+
+  .admin-referral-row > :nth-child(4) {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: end;
+  }
+}
+
+@media (min-width: 1180px) {
+  .admin-referral-row {
+    grid-template-columns: minmax(165px, 0.7fr) minmax(240px, 1.2fr) minmax(180px, 0.9fr) auto;
+  }
+
+  .admin-referral-row > :nth-child(3) {
+    grid-column: auto;
+    grid-row: auto;
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .admin-referral-row > :nth-child(4) {
+    grid-column: auto;
+    grid-row: auto;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .admin-feedback-loading__block {
     animation: none;

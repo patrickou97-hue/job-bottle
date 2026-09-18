@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import { AdminUsersClient } from "@/components/admin/AdminUsersClient";
+
+export const metadata: Metadata = {
+  title: "用户管理",
+  robots: { index: false, follow: false },
+};
 
 export default function AdminUsersPage() {
   return (

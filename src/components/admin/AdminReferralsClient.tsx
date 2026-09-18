@@ -67,7 +67,7 @@ export function AdminReferralsClient() {
         : error ? <div className="empty-state" role="alert"><div><h2>记录读取失败</h2><p>{error}</p></div></div>
         : filtered.length === 0 ? <div className="empty-state"><div><h2>没有符合条件的记录</h2><p>可以更换关键词或审核状态。</p></div></div>
         : <div className="divide-y divide-[color:var(--line-ghost)] border-y border-[color:var(--line-ghost)]">{filtered.map((item) => (
-          <article key={item.id} className="grid gap-4 py-5 lg:grid-cols-[minmax(190px,0.7fr)_minmax(240px,1.2fr)_minmax(210px,0.9fr)_auto] lg:items-center">
+          <article key={item.id} className="admin-referral-row py-5">
             <div><div className="flex flex-wrap items-center gap-2"><KeyRound aria-hidden="true" className="size-4 text-[color:var(--aurora)]" /><span className="text-sm font-semibold text-ink-primary">{item.company_name}</span><StatusBadge item={item} /></div><p className="mt-2 font-mono text-sm tracking-[0.06em] text-ink-secondary">{item.code}</p></div>
             <div><p className="text-sm text-ink-secondary">{item.applicable_roles || "未填写适用范围"}</p><p className="mt-1 line-clamp-2 text-xs leading-5 text-ink-muted">{item.usage_note || "未填写使用说明"}</p></div>
             <div className="text-xs leading-5 text-ink-muted"><p>{reviewLabel(item)}</p>{item.review_reason ? <p className="mt-1 line-clamp-2">{item.review_reason}</p> : null}<p className="mt-1">举报 {item.report_count} · {formatDateTime(item.created_at)}</p></div>

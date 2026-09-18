@@ -1,5 +1,11 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { Activity, ArrowUpRight, CheckCircle2, Coins, Database, KeyRound, MessageSquareText, Rows3, Users } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "超级功能台",
+  robots: { index: false, follow: false },
+};
 
 const adminActions = [
   { href: "/admin/analytics", eyebrow: "01 · 核心运营", title: "数据分析", body: "用户增长、功能使用、投递链路和运营信号。", icon: Activity, note: "查看趋势" },
