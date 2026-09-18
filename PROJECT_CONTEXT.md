@@ -1,5 +1,13 @@
 # PROJECT_CONTEXT.md — 秋招星瓶 (Job Bottle)
 
+## 2026-09-19 管理后台全局视觉审计与加载态修复（已上线）
+
+- 审计范围：在已登录 Safari 中复核 `/admin/analytics`、`/admin/feedback`、`/admin/jobs`、`/admin/users`、`/admin/referrals`、`/admin/billing` 与 `/admin/import`；所有页面均可加载，未发现错误品牌素材引用，后台使用的 `public/brand/shi-xing-wordmark-lockup.png` 已核验存在。
+- 修复内容：新增服务端 `/api/admin/session` 会话核验，避免后台路由切换后长时间停在权限加载；反馈管理把三个空 inline 元素替换为按列表结构对齐的骨架行；反馈和内推码列表在中等宽度下改为两列，在宽屏才启用四列，避免右侧内容被截断；为所有后台路由补齐页面标题与 noindex 元数据。
+- Git 与部署：`433522c` 修复权限加载与反馈骨架，`b589ace` 完成全局审计、列表响应式与路由元数据；最新 Vercel deployment `4stsSkCBDQNaSeWWnmtdRWEJRoQy` 返回 `success / Deployment has completed`。
+- 线上验证：后台页面 HTTP 200；匿名 `/api/admin/session`、`/api/admin/feedback` 与 `/api/admin/users` 均返回 401；Safari 已登录会话访问 `/api/admin/session` 返回管理员身份 JSON，路由切换后反馈页正常显示，不再停留在“三个点”状态。
+- 验证：`npm run typecheck`、`npm run lint`、`npm test -- --runInBand`（183/183）、带正式环境变量的 `npm run build -- --webpack`（64 个静态页面生成）和 `git diff --check` 均通过。
+
 ## 2026-09-19 管理后台超级功能台重构与反馈 RLS（已上线）
 
 - 用户目标：将管理员后台完全重构为高信息密度、可执行的“超级功能台”，沿用既有权限边界与移动端兜底，去除大面积说明卡和偏 AI 生成感的软性表达。

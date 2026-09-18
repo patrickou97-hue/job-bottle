@@ -1,5 +1,12 @@
 # PROJECT_CONTEXT_AUDIT
 
+## 2026-09-19 管理后台全局视觉审计与加载态修复（已上线）
+
+- 审计范围：已登录 Safari 复核 `/admin/analytics`、`/admin/feedback`、`/admin/jobs`、`/admin/users`、`/admin/referrals`、`/admin/billing` 与 `/admin/import`；页面均可加载，品牌字标素材路径存在且未发现错误素材引用。
+- 修复内容：新增服务端 `/api/admin/session` 会话核验；反馈列表改为结构化骨架行；反馈与内推码列表在中等宽度下收敛为两列、宽屏才使用四列；后台各路由补齐标题与 noindex 元数据。
+- 发布证据：`433522c`、`b589ace` 已推送 `origin/main`；Vercel deployment `4stsSkCBDQNaSeWWnmtdRWEJRoQy` 成功。后台页面返回 200，匿名管理 API 返回 401，已登录 Safari 的会话接口返回管理员身份 JSON。
+- 本地验证：typecheck、lint、183/183 测试、Webpack 生产构建（64 个静态页面生成）和 diff check 通过。
+
 ## 2026-09-19 管理后台超级功能台重构与反馈 RLS（已上线）
 
 - 用户目标：将管理员后台完全重构为高信息密度、可执行的“超级功能台”，沿用既有权限边界与移动端兜底，去除大面积说明卡和偏 AI 生成感的软性表达。
