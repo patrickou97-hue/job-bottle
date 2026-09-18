@@ -1,10 +1,10 @@
 # PROJECT_CONTEXT_AUDIT
 
-## 2026-09-19 内推码性能、反馈解决与后台状态体验（本地已验证，未发布）
+## 2026-09-19 内推码性能、反馈解决与后台状态体验（已上线）
 
 - 内推码广场首屏改为只读取内推码与公开来源，移除服务端全量 active jobs 查询；岗位选项在用户打开上传抽屉时按需读取，公司详情抽屉也先显示数据库/缓存数据，再后台合并公开来源。公开来源改用 Next 缓存、并发请求合并、4.5 秒超时和浏览器/边缘 stale-while-revalidate，保留公司筛选、来源追溯和上传权限边界。
 - 反馈解决保留 `requireAdminAccess` 与 caller-scoped Supabase 写入；新增管理员 RLS 策略和 `resolved_at` 更新列权限。PATCH 对已解决记录幂等返回，对更新未落库的权限/迁移问题返回可诊断错误；后台成功后立即更新列表与指标并刷新。
-- 后台反馈列表补充成功状态播报、柔和列表容器和轻量悬停层次，继续支持移动端与 reduced-motion。`npm test -- --runInBand` 183/183、`npm run typecheck`、`npm run lint`、Webpack 构建和 `git diff --check` 均通过；首版 `292e080` 已推送并完成 Vercel 部署，当前公司抽屉修正待部署，Supabase migration 尚未在托管环境执行。
+- 后台反馈列表补充成功状态播报、柔和列表容器和轻量悬停层次，继续支持移动端与 reduced-motion。`npm test -- --runInBand` 183/183、`npm run typecheck`、`npm run lint`、Webpack 构建和 `git diff --check` 均通过；最终提交 `9d863ef` 已推送，Vercel 部署 `DY1RQGYEFjaHNtgmHm4eGayMV6em` 完成。线上 `/referrals`、`/admin` 返回 200，匿名 `/api/admin/feedback` 与 `/api/admin/users` 返回 401，公开来源接口返回 200 并有 176 条来源；Supabase migration 尚未在托管环境执行，管理员真实登录态解决反馈仍待验收。
 
 ## 2026-09-14 工作区整理状态
 
