@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { ReferralPlazaClient } from "@/components/referrals/ReferralCodeHub";
 import { PageShell } from "@/components/layout/PageShell";
-import { createPublicServerClient } from "@/lib/supabase/public-server";
-import { fetchActiveJobs } from "@/lib/jobs";
 
 export const metadata: Metadata = {
   title: "内推码广场",
@@ -12,6 +10,5 @@ export const metadata: Metadata = {
 
 export default async function ReferralPlazaPage({ searchParams }: { searchParams: Promise<{ company?: string }> }) {
   const { company = "" } = await searchParams;
-  const jobs = await fetchActiveJobs(createPublicServerClient()).catch(() => []);
-  return <PageShell><ReferralPlazaClient jobs={jobs} initialUserId={null} initialCompany={company} /></PageShell>;
+  return <PageShell><ReferralPlazaClient initialUserId={null} initialCompany={company} jobs={[]} /></PageShell>;
 }

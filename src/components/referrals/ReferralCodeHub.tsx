@@ -8,8 +8,13 @@ import { createClient } from "@/lib/supabase/client";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import {
   createReferralCode,
+  fetchReferralJobs,
   fetchReferralCodes,
+  fetchReferralSourceCodes,
+  cacheReferralCodes,
+  getCachedReferralCodes,
   isReferralCodeExpired,
+  mergeReferralCodeRows,
   matchReferralCompanies,
   reportReferralCode,
   type ReferralCodeCreateResult,
@@ -480,9 +485,12 @@ function FormField({ label, required = false, helper, children }: { label: strin
   return <label className="block"><span className="mb-2 block text-xs font-medium text-ink-secondary">{label}{required ? <span className="ml-1 text-[color:var(--text-danger)]">*</span> : null}</span>{children}{helper ? <span className="mt-1.5 block text-[10px] leading-4 text-ink-muted">{helper}</span> : null}</label>;
 }
 
-export function ReferralPlazaClient({ jobs, initialUserId, initialCompany = "" }: { jobs: Job[]; initialUserId: string | null; initialCompany?: string }) {
-  const [codes, setCodes] = useState<ReferralCodeListItem[]>([]);
-  const [loading, setLoading] = useState(true);
+export function ReferralPlazaClient({ jobs: initialJobs = [], initialUserId, initialCompany = "" }: { jobs?: Job[]; initialUserId: string | null; initialCompany?: string }) {
+  const [jobs, setJobs] = useState<Job[]>(initialJobs);
+  const [cachedCodes] = useState<ReferralCodeListItem[]>(() => getCachedReferralCodes());
+  const hasCachedCodes = cachedCodes.length > 0;
+  const [codes, setCodes] = useState<ReferralCodeListItem[]>(cachedCodes);
+  const [loading, setLoading] = useState(!hasCachedCodes);
   const [error, setError] = useState("");
   const [keyword, setKeyword] = useState(initialCompany);
   const [availability, setAvailability] = useState<"usable" | "all">("usable");
@@ -490,20 +498,48 @@ export function ReferralPlazaClient({ jobs, initialUserId, initialCompany = "" }
   const [uploadOpen, setUploadOpen] = useState(false);
   const [notice, setNotice] = useState("");
   const [currentUserId, setCurrentUserId] = useState(initialUserId);
+  const [uploadJobsLoading, setUploadJobsLoading] = useState(false);
+
+  async function openUpload() {
+    if (jobs.length > 0) {
+      setUploadOpen(true);
+      return;
+    }
+    setUploadJobsLoading(true);
+    try {
+      const rows = await fetchReferralJobs(createClient());
+      setJobs(rows as unknown as Job[]);
+      setUploadOpen(true);
+    } catch {
+      setNotice("岗位选项暂时无法读取，你仍可以稍后重试上传。" );
+    } finally {
+      setUploadJobsLoading(false);
+    }
+  }
 
   useEffect(() => {
     let active = true;
     const supabase = createClient();
-    void Promise.all([fetchReferralCodes(supabase, undefined, jobs), getCurrentUserOrNull(supabase)])
+    void Promise.all([fetchReferralCodes(supabase, undefined, jobs, { includeRemoteSources: false }), getCurrentUserOrNull(supabase)])
       .then(([rows, user]) => {
         if (!active) return;
         setCodes(rows);
         setCurrentUserId(user?.id ?? initialUserId);
+        setLoading(false);
+        void fetchReferralSourceCodes().then((remoteRows) => {
+          if (active && remoteRows.length > 0) {
+            setCodes((current) => {
+              const merged = mergeReferralCodeRows(current, remoteRows);
+              cacheReferralCodes(merged);
+              return merged;
+            });
+          }
+        });
       })
-      .catch(() => { if (active) setError("内推码广场暂时无法读取，请稍后重试。" ); })
+      .catch(() => { if (active && !hasCachedCodes) setError("内推码广场暂时无法读取，请稍后重试。" ); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [initialUserId, jobs]);
+  }, [hasCachedCodes, initialUserId, jobs]);
 
   const grouped = useMemo(() => {
     const query = keyword.trim().toLowerCase();
@@ -535,7 +571,7 @@ export function ReferralPlazaClient({ jobs, initialUserId, initialCompany = "" }
       <section className="border-y border-[color:var(--line-ghost)]">
         <div className="flex flex-wrap items-end justify-between gap-4 py-4">
           <div><h2 className="section-title">按公司查找</h2><p className="mt-1 text-xs text-ink-muted">不展示上传者身份；使用前请回到公司官方招聘页面核对。</p></div>
-          {currentUserId ? <Button className="gap-2" onClick={() => setUploadOpen(true)}><KeyRound aria-hidden="true" className="size-4" />上传内推码</Button> : <Link href="/login?next=%2Freferrals" className="gold-button inline-flex min-h-11 items-center rounded-lg px-4 text-sm font-medium">登录后上传</Link>}
+          {currentUserId ? <Button className="gap-2" onClick={() => void openUpload()} disabled={uploadJobsLoading}><KeyRound aria-hidden="true" className="size-4" />{uploadJobsLoading ? "准备上传" : "上传内推码"}</Button> : <Link href="/login?next=%2Freferrals" className="gold-button inline-flex min-h-11 items-center rounded-lg px-4 text-sm font-medium">登录后上传</Link>}
         </div>
         <div className="grid gap-3 border-t border-[color:var(--line-ghost)] py-4 sm:grid-cols-[minmax(220px,1fr)_180px]">
           <Input type="search" value={keyword} onChange={(event) => setKeyword(event.target.value)} placeholder="搜索公司或适用岗位" aria-label="搜索内推码公司或适用岗位" />

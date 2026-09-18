@@ -2,12 +2,13 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [route, client, adminPage, publicRoute, feedbackServer] = await Promise.all([
+const [route, client, adminPage, publicRoute, feedbackServer, feedbackPolicy] = await Promise.all([
   readFile(new URL("../src/app/api/admin/feedback/route.ts", import.meta.url), "utf8"),
   readFile(new URL("../src/lib/admin-feedback.ts", import.meta.url), "utf8"),
   readFile(new URL("../src/components/admin/AdminFeedbackClient.tsx", import.meta.url), "utf8"),
   readFile(new URL("../src/app/api/feedback/route.ts", import.meta.url), "utf8"),
   readFile(new URL("../src/lib/feedback-server.ts", import.meta.url), "utf8"),
+  readFile(new URL("../supabase/migrations/20260918120000_feedback_admin_rls.sql", import.meta.url), "utf8"),
 ]);
 
 test("反馈解决操作只存在于管理员鉴权链路", () => {
@@ -17,6 +18,11 @@ test("反馈解决操作只存在于管理员鉴权链路", () => {
   assert.match(route, /\.is\("resolved_at", null\)/);
   assert.match(client, /method: "PATCH"/);
   assert.match(adminPage, /解决反馈/);
+  assert.match(route, /FEEDBACK_UPDATE_NOT_APPLIED/);
+  assert.match(route, /FEEDBACK_RLS_NOT_CONFIGURED/);
+  assert.match(feedbackPolicy, /create policy feedback_admin_select/);
+  assert.match(feedbackPolicy, /create policy feedback_admin_update/);
+  assert.match(feedbackPolicy, /grant update \(resolved_at\)/);
 });
 
 test("普通用户反馈接口不暴露解决状态", () => {

@@ -44,11 +44,28 @@ export type ReferralCodeCreateResult = {
 
 const PUBLIC_REFERRAL_COLUMNS = "id,company_name,job_id,applicable_roles,code,usage_note,expires_at,created_at,updated_at";
 const LOCAL_REFERRAL_STORAGE_KEY = "starjob-local-referral-codes-v1";
+const REFERRAL_CACHE_STORAGE_KEY = "starjob-referral-codes-cache-v1";
 const LOCAL_REPORTED_STORAGE_KEY = "starjob-local-reported-referral-codes-v1";
 const REFERRAL_READ_TIMEOUT_MS = 3500;
 const REMOTE_SOURCE_TIMEOUT_MS = 6000;
 const PROHIBITED_REFERRAL_CONTENT = /(https?:\/\/|www\.|微信|v信|qq|收费|付费|转账|红包|验证码|密码|身份证|银行卡)/i;
 const REFERRAL_CODE_PATTERN = /^[A-Za-z0-9_-]{2,64}$/;
+
+export async function fetchReferralJobs(supabase: SupabaseClient<Database>) {
+  const rows: TencentReferralSourceJob[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await supabase
+      .from("jobs")
+      .select("id,company_name,batch_type,job_titles,job_categories,apply_url,is_active,created_at,updated_at")
+      .eq("is_active", true)
+      .order("company_name", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, from + 999);
+    if (error) throw error;
+    rows.push(...((data ?? []) as TencentReferralSourceJob[]));
+    if ((data?.length ?? 0) < 1000) return rows;
+  }
+}
 
 const LOCAL_PREVIEW_CODES: ReferralCodeListItem[] = [
   {
@@ -81,13 +98,16 @@ export async function fetchReferralCodes(
   supabase: SupabaseClient<Database>,
   companyName?: string,
   sourceJobs?: TencentReferralSourceJob[],
+  options: { includeRemoteSources?: boolean } = {},
 ) {
   let query = supabase
     .from("referral_codes")
     .select(PUBLIC_REFERRAL_COLUMNS)
     .order("created_at", { ascending: false });
   if (companyName?.trim()) query = query.eq("company_name", companyName.trim());
-  const remoteSourcesPromise = fetchRemoteSourceReferralCodes(companyName);
+  const remoteSourcesPromise = options.includeRemoteSources === false
+    ? Promise.resolve([] as ReferralCodeListItem[])
+    : fetchRemoteSourceReferralCodes(companyName);
   let result: Awaited<typeof query>;
   try {
     result = await withReferralReadTimeout(query);
@@ -100,12 +120,45 @@ export async function fetchReferralCodes(
   const { data, error } = result;
   if (!error) {
     const remoteSources = await remoteSourcesPromise;
-    return mergeSourceReferralCodes((data ?? []) as unknown as ReferralCodeListItem[], sourceJobs, companyName, remoteSources);
+    const rows = mergeSourceReferralCodes((data ?? []) as unknown as ReferralCodeListItem[], sourceJobs, companyName, remoteSources);
+    cacheReferralCodes(rows);
+    return rows;
   }
   if (isMissingReferralTableError(error) && canUseLocalPreview()) {
     return mergeSourceReferralCodes(getLocalPreviewCodes(), sourceJobs, companyName, await remoteSourcesPromise);
   }
   throw error;
+}
+
+export async function fetchReferralSourceCodes(companyName?: string) {
+  return fetchRemoteSourceReferralCodes(companyName);
+}
+
+export function getCachedReferralCodes() {
+  if (typeof window === "undefined") return [] as ReferralCodeListItem[];
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(REFERRAL_CACHE_STORAGE_KEY) ?? "[]");
+    return (Array.isArray(parsed) ? parsed : []) as ReferralCodeListItem[];
+  } catch {
+    return [];
+  }
+}
+
+export function cacheReferralCodes(rows: ReferralCodeListItem[]) {
+  if (typeof window === "undefined" || rows.length === 0) return;
+  try {
+    const existing = getCachedReferralCodes();
+    const merged = existing.length > 0
+      ? mergeSourceReferralCodes(existing, undefined, undefined, rows)
+      : rows;
+    window.localStorage.setItem(REFERRAL_CACHE_STORAGE_KEY, JSON.stringify(merged.slice(0, 2000)));
+  } catch {
+    // A full or disabled browser store should never block the public listing.
+  }
+}
+
+export function mergeReferralCodeRows(current: ReferralCodeListItem[], incoming: ReferralCodeListItem[]) {
+  return mergeSourceReferralCodes(current, undefined, undefined, incoming);
 }
 
 export async function createReferralCode(

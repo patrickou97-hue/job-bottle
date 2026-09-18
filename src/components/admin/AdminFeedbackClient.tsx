@@ -40,12 +40,14 @@ export function AdminFeedbackClient() {
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [refreshing, setRefreshing] = useState(false);
   const [message, setMessage] = useState("");
+  const [notice, setNotice] = useState("");
   const [expandedId, setExpandedId] = useState("");
   const [resolvingId, setResolvingId] = useState("");
 
   const load = useCallback(async (showLoading = false) => {
     if (showLoading) setRefreshing(true);
     setMessage("");
+    setNotice("");
     try {
       const result = await fetchAdminFeedback({ page, pageSize: PAGE_SIZE, query, status, platform });
       setFeedback(result.feedback);
@@ -87,8 +89,12 @@ export function AdminFeedbackClient() {
     setResolvingId(id);
     setMessage("");
     try {
-      await resolveAdminFeedback(id);
+      const result = await resolveAdminFeedback(id);
+      const resolvedAt = result.feedback.resolved_at;
+      setFeedback((current) => current.map((item) => item.id === id ? { ...item, resolvedAt } : item));
+      setMetrics((current) => ({ ...current, open: Math.max(0, current.open - 1), resolved: current.resolved + 1 }));
       await load(true);
+      setNotice("反馈已标记为已处理。列表已刷新。" );
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "反馈状态暂时无法保存，请稍后重试。");
     } finally {
@@ -139,6 +145,7 @@ export function AdminFeedbackClient() {
             : <FeedbackList feedback={feedback} expandedId={expandedId} resolvingId={resolvingId} onResolve={resolveFeedback} onToggle={(id) => setExpandedId((current) => current === id ? "" : id)} />}
 
       {message && state === "ready" ? <p className="text-sm text-[color:var(--text-danger)]" role="alert">{message}</p> : null}
+      {notice && state === "ready" ? <p className="info-banner px-3 py-2 text-sm" role="status" aria-live="polite">{notice}</p> : null}
 
       {state === "ready" && totalFiltered > 0 ? (
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[color:var(--line-ghost)] pt-4 text-sm text-ink-muted">
@@ -156,7 +163,7 @@ export function AdminFeedbackClient() {
 
 function FeedbackList({ feedback, expandedId, resolvingId, onResolve, onToggle }: { feedback: AdminFeedbackItem[]; expandedId: string; resolvingId: string; onResolve: (id: string) => void; onToggle: (id: string) => void }) {
   return (
-    <div className="divide-y divide-[color:var(--line-ghost)] border-y border-[color:var(--line-ghost)]">
+    <div className="admin-feedback-list divide-y divide-[color:var(--line-ghost)] border-y border-[color:var(--line-ghost)]">
       {feedback.map((item) => {
         const expanded = expandedId === item.id;
         return (

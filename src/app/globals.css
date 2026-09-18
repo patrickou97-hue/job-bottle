@@ -1581,6 +1581,7 @@ textarea:focus-visible {
 
 .admin-shell__header {
   background: rgba(247, 248, 250, 0.96);
+  box-shadow: 0 1px 0 rgba(32, 49, 76, 0.04), 0 8px 24px rgba(32, 49, 76, 0.04);
 }
 
 .admin-shell__header-inner {
@@ -1729,7 +1730,8 @@ textarea:focus-visible {
 
 .admin-shell__sidebar {
   padding: 1.6rem 1rem 2rem;
-  border-right: 1px solid var(--line-ghost);
+  border-right: 0;
+  background: linear-gradient(180deg, rgba(247, 248, 250, 0.62), rgba(233, 235, 239, 0.28));
 }
 
 .admin-shell__sidebar-intro {
@@ -1860,6 +1862,21 @@ textarea:focus-visible {
 .admin-shell__main {
   min-width: 0;
   padding: clamp(1.5rem, 3vw, 3rem) clamp(1rem, 4vw, 4.25rem) 4rem;
+}
+
+.admin-feedback-list {
+  overflow: hidden;
+  border-radius: 16px;
+  background: rgba(247, 248, 250, 0.58);
+  box-shadow: 0 12px 30px rgba(32, 49, 76, 0.045);
+}
+
+.admin-feedback-list article {
+  transition: background-color 180ms var(--ease-snap), box-shadow 180ms var(--ease-snap);
+}
+
+.admin-feedback-list article:hover {
+  background: rgba(255, 255, 255, 0.52);
 }
 
 .admin-shell__page-transition {

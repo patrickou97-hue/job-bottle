@@ -3,73 +3,74 @@ import { deriveTencentReferralCodes } from "@/lib/referral-source.mjs";
 import { buildExternalReferralRows } from "@/lib/referral-external-sources";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { OfficialReferralSource } from "@/lib/types";
-import {
-  SOURCE_DOCUMENT_ID,
-  SOURCE_TAB_ID,
-  SOURCE_VIEW_ID,
-  build27AutumnJobCandidates,
-  collectSmartSheetModel,
-} from "../../../../../scripts/lib/job-sync-utils.mjs";
-import { fetchLiveSmartSheet } from "../../../../../scripts/sync_27_autumn_jobs.mjs";
+import { unstable_cache } from "next/cache";
+import { createPublicServerClient } from "@/lib/supabase/public-server";
 
 export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
-const CACHE_TTL_MS = 3 * 60 * 60 * 1000;
-const SOURCE_URL = `https://docs.qq.com/smartsheet/${SOURCE_DOCUMENT_ID}?tab=${SOURCE_TAB_ID}&viewId=${SOURCE_VIEW_ID}`;
-type SourceReferralRow = ReturnType<typeof deriveTencentReferralCodes>[number] | ReturnType<typeof buildExternalReferralRows>[number];
-let cache: { expiresAt: number; rows: SourceReferralRow[] } | null = null;
+// The synchronized job library is the source of active 27-autumn companies.
+// Never crawl the full Tencent sheet on a user's page-opening request.
+const readSources = unstable_cache(async () => {
+  const signal = AbortSignal.timeout(4500);
+  const [sourceJobs, officialRows] = await Promise.all([
+    fetchSourceJobs(signal),
+    fetchOfficialReferralSources(signal),
+  ]);
+  const activeCompanies = new Set(sourceJobs.map((job) => job.company_name));
+  const tencentRows = deriveTencentReferralCodes(sourceJobs).map((row) => ({ ...row, job_id: null }));
+  const persisted = officialRows.filter((row) => activeCompanies.has(row.company_name));
+  const externalRows = persisted.length > 0
+    ? persisted.map(toExternalReferralRow)
+    : buildExternalReferralRows(activeCompanies);
+  return dedupeRows([...tencentRows, ...externalRows]);
+}, ["public-referral-sources-v2"], { revalidate: 300 });
+
+// Coalesce concurrent cold requests as well as using Next's persistent cache.
+let pending: ReturnType<typeof readSources> | null = null;
 
 export async function GET(request: Request) {
   const companyName = new URL(request.url).searchParams.get("company")?.trim() || "";
-  const now = Date.now();
-  if (!cache || cache.expiresAt <= now) {
-    try {
-      const source = await fetchLiveSmartSheet(SOURCE_URL);
-      const parsed = build27AutumnJobCandidates(collectSmartSheetModel(source.operationGroups));
-      if (parsed.wrongSeasonRows.length > 0) throw new Error("wrong-season");
-      if (parsed.candidates.length === 0) throw new Error("empty-source");
-      const fetchedAt = new Date().toISOString();
-      const sourceJobs = parsed.candidates.map(({ payload }) => ({
-        ...payload,
-        created_at: fetchedAt,
-        updated_at: fetchedAt,
-      }));
-      const tencentRows = deriveTencentReferralCodes(sourceJobs).map((row) => ({ ...row, job_id: null }));
-      const activeCompanies = new Set(sourceJobs.map((job) => job.company_name));
-      const persistedOfficialRows = await fetchOfficialReferralSources(activeCompanies);
-      const externalRows = persistedOfficialRows.length > 0
-        ? persistedOfficialRows.map((row) => toExternalReferralRow(row))
-        : buildExternalReferralRows(activeCompanies, fetchedAt);
-      const rows = dedupeRows([...tencentRows, ...externalRows]);
-      cache = { expiresAt: now + CACHE_TTL_MS, rows };
-    } catch {
-      return NextResponse.json(
-        { error: "腾讯文档来源暂时无法核验，已停止读取来源内推码。" },
-        { status: 503, headers: { "Cache-Control": "no-store" } },
-      );
-    }
+  try {
+    pending ??= readSources().finally(() => { pending = null; });
+    const allRows = await pending;
+    const rows = companyName ? allRows.filter((row) => row.company_name === companyName) : allRows;
+    return NextResponse.json({ rows }, {
+      headers: { "Cache-Control": "public, max-age=60, s-maxage=300, stale-while-revalidate=300" },
+    });
+  } catch {
+    return NextResponse.json({ error: "公开来源暂时无法读取，请稍后重试。" }, {
+      status: 503, headers: { "Cache-Control": "no-store" },
+    });
   }
-
-  const rows = companyName
-    ? cache.rows.filter((row) => row.company_name === companyName)
-    : cache.rows;
-  return NextResponse.json(
-    { rows },
-    { headers: { "Cache-Control": "public, max-age=300, stale-while-revalidate=600" } },
-  );
 }
 
-async function fetchOfficialReferralSources(activeCompanies: Set<string>): Promise<OfficialReferralSource[]> {
+async function fetchSourceJobs(signal: AbortSignal) {
+  const client = createPublicServerClient();
+  const rows = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await client.from("jobs")
+      .select("id,company_name,batch_type,job_titles,apply_url,created_at,updated_at")
+      .eq("is_active", true).like("batch_type", "27秋招%")
+      .order("id").range(from, from + 999).abortSignal(signal);
+    if (error) throw error;
+    rows.push(...(data ?? []));
+    if ((data?.length ?? 0) < 1000) return rows;
+  }
+}
+
+async function fetchOfficialReferralSources(signal: AbortSignal): Promise<OfficialReferralSource[]> {
   try {
     const admin = createAdminClient();
-    const { data, error } = await admin
-      .from("official_referral_sources")
-      .select("id,publisher_name,company_name,job_id,applicable_roles,code,usage_note,source_platform,source_url,published_at,source_verified_at,is_active,created_at,updated_at,source_key")
-      .eq("is_active", true)
-      .order("source_verified_at", { ascending: false });
-    if (error || !data) return [];
-    return (data as OfficialReferralSource[]).filter((row) => activeCompanies.has(row.company_name));
+    const rows: OfficialReferralSource[] = [];
+    for (let from = 0; ; from += 1000) {
+      const { data, error } = await admin.from("official_referral_sources")
+        .select("id,publisher_name,company_name,job_id,applicable_roles,code,usage_note,source_platform,source_url,published_at,source_verified_at,is_active,created_at,updated_at,source_key")
+        .eq("is_active", true).order("source_verified_at", { ascending: false })
+        .order("id").range(from, from + 999).abortSignal(signal);
+      if (error) return [];
+      rows.push(...(data ?? []) as OfficialReferralSource[]);
+      if ((data?.length ?? 0) < 1000) return rows;
+    }
   } catch {
     return [];
   }

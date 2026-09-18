@@ -90,11 +90,17 @@ export async function PATCH(request: NextRequest) {
         .maybeSingle();
       if (readError) throw readError;
       if (!existing) return NextResponse.json({ error: "反馈不存在或已被删除。" }, { status: 404 });
+      if (!existing.resolved_at) {
+        return NextResponse.json({ error: "反馈状态未写入，数据库权限或迁移可能未完成。请联系技术负责人检查反馈表策略。", code: "FEEDBACK_UPDATE_NOT_APPLIED" }, { status: 500 });
+      }
       return NextResponse.json({ feedback: existing }, { headers: { "Cache-Control": "private, no-store" } });
     }
     return NextResponse.json({ feedback: data }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     console.error("[admin_feedback_update]", error instanceof Error ? error.message : "unknown error");
+    if (isFeedbackPermissionError(error)) {
+      return NextResponse.json({ error: "管理员反馈写入权限尚未配置，请先执行反馈表迁移。", code: "FEEDBACK_RLS_NOT_CONFIGURED" }, { status: 503 });
+    }
     return NextResponse.json({ error: "反馈状态保存失败，请稍后重试。" }, { status: 500 });
   }
 }
@@ -176,4 +182,10 @@ function escapeIlike(value: string) {
 
 function isUuid(value: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+function isFeedbackPermissionError(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+  const candidate = error as { code?: unknown; status?: unknown; message?: unknown };
+  return candidate.code === "42501" || candidate.status === 401 || candidate.status === 403 || (typeof candidate.message === "string" && /permission denied|row-level security/i.test(candidate.message));
 }
