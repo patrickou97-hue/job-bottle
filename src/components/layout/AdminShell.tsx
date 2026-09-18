@@ -9,6 +9,7 @@ import {
   ChevronDown,
   Coins,
   Database,
+  Gauge,
   KeyRound,
   LogOut,
   MessageSquareText,
@@ -45,6 +46,13 @@ const utilityNavItems: AdminNavItem[] = [
   { href: "/admin/referrals", label: "内推码", icon: KeyRound },
   { href: "/admin/import", label: "批量导入", icon: Database },
   { href: "/admin/billing", label: "诘星计费", icon: Coins },
+];
+
+const navGroups: Array<{ label: string; items: AdminNavItem[] }> = [
+  { label: "核心运营", items: primaryNavItems.slice(0, 2) },
+  { label: "内容与用户", items: primaryNavItems.slice(2) },
+  { label: "增长与财务", items: utilityNavItems.filter((item) => item.href !== "/admin/import") },
+  { label: "系统工具", items: utilityNavItems.filter((item) => item.href === "/admin/import") },
 ];
 
 export function AdminShell({ children }: { children: ReactNode }) {
@@ -191,13 +199,22 @@ export function AdminShell({ children }: { children: ReactNode }) {
       <div className="admin-shell__layout">
         <aside className="admin-shell__sidebar">
           <div className="admin-shell__sidebar-intro">
-            <span>StarJob Admin</span>
-            <strong>管理工作台</strong>
+            <div className="admin-shell__sidebar-overline"><Gauge aria-hidden="true" /> StarJob Admin</div>
+            <strong>超级功能台</strong>
+            <span>运营、内容与权限集中管理</span>
           </div>
           <nav className="admin-shell__nav" aria-label="管理导航">
-            <span className="admin-shell__nav-label">工作台</span>
-            {primaryNavItems.map((item) => renderNavLink(item))}
+            {navGroups.map((group) => (
+              <div key={group.label} className="admin-shell__nav-group-block">
+                <span className="admin-shell__nav-label">{group.label}</span>
+                {group.items.map((item) => renderNavLink(item))}
+              </div>
+            ))}
           </nav>
+          <div className="admin-shell__sidebar-footer">
+            <span className="admin-shell__sidebar-status"><i aria-hidden="true" /> 生产环境</span>
+            <span>管理员权限已启用</span>
+          </div>
         </aside>
 
         <div key={pathname} className="admin-shell__mobile-nav">
@@ -216,10 +233,12 @@ export function AdminShell({ children }: { children: ReactNode }) {
           </button>
           {mobileNavOpen ? (
             <nav id="admin-mobile-nav" className="admin-shell__mobile-panel" aria-label="管理导航">
-              <span className="admin-shell__nav-label">工作台</span>
-              {primaryNavItems.map((item) => renderNavLink(item, true))}
-              <span className="admin-shell__nav-label admin-shell__nav-label--tools">更多工具</span>
-              {utilityNavItems.map((item) => renderNavLink(item, true))}
+              {navGroups.map((group) => (
+                <div key={group.label} className="admin-shell__mobile-group">
+                  <span className="admin-shell__nav-label">{group.label}</span>
+                  {group.items.map((item) => renderNavLink(item, true))}
+                </div>
+              ))}
             </nav>
           ) : null}
         </div>
