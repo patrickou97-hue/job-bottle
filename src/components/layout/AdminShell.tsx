@@ -54,17 +54,18 @@ const navGroups: Array<{ label: string; items: AdminNavItem[] }> = [
   { label: "系统工具", items: utilityNavItems.filter((item) => item.href === "/admin/import") },
 ];
 
-export function AdminShell({ children }: { children: ReactNode }) {
+export function AdminShell({ children, initialAccess }: { children: ReactNode; initialAccess?: { allowed: boolean; message: string } }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [allowed, setAllowed] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState("");
+  const [allowed, setAllowed] = useState(initialAccess?.allowed ?? false);
+  const [loading, setLoading] = useState(initialAccess === undefined);
+  const [message, setMessage] = useState(initialAccess?.message ?? "");
   const isUtilityRoute = utilityNavItems.some((item) => isNavActive(pathname, item.href));
   const [moreOpen, setMoreOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   useEffect(() => {
+    if (initialAccess !== undefined) return;
     let mounted = true;
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), 6000);
@@ -104,7 +105,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
       controller.abort();
       window.clearTimeout(timeoutId);
     };
-  }, []);
+  }, [initialAccess]);
 
   async function handleLogout() {
     if (!isSupabaseConfigured()) return;
