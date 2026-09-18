@@ -168,7 +168,7 @@ function FeedbackList({ feedback, expandedId, resolvingId, onResolve, onToggle }
         const expanded = expandedId === item.id;
         return (
           <article key={item.id} className={cn("py-5", expanded && "bg-[color:var(--surface-read-bg)] px-4 sm:px-5")}>
-            <div className="grid gap-4 lg:grid-cols-[minmax(185px,0.7fr)_minmax(280px,1.35fr)_minmax(180px,0.8fr)_auto] lg:items-center">
+            <div className="admin-feedback-row">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <MessageSquareText aria-hidden="true" className="size-4 text-[color:var(--aurora)]" />
@@ -239,7 +239,21 @@ function AdminStat({ label, value, tone = "normal" }: { label: string; value: nu
 }
 
 function LoadingState() {
-  return <div className="space-y-5 border-y border-[color:var(--line-ghost)] py-5" aria-label="正在读取反馈" aria-busy="true"><div className="loading-line w-32" /><div className="loading-line w-3/4" /><div className="loading-line w-1/2" /></div>;
+  return (
+    <div className="admin-feedback-loading" aria-label="正在读取反馈" aria-busy="true">
+      {Array.from({ length: 4 }, (_, index) => (
+        <div className="admin-feedback-loading__row" key={index}>
+          <div className="admin-feedback-loading__group">
+            <span className="admin-feedback-loading__block admin-feedback-loading__block--title" />
+            <span className="admin-feedback-loading__block admin-feedback-loading__block--meta" />
+          </div>
+          <span className="admin-feedback-loading__block admin-feedback-loading__block--content" />
+          <span className="admin-feedback-loading__block admin-feedback-loading__block--contact" />
+          <span className="admin-feedback-loading__block admin-feedback-loading__block--action" />
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function formatNumber(value: number) {

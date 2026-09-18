@@ -21,7 +21,6 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
-import { getCurrentUserOrNull } from "@/lib/auth";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { SITE_NAME } from "@/lib/constants";
 import { feedbackVariants, motionDuration, motionEase } from "@/lib/motion";
@@ -67,6 +66,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 6000);
 
     async function checkAdmin() {
       try {
@@ -77,25 +78,21 @@ export function AdminShell({ children }: { children: ReactNode }) {
           }
           return;
         }
-        const supabase = createClient();
-        const user = await getCurrentUserOrNull(supabase);
-        if (!user) {
-          if (mounted) setMessage("请先登录管理员账号。");
-          return;
-        }
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .maybeSingle();
-        if (error) throw error;
-        if (data?.role !== "admin") {
-          if (mounted) setMessage("无权限访问。");
+        const response = await fetch("/api/admin/session", {
+          cache: "no-store",
+          credentials: "include",
+          signal: controller.signal,
+        });
+        const payload = await response.json().catch(() => null) as { error?: string } | null;
+        if (!response.ok) {
+          if (mounted) setMessage(payload?.error || (response.status === 401 ? "请先登录管理员账号。" : "无权限访问。"));
           return;
         }
         if (mounted) setAllowed(true);
-      } catch {
-        if (mounted) setMessage("无法确认管理员权限。");
+      } catch (error) {
+        if (mounted) {
+          setMessage(error instanceof DOMException && error.name === "AbortError" ? "管理员权限核验超时，请刷新后重试。" : "无法确认管理员权限。");
+        }
       } finally {
         if (mounted) setLoading(false);
       }
@@ -104,6 +101,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
     void checkAdmin();
     return () => {
       mounted = false;
+      controller.abort();
+      window.clearTimeout(timeoutId);
     };
   }, []);
 
