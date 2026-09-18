@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Filter, Plus, Search, Upload, X } from "lucide-react";
 import { fetchAllJobsForAdmin } from "@/lib/jobs";
-import { getCurrentUserOrNull } from "@/lib/auth";
 import { findDuplicateJobGroups } from "@/lib/job-dedupe";
 import { sanitizeApplicationUrl } from "@/lib/application-url";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
@@ -37,25 +36,15 @@ export function AdminJobsClient() {
         setMessage("岗位数据暂时无法读取，请稍后重试。");
         return;
       }
-      const supabase = createClient();
-      const user = await getCurrentUserOrNull(supabase);
-      if (!user) {
+      const sessionResponse = await fetch("/api/admin/session", { cache: "no-store", credentials: "include" });
+      const sessionPayload = await sessionResponse.json().catch(() => null) as { error?: string } | null;
+      if (!sessionResponse.ok) {
         setIsAdmin(false);
-        setMessage("请先登录管理员账号。");
-        return;
-      }
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .maybeSingle();
-      if (profile?.role !== "admin") {
-        setIsAdmin(false);
-        setMessage("无权限访问。");
+        setMessage(sessionPayload?.error || (sessionResponse.status === 401 ? "请先登录管理员账号。" : "无权限访问。"));
         return;
       }
       setIsAdmin(true);
-      setJobs(await fetchAllJobsForAdmin(supabase));
+      setJobs(await fetchAllJobsForAdmin(createClient()));
     } catch {
       setMessage("读取岗位失败，请确认数据库权限。");
     } finally {

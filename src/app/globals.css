@@ -4542,6 +4542,19 @@ textarea:focus-visible {
   background: #f3f7fb;
 }
 
+.admin-import-loading {
+  overflow: hidden;
+  border: 1px solid var(--admin-line);
+  border-radius: 0.65rem;
+  background: var(--admin-surface-strong);
+}
+
+.admin-import-loading__upload {
+  display: block;
+  min-height: 11rem;
+  border-radius: 0;
+}
+
 @media (min-width: 1024px) {
   .admin-feedback-row,
   .admin-feedback-loading__row {

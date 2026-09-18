@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Upload } from "lucide-react";
 import { parseJobsImportFile } from "@/lib/csv";
-import { getCurrentUserOrNull } from "@/lib/auth";
 import { getJobMergeFingerprint } from "@/lib/job-dedupe";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
@@ -13,32 +12,30 @@ import type { CsvImportPreviewRow } from "@/lib/types";
 export function CsvImportPanel() {
   const [rows, setRows] = useState<CsvImportPreviewRow[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     async function checkAdmin() {
-      if (!isSupabaseConfigured()) {
-        console.error("Supabase environment variables are not configured.");
-        setMessage("岗位库暂时无法读取，请稍后重试。");
-        return;
+      try {
+        if (!isSupabaseConfigured()) {
+          console.error("Supabase environment variables are not configured.");
+          setMessage("岗位库暂时无法读取，请稍后重试。");
+          return;
+        }
+        const response = await fetch("/api/admin/session", { cache: "no-store", credentials: "include" });
+        const payload = await response.json().catch(() => null) as { error?: string } | null;
+        if (!response.ok) {
+          setMessage(payload?.error || (response.status === 401 ? "请先登录管理员账号。" : "无权限访问。"));
+          return;
+        }
+        setIsAdmin(true);
+      } catch {
+        setMessage("管理员权限暂时无法确认，请刷新后重试。");
+      } finally {
+        setAuthLoading(false);
       }
-      const supabase = createClient();
-      const user = await getCurrentUserOrNull(supabase);
-      if (!user) {
-        setMessage("请先登录管理员账号。");
-        return;
-      }
-      const { data } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .maybeSingle();
-      if (data?.role !== "admin") {
-        setMessage("无权限访问。");
-        return;
-      }
-      setIsAdmin(true);
     }
     checkAdmin();
   }, []);
@@ -139,7 +136,7 @@ export function CsvImportPanel() {
         </div>
       ) : null}
 
-      {isAdmin ? (
+      {authLoading ? <ImportLoadingState /> : isAdmin ? (
         <>
           <section className="visualization-boundary border-dashed p-5">
             <label className="pressable flex cursor-pointer flex-col items-center justify-center p-8 text-center transition hover:bg-[color:var(--surface-hover-bg)]">
@@ -220,6 +217,14 @@ export function CsvImportPanel() {
           ) : null}
         </>
       ) : null}
+    </div>
+  );
+}
+
+function ImportLoadingState() {
+  return (
+    <div className="admin-import-loading" aria-label="正在确认管理员权限" aria-busy="true">
+      <span className="admin-skeleton-block admin-import-loading__upload" />
     </div>
   );
 }
