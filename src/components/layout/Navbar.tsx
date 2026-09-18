@@ -25,7 +25,10 @@ const navItems = [
 ];
 
 const primaryNavItems = navItems.filter((item) => !["/forum", "/profile", "/feedback"].includes(item.href));
-const moreNavItems = navItems.filter((item) => ["/forum", "/profile", "/feedback"].includes(item.href));
+const moreNavItems = [
+  { href: "/referrals", label: "内推码广场" },
+  ...navItems.filter((item) => ["/forum", "/profile", "/feedback"].includes(item.href)),
+];
 const compactMoreNavItems = primaryNavItems.slice(3);
 
 const mobileNavItems = [
