@@ -1,12 +1,14 @@
 # 拾星 StarJob — 最终完整确认版交接文档
 
-## 2026-09-19 管理后台超级功能台重构与反馈 RLS（已执行，待部署）
+## 2026-09-19 管理后台超级功能台重构与反馈 RLS（已上线）
 
 - 用户目标：将管理员后台完全重构为高信息密度、可执行的“超级功能台”，沿用既有权限边界与移动端兜底，去除大面积说明卡和偏 AI 生成感的软性表达。
 - 实际改动：`AdminShell` 按“核心运营 / 内容与用户 / 增长与财务 / 系统工具”分组，使用深蓝侧栏、紧凑工作区和生产环境状态；管理员总览改为运营控制台，增加工作台概览、工作模块队列、快捷入口和系统状态面板；桌面与移动端共用信息架构，保留全部现有管理路由和业务逻辑。
 - Supabase 状态：已在生产项目 `uzzdcjdjlbnxmhvilldj` 的 SQL Editor 执行反馈权限 migration；页面结果显示 `Success. No rows returned`。本次授予 `authenticated` 对 `feedback_submissions` 的读取与 `resolved_at` 更新权限，并创建管理员 select/update RLS 策略。
-- 验证：`npm run typecheck`、`npm run lint`、`npm test -- --runInBand`（183/183）、带正式环境变量的 `npm run build -- --webpack`（63 个路由）和 `git diff --check` 均通过；代码提交 `1f1b73a` 与视觉重构提交 `6ed3190` 已生成，尚未推送或部署。
-- 兼容边界：未改变管理员鉴权、API、数据库业务表结构、岗位/用户/反馈/内推码/计费逻辑；生产 migration 已执行，管理员真实登录态解决反馈与新后台视觉仍需随部署后一起验收。
+- Git 与部署：提交 `b8f1c55` 已推送 `origin/main`，Vercel deployment `3fKZcFSt5civ7qNkVRdqNZ4BtvSG` 返回 `success / Deployment has completed`。
+- 线上验证：`/admin` 与 `/admin/analytics` 返回 HTTP 200，`/admin` HTML 已检出“超级功能台”“STARJOB / ADMIN CONSOLE”“工作模块”；匿名 `/api/admin/feedback` 与 `/api/admin/users` 均返回 401。尚未把匿名探针当作管理员真实登录态 E2E，管理员反馈解决动作仍需在部署后的有效登录态完成设备验收。
+- 验证：`npm run typecheck`、`npm run lint`、`npm test -- --runInBand`（183/183）、带正式环境变量的 `npm run build -- --webpack`（63 个路由）和 `git diff --check` 均通过。
+- 兼容边界：未改变管理员鉴权、API、数据库业务表结构、岗位/用户/反馈/内推码/计费逻辑；生产 migration 已执行，真实管理员写入验收与移动设备视觉验收仍保持单独边界。
 
 ## 2026-09-14 工作区整理状态
 
