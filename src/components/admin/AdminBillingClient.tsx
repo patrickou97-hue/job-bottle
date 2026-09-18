@@ -291,7 +291,7 @@ export function AdminBillingClient() {
         </div>
       </header>
 
-      <section className="grid gap-px overflow-hidden rounded-[22px] border border-[color:var(--line-ghost)] bg-[color:var(--line-ghost)] sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-px overflow-hidden rounded-[22px] border border-[color:var(--line-ghost)] bg-[color:var(--line-ghost)] sm:grid-cols-2 lg:grid-cols-4">
         <SummaryMetric
           label="注册账户"
           value={summaryState === "ready" ? String(summary.totalUsers) : "—"}
@@ -314,7 +314,7 @@ export function AdminBillingClient() {
         />
       </section>
 
-      <div className="grid items-start gap-6 xl:grid-cols-[minmax(340px,0.84fr)_minmax(0,1.16fr)]">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(300px,0.84fr)_minmax(0,1.16fr)]">
         <section
           aria-labelledby="account-search-title"
           className="rounded-[24px] border border-[color:var(--line-ghost)] bg-[color:var(--surface-read-bg-strong)] p-5 sm:p-7"

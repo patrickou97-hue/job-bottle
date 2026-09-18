@@ -168,14 +168,14 @@ export function AdminAnalyticsClient() {
         </div>
       ) : null}
 
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4" aria-label="核心指标">
+      <section className="grid gap-3 md:grid-cols-2 lg:grid-cols-4" aria-label="核心指标">
         <MetricCard icon={UsersRound} label="用户总量" value={formatNumber(data.summary.totalUsers)} note={`本期新增 ${formatNumber(data.summary.newUsers)} 人`} />
         <MetricCard icon={Activity} label={`${periodLabel}活跃`} value={formatNumber(data.summary.activeUsers)} comparison={compare(data.summary.activeUsers, data.summary.previousActiveUsers)} note="有事件记录的去重用户" />
         <MetricCard icon={UserRoundPlus} label="新增用户" value={formatNumber(data.summary.newUsers)} comparison={compare(data.summary.newUsers, data.summary.previousNewUsers)} note="按注册时间统计" />
         <MetricCard icon={Gauge} label="关键动作" value={formatNumber(data.summary.events)} comparison={compare(data.summary.events, data.summary.previousEvents)} note={`人均 ${formatAverage(data.summary.events, data.summary.activeUsers)} 次`} />
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.65fr)_minmax(320px,0.85fr)]">
+      <section className="grid gap-4 lg:grid-cols-[minmax(0,1.65fr)_minmax(300px,0.85fr)]">
         <TrendPanel data={data} />
         <Panel title="用户活跃分层" icon={UsersRound} meta={`${periodLabel}用户状态`}>
           <div className="space-y-5">
@@ -189,7 +189,7 @@ export function AdminAnalyticsClient() {
         </Panel>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-2">
+      <section className="grid gap-4 lg:grid-cols-2">
         <Panel title="使用链路" icon={Target} meta="本期去重用户">
           <div className="space-y-4">
             {data.funnel.map((step) => (
@@ -212,7 +212,7 @@ export function AdminAnalyticsClient() {
         <ApplicationStatusPanel data={data} />
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(300px,0.86fr)]">
+      <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(260px,0.86fr)]">
         <RankPanel title="目标岗位" icon={Target} items={data.topRoles} empty="用户暂未填写目标岗位" />
         <RankPanel title="意向地区" icon={BriefcaseBusiness} items={data.topRegions} empty="用户暂未填写意向地区" />
         <Panel title="运营提醒" icon={ShieldCheck} meta="需要人工关注">
@@ -225,7 +225,7 @@ export function AdminAnalyticsClient() {
         </Panel>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+      <section className="grid gap-4 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
         <RankPanel title="投递热度" icon={BriefcaseBusiness} items={data.topCompanies} empty="本期还没有投递记录" showUsers />
         <EventPanel events={data.events} />
       </section>

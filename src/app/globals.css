@@ -4542,6 +4542,47 @@ textarea:focus-visible {
   background: #f3f7fb;
 }
 
+@media (min-width: 1024px) {
+  .admin-feedback-row,
+  .admin-feedback-loading__row {
+    grid-template-columns: minmax(170px, 0.72fr) minmax(0, 1.5fr) minmax(135px, 0.65fr) auto;
+    gap: 0.85rem;
+  }
+
+  .admin-feedback-row > :nth-child(3),
+  .admin-feedback-loading__row > :nth-child(3),
+  .admin-feedback-row > :nth-child(4),
+  .admin-feedback-loading__row > :nth-child(4) {
+    grid-column: auto;
+    grid-row: auto;
+    padding-top: 0;
+    border-top: 0;
+    justify-self: stretch;
+  }
+
+  .admin-feedback-row > :nth-child(4),
+  .admin-feedback-loading__row > :nth-child(4) {
+    justify-self: end;
+  }
+
+  .admin-referral-row {
+    grid-template-columns: minmax(170px, 0.72fr) minmax(0, 1.25fr) minmax(150px, 0.8fr) auto;
+    gap: 0.85rem;
+  }
+
+  .admin-referral-row > :nth-child(3),
+  .admin-referral-row > :nth-child(4) {
+    grid-column: auto;
+    grid-row: auto;
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .admin-referral-row > :nth-child(4) {
+    justify-self: end;
+  }
+}
+
 /* Loading blocks remain visible and aligned at every route; empty inline elements
    must never collapse into stray dots. */
 .admin-shell .admin-skeleton-block {
