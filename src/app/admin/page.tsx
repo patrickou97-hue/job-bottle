@@ -20,13 +20,6 @@ const adminTools = [
   { href: "/admin/billing", title: "诘星计费", body: "余额、额度与账本", icon: Coins },
 ] as const;
 
-const metricItems = [
-  { value: "05", label: "核心模块", note: "运营主流程" },
-  { value: "03", label: "快捷动作", note: "首屏可达" },
-  { value: "02", label: "低频工具", note: "按需使用" },
-  { value: "100%", label: "权限隔离", note: "AdminShell 统一核验" },
-] as const;
-
 export default function AdminPage() {
   return (
     <div className="observatory-page admin-console">
@@ -46,16 +39,6 @@ export default function AdminPage() {
           <strong>管理员权限已核验</strong>
           <small>写入动作继续沿用服务端权限边界</small>
         </div>
-      </section>
-
-      <section className="admin-console__metrics" aria-label="工作台概览">
-        {metricItems.map((item) => (
-          <div key={item.label} className="admin-console__metric">
-            <strong>{item.value}</strong>
-            <span>{item.label}</span>
-            <small>{item.note}</small>
-          </div>
-        ))}
       </section>
 
       <div className="admin-console__grid">

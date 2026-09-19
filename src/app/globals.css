@@ -3222,46 +3222,6 @@ textarea:focus-visible {
   line-height: 1.5;
 }
 
-.admin-console__metrics {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  border-block: 1px solid var(--admin-line);
-}
-
-.admin-console__metric {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: baseline;
-  column-gap: 0.6rem;
-  row-gap: 0.1rem;
-  min-height: 5.4rem;
-  padding: 0.85rem 1rem;
-}
-
-.admin-console__metric + .admin-console__metric {
-  border-left: 1px solid var(--admin-line);
-}
-
-.admin-console__metric strong {
-  grid-row: span 2;
-  color: #17375e;
-  font-size: 1.8rem;
-  font-weight: 680;
-  letter-spacing: -0.06em;
-  line-height: 1;
-}
-
-.admin-console__metric span {
-  color: #263b56;
-  font-size: 0.74rem;
-  font-weight: 700;
-}
-
-.admin-console__metric small {
-  color: #778294;
-  font-size: 0.64rem;
-}
-
 .admin-console__grid {
   display: grid;
   grid-template-columns: minmax(0, 1.55fr) minmax(270px, 0.72fr);
@@ -3484,19 +3444,6 @@ textarea:focus-visible {
 
   .admin-console__hero-meta {
     width: 100%;
-  }
-
-  .admin-console__metrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .admin-console__metric:nth-child(3) {
-    border-top: 1px solid var(--admin-line);
-    border-left: 0;
-  }
-
-  .admin-console__metric:nth-child(4) {
-    border-top: 1px solid var(--admin-line);
   }
 
   .admin-console__grid {
