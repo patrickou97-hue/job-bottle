@@ -159,6 +159,8 @@ export function ResumeEditor({
           title="教育经历"
           addLabel="新增教育经历"
           items={resume.content.education}
+          sortable
+          onReorder={(items) => patchContent({ education: items })}
           onAdd={() => patchContent({ education: [...resume.content.education, createBlankEducation()] })}
           onRemove={(id) => patchContent({ education: resume.content.education.filter((item) => item.id !== id) })}
           renderItem={(item) => (
@@ -177,6 +179,8 @@ export function ResumeEditor({
           title="实习与工作经历"
           addLabel="新增经历"
           items={resume.content.work}
+          sortable
+          onReorder={(items) => patchContent({ work: items })}
           onAdd={() => patchContent({ work: [...resume.content.work, createBlankExperience()] })}
           onRemove={(id) => patchContent({ work: resume.content.work.filter((item) => item.id !== id) })}
           renderItem={(item) => (
@@ -195,6 +199,8 @@ export function ResumeEditor({
           title="项目经历"
           addLabel="新增项目"
           items={resume.content.projects}
+          sortable
+          onReorder={(items) => patchContent({ projects: items })}
           onAdd={() => patchContent({ projects: [...resume.content.projects, createBlankProject()] })}
           onRemove={(id) => patchContent({ projects: resume.content.projects.filter((item) => item.id !== id) })}
           renderItem={(item) => (
@@ -527,6 +533,8 @@ function CollectionEditor<T extends { id: string }>({
   title,
   addLabel,
   items,
+  sortable = false,
+  onReorder,
   onAdd,
   onRemove,
   renderItem,
@@ -534,36 +542,134 @@ function CollectionEditor<T extends { id: string }>({
   title: string;
   addLabel: string;
   items: T[];
+  sortable?: boolean;
+  onReorder?: (items: T[]) => void;
   onAdd: () => void;
   onRemove: (id: string) => void;
   renderItem: (item: T) => React.ReactNode;
 }) {
+  const rows = items.map((item, index) => (
+    sortable ? (
+      <SortableCollectionItem
+        key={item.id}
+        item={item}
+        index={index}
+        count={items.length}
+        title={title}
+        onMove={(direction) => onReorder?.(moveByIndex(items, index, direction))}
+        onRemove={onRemove}
+      >
+        {renderItem(item)}
+      </SortableCollectionItem>
+    ) : (
+      <div key={item.id} className="space-y-4 border-t border-[color:var(--line-ghost)] pt-4">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-xs text-ink-muted">第 {index + 1} 条</span>
+          <button
+            type="button"
+            className="text-action pressable rounded-lg px-3 py-1 text-xs text-[color:var(--text-danger)]"
+            onClick={() => onRemove(item.id)}
+          >
+            删除
+          </button>
+        </div>
+        {renderItem(item)}
+      </div>
+    )
+  ));
+
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="section-title">{title}</h2>
+        <div>
+          <h2 className="section-title">{title}</h2>
+          {sortable ? <p className="mt-1 text-xs text-ink-muted">拖动左侧把手调整顺序，也可以使用上下按钮。</p> : null}
+        </div>
         <Button variant="secondary" className="gap-2" onClick={onAdd}>
           <Plus aria-hidden="true" className="size-4" />
           {addLabel}
         </Button>
       </div>
       {items.length === 0 ? <p className="text-sm text-ink-muted">暂时没有内容。</p> : null}
-      {items.map((item, index) => (
-        <div key={item.id} className="space-y-4 border-t border-[color:var(--line-ghost)] pt-4">
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-xs text-ink-muted">第 {index + 1} 条</span>
-            <button
-              type="button"
-              className="text-action pressable rounded-lg px-3 py-1 text-xs text-[color:var(--text-danger)]"
-              onClick={() => onRemove(item.id)}
-            >
-              删除
-            </button>
-          </div>
-          {renderItem(item)}
-        </div>
-      ))}
+      {sortable ? (
+        <Reorder.Group
+          as="div"
+          axis="y"
+          values={items}
+          onReorder={(next) => onReorder?.(next)}
+          className="space-y-4"
+        >
+          {rows}
+        </Reorder.Group>
+      ) : rows}
     </section>
+  );
+}
+
+function SortableCollectionItem<T extends { id: string }>({
+  item,
+  index,
+  count,
+  title,
+  onMove,
+  onRemove,
+  children,
+}: {
+  item: T;
+  index: number;
+  count: number;
+  title: string;
+  onMove: (direction: -1 | 1) => void;
+  onRemove: (id: string) => void;
+  children: React.ReactNode;
+}) {
+  const dragControls = useDragControls();
+  const reducedMotion = useReducedMotion();
+
+  return (
+    <Reorder.Item
+      value={item}
+      dragListener={false}
+      dragControls={dragControls}
+      dragMomentum={false}
+      className="resume-sortable-item space-y-4 border-t border-[color:var(--line-ghost)] pt-4"
+      transition={reducedMotion ? { duration: 0 } : { type: "spring", stiffness: 500, damping: 38 }}
+      whileDrag={reducedMotion ? undefined : {
+        scale: 1.01,
+        boxShadow: "0 12px 28px rgba(18, 41, 78, 0.14)",
+      }}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <button
+            type="button"
+            className="muted-button pressable inline-flex size-9 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg active:cursor-grabbing"
+            aria-label={`拖动${title}第 ${index + 1} 条排序`}
+            title="拖动排序"
+            onPointerDown={(event) => dragControls.start(event)}
+          >
+            <GripVertical aria-hidden="true" className="size-4" />
+          </button>
+          <span className="text-xs tabular-nums text-ink-muted">第 {index + 1} 条</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <IconButton label="上移" disabled={index === 0} onClick={() => onMove(-1)}>
+            <ArrowUp aria-hidden="true" className="size-3.5" />
+          </IconButton>
+          <IconButton label="下移" disabled={index === count - 1} onClick={() => onMove(1)}>
+            <ArrowDown aria-hidden="true" className="size-3.5" />
+          </IconButton>
+          <button
+            type="button"
+            className="text-action pressable rounded-lg px-3 py-1 text-xs text-[color:var(--text-danger)]"
+            onClick={() => onRemove(item.id)}
+          >
+            删除
+          </button>
+        </div>
+      </div>
+      {children}
+    </Reorder.Item>
   );
 }
 
