@@ -168,7 +168,7 @@ export function AdminAnalyticsClient() {
         </div>
       ) : null}
 
-      <section className="grid gap-3 md:grid-cols-2 lg:grid-cols-4" aria-label="核心指标">
+      <section className="admin-analytics-metric-strip" aria-label="核心指标">
         <MetricCard icon={UsersRound} label="用户总量" value={formatNumber(data.summary.totalUsers)} note={`本期新增 ${formatNumber(data.summary.newUsers)} 人`} />
         <MetricCard icon={Activity} label={`${periodLabel}活跃`} value={formatNumber(data.summary.activeUsers)} comparison={compare(data.summary.activeUsers, data.summary.previousActiveUsers)} note="有事件记录的去重用户" />
         <MetricCard icon={UserRoundPlus} label="新增用户" value={formatNumber(data.summary.newUsers)} comparison={compare(data.summary.newUsers, data.summary.previousNewUsers)} note="按注册时间统计" />
@@ -238,7 +238,7 @@ function MetricCard({ icon: Icon, label, value, note, comparison }: { icon: Luci
     <article className="admin-analytics-metric rounded-[14px] border border-[#dde3eb] bg-white px-5 py-5 shadow-[0_8px_24px_rgba(18,41,78,0.04)]">
       <div className="flex items-start justify-between gap-3">
         <span className="text-sm font-medium text-[#626b78]">{label}</span>
-        <span className="flex size-8 items-center justify-center rounded-lg bg-[#E8EDF4] text-[#1D2F4F]"><Icon aria-hidden="true" className="size-4" /></span>
+        <span className="admin-analytics-metric__icon flex size-8 items-center justify-center rounded-lg bg-[#E8EDF4] text-[#1D2F4F]"><Icon aria-hidden="true" className="size-4" /></span>
       </div>
       <div className="mt-5 flex flex-wrap items-baseline gap-2">
         <strong className="font-mono text-[2rem] font-medium leading-none tracking-[-0.05em] text-[#12294E]">{value}</strong>

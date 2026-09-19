@@ -4416,12 +4416,45 @@ textarea:focus-visible {
 }
 
 .admin-page--analytics .admin-analytics-metric {
-  min-height: 8rem;
-  padding: 1.15rem 1.25rem;
+  min-height: 6.9rem;
+  padding: 0.9rem 1.1rem;
 }
 
 .admin-page--analytics .admin-analytics-metric + .admin-analytics-metric {
   border-left: 0;
+}
+
+.admin-page--analytics .admin-analytics-metric-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--admin-line);
+  border-radius: 0.65rem;
+  background: var(--admin-line);
+}
+
+.admin-page--analytics .admin-analytics-metric-strip .admin-analytics-metric {
+  border: 0;
+  border-radius: 0;
+  background: var(--admin-surface-strong);
+  box-shadow: none;
+}
+
+.admin-page--analytics .admin-analytics-metric > div:nth-child(2) {
+  margin-top: 0.8rem;
+}
+
+.admin-page--analytics .admin-analytics-metric > p {
+  margin-top: 0.45rem;
+}
+
+.admin-page--analytics .admin-analytics-metric__icon {
+  width: 1.8rem;
+  height: 1.8rem;
+  border: 1px solid var(--admin-line);
+  border-radius: 0.42rem;
+  background: var(--admin-surface-soft);
 }
 
 .admin-page--analytics .admin-analytics-metric strong {
@@ -4800,6 +4833,19 @@ textarea:focus-visible {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .admin-page--analytics .admin-analytics-metric-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-page--analytics .admin-analytics-metric:nth-child(3),
+  .admin-page--analytics .admin-analytics-metric:nth-child(4) {
+    border-top: 1px solid var(--admin-line);
+  }
+
+  .admin-page--analytics .admin-analytics-metric:nth-child(3) {
+    border-left: 0;
+  }
+
   .admin-users-loading__filter-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -4854,6 +4900,19 @@ textarea:focus-visible {
 
   .admin-page--analytics .admin-analytics-metric {
     min-height: 6.8rem;
+  }
+
+  .admin-page--analytics .admin-analytics-metric-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-page--analytics .admin-analytics-metric:nth-child(3),
+  .admin-page--analytics .admin-analytics-metric:nth-child(4) {
+    border-top: 1px solid var(--admin-line);
+  }
+
+  .admin-page--analytics .admin-analytics-metric:nth-child(3) {
+    border-left: 0;
   }
 
   .admin-page--analytics .admin-analytics-panel {
