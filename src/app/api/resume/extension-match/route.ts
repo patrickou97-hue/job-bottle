@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { verifyExtensionMatchToken } from "@/lib/extension-match-token";
+import { resolveMimoModel } from "@/lib/mimo-model";
 
 const REQUEST_TIMEOUT_MS = 8_000;
 const RATE_WINDOW_MS = 10 * 60 * 1_000;
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest) {
 
   const apiKey = process.env.MIMO_API_KEY;
   const baseUrl = process.env.MIMO_BASE_URL;
-  const model = process.env.MIMO_MODEL;
+  const model = resolveMimoModel();
   if (!apiKey || !baseUrl || !model) return NextResponse.json({ error: "智能匹配服务尚未配置" }, { status: 503 });
 
   try {

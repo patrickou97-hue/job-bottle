@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { resolveResumeAiAccess } from "@/lib/resume-ai-access";
+import { resolveMimoModel } from "@/lib/mimo-model";
 import {
   applyTranslationValues,
   createTranslationPlan,
@@ -139,7 +140,7 @@ export async function POST(request: NextRequest) {
 
   const apiKey = process.env.MIMO_API_KEY;
   const baseUrl = process.env.MIMO_BASE_URL;
-  const model = process.env.MIMO_MODEL;
+  const model = resolveMimoModel();
   if (!apiKey || !baseUrl || !model) {
     return NextResponse.json({ error: "翻译暂时不可用，原简历未改动。" }, { status: 503 });
   }

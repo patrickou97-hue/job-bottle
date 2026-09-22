@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { resolveResumeAiAccess } from "@/lib/resume-ai-access";
 import { cleanResumeBullet } from "@/lib/resume-import-text";
+import { resolveMimoModel } from "@/lib/mimo-model";
 
 export const maxDuration = 120;
 
@@ -110,7 +111,7 @@ export async function POST(request: NextRequest) {
 
   const apiKey = process.env.MIMO_API_KEY;
   const baseUrl = process.env.MIMO_BASE_URL;
-  const model = process.env.MIMO_MODEL;
+  const model = resolveMimoModel();
   if (!apiKey || !baseUrl || !model) {
     return NextResponse.json({ error: "智能导入尚未配置，请联系管理员检查服务设置" }, { status: 503 });
   }

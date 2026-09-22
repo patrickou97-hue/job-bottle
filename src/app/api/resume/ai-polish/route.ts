@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createHash } from "node:crypto";
 import { RESUME_POLISH_INSTRUCTIONS, RESUME_POLISH_SECTION_TYPES } from "@/lib/resume-ai";
 import { resolveResumeAiAccess } from "@/lib/resume-ai-access";
+import { resolveMimoModel } from "@/lib/mimo-model";
 
 export const maxDuration = 60;
 
@@ -69,7 +70,7 @@ export async function POST(request: NextRequest) {
 
   const apiKey = process.env.MIMO_API_KEY;
   const baseUrl = process.env.MIMO_BASE_URL;
-  const model = process.env.MIMO_MODEL;
+  const model = resolveMimoModel();
   if (!apiKey || !baseUrl || !model) {
     return NextResponse.json(
       { error: "润色暂时不可用，请稍后重试。" },

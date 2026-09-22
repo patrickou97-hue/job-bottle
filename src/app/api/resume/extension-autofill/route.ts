@@ -6,6 +6,7 @@ import {
   isAutofillRecordNarrativeMappingCompatible,
 } from "@/lib/extension-autofill-field-compat";
 import { verifyExtensionMatchToken } from "@/lib/extension-match-token";
+import { resolveMimoModel } from "@/lib/mimo-model";
 import {
   analyzeOutcomeCompleteness,
   extractPartialOutcomeRows,
@@ -254,7 +255,7 @@ export async function POST(request: NextRequest) {
     ? process.env.MIMO_BASE_URL?.trim() || ""
     : process.env.DEEPSEEK_BASE_URL?.trim() || "https://api.deepseek.com";
   const model = provider === "mimo"
-    ? process.env.MIMO_MODEL?.trim() || ""
+    ? resolveMimoModel() || ""
     : process.env.DEEPSEEK_MODEL?.trim() || "deepseek-v4-flash";
   if (!apiKey || !baseUrl || !model) return NextResponse.json({ error: "AI 智能填写服务尚未配置" }, { status: 503 });
 

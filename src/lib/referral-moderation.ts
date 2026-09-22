@@ -126,8 +126,15 @@ export function buildReferralReviewMessages(record: ReferralReviewRecord) {
 export function getReferralMimoConfiguration(): MimoConfiguration | null {
   const apiKey = process.env.MIMO_API_KEY;
   const baseUrl = process.env.MIMO_BASE_URL;
-  const model = process.env.MIMO_MODEL;
+  const model = resolveReferralMimoModel();
   return apiKey && baseUrl && model ? { apiKey, baseUrl, model } : null;
+}
+
+function resolveReferralMimoModel(configuredModel = process.env.MIMO_MODEL) {
+  const model = configuredModel?.trim();
+  if (model?.toLowerCase() === "mimo-v2.5") return "mimo-v2.6";
+  if (model?.toLowerCase() === "mimo-v2.5-pro") return "mimo-v2.6-pro";
+  return model;
 }
 
 function getChatCompletionsUrl(baseUrl: string) {
