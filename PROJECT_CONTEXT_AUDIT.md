@@ -1,12 +1,13 @@
 # PROJECT_CONTEXT_AUDIT
 
 
-## 2026-09-22 P1 性能与 AI 点阵状态发布（待线上部署）
+## 2026-09-22 P1 性能与 AI 点阵状态发布（已上线）
 
 - 审计范围：岗位目录缓存与管理员分页读取、管理员分析/用户路径、MiMo 模型别名，以及简历和网申助手全部 AI 等待态。
 - 结果：目录请求使用 30 秒短缓存并保留显式刷新边界；管理员岗位搜索走服务端分页，减少首屏数据量；v2.5 Pro 配置统一到 v2.6 Pro，基础调用使用 v2.6 Flash；点阵十字星 loader 覆盖简历润色、导入复核、翻译、演示和扩展 popup。
 - 契约修正：smoke 检查从已移除的 `admin-shell__nav-group-toggle` 更新为现行 `admin-shell__nav-group-block`，并从简历润色路由的旧 `MIMO_MODEL` 字面量更新为 `resolveMimoModel`，同时确认余额页由共享 `admin/layout.tsx` 注入壳层，并把扩展匹配/填写路由的旧 `MIMO_MODEL` 字面量更新为 `resolveMimoModel`；只修正检查与实现的漂移。
-- 验证：typecheck、lint、186/186 测试、扩展夹具、12/12 安装包逐字节校验和 Webpack 构建（64 个静态页面）通过；smoke 将在契约修正后重跑。未新增数据库写入或权限变更，尚未推送或部署。
+- 验证：typecheck、lint、186/186 测试、扩展夹具、12/12 安装包逐字节校验、Webpack 构建（64 个静态页面）和 smoke 通过；未新增数据库写入或权限变更。
+- 发布证据：`ea2d1bb` 已推送 `origin/main`；GitHub Production deployment `6589011284` 状态为 `success / Deployment has completed`。正式站核心页面和 1.1.5 ZIP 返回 200，匿名管理反馈与扩展填写 API 返回 401；线上 ZIP 257884 bytes、SHA-256 `9d0d64f37d443bee3dd454c770ead1d6a3fa361e9d8eecf4651e4332391ddfb8` 与本地一致。
 
 ## 2026-09-19 简历条目自定义排序（已发布）
 

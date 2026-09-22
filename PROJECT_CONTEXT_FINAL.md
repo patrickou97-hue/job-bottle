@@ -1,13 +1,14 @@
 # 拾星 StarJob — 最终完整确认版交接文档
 
 
-## 2026-09-22 P1 性能与 AI 点阵状态发布（待线上部署）
+## 2026-09-22 P1 性能与 AI 点阵状态发布（已上线）
 
 - 发布范围：合并现有 P1 性能与模型配置更新（`60a0a9d`、`ab2f356`、`4924e76`）以及本轮 AI 状态视觉更新（`c6d7c6a`）。岗位目录复用短时请求缓存并支持管理员分页检索；管理端分析、用户和岗位路径减少重复读取；MiMo v2.5 Pro 别名统一到官方 v2.6 Pro，基础模型使用可调用的 v2.6 Flash。
 - AI 状态视觉：简历润色、导入复核、整份翻译、网申助手演示和真实扩展 popup 共用点阵十字星 loading，保留原有进度、取消和无障碍状态；扩展 1.1.5 安装包已重新生成。
 - 发布前修正：smoke 检查同步当前 `AdminShell` 的分层导航块类名，并将简历润色契约改为检查 `resolveMimoModel`、余额页契约改为验证共享后台布局，扩展匹配/填写契约改为检查 `resolveMimoModel`，移除对已不再使用的类名和旧模型环境变量字面量的过时契约，不改变产品行为。
 - 兼容边界：未新增 Supabase migration/RLS/DDL、用户数据写入或权限捷径；保留管理员调用方鉴权、岗位筛选与扩展安全填写边界。
-- 本地验证：typecheck、lint、186/186 测试、扩展夹具、12/12 安装包逐字节一致性和 Webpack 生产构建（64 个静态页面）通过；smoke 在契约同步后待重跑。当前提交已在本地，尚未推送或部署。
+- 验证与部署：typecheck、lint、186/186 测试、扩展夹具、12/12 安装包逐字节一致性、Webpack 生产构建（64 个静态页面）和 smoke 全部通过。`ea2d1bb` 已推送 `origin/main`；GitHub Production deployment `6589011284` 指向 Vercel `https://job-bottle-qqjm9zvrc-job-bottle.vercel.app`，状态为 `success / Deployment has completed`。
+- 线上探针：正式站 `/`、`/resume`、`/extension`、`/extension/guide` 和 1.1.5 ZIP 均返回 HTTP 200；匿名 `/api/admin/feedback` 与 `/api/resume/extension-autofill` 均返回 401。线上扩展包 257884 bytes、SHA-256 `9d0d64f37d443bee3dd454c770ead1d6a3fa361e9d8eecf4651e4332391ddfb8`，与本地包逐字节一致。
 
 ## 2026-09-19 简历条目自定义排序（已发布）
 
