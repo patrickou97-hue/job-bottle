@@ -1511,9 +1511,9 @@ git diff --check
 - 验证：`npm test` 186/186；`npm run typecheck`、`npm run lint`、`git diff --check` 和使用本机现有环境变量的 `npm run build` 通过。`npm run smoke` 仍在既有 `AdminShell` 合同门禁 `admin-shell__nav-group-toggle` 处停止，与本轮 P1 修改无关。
 - 当前状态：P1 修改在当前工作树完成，尚未提交、推送或部署；用户明确要求上线后再执行发布，并重新验证管理页、公共岗位目录和受保护 API。
 
-## 2026-09-22 MiMo v2.6 拾星简历 AI 可调用性验证（待发布）
+## 2026-09-22 MiMo v2.6 拾星简历 AI 可调用性验证（已上线）
 
 - 官方今日发布的可调用模型名为小写 `mimo-v2.6-pro`、`mimo-v2.6-flash` 和 `mimo-v2.6-pro-ultraspeed`；官方发布页没有可调用的裸 `mimo-v2.6`。
 - 使用现有本机 MiMo 配置做最小 OpenAI 兼容请求：`mimo-v2.6-pro` 返回 HTTP 200，并返回可被拾星简历润色 `resultSchema` 接受的 JSON 字段；`mimo-v2.6-flash` 同样返回 HTTP 200 和完整字段；`mimo-v2.6` 返回 HTTP 400 `Unsupported model`；`mimo-v2.6-pro-ultraspeed` 当前返回 HTTP 400 `Not supported model`。
 - 修复：将旧 `mimo-v2.5` 和误配置的裸 `mimo-v2.6` 映射到可调用的 `mimo-v2.6-flash`；`mimo-v2.5-pro` 保持映射到 `mimo-v2.6-pro`；简历润色、简历翻译、简历导入、扩展匹配、扩展自动填写和内推审核共用该兼容边界。
-- 当前状态：上游请求已验证可用，代码和回归测试已完成，待提交、推送并验证拾星生产部署；`mimo-v2.5-asr` 仍保持独立，不参与文本模型映射。
+- 当前状态：上游请求、代码和回归测试已完成；修复已提交为 `ab2f356`，已推送并完成 Vercel Production 部署，页面探针返回 200，受保护的简历 API 匿名探针按预期返回 401；`mimo-v2.5-asr` 仍保持独立，不参与文本模型映射。
