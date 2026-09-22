@@ -1495,10 +1495,10 @@ git diff --check
 - 验证：\`npm run typecheck\` 通过；\`npm run render:preview\` 成功输出预览 MP4（900/900，约 3.3 MB）；关键帧 60、220、370、520、670、820 已生成并完成画面检查，确认中文清晰、画幅安全、功能识别明确、网申助手截图无裁切；\`npm run render\` 成功输出完整 MP4（900/900，约 8.2 MB）；\`file\` 确认两个输出均为 MP4。
 - 当前状态与边界：视频和源工程仅保存在本地 \`promo-video/\`，本轮未提交、未推送、未部署、未修改正式站点；抖音/小红书的音乐、封面、发布文案和真实平台上传尚未完成。主工作区原有未提交改动未覆盖、未删除。
 
-## 2026-09-22 MiMo v2.6 模型迁移（待发布）
+## 2026-09-22 MiMo v2.6 模型迁移（已上线）
 
 - 用户要求将实际服务端 MiMo 文本模型从 `mimo-v2.5` / `mimo-v2.5-pro` 迁移到 `mimo-v2.6` / `mimo-v2.6-pro`。官方 Pro API 标识为小写 `mimo-v2.6-pro`；当前代码通过 `resolveMimoModel` 统一映射旧配置，内推审核路径同步处理旧配置。
 - 实际修改：新增 `src/lib/mimo-model.ts`；更新简历导入、翻译、润色、扩展匹配、扩展自动填写、扩展资料和内推审核的服务端模型解析；`.env.local.example` 设置 `MIMO_MODEL=mimo-v2.6-pro`；新增 `tests/mimo-model.test.ts`。
 - 保留边界：`mimo-v2.5-asr` 仍是独立 ASR 模型；StarInterview 的旧 `mimo-v2.5` 客户端标识保留兼容，不作为实际上游模型选择。Supabase 项目无可更新 Edge Function secret，未执行 SQL/migration。
 - 验证：`npm test` 186/186；`npm run typecheck`、`npm run lint`、`git diff --check` 和使用本机现有环境变量的 `npm run build` 通过。`npm run smoke` 在既有 AdminShell 合同门禁 `admin-shell__nav-group-toggle` 处失败，与本次 MiMo 迁移无关。
-- 当前状态：代码变更已在当前工作树完成，尚未提交、推送或部署；下一步提交、推送并等待生产部署，再验证线上资源与受保护边界。
+- 当前状态：提交 `0df4ee8` 已推送到 `origin/main`；Vercel 生产部署成功，正式域名 `https://www.starjob.space` 与部署地址均返回正常页面，简历导入接口未登录请求返回 401，受保护边界保持生效。
