@@ -95,6 +95,12 @@ export function SpaceHome() {
 
     function tick(now: number) {
       if (stopped) return;
+      if (pausedRef.current || document.hidden) {
+        previousTime = null;
+        render();
+        frame = 0;
+        return;
+      }
       if (previousTime !== null && !pausedRef.current && !hoverRef.current && !focusRef.current) {
         elapsedRef.current += Math.min((now - previousTime) / 1000, .1);
       }
@@ -113,7 +119,7 @@ export function SpaceHome() {
     if (!document.hidden && !reducedMotion) frame = requestAnimationFrame(tick);
     document.addEventListener("visibilitychange", onVisibility);
     return () => { stopped = true; cancelAnimationFrame(frame); observer.disconnect(); document.removeEventListener("visibilitychange", onVisibility); };
-  }, [planets, reducedMotion]);
+  }, [menuOpen, paused, planets, reducedMotion]);
 
   return (
     <main ref={sceneRef} className="orbital-home" aria-label="拾星主页" onKeyDown={(event) => { if (event.key === "Escape") setMenuOpen(false); }}>

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Filter, Plus, Search, Upload, X } from "lucide-react";
-import { fetchAllJobsForAdmin } from "@/lib/jobs";
+import { fetchAdminJobsPage, fetchAllJobsForAdmin } from "@/lib/jobs";
 import { findDuplicateJobGroups } from "@/lib/job-dedupe";
 import { sanitizeApplicationUrl } from "@/lib/application-url";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
@@ -17,6 +17,8 @@ const PAGE_SIZE = 40;
 
 export function AdminJobsClient() {
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [totalJobs, setTotalJobs] = useState(0);
+  const [duplicateSource, setDuplicateSource] = useState<Job[] | null>(null);
   const [editing, setEditing] = useState<Job | null>(null);
   const [keyword, setKeyword] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
@@ -44,7 +46,9 @@ export function AdminJobsClient() {
         return;
       }
       setIsAdmin(true);
-      setJobs(await fetchAllJobsForAdmin(createClient()));
+      const result = await fetchAdminJobsPage(createClient(), { page, pageSize: PAGE_SIZE, keyword });
+      setJobs(result.jobs);
+      setTotalJobs(result.total);
     } catch {
       setMessage("读取岗位失败，请确认数据库权限。");
     } finally {
@@ -57,35 +61,53 @@ export function AdminJobsClient() {
       void loadData();
     }, 0);
     return () => window.clearTimeout(timer);
+    // This initial session check intentionally runs once; subsequent query changes use the effect below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const filtered = useMemo(() => {
+  useEffect(() => {
+    if (!isAdmin || duplicateOnly) return;
+    const timer = window.setTimeout(() => {
+      setLoading(true);
+      void fetchAdminJobsPage(createClient(), { page, pageSize: PAGE_SIZE, keyword })
+        .then((result) => {
+          setJobs(result.jobs);
+          setTotalJobs(result.total);
+        })
+        .catch(() => setMessage("读取岗位失败，请确认数据库权限。"))
+        .finally(() => setLoading(false));
+    }, keyword.trim() ? 220 : 0);
+    return () => window.clearTimeout(timer);
+  }, [isAdmin, keyword, page, duplicateOnly]);
+
+  const duplicateFiltered = useMemo(() => {
     const key = keyword.trim().toLowerCase();
-    if (!key) return jobs;
-    return jobs.filter(
+    const source = duplicateSource ?? [];
+    if (!key) return source;
+    return source.filter(
       (job) =>
         job.company_name.toLowerCase().includes(key) ||
         (job.job_titles ?? "").toLowerCase().includes(key) ||
         (job.industry ?? "").toLowerCase().includes(key) ||
         (job.locations ?? "").toLowerCase().includes(key),
     );
-  }, [jobs, keyword]);
+  }, [duplicateSource, keyword]);
 
-  const duplicateGroups = useMemo(() => findDuplicateJobGroups(jobs), [jobs]);
+  const duplicateGroups = useMemo(() => findDuplicateJobGroups(duplicateSource ?? []), [duplicateSource]);
   const duplicateJobIds = useMemo(
     () => new Set(duplicateGroups.flatMap((group) => group.jobs.map((job) => job.id))),
     [duplicateGroups],
   );
 
   const visibleJobs = useMemo(
-    () => (duplicateOnly ? filtered.filter((job) => duplicateJobIds.has(job.id)) : filtered),
-    [duplicateJobIds, duplicateOnly, filtered],
+    () => (duplicateOnly ? duplicateFiltered.filter((job) => duplicateJobIds.has(job.id)) : jobs),
+    [duplicateFiltered, duplicateJobIds, duplicateOnly, jobs],
   );
-  const totalPages = Math.max(1, Math.ceil(visibleJobs.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil((duplicateOnly ? visibleJobs.length : totalJobs) / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const pagedJobs = useMemo(
-    () => visibleJobs.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE),
-    [safePage, visibleJobs],
+    () => duplicateOnly ? visibleJobs.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE) : jobs,
+    [duplicateOnly, jobs, safePage, visibleJobs],
   );
 
   useEffect(() => {
@@ -132,6 +154,7 @@ export function AdminJobsClient() {
       return;
     }
     setJobs((current) => current.filter((item) => item.id !== job.id));
+    setTotalJobs((current) => Math.max(0, current - 1));
   }
 
   async function toggleActive(job: Job) {
@@ -151,6 +174,26 @@ export function AdminJobsClient() {
     setJobs((current) => current.map((item) => item.id === job.id ? { ...item, is_active: !item.is_active } : item));
   }
 
+  async function toggleDuplicateMode() {
+    if (duplicateOnly) {
+      setDuplicateOnly(false);
+      setDuplicateSource(null);
+      setPage(1);
+      return;
+    }
+    setLoading(true);
+    setMessage("");
+    try {
+      setDuplicateSource(await fetchAllJobsForAdmin(createClient()));
+      setDuplicateOnly(true);
+      setPage(1);
+    } catch {
+      setMessage("重复岗位暂时无法读取，请稍后重试。");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="admin-page admin-page--jobs observatory-page space-y-8">
       <section className="page-hero">
@@ -167,10 +210,12 @@ export function AdminJobsClient() {
             <Button
               variant={duplicateOnly ? "primary" : "secondary"}
               className="gap-2"
-              disabled={!isAdmin || duplicateGroups.length === 0}
-              onClick={() => { setDuplicateOnly((current) => !current); setPage(1); }}
+              disabled={!isAdmin || loading}
+              onClick={() => void toggleDuplicateMode()}
               title={
-                duplicateGroups.length > 0
+                duplicateSource === null
+                  ? "点击后扫描全部岗位的重复记录"
+                  : duplicateGroups.length > 0
                   ? `仅查看 ${duplicateGroups.length} 组重复岗位`
                   : "当前没有发现重复岗位"
               }
@@ -239,7 +284,7 @@ export function AdminJobsClient() {
                 />
               </div>
               <span className="admin-jobs-toolbar__count">
-                {visibleJobs.length === jobs.length ? `${jobs.length} 个岗位` : `${visibleJobs.length} / ${jobs.length} 个岗位`}
+                {duplicateOnly ? `${visibleJobs.length} 个重复岗位` : `${totalJobs} 个岗位`}
               </span>
             </div>
           </section>

@@ -45,8 +45,20 @@ const DEFAULT_PAGE_SIZE = 25;
 const MAX_PAGE_SIZE = 100;
 const DATABASE_CHUNK_SIZE = 500;
 const USAGE_PAGE_SIZE = 1000;
+const AUTH_USERS_CACHE_TTL_MS = 2_000;
 const HOUR_MS = 60 * 60 * 1000;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+// Admin filters can trigger several requests while an operator is typing. A
+// short process-local snapshot avoids repeating the Auth and directory reads,
+// while mutations explicitly invalidate it.
+let authUsersCache: { expiresAt: number; users: User[] } | null = null;
+let directoryCache: {
+  expiresAt: number;
+  key: string;
+  profiles: Map<string, AdminProfile>;
+  wechatIdentities: Map<string, AdminWechatIdentity>;
+} | null = null;
 
 // The recovery RPC enforces a five-minute quiescence window before it may
 // restore and release a guard. Keeping this route's hard lifetime below that
@@ -68,10 +80,7 @@ export async function GET(request: NextRequest) {
     const admin = createAdminClient();
     const authUsers = await listAllAuthUsers(admin);
     const authUserIds = authUsers.map((user) => user.id);
-    const [profiles, wechatIdentities] = await Promise.all([
-      fetchProfiles(admin, authUserIds),
-      fetchWechatIdentities(admin, authUserIds),
-    ]);
+    const { profiles, wechatIdentities } = await fetchAdminUserDirectory(admin, authUserIds);
     const metrics = buildMetrics(authUsers, profiles);
     const filteredUsers = authUsers
       .filter((user) => matchesFilters(
@@ -186,6 +195,8 @@ export async function PATCH(request: NextRequest) {
 
     const access = await requireAdminAccess();
     if ("response" in access) return access.response;
+    authUsersCache = null;
+    directoryCache = null;
     if (isStarInterviewAccessUpdate(body)) {
       if (!access.isPrimaryAdmin) {
         return NextResponse.json({ error: "只有主管理员可以调整 StarInterview 无限访问。" }, { status: 403 });
@@ -646,12 +657,16 @@ function parseListFilters(searchParams: URLSearchParams) {
 }
 
 async function listAllAuthUsers(admin: SupabaseClient<Database>) {
+  if (authUsersCache && authUsersCache.expiresAt > Date.now()) return authUsersCache.users;
   const users: User[] = [];
   for (let page = 1; page <= 100; page += 1) {
     const { data, error } = await admin.auth.admin.listUsers({ page, perPage: AUTH_PAGE_SIZE });
     if (error) throw error;
     users.push(...data.users);
-    if (data.users.length < AUTH_PAGE_SIZE) return users;
+    if (data.users.length < AUTH_PAGE_SIZE) {
+      authUsersCache = { expiresAt: Date.now() + AUTH_USERS_CACHE_TTL_MS, users };
+      return users;
+    }
   }
   throw new Error("用户数量超过当前管理页的安全读取上限。");
 }
@@ -666,6 +681,24 @@ async function fetchProfiles(admin: SupabaseClient<Database>, ids: string[]) {
     (data as AdminProfile[]).forEach((profile) => profiles.set(profile.id, profile));
   }
   return profiles;
+}
+
+async function fetchAdminUserDirectory(admin: SupabaseClient<Database>, ids: string[]) {
+  const key = ids.join(",");
+  if (directoryCache && directoryCache.expiresAt > Date.now() && directoryCache.key === key) {
+    return directoryCache;
+  }
+  const [profiles, wechatIdentities] = await Promise.all([
+    fetchProfiles(admin, ids),
+    fetchWechatIdentities(admin, ids),
+  ]);
+  directoryCache = {
+    expiresAt: Date.now() + AUTH_USERS_CACHE_TTL_MS,
+    key,
+    profiles,
+    wechatIdentities,
+  };
+  return directoryCache;
 }
 
 async function fetchWechatIdentities(admin: SupabaseClient<Database>, ids: string[]) {

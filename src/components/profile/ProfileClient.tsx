@@ -77,25 +77,17 @@ export function ProfileClient() {
       setUserId(user.id);
       setUserEmail(user.email ?? "");
       await ensureProfile(supabase, user);
-      const [profileResult, jobsResult, resumesResult, applicationsResult] = await Promise.allSettled([
-        supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
+      const profilePromise = supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
+      const supportingPromise = Promise.allSettled([
         fetchActiveJobs(supabase),
         fetchMyResumes(supabase),
         fetchMyApplications(supabase, user.id),
       ]);
+      const profileResult = await profilePromise;
       if (!mounted) return;
+      if (profileResult.error) throw profileResult.error;
 
-      const nextProfile =
-        profileResult.status === "fulfilled" ? (profileResult.value.data as Profile | null) : null;
-      setJobs(jobsResult.status === "fulfilled" ? jobsResult.value : []);
-      setApplications(applicationsResult.status === "fulfilled" ? applicationsResult.value : []);
-      setResumes(
-        resumesResult.status === "fulfilled" || !isMissingResumeTableError(resumesResult.reason)
-          ? resumesResult.status === "fulfilled"
-            ? resumesResult.value
-            : []
-          : [],
-      );
+      const nextProfile = profileResult.data as Profile | null;
       setDisplayName(nextProfile?.display_name ?? user.email?.split("@")[0] ?? "秋招用户");
       setPhone(nextProfile?.phone ?? "");
       setCity(nextProfile?.city ?? "");
@@ -107,6 +99,16 @@ export function ProfileClient() {
       setAuthFailed(false);
       setAuthResolved(true);
       setMessage("");
+
+      const [jobsResult, resumesResult, applicationsResult] = await supportingPromise;
+      if (!mounted) return;
+      setJobs(jobsResult.status === "fulfilled" ? jobsResult.value : []);
+      setApplications(applicationsResult.status === "fulfilled" ? applicationsResult.value : []);
+      setResumes(
+        resumesResult.status === "fulfilled" || !isMissingResumeTableError(resumesResult.reason)
+          ? resumesResult.status === "fulfilled" ? resumesResult.value : []
+          : [],
+      );
     }
 
     void loadProfile().catch((error) => {

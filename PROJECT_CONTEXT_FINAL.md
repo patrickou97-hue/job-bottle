@@ -1502,3 +1502,11 @@ git diff --check
 - 保留边界：`mimo-v2.5-asr` 仍是独立 ASR 模型；StarInterview 的旧 `mimo-v2.5` 客户端标识保留兼容，不作为实际上游模型选择。Supabase 项目无可更新 Edge Function secret，未执行 SQL/migration。
 - 验证：`npm test` 186/186；`npm run typecheck`、`npm run lint`、`git diff --check` 和使用本机现有环境变量的 `npm run build` 通过。`npm run smoke` 在既有 AdminShell 合同门禁 `admin-shell__nav-group-toggle` 处失败，与本次 MiMo 迁移无关。
 - 当前状态：提交 `0df4ee8` 已推送到 `origin/main`；Vercel 生产部署成功，正式域名 `https://www.starjob.space` 与部署地址均返回正常页面，简历导入接口未登录请求返回 401，受保护边界保持生效。
+
+## 2026-09-22 P1 性能修复与交互稳定性（本地待发布）
+
+- P1 范围：管理分析趋势、管理用户目录、管理岗位分页、StarInterview 余额、公共岗位复用、个人资料首屏、主页动画停帧、账户安全恢复。
+- 实际修改：分析趋势改为单次日期分桶，避免 `range × rows` 重复扫描；管理用户 Auth/目录读取增加 2 秒进程内快照并在变更时失效；管理岗位新增服务端分页与关键词查询，重复岗位扫描改为点击后按需读取全量；余额概览只读取角色与余额字段，选中账户时只读取该账户和最近账本；公共岗位目录按 Supabase 客户端复用 30 秒缓存与进行中的请求；个人资料先渲染基础资料再填充岗位、简历和投递；主页暂停、菜单打开或页面隐藏时停止 RAF；账户安全恢复列表改为展开后读取。
+- 兼容边界：保留现有筛选、排序、重复核验、编辑、删除、导入、余额发放、恢复静默期和登录权限语义；没有引入 service-role 到客户端，也没有修改数据库权限或业务数据。
+- 验证：`npm test` 186/186；`npm run typecheck`、`npm run lint`、`git diff --check` 和使用本机现有环境变量的 `npm run build` 通过。`npm run smoke` 仍在既有 `AdminShell` 合同门禁 `admin-shell__nav-group-toggle` 处停止，与本轮 P1 修改无关。
+- 当前状态：P1 修改在当前工作树完成，尚未提交、推送或部署；用户明确要求上线后再执行发布，并重新验证管理页、公共岗位目录和受保护 API。

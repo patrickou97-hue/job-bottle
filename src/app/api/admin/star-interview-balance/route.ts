@@ -28,8 +28,36 @@ export async function GET(request: NextRequest) {
   }
   try {
     const admin = createAdminClient();
+    if (selectedUserId) {
+      const selected = await readSelectedUser(admin, selectedUserId);
+      return "error" in selected
+        ? NextResponse.json(selected, { status: 404 })
+        : NextResponse.json(selected);
+    }
     const authUsers = await listAllUsers();
     const ids = authUsers.map((user) => user.id);
+    if (summaryOnly) {
+      const [{ data: summaryProfiles, error: summaryProfileError }, { data: summaryWallets, error: summaryWalletError }] = await Promise.all([
+        admin.from("profiles").select("id,role").in("id", ids),
+        admin.from("star_interview_wallets").select("user_id,balance_fen").in("user_id", ids),
+      ]);
+      if (summaryProfileError || summaryWalletError) throw summaryProfileError ?? summaryWalletError;
+      const roles = new Map((summaryProfiles ?? []).map((profile) => [profile.id, profile.role]));
+      const balances = new Map((summaryWallets ?? []).map((wallet) => [wallet.user_id, wallet.balance_fen]));
+      const summary = authUsers.reduce((result, user) => {
+        const balanceFen = balances.get(user.id) ?? 0;
+        result.fundedUsers += balanceFen > 0 ? 1 : 0;
+        result.totalBalanceFen += balanceFen;
+        result.unlimitedUsers += resolveAccessMode(user, roles.get(user.id) ?? "user") === "unlimited" ? 1 : 0;
+        return result;
+      }, {
+        totalUsers: authUsers.length,
+        fundedUsers: 0,
+        unlimitedUsers: 0,
+        totalBalanceFen: 0,
+      });
+      return NextResponse.json({ summary });
+    }
     const [{ data: profiles, error: profileError }, { data: wallets, error: walletError }] = await Promise.all([
       admin.from("profiles").select("id,display_name,role").in("id", ids),
       admin.from("star_interview_wallets").select("*").in("user_id", ids),
@@ -60,25 +88,6 @@ export async function GET(request: NextRequest) {
       totalBalanceFen: allUsers.reduce((sum, user) => sum + user.balanceFen, 0),
     };
 
-    if (summaryOnly) {
-      return NextResponse.json({ summary });
-    }
-
-    if (selectedUserId) {
-      const selectedUser = allUsers.find((user) => user.id === selectedUserId);
-      if (!selectedUser) {
-        return NextResponse.json({ error: "没有找到这个用户。" }, { status: 404 });
-      }
-      const { data: ledger, error: ledgerError } = await admin
-        .from("star_interview_ledger")
-        .select("id,entry_type,amount_fen,nominal_amount_fen,balance_after_fen,feature,note,created_at")
-        .eq("user_id", selectedUserId)
-        .order("created_at", { ascending: false })
-        .limit(8);
-      if (ledgerError) throw ledgerError;
-      return NextResponse.json({ user: selectedUser, ledger: ledger ?? [] });
-    }
-
     const matched = authUsers.filter((user) => {
       if (!query) return true;
       const profile = profileById.get(user.id);
@@ -103,6 +112,33 @@ export async function GET(request: NextRequest) {
   } catch {
     return NextResponse.json({ error: "诘星余额列表暂时无法读取。" }, { status: 500 });
   }
+}
+
+async function readSelectedUser(admin: ReturnType<typeof createAdminClient>, userId: string) {
+  const [{ data: authResult, error: authError }, { data: profile, error: profileError }, { data: wallet, error: walletError }, { data: ledger, error: ledgerError }] = await Promise.all([
+    admin.auth.admin.getUserById(userId),
+    admin.from("profiles").select("id,display_name,role").eq("id", userId).maybeSingle(),
+    admin.from("star_interview_wallets").select("*").eq("user_id", userId).maybeSingle(),
+    admin.from("star_interview_ledger").select("id,entry_type,amount_fen,nominal_amount_fen,balance_after_fen,feature,note,created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(8),
+  ]);
+  if (authError || profileError || walletError || ledgerError) throw authError ?? profileError ?? walletError ?? ledgerError;
+  const user = authResult.user;
+  if (!user) return { error: "没有找到这个用户。" };
+  return {
+    user: {
+      id: user.id,
+      email: user.email ?? "微信账户",
+      displayName: profile?.display_name || "拾星用户",
+      accessMode: resolveAccessMode(user, profile?.role ?? "user"),
+      balanceFen: wallet?.balance_fen ?? 0,
+      totalGrantedFen: wallet?.total_granted_fen ?? 0,
+      totalRechargedFen: wallet?.total_recharged_fen ?? 0,
+      totalSpentFen: wallet?.total_spent_fen ?? 0,
+      nominalSpentFen: wallet?.nominal_spent_fen ?? 0,
+      updatedAt: wallet?.updated_at ?? null,
+    },
+    ledger: ledger ?? [],
+  };
 }
 
 export async function POST(request: NextRequest) {

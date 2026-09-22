@@ -78,7 +78,8 @@ export function AdminUsersClient() {
   const [expandedId, setExpandedId] = useState("");
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [mutationGuards, setMutationGuards] = useState<AdminUserMutationGuardSummary[]>([]);
-  const [recoveryState, setRecoveryState] = useState<"loading" | "hidden" | "ready" | "error">("loading");
+  const [recoveryState, setRecoveryState] = useState<"loading" | "hidden" | "ready" | "error">("hidden");
+  const [recoveryOpen, setRecoveryOpen] = useState(false);
   const [recoveryRefreshing, setRecoveryRefreshing] = useState(false);
   const [recoveryReasons, setRecoveryReasons] = useState<Record<string, string>>({});
   const [recoveryFieldErrors, setRecoveryFieldErrors] = useState<Record<string, string>>({});
@@ -119,13 +120,14 @@ export function AdminUsersClient() {
     }
   }, []);
 
-  useEffect(() => {
-    const timer = window.setTimeout(() => void loadMutationGuards(true), 0);
-    return () => {
-      window.clearTimeout(timer);
-      recoveryLoadIdRef.current += 1;
-    };
-  }, [loadMutationGuards]);
+  function toggleRecoveryPanel() {
+    setRecoveryOpen((current) => {
+      const next = !current;
+      if (next && recoveryState === "hidden") void loadMutationGuards(true);
+      if (!next) recoveryLoadIdRef.current += 1;
+      return next;
+    });
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -505,10 +507,24 @@ export function AdminUsersClient() {
     </section>
   );
 
+  const recoveryDisclosure = (
+    <button
+      type="button"
+      onClick={toggleRecoveryPanel}
+      className="flex w-full items-center justify-between rounded-xl border border-[#a66f81]/25 bg-[#a66f81]/[0.045] px-4 py-3 text-left text-sm text-ink-secondary transition hover:bg-[#a66f81]/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--aurora)]"
+      aria-expanded={recoveryOpen}
+      aria-controls="admin-account-recovery-panel"
+    >
+      <span className="flex items-center gap-2 font-medium text-ink-primary"><ShieldCheck aria-hidden="true" className="size-4 text-[#d8a8b7]" />账户安全恢复</span>
+      <ChevronDown aria-hidden="true" className={cn("size-4 transition-transform", recoveryOpen && "rotate-180")} />
+    </button>
+  );
+
   if (state === "loading") {
     return (
       <div className="space-y-5">
-        {recoveryPanel}
+        {recoveryDisclosure}
+        {recoveryOpen ? <div id="admin-account-recovery-panel">{recoveryPanel}</div> : null}
         <UsersLoadingState />
       </div>
     );
@@ -517,7 +533,8 @@ export function AdminUsersClient() {
   if (state === "error") {
     return (
       <div className="space-y-5">
-        {recoveryPanel}
+        {recoveryDisclosure}
+        {recoveryOpen ? <div id="admin-account-recovery-panel">{recoveryPanel}</div> : null}
         <div className="empty-state">
           <p>{message}</p>
           <Button className="mt-4" onClick={() => setRevision((value) => value + 1)}>重试用户列表</Button>
@@ -535,7 +552,8 @@ export function AdminUsersClient() {
 
   return (
     <div className="admin-page admin-page--users space-y-5">
-      {recoveryPanel}
+      {recoveryDisclosure}
+      {recoveryOpen ? <div id="admin-account-recovery-panel">{recoveryPanel}</div> : null}
 
       <section aria-label="用户概览" className="grid gap-px overflow-hidden rounded-xl border border-[color:var(--line-ghost)] bg-[color:var(--line-ghost)] sm:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))_minmax(210px,1.2fr)]">
         {metricItems.map((item) => {

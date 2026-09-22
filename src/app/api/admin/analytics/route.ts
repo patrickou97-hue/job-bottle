@@ -204,22 +204,56 @@ function buildTrend(input: {
   start: Date;
   range: AdminAnalyticsRange;
 }) {
-  return Array.from({ length: input.range }, (_, index) => {
+  const dayMs = 24 * 60 * 60 * 1000;
+  const startMs = input.start.getTime();
+  const buckets = Array.from({ length: input.range }, (_, index) => {
     const dayStart = addDays(input.start, index);
-    const dayEnd = addDays(dayStart, 1);
-    const start = dayStart.getTime();
-    const end = dayEnd.getTime();
-    const dayEvents = input.events.filter((row) => isBetween(row.created_at, start, end));
     return {
       date: dayStart.toISOString().slice(0, 10),
       label: formatDateLabel(dayStart),
-      newUsers: input.authUsers.filter((user) => isBetween(user.created_at, start, end)).length,
-      activeUsers: unique(dayEvents.map((row) => row.user_id).filter(isNonEmpty)).length,
-      events: dayEvents.length,
-      applications: input.applications.filter((row) => isBetween(row.updated_at, start, end)).length,
-      resumes: input.resumes.filter((row) => isBetween(row.created_at, start, end)).length,
+      newUsers: 0,
+      activeUsers: new Set<string>(),
+      events: 0,
+      applications: 0,
+      resumes: 0,
     };
   });
+
+  function bucketIndex(value: string | null | undefined) {
+    if (!value) return -1;
+    const timestamp = new Date(value).getTime();
+    const index = Math.floor((timestamp - startMs) / dayMs);
+    return index >= 0 && index < buckets.length ? index : -1;
+  }
+
+  input.authUsers.forEach((user) => {
+    const index = bucketIndex(user.created_at);
+    if (index >= 0) buckets[index].newUsers += 1;
+  });
+  input.events.forEach((row) => {
+    const index = bucketIndex(row.created_at);
+    if (index < 0) return;
+    buckets[index].events += 1;
+    if (row.user_id) buckets[index].activeUsers.add(row.user_id);
+  });
+  input.applications.forEach((row) => {
+    const index = bucketIndex(row.updated_at);
+    if (index >= 0) buckets[index].applications += 1;
+  });
+  input.resumes.forEach((row) => {
+    const index = bucketIndex(row.created_at);
+    if (index >= 0) buckets[index].resumes += 1;
+  });
+
+  return buckets.map((bucket) => ({
+    date: bucket.date,
+    label: bucket.label,
+    newUsers: bucket.newUsers,
+    activeUsers: bucket.activeUsers.size,
+    events: bucket.events,
+    applications: bucket.applications,
+    resumes: bucket.resumes,
+  }));
 }
 
 function buildSegments(input: { totalUsers: number; activeUsers: number; returningUsers: number; onePeriodUsers: number }) {

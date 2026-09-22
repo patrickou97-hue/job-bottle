@@ -7,8 +7,18 @@ import type { Database, Job, JobFilters, JobFormValues, Profile } from "@/lib/ty
 
 const DEFAULT_JOBS_TIMEOUT_MS = 7000;
 const PUBLIC_JOB_PAGE_SIZE = 1000;
+const PUBLIC_JOB_CACHE_TTL_MS = 30_000;
 export const RECENT_JOB_WINDOW_DAYS = 7;
 const PUBLIC_JOB_LIST_COLUMNS = "id,company_name,start_date,industry,batch_type,job_titles,job_categories,locations,apply_url,logo_url,tags,is_active,opens_at,closes_at,created_at,updated_at";
+
+// Several client surfaces share one Supabase client during a page session.
+// Reuse the same active catalogue request for 30 seconds without changing the
+// explicit refresh paths used by admin and import flows.
+const activeJobsCache = new WeakMap<object, {
+  expiresAt: number;
+  value?: Job[];
+  pending?: Promise<Job[]>;
+}>();
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string) {
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
@@ -22,6 +32,23 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string)
 }
 
 export async function fetchActiveJobs(supabase: SupabaseClient<Database>) {
+  const cached = activeJobsCache.get(supabase);
+  if (cached?.value && cached.expiresAt > Date.now()) return cached.value;
+  if (cached?.pending) return cached.pending;
+
+  const pending = loadActiveJobs(supabase);
+  activeJobsCache.set(supabase, { expiresAt: Date.now() + PUBLIC_JOB_CACHE_TTL_MS, pending });
+  try {
+    const rows = await pending;
+    activeJobsCache.set(supabase, { expiresAt: Date.now() + PUBLIC_JOB_CACHE_TTL_MS, value: rows });
+    return rows;
+  } catch (error) {
+    activeJobsCache.delete(supabase);
+    throw error;
+  }
+}
+
+async function loadActiveJobs(supabase: SupabaseClient<Database>) {
   const rows: Job[] = [];
   for (let from = 0; ; from += PUBLIC_JOB_PAGE_SIZE) {
     const query = supabase
@@ -119,6 +146,39 @@ export async function fetchAllJobsForAdmin(supabase: SupabaseClient<Database>) {
 
   if (error) throw error;
   return (data ?? []) as Job[];
+}
+
+export async function fetchAdminJobsPage(
+  supabase: SupabaseClient<Database>,
+  input: { page?: number; pageSize?: number; keyword?: string } = {},
+) {
+  const pageSize = Math.max(1, Math.min(100, input.pageSize ?? 40));
+  const page = Math.max(1, input.page ?? 1);
+  const keyword = escapePostgrestSearch(input.keyword?.trim() ?? "");
+  let query = supabase
+    .from("jobs")
+    .select("*", { count: "exact" })
+    .order("updated_at", { ascending: false })
+    .range((page - 1) * pageSize, page * pageSize - 1);
+  if (keyword) {
+    query = query.or([
+      `company_name.ilike.%${keyword}%`,
+      `job_titles.ilike.%${keyword}%`,
+      `industry.ilike.%${keyword}%`,
+      `locations.ilike.%${keyword}%`,
+    ].join(","));
+  }
+  const { data, count, error } = await withTimeout(
+    Promise.resolve(query),
+    DEFAULT_JOBS_TIMEOUT_MS,
+    "读取岗位数据库超时。",
+  );
+  if (error) throw error;
+  return { jobs: (data ?? []) as Job[], total: count ?? 0, page, pageSize };
+}
+
+function escapePostgrestSearch(value: string) {
+  return value.replace(/[\\%_(),]/g, (character) => `\\${character}`);
 }
 
 export function filterJobs(jobs: Job[], filters: JobFilters) {
