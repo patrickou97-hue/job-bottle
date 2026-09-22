@@ -7,6 +7,19 @@ const AI_AUTOFILL_BATCH_BUDGET = 1_700;
 const AI_AUTOFILL_MAX_BATCHES = 100;
 const AI_AUTOFILL_MAX_FIELDS = 1_500;
 const AI_AUTOFILL_MIN_CONFIDENCE = 0.68;
+const PIXEL_STAR_PATTERN = [
+  ".....x.....",
+  "....xxx....",
+  "...xxxxx...",
+  "..xx...xx..",
+  ".xx.....xx.",
+  "xxxxxxxxxxx",
+  ".xx.....xx.",
+  "..xx...xx..",
+  "...xxxxx...",
+  "....xxx....",
+  ".....x.....",
+];
 // Hard resume facts already pass the scanner's descriptor, section and control
 // compatibility checks at 0.74. Requiring 0.90 here caused plainly labelled
 // ATS fields such as school/company to be omitted whenever the label was
@@ -44,6 +57,25 @@ const elements = {
   resumeMeta: document.querySelector("#resumeMeta"),
   prepMeta: document.querySelector("#prepMeta"),
 };
+
+function mountPixelStarLoader() {
+  const loader = document.querySelector("[data-pixel-star-loader]");
+  if (!loader) return;
+  const fragment = document.createDocumentFragment();
+  let order = 0;
+  PIXEL_STAR_PATTERN.forEach((row) => {
+    [...row].forEach((cell) => {
+      const dot = document.createElement("span");
+      dot.className = cell === "x" ? "pixel-star-loader__dot pixel-star-loader__dot--active" : "pixel-star-loader__dot";
+      if (cell === "x") dot.style.setProperty("--pixel-star-order", String(order));
+      fragment.append(dot);
+      order += 1;
+    });
+  });
+  loader.replaceChildren(fragment);
+}
+
+mountPixelStarLoader();
 
 let overwriteConfirmationExpiresAt = 0;
 let overwriteConfirmationTimer = null;

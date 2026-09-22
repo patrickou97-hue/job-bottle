@@ -5,6 +5,7 @@ import { Check, FileSearch, FileUp, LoaderCircle, Sparkles, X } from "lucide-rea
 import { Button } from "@/components/ui/Button";
 import { AiTaskProgress } from "@/components/ui/AiTaskProgress";
 import { MotionDialog } from "@/components/ui/MotionDialog";
+import { PixelStarLoader } from "@/components/ui/PixelStarLoader";
 import { extractResumeFileText } from "@/lib/resume-file-reader";
 import {
   parseResumeTextLocally,
@@ -254,7 +255,7 @@ export function ResumeImportDialog({
           ) : null}
           {localResult ? (
             <Button variant={review ? "secondary" : "primary"} className="gap-2" disabled={stage !== "idle"} onClick={() => void requestReview()}>
-              {stage === "reviewing" ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> : review ? <FileSearch aria-hidden="true" className="size-4" /> : <Sparkles aria-hidden="true" className="size-4" />}
+              {stage === "reviewing" ? <PixelStarLoader size="xs" /> : review ? <FileSearch aria-hidden="true" className="size-4" /> : <Sparkles aria-hidden="true" className="size-4" />}
               {stage === "reviewing" ? "AI 正在理解全文" : review ? "重新智能整理" : "AI 智能整理"}
             </Button>
           ) : null}

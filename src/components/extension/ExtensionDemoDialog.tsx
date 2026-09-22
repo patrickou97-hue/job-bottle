@@ -5,6 +5,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon } from "@phosphor-icons/react";
 import { MotionDialog } from "@/components/ui/MotionDialog";
 import { Button } from "@/components/ui/Button";
+import { PixelStarLoader } from "@/components/ui/PixelStarLoader";
 
 type ExtensionDemoDialogProps = {
   onClose: () => void;
@@ -256,8 +257,11 @@ function ChromeExtensionPanel({ stage, aiAnalyzing, analysisStep, onChooseResume
             {aiAnalyzing ? (
               <div className="mt-2 rounded-lg border border-[#d2e3fc] bg-[#f8fbff] px-2 py-1.5" aria-live="polite">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-[9px] font-medium text-[#174ea6]">AI 正在分析当前表单</p>
-                  <span className="size-2 animate-pulse rounded-full bg-[#1a73e8]" />
+                  <div className="flex items-center gap-1.5">
+                    <PixelStarLoader size="xs" className="-ml-1" />
+                    <p className="text-[9px] font-medium text-[#174ea6]">AI 正在分析当前表单</p>
+                  </div>
+                  <span className="text-[8px] text-[#1a73e8]">进行中</span>
                 </div>
                 <div className="mt-1 space-y-0.5">
                   {analysisSteps.map((step, index) => (

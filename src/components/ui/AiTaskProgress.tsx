@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
+import { PixelStarLoader } from "@/components/ui/PixelStarLoader";
 
 export function AiTaskProgress({
   title,
@@ -56,9 +57,12 @@ export function AiTaskProgress({
         {isDeterminate ? `${label}，已完成 ${safeCompleted} / ${safeTotal} 个处理区块` : label}
       </p>
       <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-ink-primary">{title}</p>
-          <p className="mt-1 text-xs leading-5 text-ink-muted">{label}</p>
+        <div className="flex min-w-0 items-start gap-3">
+          <PixelStarLoader size="sm" className="-ml-1 -mt-1" />
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-ink-primary">{title}</p>
+            <p className="mt-1 text-xs leading-5 text-ink-muted">{label}</p>
+          </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <span className="text-xs font-semibold tabular-nums text-[color:var(--aurora)]" aria-hidden="true">

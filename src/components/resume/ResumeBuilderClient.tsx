@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
-import { ChevronDown, Copy, FileText, FileUp, Languages, LoaderCircle, Plus, Puzzle, Trash2 } from "lucide-react";
+import { ChevronDown, Copy, FileText, FileUp, Languages, Plus, Puzzle, Trash2 } from "lucide-react";
 import { AnimatePresence } from "motion/react";
 import { ResumeCreateDialog } from "@/components/resume/ResumeCreateDialog";
 import { ResumeEditor, type EditorSection } from "@/components/resume/ResumeEditor";
@@ -13,6 +13,7 @@ import { ResumePreview } from "@/components/resume/ResumePreview";
 import { ResumeTemplatePicker } from "@/components/resume/ResumeTemplatePicker";
 import { Button } from "@/components/ui/Button";
 import { AiTaskProgress } from "@/components/ui/AiTaskProgress";
+import { PixelStarLoader } from "@/components/ui/PixelStarLoader";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { fetchMyApplications } from "@/lib/applications";
 import {
@@ -784,7 +785,7 @@ export function ResumeBuilderClient({
                   title={translating ? "取消本次翻译，原简历不会改变" : "翻译会创建独立副本，不会覆盖当前简历"}
                   onClick={() => void translateResume()}
                 >
-                  {translating ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> : <Languages aria-hidden="true" className="size-4" />}
+                  {translating ? <PixelStarLoader size="xs" /> : <Languages aria-hidden="true" className="size-4" />}
                   {translating
                     ? "取消翻译"
                     : getResumeLanguage(selectedResume.templateId) === "en-US"

@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, LoaderCircle, RefreshCw, Sparkles, X } from "lucide-react";
+import { AlertTriangle, RefreshCw, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { AiTaskProgress } from "@/components/ui/AiTaskProgress";
 import { CommunityHelpLink } from "@/components/ui/CommunityHelpLink";
 import { MotionDialog } from "@/components/ui/MotionDialog";
+import { PixelStarLoader } from "@/components/ui/PixelStarLoader";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import {
@@ -224,7 +225,7 @@ export function ResumePolishDialog({
           <CommunityHelpLink className="mr-auto" onClick={closeDialog} />
           <Button variant="secondary" onClick={closeDialog}>保留原文</Button>
           <Button variant="secondary" className="gap-2" onClick={busy ? () => requestAbortRef.current?.abort() : generate}>
-            {busy ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> : result ? <RefreshCw aria-hidden="true" className="size-4" /> : <Sparkles aria-hidden="true" className="size-4" />}
+            {busy ? <PixelStarLoader size="xs" /> : result ? <RefreshCw aria-hidden="true" className="size-4" /> : <Sparkles aria-hidden="true" className="size-4" />}
             {busy ? "取消" : result ? "重新生成" : "生成建议"}
           </Button>
           {result ? (

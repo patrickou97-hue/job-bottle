@@ -908,6 +908,89 @@ textarea:focus-visible {
 
 .theme-work .loading-line::before { box-shadow: none; }
 
+.pixel-star-loader {
+  --pixel-star-color: var(--star-apricot);
+  --pixel-star-glow: rgba(213, 166, 42, 0.58);
+  display: grid;
+  grid-template-columns: repeat(11, 1fr);
+  flex: 0 0 auto;
+  aspect-ratio: 1;
+  width: 3.35rem;
+  gap: 0.14rem;
+  padding: 0.28rem;
+}
+
+.pixel-star-loader--xs {
+  width: 1.55rem;
+  gap: 0.07rem;
+  padding: 0.12rem;
+}
+
+.pixel-star-loader--sm {
+  width: 2.35rem;
+  gap: 0.1rem;
+  padding: 0.2rem;
+}
+
+.pixel-star-loader__dot {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 1px;
+  background: transparent;
+}
+
+.pixel-star-loader__dot--active {
+  background: var(--pixel-star-color);
+  opacity: 0.18;
+  transform: scale(0.42);
+  animation: pixel-star-draw 2.4s cubic-bezier(0.22, 0.8, 0.28, 1) infinite;
+  animation-delay: calc(var(--pixel-star-order) * 18ms);
+}
+
+.pixel-star-loader--xs .pixel-star-loader__dot--active {
+  animation-duration: 2s;
+}
+
+.pixel-star-loader[data-reduced-motion="true"] .pixel-star-loader__dot--active {
+  animation: none;
+  opacity: 0.86;
+  transform: scale(0.82);
+  box-shadow: 0 0 0.35rem var(--pixel-star-glow);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pixel-star-loader__dot--active {
+    animation: none;
+    opacity: 0.86;
+    transform: scale(0.82);
+    box-shadow: 0 0 0.35rem var(--pixel-star-glow);
+  }
+}
+
+@keyframes pixel-star-draw {
+  0%, 10% {
+    opacity: 0.16;
+    transform: scale(0.38);
+    box-shadow: none;
+  }
+  25% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 0.42rem var(--pixel-star-glow);
+  }
+  48% {
+    opacity: 0.7;
+    transform: scale(0.78);
+    box-shadow: 0 0 0.2rem var(--pixel-star-glow);
+  }
+  100% {
+    opacity: 0.18;
+    transform: scale(0.42);
+    box-shadow: none;
+  }
+}
+
 .chip-button {
   display: inline-flex;
   width: auto;
