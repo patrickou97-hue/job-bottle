@@ -132,7 +132,7 @@ export function getReferralMimoConfiguration(): MimoConfiguration | null {
 
 function resolveReferralMimoModel(configuredModel = process.env.MIMO_MODEL) {
   const model = configuredModel?.trim();
-  if (model?.toLowerCase() === "mimo-v2.5") return "mimo-v2.6";
+  if (model?.toLowerCase() === "mimo-v2.5" || model?.toLowerCase() === "mimo-v2.6") return "mimo-v2.6-flash";
   if (model?.toLowerCase() === "mimo-v2.5-pro") return "mimo-v2.6-pro";
   return model;
 }
