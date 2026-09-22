@@ -285,9 +285,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/layout/AdminShell.tsx",
-    mustInclude: ["theme-work", "admin-shell__mobile-nav", "admin-shell__nav-group-toggle", "管理导航", "nav-account", "返回首页", "StarJobWordmark"],
+    mustInclude: ["theme-work", "admin-shell__mobile-nav", "admin-shell__nav-group-block", "管理导航", "nav-account", "返回首页", "StarJobWordmark"],
     mustNotInclude: ["StarFieldBackground", "rounded-[28px]", "rounded-full"],
-    label: "管理页使用分层导航、可折叠工具组和轻量工作区壳层",
+    label: "管理页使用分层导航和轻量工作区壳层",
   },
   {
     file: "src/components/layout/SpaceBackground.tsx",
@@ -888,7 +888,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/resume/ai-polish/route.ts",
-    mustInclude: ["MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL", "resolveResumeAiAccess", "access.takeRateSlot", "REQUEST_TIMEOUT_MS", "MAX_OUTPUT_TOKENS", "chat_template_kwargs", "enable_thinking: false", "response_format", "json_object", "createPolishCacheKey", "X-StarJob-AI-Cache", "logServerError", "kind: \"kind\" in error", "不得虚构", "不把“协助/参与/支持”升级", "不强补结果", "verificationItems", "待确认信息", "只用于用户核实", "warnings", "严格 JSON", "resultSchema", "parseResult", "normalizeResultCandidate", "typeof change === \"string\"", "title: source.title", "subtitle: source.subtitle", "customInstruction: z.string().trim().max(600).optional().default(\"\")", "用户补充要求", "不得覆盖以上事实约束", "原文未改变"],
+    mustInclude: ["MIMO_API_KEY", "MIMO_BASE_URL", "resolveMimoModel", "resolveResumeAiAccess", "access.takeRateSlot", "REQUEST_TIMEOUT_MS", "MAX_OUTPUT_TOKENS", "chat_template_kwargs", "enable_thinking: false", "response_format", "json_object", "createPolishCacheKey", "X-StarJob-AI-Cache", "logServerError", "kind: \"kind\" in error", "不得虚构", "不把“协助/参与/支持”升级", "不强补结果", "verificationItems", "待确认信息", "只用于用户核实", "warnings", "严格 JSON", "resultSchema", "parseResult", "normalizeResultCandidate", "typeof change === \"string\"", "title: source.title", "subtitle: source.subtitle", "customInstruction: z.string().trim().max(600).optional().default(\"\")", "用户补充要求", "不得覆盖以上事实约束", "原文未改变"],
     mustNotInclude: ["NEXT_PUBLIC_MIMO", "console.log", "SUPABASE_SERVICE_ROLE_KEY"],
     label: "简历分段润色仅在服务端调用 MiMo 并限制幻觉、输入、超时和频率",
   },
@@ -1020,9 +1020,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/admin/billing/page.tsx",
-    mustInclude: ["AdminShell", "AdminBillingClient"],
+    mustInclude: ["AdminBillingClient"],
     mustNotInclude: [],
-    label: "余额管理页接入统一后台权限壳层和返回导航",
+    label: "余额管理页由共享后台布局提供权限壳层和返回导航",
   },
   {
     file: "src/app/api/admin/star-interview-balance/route.ts",
@@ -1209,13 +1209,13 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/resume/extension-match/route.ts",
-    mustInclude: ["verifyExtensionMatchToken", "MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL", "REQUEST_TIMEOUT_MS", "RATE_LIMIT", "CANONICAL_KEYS", "max_tokens", "response_format", "json_object", "deterministicKey", "不包含输入框现有值", "不得把姓名映射为学校", "区块是硬边界", "awards.title", "awards.description", "resultSchema", "Cache-Control", "no-store"],
+    mustInclude: ["verifyExtensionMatchToken", "resolveMimoModel", "MIMO_API_KEY", "MIMO_BASE_URL", "REQUEST_TIMEOUT_MS", "RATE_LIMIT", "CANONICAL_KEYS", "max_tokens", "response_format", "json_object", "deterministicKey", "不包含输入框现有值", "不得把姓名映射为学校", "区块是硬边界", "awards.title", "awards.description", "resultSchema", "Cache-Control", "no-store"],
     mustNotInclude: ["createAdminClient", "SUPABASE_SERVICE_ROLE_KEY", "document.cookie", "resume.content"],
     label: "扩展智能匹配只上传字段元数据并校验令牌、频率和标准字段键",
   },
   {
     file: "src/app/api/resume/extension-autofill/route.ts",
-    mustInclude: ["export const maxDuration = 90", "preferredRegion = \"hkg1\"", "REQUEST_TIMEOUT_MS = 75_000", "verifyExtensionMatchToken", "takeExtensionAutofillRateSlot", "MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL", "DEEPSEEK_API_KEY", "DEEPSEEK_BASE_URL", "DEEPSEEK_MODEL", "https://api.deepseek.com", "deepseek-v4-flash", "chat_template_kwargs: { enable_thinking: false }", "thinking: { type: \"disabled\" }", "REQUEST_TIMEOUT_MS", "MIN_CONFIDENCE = 0.68", "MAX_REPAIR_PASSES = 2", "pendingGroups", "repairGroupIndex", "repair_upstream_error", "modelCallCount", "MAX_MODEL_OUTPUT_TOKENS = 5_000", "MIN_MODEL_OUTPUT_TOKENS = 1_200", "extractPartialOutcomeRows(content)", "normalizeModelOutcomeCandidate(row)", "isHardBlockedApplicationField(field)", "isHardResumeFactField(field)", "ownDescriptor", "deriveExactResumeValue", "extension_autofill_partial_contract", "AI_RESPONSE_INCOMPLETE", "degraded: missingAfterRepair.length > 0", "operationId", "pageSnapshotId", "batchId", "rateSlotAllowed", "response_format", "json_object", "resumeSchema", "fieldSchema", "resultSchema", "outcomes", "semantic_inference", "grounded_generation", "recordIndex", "deriveRecordDateValue", "deriveRecordDescriptionValue", "getScopedFieldFacts", "hasFieldSpecificResumeBasis", "isEducationDescriptionField", "normalizeMonthBoundaryDate", "简历是候选人的事实与能力证据", "允许重写、归纳、翻译和有证据的语义推断", "职位上下文只能决定表达重点", "只要存在课程、荣誉或职责内容就必须填写经历描述", "严禁交换开始和结束日期", "结束日期规范为当月最后一天", "normalizeChoice", "field.options.some", "returnedByKey", "discardedUnknown", "discardedDuplicate", "discardedMalformed", "fieldKey: `f${index}`", "originalFields", "collectResumeFacts", "collectResumeSummaryFacts", "hasResumeBasis", "isAllowedDerivedValue", "isSafeResumeSummary", "basics.birthDate", "自我描述", "deriveGraduationValue", "parseYearMonth", "不可信文本", "中文姓名的无声调汉语拼音", "不得推断或填写身份证", "可以回答有事实证据的开放申请题", "每个 fieldKey 必须恰好返回一个 outcome", "不能填写时返回 manual 或 skip", "Wang Xiaoxing", "Cache-Control", "no-store"],
+    mustInclude: ["export const maxDuration = 90", "preferredRegion = \"hkg1\"", "REQUEST_TIMEOUT_MS = 75_000", "verifyExtensionMatchToken", "takeExtensionAutofillRateSlot", "MIMO_API_KEY", "MIMO_BASE_URL", "resolveMimoModel", "DEEPSEEK_API_KEY", "DEEPSEEK_BASE_URL", "DEEPSEEK_MODEL", "https://api.deepseek.com", "deepseek-v4-flash", "chat_template_kwargs: { enable_thinking: false }", "thinking: { type: \"disabled\" }", "REQUEST_TIMEOUT_MS", "MIN_CONFIDENCE = 0.68", "MAX_REPAIR_PASSES = 2", "pendingGroups", "repairGroupIndex", "repair_upstream_error", "modelCallCount", "MAX_MODEL_OUTPUT_TOKENS = 5_000", "MIN_MODEL_OUTPUT_TOKENS = 1_200", "extractPartialOutcomeRows(content)", "normalizeModelOutcomeCandidate(row)", "isHardBlockedApplicationField(field)", "isHardResumeFactField(field)", "ownDescriptor", "deriveExactResumeValue", "extension_autofill_partial_contract", "AI_RESPONSE_INCOMPLETE", "degraded: missingAfterRepair.length > 0", "operationId", "pageSnapshotId", "batchId", "rateSlotAllowed", "response_format", "json_object", "resumeSchema", "fieldSchema", "resultSchema", "outcomes", "semantic_inference", "grounded_generation", "recordIndex", "deriveRecordDateValue", "deriveRecordDescriptionValue", "getScopedFieldFacts", "hasFieldSpecificResumeBasis", "isEducationDescriptionField", "normalizeMonthBoundaryDate", "简历是候选人的事实与能力证据", "允许重写、归纳、翻译和有证据的语义推断", "职位上下文只能决定表达重点", "只要存在课程、荣誉或职责内容就必须填写经历描述", "严禁交换开始和结束日期", "结束日期规范为当月最后一天", "normalizeChoice", "field.options.some", "returnedByKey", "discardedUnknown", "discardedDuplicate", "discardedMalformed", "fieldKey: `f${index}`", "originalFields", "collectResumeFacts", "collectResumeSummaryFacts", "hasResumeBasis", "isAllowedDerivedValue", "isSafeResumeSummary", "basics.birthDate", "自我描述", "deriveGraduationValue", "parseYearMonth", "不可信文本", "中文姓名的无声调汉语拼音", "不得推断或填写身份证", "可以回答有事实证据的开放申请题", "每个 fieldKey 必须恰好返回一个 outcome", "不能填写时返回 manual 或 skip", "Wang Xiaoxing", "Cache-Control", "no-store"],
     mustNotInclude: ["createAdminClient", "SUPABASE_SERVICE_ROLE_KEY", "document.cookie", "console.log"],
     label: "AI 智能填写优先使用 MiMo，并在未配置 MiMo 时兼容 DeepSeek，同时保留受限令牌、结构化简历白名单和全表单保守规则",
   },

@@ -1,5 +1,14 @@
 # PROJECT_CONTEXT.md — 秋招星瓶 (Job Bottle)
 
+
+## 2026-09-22 P1 性能与 AI 点阵状态发布（待线上部署）
+
+- 合并 `60a0a9d`、`ab2f356`、`4924e76` 的 P1 性能与 MiMo v2.6 配置更新，以及 `c6d7c6a` 的点阵十字星 loading。
+- 岗位目录增加短时请求缓存和管理员分页检索；管理员分析、用户与岗位路径减少重复读取；MiMo v2.5 Pro 别名改为官方 v2.6 Pro，基础模型使用 v2.6 Flash。
+- 简历润色、导入复核、翻译、网申助手演示和扩展 popup 统一使用点阵十字星 loading，原进度、取消和无障碍语义保持不变；扩展 1.1.5 包已重新生成。
+- smoke 契约已同步现行 `AdminShell` 分层导航块、共享 admin layout、简历润色和扩展 AI 路由中的 `resolveMimoModel`。未新增 Supabase migration/RLS/DDL、用户数据写入或权限捷径。
+- 本地验证：typecheck、lint、186/186 测试、扩展夹具、12/12 安装包一致性和 Webpack 生产构建（64 个静态页面）通过；尚未推送或部署。
+
 ## 2026-09-19 简历条目自定义排序（已发布）
 
 - `ResumeEditor` 为教育、实习/工作、项目三组条目增加拖拽排序，以及上移/下移按钮和删除操作；排序直接写入 `content.education`、`content.work`、`content.projects` 数组。
