@@ -1,11 +1,12 @@
 # PROJECT_CONTEXT.md — 秋招星瓶 (Job Bottle)
 
-## 2026-09-29 拾星指南产品教程子页面（发布准备完成，线上待核验）
+## 2026-09-29 拾星指南产品教程子页面（已上线）
 
 - 在 `/forum/tutorials` 新增独立产品使用教程页，提供 7 个主题标签、键盘切换、分步操作和对应页面入口；保留原 `/guide` 秋招流程，并在拾星指南中把教程、常用入口与公告/求职经验分层呈现。
 - 页面主标题按用户要求改为“在拾星步步运筹帷幄”。本次没有新增 Supabase 数据结构、数据库写入或岗位详情资料增强。
 - `npm run check`、只读 `npm run smoke`、`npm run build -- --webpack`（65 个路由）及 `git diff --check` 均通过；冒烟读取 2,310 条开放岗位。
-- 发布状态：本地生产构建完成，下一步推送 `origin/main`，再核对 Vercel 部署和正式站 `/forum/tutorials`。
+- 发布提交 `eeaef9b` 已推送至 `origin/main`；Vercel Production deployment `6738153401` 成功，部署地址为 `https://job-bottle-1c9v3gjea-job-bottle.vercel.app`。
+- 正式站 `/forum` 与 `/forum/tutorials` 均返回 HTTP 200；缓存破除请求已确认教程入口、7 个主题和主标题“在拾星步步运筹帷幄”。
 
 ## 2026-09-29 投递工作台扩展与网申答案复核（已上线）
 
