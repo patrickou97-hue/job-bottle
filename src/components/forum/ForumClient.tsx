@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, BookOpenText } from "lucide-react";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { fetchPosts } from "@/lib/forum";
@@ -125,6 +125,23 @@ export function ForumClient() {
         <NewPostForm onCreated={handleCreated} onCancel={() => setShowForm(false)} />
       </Drawer>
 
+      <section aria-labelledby="product-tutorial-title" className="flex flex-col gap-5 border-y border-[color:var(--line-ghost)] py-5 sm:flex-row sm:items-center sm:justify-between sm:py-6">
+        <div className="flex min-w-0 items-start gap-4">
+          <span className="mt-0.5 grid size-10 shrink-0 place-items-center rounded-xl bg-[color:var(--surface-selected-bg)] text-[color:var(--aurora)]">
+            <BookOpenText aria-hidden="true" className="size-5" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold tracking-[0.12em] text-ink-muted">拾星产品手册 · 7 个主题</p>
+            <h2 id="product-tutorial-title" className="mt-1 text-lg font-semibold text-ink-primary">想知道某项功能怎么用？</h2>
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-ink-secondary">按岗位探索、星瓶、投递管理、简历和网申助手等主题，直接查看对应步骤。</p>
+          </div>
+        </div>
+        <Link href="/forum/tutorials" className="group inline-flex min-h-11 shrink-0 items-center justify-between gap-4 rounded-xl border border-[color:var(--line)] bg-[color:var(--surface-read-bg-strong)] px-4 text-sm font-semibold text-ink-primary transition-colors hover:bg-[color:var(--surface-hover-bg)] sm:justify-center">
+          打开使用教程
+          <ArrowRight aria-hidden="true" className="size-4 text-ink-muted transition-transform group-hover:translate-x-0.5" />
+        </Link>
+      </section>
+
       <section aria-labelledby="guide-shortcuts-title" className="border-y border-[color:var(--line-ghost)] py-5 sm:py-6">
         <div className="flex items-baseline justify-between gap-4">
           <h2 id="guide-shortcuts-title" className="text-lg font-semibold text-ink-primary">常用入口</h2>
@@ -140,14 +157,20 @@ export function ForumClient() {
         </div>
       </section>
 
-      <section className="flex flex-wrap items-center justify-between gap-4">
+      <section aria-labelledby="official-guides-title" className="space-y-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-3 border-t border-[color:var(--line-ghost)] pt-5">
+          <div>
+            <p className="text-xs font-semibold tracking-[0.12em] text-ink-muted">持续更新</p>
+            <h2 id="official-guides-title" className="mt-1 text-lg font-semibold text-ink-primary">公告与求职经验</h2>
+          </div>
+          <span className="section-meta">{posts.length} 篇内容</span>
+        </div>
         <SegmentedControl
           ariaLabel="指南分类"
           options={CATEGORIES.map((category) => ({ value: category, label: category }))}
           value={activeCategory}
           onChange={setActiveCategory}
         />
-        <span className="section-meta">{posts.length} 篇内容</span>
       </section>
 
       <section className="list-surface">
