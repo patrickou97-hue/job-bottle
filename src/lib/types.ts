@@ -61,10 +61,54 @@ export type JobFormValues = {
   is_active: boolean;
 };
 
+export type JobSnapshot = Pick<Job,
+  | "company_name"
+  | "job_titles"
+  | "locations"
+  | "industry"
+  | "batch_type"
+  | "apply_url"
+  | "start_date"
+  | "responsibilities"
+  | "must_have"
+  | "preferred_qualifications"
+  | "keywords"
+  | "closes_at"
+> & {
+  source_url: string;
+  notes?: string | null;
+};
+
+export type ApplicationFormAnswer = {
+  question: string;
+  answer: string;
+};
+
+export type ApplicationMaterial = {
+  name: string;
+  url: string;
+  note: string;
+};
+
+export type ResumeSnapshot = {
+  id: string;
+  title: string;
+  targetRole: string;
+  jobTarget: string;
+  templateId: string;
+  capturedAt: string;
+  photoOmitted: boolean;
+  content: Record<string, unknown>;
+};
+
 export type UserApplication = {
   id: string;
   user_id: string;
-  job_id: string;
+  job_id: string | null;
+  job_snapshot?: JobSnapshot | null;
+  resume_snapshot?: ResumeSnapshot | null;
+  form_answers?: ApplicationFormAnswer[];
+  material_records?: ApplicationMaterial[];
   status: ApplicationStatus;
   candidate_stage?: ApplicationCandidateStage | null;
   priority?: number | null;
@@ -587,7 +631,11 @@ export type Database = {
         Insert: {
           id?: string;
           user_id: string;
-          job_id: string;
+          job_id?: string | null;
+          job_snapshot?: JobSnapshot | null;
+          resume_snapshot?: ResumeSnapshot | null;
+          form_answers?: ApplicationFormAnswer[];
+          material_records?: ApplicationMaterial[];
           status?: ApplicationStatus;
           candidate_stage?: ApplicationCandidateStage;
           priority?: number;
@@ -610,6 +658,11 @@ export type Database = {
           updated_at?: string;
         };
         Update: {
+          job_id?: string | null;
+          job_snapshot?: JobSnapshot | null;
+          resume_snapshot?: ResumeSnapshot | null;
+          form_answers?: ApplicationFormAnswer[];
+          material_records?: ApplicationMaterial[];
           status?: ApplicationStatus;
           candidate_stage?: ApplicationCandidateStage;
           priority?: number;

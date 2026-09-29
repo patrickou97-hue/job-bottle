@@ -54,7 +54,7 @@ export function GalaxyMapClient({ kind }: { kind: GalaxyKind }) {
   }, []);
 
   const capturedJobIds = useMemo(
-    () => new Set(applications.map((application) => application.job_id)),
+    () => new Set(applications.flatMap((application) => application.job_id ? [application.job_id] : [])),
     [applications],
   );
   const stats = useMemo(() => buildGalaxyStats(jobs, capturedJobIds, kind), [capturedJobIds, jobs, kind]);

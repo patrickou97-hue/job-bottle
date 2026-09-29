@@ -122,7 +122,7 @@ export function LoginForm() {
           return;
         }
         setMode("login");
-        setMessage("注册成功。若需邮箱验证，请先完成确认；登录后将返回简历制作页面。");
+        setMessage("注册成功。请到注册邮箱完成验证，再登录并继续刚才的操作。");
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
           email: normalizeLoginAccount(values.account),

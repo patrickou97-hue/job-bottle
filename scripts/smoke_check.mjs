@@ -453,7 +453,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/auth/LoginForm.tsx",
-    mustInclude: ["mode", "register", "reason", "resume-download", "getSafeNextPath", "data.session", "返回简历制作", "placeholder=\"2027\""],
+    mustInclude: ["mode", "register", "reason", "resume-download", "getSafeNextPath", "data.session", "继续刚才的操作", "placeholder=\"2027\""],
     mustNotInclude: ["router.push(searchParams.get(\"next\")", "placeholder=\"成都\"", "西南财经大学", "金融学"],
     label: "注册登录可安全返回来源页并兼容邮箱确认流程",
   },
@@ -805,7 +805,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/jobs/JobDetailActions.tsx",
-    mustInclude: ["收入星瓶", "getJobPrimaryAction", "candidateStage", "upsertApplication(supabase, user.id, job.id, \"preparing\")", "safeOpenUrl", "sanitizeApplicationUrl", "岗位已收入星瓶，投递官网已打开", "ApplyReturnConfirm", "keep_opened", "withdrawn"],
+    mustInclude: ["收入星瓶", "getJobPrimaryAction", "candidateStage", "upsertApplication(", "job.id", "\"preparing\"", "createJobSnapshot(job)", "safeOpenUrl", "sanitizeApplicationUrl", "岗位已收入星瓶，投递官网已打开", "ApplyReturnConfirm", "keep_opened", "withdrawn"],
     mustNotInclude: ["router.push(`/login", "登录后收入星瓶，不会直接打开官网。"],
     label: "岗位详情首次收录后直接打开官网并支持回到页面确认投递",
   },
@@ -877,7 +877,7 @@ const SOURCE_INVARIANTS = [
       "进展时间线",
       "复盘",
     ],
-    mustNotInclude: ["StatusSelect", "投递状态", "岗位方向", "招聘岗位方向", "job.job_categories", "rounded-[22px] border", "variant=\"secondary\"", "variant=\"danger\"", "await onChanged()", "router.refresh", "window.location.reload"],
+    mustNotInclude: ["StatusSelect", "投递状态", "岗位方向", "招聘岗位方向", "job.job_categories", "rounded-[22px] border", "variant=\"danger\"", "await onChanged()", "router.refresh", "window.location.reload"],
     label: "投递轨道侧滑面板只展示实际投递岗位并自动保存补填内容",
   },
   {
@@ -1185,7 +1185,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "browser-extension/starjob-resume-assistant/manifest.json",
-    mustInclude: ["\"manifest_version\": 3", "\"version\": \"1.1.5\"", "\"activeTab\"", "\"scripting\"", "\"storage\"", "https://www.starjob.space/extension*", "https://www.starjob.space/*"],
+    mustInclude: ["\"manifest_version\": 3", "\"version\": \"1.1.6\"", "\"activeTab\"", "\"scripting\"", "\"storage\"", "https://www.starjob.space/extension*", "https://www.starjob.space/*"],
     mustNotInclude: ["\"cookies\"", "\"tabs\"", "<all_urls>", "localhost", "nowcoder", "牛客"],
     label: "拾星网申助手使用 Manifest V3 和用户触发的最小权限",
   },
@@ -1281,15 +1281,15 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/extension/ExtensionHubClient.tsx",
-    mustInclude: ["<span className=\"block\">一份简历，</span>", "<span className=\"block\">抵达更多坐标</span>", "把拾星简历同步到浏览器，在网申页面填写常用字段；你负责核对与提交。", "starjob-extension-paper-planes.png", "多架纸飞机沿不同虚线轨迹飞向远方", "查看安装教程", "安装后重新检测", "window.location.reload()", "LEGACY_COMPATIBLE_VERSIONS", "SHORT_TIMEOUT_AI_VERSIONS", "PREVIOUS_AI_VERSIONS", "\"1.1.3\", \"1.1.4\"", "AI 智能填写需要升级到 1.1.5"],
+    mustInclude: ["<span className=\"block\">一份简历，</span>", "<span className=\"block\">抵达更多坐标</span>", "把拾星简历同步到浏览器，在网申页面填写常用字段；你负责核对与提交。", "starjob-extension-paper-planes.png", "多架纸飞机沿不同虚线轨迹飞向远方", "查看安装教程", "安装后重新检测", "window.location.reload()", "LEGACY_COMPATIBLE_VERSIONS", "SHORT_TIMEOUT_AI_VERSIONS", "PREVIOUS_AI_VERSIONS", "\"1.1.4\", \"1.1.5\"", "AI 智能填写需要升级到 1.1.6"],
     mustNotInclude: ["获取安装包", "DOWNLOAD_URL", "/downloads/starjob-resume-assistant-v0.2.8.zip", "一份简历，投向更多可能", "常见网申字段按页面顺序填入", "你只需检查，再决定提交", "简历写一次，网申少重复", "请升级到 0.1.8", "extensionVersion !==", "starjob-resume-assistant-popup.png", "https://pan.baidu.com/s/1q9gVenToSLL5x5tXZzYLig?pwd=SXZS", "https://pan.baidu.com/s/13sk2UUdep9S1zoJdEk_sSA?pwd=SXZS", "https://pan.baidu.com/s/1jl_OHVc_HxXbUrI1-IS56g?pwd=SXZS"],
     label: "网申助手首屏使用更克制的价值表达与纸飞机线稿引导",
   },
   {
     file: "src/components/extension/ExtensionGuide.tsx",
-    mustInclude: ["/downloads/starjob-resume-assistant-v1.1.5.zip", "下载 1.1.5 安装包", "当前版本 1.1.5", "结束月写为当月最后一天", "每段工作和项目描述仍只使用当前记录的证据", "最多支持 100 个 AI 批次和 1500 个安全字段", "安装后刷新检测", "步骤 {String(index + 1).padStart(2, \"0\")}"],
+    mustInclude: ["/downloads/starjob-resume-assistant-v1.1.6.zip", "下载 1.1.6 安装包", "当前版本 1.1.6", "人工复核", "答案库", "结束月写为当月最后一天", "每段工作和项目描述仍只使用当前记录的证据", "最多支持 100 个 AI 批次和 1500 个安全字段", "安装后刷新检测", "步骤 {String(index + 1).padStart(2, \"0\")}"],
     mustNotInclude: ["获取安装包", "pan.baidu.com", "百度网盘提取码", "最新版本 0.1.9", "starjob-resume-assistant-popup-v026.png"],
-    label: "网申助手下载页与安装教程共用 1.1.5 官网安装包",
+    label: "网申助手下载页与安装教程共用 1.1.6 官网安装包",
   },
   {
     file: "scripts/build_resume_extension.mjs",
@@ -1387,7 +1387,7 @@ const REQUIRED_FILES = [
   "public/assets/extension/starjob-resume-assistant-popup.png",
   "public/assets/extension/starjob-resume-assistant-iphone17pm.png",
   "public/assets/extension/starjob-extension-paper-planes.png",
-  "public/downloads/starjob-resume-assistant-v1.1.5.zip",
+  "public/downloads/starjob-resume-assistant-v1.1.6.zip",
   "browser-extension/starjob-resume-assistant/assets/icon16.png",
   "browser-extension/starjob-resume-assistant/assets/icon48.png",
   "browser-extension/starjob-resume-assistant/assets/icon128.png",

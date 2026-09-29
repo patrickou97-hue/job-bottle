@@ -60,6 +60,9 @@
   .theme-work .apple-segmented { border: 0; border-radius: var(--ui-radius-group); background: var(--apple-control-bg); padding: 4px; box-shadow: none; }
   .theme-work :is(.apple-segmented__item,.apple-segmented__indicator) { border-radius: var(--ui-radius-control); }
   .theme-work .apple-segmented__indicator { background: #fff; border: 0; box-shadow: var(--ui-shadow-soft); }
+  .theme-work .resume-editor-section-tabs .apple-segmented__indicator { display: none; }
+  .theme-work .resume-editor-section-tabs .apple-segmented__item { background: transparent; transition: color 160ms, background 160ms, transform 180ms; }
+  .theme-work .resume-editor-section-tabs .apple-segmented__item[aria-pressed="true"] { background: #fff; box-shadow: var(--ui-shadow-soft); }
   .theme-work :is(.apple-panel,.liquid-panel) { border: 1px solid var(--line-ghost); border-radius: var(--ui-radius-panel); background: var(--surface-read-bg); box-shadow: none; }
   .theme-work :is(.collection-surface,.list-surface,.table-surface) { border: 1px solid var(--line-ghost); border-radius: var(--ui-radius-panel); background: var(--surface-read-bg); }
   .theme-work .empty-state { border: 1px dashed #d2dae5; border-radius: var(--ui-radius-panel); background: #fafbfd; }

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>拾星网申助手</title>
-    <link rel="stylesheet" href="popup.css?v=031-pixel-star" />
+    <link rel="stylesheet" href="popup.css?v=032-review-queue" />
   </head>
   <body>
     <main class="shell">
@@ -93,6 +93,19 @@
         <div class="progress-row" data-step="summary"><span class="progress-dot"></span><div><strong>整理待处理项</strong><p>等待填写完成</p></div></div>
       </section>
 
+      <section id="reviewPanel" class="review-panel" aria-labelledby="reviewTitle" hidden>
+        <div class="review-heading">
+          <div><h2 id="reviewTitle">待复核字段</h2><p>低置信建议和已保存答案都不会自动写入页面。</p></div>
+          <span id="reviewCount" class="review-count"></span>
+        </div>
+        <div id="reviewList" class="review-list"></div>
+        <div class="review-actions">
+          <button id="reviewApply" class="button button-primary" type="button">写入选中项</button>
+          <button id="reviewSaveOnly" class="button button-secondary" type="button">只保存答案</button>
+        </div>
+        <p class="review-footnote">答案库保存在当前浏览器，按网站和问题原文匹配；保存后再次使用仍会让你确认。</p>
+      </section>
+
       <footer class="footer-actions">
         <div class="footer-main-actions">
           <button id="openSync" class="text-button" type="button">同步简历</button>
@@ -102,6 +115,6 @@
         <button id="clearData" class="text-button text-button-danger" type="button">清除本地数据</button>
       </footer>
     </main>
-    <script src="popup.js?v=031-pixel-star"></script>
+    <script src="popup.js?v=032-review-queue"></script>
   </body>
 </html>

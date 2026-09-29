@@ -26,7 +26,7 @@ const PIXEL_STAR_PATTERN = [
 // exposed only through a placeholder or a framework wrapper.
 const LOCAL_EXACT_MIN_CONFIDENCE = 0.74;
 const CONFIRM_WINDOW_MS = 8_000;
-const STORAGE_KEYS = ["starjobResumes", "activeResumeId", "fillMode", "lastSyncedAt", "matchToken", "matchTokenExpiresAt", "aiMatchingAvailable", "analysisOnly", "aiOnly", "aiFieldMappings", "aiAutofillOnly", "aiValueMappings", "aiTargetFieldKeys"];
+const STORAGE_KEYS = ["starjobResumes", "activeResumeId", "fillMode", "lastSyncedAt", "matchToken", "matchTokenExpiresAt", "aiMatchingAvailable", "analysisOnly", "aiOnly", "aiFieldMappings", "aiAutofillOnly", "aiValueMappings", "aiTargetFieldKeys", "starjobAnswerBank"];
 
 const elements = {
   emptyState: document.querySelector("#emptyState"),
@@ -41,6 +41,11 @@ const elements = {
   unmatchedDetails: document.querySelector("#unmatchedDetails"),
   unmatchedList: document.querySelector("#unmatchedList"),
   progressPanel: document.querySelector("#progressPanel"),
+  reviewPanel: document.querySelector("#reviewPanel"),
+  reviewCount: document.querySelector("#reviewCount"),
+  reviewList: document.querySelector("#reviewList"),
+  reviewApply: document.querySelector("#reviewApply"),
+  reviewSaveOnly: document.querySelector("#reviewSaveOnly"),
   progressAnnouncement: document.querySelector("#progressAnnouncement"),
   progressElapsed: document.querySelector("#progressElapsed"),
   progressLabel: document.querySelector("#progressLabel"),
@@ -86,6 +91,8 @@ let progressStartedAt = 0;
 let progressClockTimer = null;
 let lastProgressAnnouncement = "";
 let activeAiOperationId = null;
+let pendingReviewContext = null;
+let reviewDrafts = [];
 
 function isLocalExactFallbackField(field) {
   return Number(field?.deterministicConfidence) >= LOCAL_EXACT_MIN_CONFIDENCE
@@ -203,6 +210,170 @@ function showResult(title, text, tone = "success", unmatchedFields = []) {
   elements.unmatchedDetails.open = false;
 }
 
+function normalizedReviewQuestion(value) {
+  return String(value || "").normalize("NFKC").toLocaleLowerCase().replace(/[\s\u3000]+/g, " ").trim().slice(0, 240);
+}
+
+function getReviewQuestion(field) {
+  return String(field?.accessibleName || field?.label || field?.ownDescriptor || field?.semanticKey || "").trim().slice(0, 240);
+}
+
+function answerBankKey(hostname, question) {
+  const normalized = normalizedReviewQuestion(question);
+  return normalized ? `${String(hostname || "").toLocaleLowerCase()}|${normalized}` : "";
+}
+
+function isSameReviewPage(originalUrl, currentUrl) {
+  try {
+    return new URL(originalUrl).href === new URL(currentUrl).href;
+  } catch {
+    return false;
+  }
+}
+
+function renderReviewQueue(candidates, context = pendingReviewContext) {
+  reviewDrafts = candidates.map((candidate) => ({ ...candidate, selected: true, remember: false, value: candidate.value || "" }));
+  pendingReviewContext = context;
+  elements.reviewList.replaceChildren();
+  elements.reviewCount.textContent = `${reviewDrafts.length} 项`;
+  elements.reviewPanel.hidden = reviewDrafts.length === 0;
+  for (const [index, draft] of reviewDrafts.entries()) {
+    const row = document.createElement("article");
+    row.className = "review-item";
+    const head = document.createElement("div");
+    head.className = "review-item-head";
+    const selected = document.createElement("input");
+    selected.type = "checkbox";
+    selected.checked = true;
+    selected.setAttribute("aria-label", `选择 ${draft.question || "待复核字段"}`);
+    selected.addEventListener("change", () => { reviewDrafts[index].selected = selected.checked; });
+    const label = document.createElement("strong");
+    label.className = "review-field-name";
+    label.textContent = draft.question || "页面字段";
+    const confidence = document.createElement("span");
+    confidence.className = "review-confidence";
+    confidence.textContent = draft.reviewSource === "答案库" ? "已保存答案" : `置信度 ${Math.round((draft.confidence || 0) * 100)}%`;
+    head.append(selected, label, confidence);
+    const value = document.createElement("textarea");
+    value.className = "review-value";
+    value.rows = 3;
+    value.maxLength = 1200;
+    value.value = draft.value;
+    value.setAttribute("aria-label", `${draft.question || "字段"}的建议答案`);
+    value.addEventListener("input", () => { reviewDrafts[index].value = value.value; });
+    const rememberLabel = document.createElement("label");
+    rememberLabel.className = "review-save-row";
+    const remember = document.createElement("input");
+    remember.type = "checkbox";
+    remember.addEventListener("change", () => { reviewDrafts[index].remember = remember.checked; });
+    const rememberText = document.createElement("span");
+    rememberText.textContent = `记住此问题的答案（仅限 ${draft.hostname || "当前网站"}）`;
+    rememberLabel.append(remember, rememberText);
+    row.append(head, value, rememberLabel);
+    elements.reviewList.append(row);
+  }
+}
+
+async function persistAnswerBank(candidates) {
+  const stored = await chrome.storage.local.get(["starjobAnswerBank"]);
+  const existing = Array.isArray(stored.starjobAnswerBank) ? stored.starjobAnswerBank : [];
+  const answers = new Map(existing
+    .filter((item) => item && typeof item.key === "string" && typeof item.value === "string")
+    .map((item) => [item.key, item]));
+  let saved = 0;
+  for (const candidate of candidates) {
+    const key = answerBankKey(candidate.hostname, candidate.question);
+    const value = String(candidate.value || "").trim().slice(0, 1200);
+    if (!key || !value) continue;
+    answers.set(key, {
+      key,
+      hostname: candidate.hostname,
+      question: candidate.question,
+      value,
+      savedAt: new Date().toISOString(),
+    });
+    saved += 1;
+  }
+  await chrome.storage.local.set({ starjobAnswerBank: [...answers.values()].slice(-250) });
+  return saved;
+}
+
+async function handleReviewAction({ saveOnly = false } = {}) {
+  const selected = reviewDrafts.filter((item) => item.selected && String(item.value || "").trim());
+  if (!selected.length) {
+    showResult("还没有选择答案", "勾选要写入或保存的字段，并检查答案内容。", "warning");
+    return;
+  }
+  if (saveOnly) {
+    try {
+      const saved = await persistAnswerBank(selected);
+      if (!saved) {
+        showResult("没有可保存的答案", "请为已选字段填写答案后再保存。", "warning");
+        return;
+      }
+      showResult("答案已保存", `已将 ${saved} 项答案保存在此浏览器；下次遇到相同网站和问题时仍会先让你确认。`, "success");
+      elements.reviewPanel.hidden = true;
+      reviewDrafts = [];
+    } catch (error) {
+      showResult("答案没有保存", error instanceof Error ? error.message : "本地答案库暂时不可用，请稍后重试。", "warning");
+    }
+    return;
+  }
+  if (!pendingReviewContext?.tabId || !pendingReviewContext.pageUrl) {
+    showResult("原页面信息已失效", "请回到网申页面重新读取字段，再复核这些答案。", "warning");
+    return;
+  }
+  const toRemember = selected.filter((item) => item.remember);
+  const mappings = {};
+  for (const item of selected) {
+    mappings[item.fieldKey] = {
+      ...item.mapping,
+      value: String(item.value).trim(),
+      confidence: Math.max(AI_AUTOFILL_MIN_CONFIDENCE, Number(item.confidence) || AI_AUTOFILL_MIN_CONFIDENCE),
+      basis: item.mapping?.basis || "user_preference",
+      action: item.mapping?.action || "fill",
+      needsReview: false,
+    };
+  }
+  const controller = new AbortController();
+  const previousFillButtonText = elements.fillButton.textContent;
+  activeFillAbortController = controller;
+  elements.reviewApply.disabled = true;
+  elements.reviewSaveOnly.disabled = true;
+  elements.fillButton.disabled = true;
+  elements.fillButton.textContent = "正在写入复核项";
+  try {
+    const currentTab = await chrome.tabs.get(pendingReviewContext.tabId);
+    if (!isSameReviewPage(pendingReviewContext.pageUrl, currentTab?.url)) {
+      throw new Error("当前页面已变化，复核答案未写入。请重新扫描当前网申页面。");
+    }
+    if (toRemember.length) await persistAnswerBank(toRemember);
+    const result = await executeMappedFillProgressively({
+      tabId: pendingReviewContext.tabId,
+      mappings,
+      fieldAddressByQualifiedKey: pendingReviewContext.fieldAddressByQualifiedKey,
+      mappingStorageKey: "aiValueMappings",
+      taskSignal: controller.signal,
+      storageState: { analysisOnly: false, aiOnly: false, aiFieldMappings: {}, aiAutofillOnly: true },
+    });
+    const total = summarizeFrameResults(result.results);
+    total.failed += result.failedFields;
+    const remaining = total.failed > 0
+      ? reviewDrafts
+      : reviewDrafts.filter((item) => !item.selected);
+    renderReviewQueue(remaining, pendingReviewContext);
+    showResult(total.failed ? "已写入复核项，部分控件需要检查" : "复核完成", `按你的确认写入 ${total.filled} 项；保留原有内容 ${total.preserved} 项。${toRemember.length ? `另有 ${toRemember.length} 项已存入本地答案库。` : ""}`, total.failed ? "warning" : "success", total.unmatched);
+  } catch (error) {
+    showResult("复核项没有写入", error instanceof Error ? error.message : "页面状态已变化，请重新读取后再试。", "warning");
+  } finally {
+    activeFillAbortController = null;
+    elements.reviewApply.disabled = false;
+    elements.reviewSaveOnly.disabled = false;
+    elements.fillButton.disabled = false;
+    elements.fillButton.textContent = previousFillButtonText || "AI 智能填写";
+  }
+}
+
 function selectedFillMode() {
   const value = document.querySelector('input[name="fillMode"]:checked')?.value;
   return ["merge", "overwrite", "ai"].includes(value) ? value : "merge";
@@ -247,7 +418,7 @@ function resetClearConfirmation() {
 function armClearConfirmation() {
   clearConfirmationExpiresAt = Date.now() + CONFIRM_WINDOW_MS;
   elements.clearData.textContent = "再次点击确认清除";
-  showResult("确认清除本地数据", "这会删除扩展中已同步的所有简历，不会删除拾星网站中的云端简历。", "warning");
+  showResult("确认清除本地数据", "这会删除本地同步简历和答案库，不会删除拾星网站中的云端简历。", "warning");
   if (clearConfirmationTimer) window.clearTimeout(clearConfirmationTimer);
   clearConfirmationTimer = window.setTimeout(resetClearConfirmation, CONFIRM_WINDOW_MS);
 }
@@ -716,6 +887,9 @@ async function render() {
 }
 
 async function fillCurrentPage() {
+  if (elements.reviewPanel) elements.reviewPanel.hidden = true;
+  reviewDrafts = [];
+  pendingReviewContext = null;
   const fillMode = selectedFillMode();
   if (fillMode === "overwrite" && overwriteConfirmationExpiresAt < Date.now()) {
     armOverwriteConfirmation();
@@ -729,6 +903,7 @@ async function fillCurrentPage() {
   const taskController = new AbortController();
   let taskOperationId = null;
   let progressiveFilledOnPage = 0;
+  let reviewCandidates = [];
   activeFillAbortController = taskController;
   elements.fillButton.disabled = fillMode !== "ai";
   elements.fillButton.textContent = fillMode === "ai" ? "停止本次智能填写" : "正在逐项分析";
@@ -823,7 +998,7 @@ async function fillCurrentPage() {
 
     if (fillMode === "ai") {
       updateProgress("match", "loading", `正在让 AI 从上到下处理 ${fields.length} 个安全字段`);
-      const stored = await chrome.storage.local.get(["starjobResumes", "matchToken", "matchTokenExpiresAt", "aiMatchingAvailable"]);
+      const stored = await chrome.storage.local.get(["starjobResumes", "matchToken", "matchTokenExpiresAt", "aiMatchingAvailable", "starjobAnswerBank"]);
       const selectedResume = (Array.isArray(stored.starjobResumes) ? stored.starjobResumes : [])
         .find((resume) => resume.id === activeResumeId);
       const tokenValid = stored.matchToken
@@ -832,6 +1007,7 @@ async function fillCurrentPage() {
       if (!stored.aiMatchingAvailable || !tokenValid) throw new Error("AI 智能填写需要重新同步简历，请返回拾星同步后再试。");
 
       const aiValueMappings = {};
+      const reviewFieldKeys = new Set();
       let acceptedMappings = 0;
       let localExactFallbacks = 0;
       let aiRawMappingCount = 0;
@@ -875,13 +1051,43 @@ async function fillCurrentPage() {
         aiRawMappingCount += Number(payload?.diagnostics?.aiRawMappingCount || 0);
         validatedMappingCount += Number(payload?.diagnostics?.validatedMappingCount || 0);
         for (const mapping of payload.mappings || []) {
-          if (mapping?.fieldKey && typeof mapping.value === "string" && mapping.value.trim()
+          const validValue = mapping?.fieldKey && typeof mapping.value === "string" && mapping.value.trim()
             && !["manual", "skip"].includes(mapping.action)
-            && ["resume", "exact_fact", "normalized_fact", "derived", "semantic_inference", "grounded_generation", "user_preference"].includes(mapping.basis) && Number(mapping.confidence) >= AI_AUTOFILL_MIN_CONFIDENCE) {
+            && ["resume", "exact_fact", "normalized_fact", "derived", "semantic_inference", "grounded_generation", "user_preference"].includes(mapping.basis);
+          const confidence = Number(mapping?.confidence) || 0;
+          if (validValue && (mapping.needsReview === true || confidence < AI_AUTOFILL_MIN_CONFIDENCE) && confidence >= 0.3) {
+            const sourceField = batch.find((field) => field.fieldKey === mapping.fieldKey);
+            const question = getReviewQuestion(sourceField);
+            if (sourceField && question && !reviewFieldKeys.has(mapping.fieldKey)) {
+              reviewFieldKeys.add(mapping.fieldKey);
+              reviewCandidates.push({
+                fieldKey: mapping.fieldKey,
+                question,
+                hostname: pageUrl.hostname,
+                value: mapping.value.trim(),
+                confidence,
+                reviewSource: "AI 建议",
+                mapping: {
+                  value: mapping.value.trim(),
+                  displayValue: typeof mapping.displayValue === "string" ? mapping.displayValue.trim() : null,
+                  confidence,
+                  basis: mapping.basis,
+                  action: mapping.action || "fill",
+                  evidence: Array.isArray(mapping.evidence) ? mapping.evidence : [],
+                  source: mapping.source || null,
+                  needsReview: true,
+                  controlType: mapping.controlType || null,
+                  optionMatch: mapping.optionMatch || null,
+                },
+              });
+            }
+            continue;
+          }
+          if (validValue && mapping.needsReview !== true && confidence >= AI_AUTOFILL_MIN_CONFIDENCE) {
             const compiled = {
               value: mapping.value.trim(),
               displayValue: typeof mapping.displayValue === "string" ? mapping.displayValue.trim() : null,
-              confidence: Number(mapping.confidence),
+              confidence,
               basis: mapping.basis,
               action: mapping.action || "fill",
               evidence: Array.isArray(mapping.evidence) ? mapping.evidence : [],
@@ -982,6 +1188,35 @@ async function fillCurrentPage() {
       throwIfAborted(taskController.signal);
       activeFillAbortController = null;
       const total = summarizeFrameResults(progressiveResults);
+      const answerBank = Array.isArray(stored.starjobAnswerBank) ? stored.starjobAnswerBank : [];
+      for (const field of fields) {
+        if (reviewFieldKeys.has(field.fieldKey) || aiValueMappings[field.fieldKey]) continue;
+        if (isLocalExactFallbackField(field)) continue;
+        const question = getReviewQuestion(field);
+        const key = answerBankKey(pageUrl.hostname, question);
+        const saved = answerBank.find((item) => item?.key === key && typeof item.value === "string" && item.value.trim());
+        if (!saved || !question) continue;
+        reviewFieldKeys.add(field.fieldKey);
+        reviewCandidates.push({
+          fieldKey: field.fieldKey,
+          question,
+          hostname: pageUrl.hostname,
+          value: saved.value,
+          confidence: 1,
+          reviewSource: "答案库",
+          mapping: {
+            value: saved.value,
+            confidence: 1,
+            basis: "user_preference",
+            action: "fill",
+            evidence: ["用户在此浏览器确认保存"],
+            needsReview: true,
+          },
+        });
+      }
+      if (reviewCandidates.length) {
+        renderReviewQueue(reviewCandidates, { tabId: tab.id, pageUrl: pageUrl.href, fieldAddressByQualifiedKey });
+      }
       console.info("[starjob_pipeline_checkpoint_D]", {
         ...total,
         reboundFieldCount: progressiveReboundFields,
@@ -1099,7 +1334,7 @@ async function fillCurrentPage() {
     updateTaskProgress(4, 4, `已填写 ${total.filled} 项，${total.manual} 项需手动确认${total.failed > 0 ? `，${total.failed} 项写入失败` : ""}`);
     showResult(
       total.failed > 0 ? `已填写 ${total.filled} 项，部分未完成` : `已填写 ${total.filled} 项`,
-      `保留已有内容 ${total.preserved} 项，仍有 ${total.manual} 项需要你确认。${total.failed > 0 ? `其中 ${total.failed} 项因页面控件异常写入失败。` : ""}提交前请逐项检查。`,
+        `保留已有内容 ${total.preserved} 项，仍有 ${total.manual} 项需要你确认。${reviewCandidates.length ? `另有 ${reviewCandidates.length} 个建议留在下方待你复核，不会自动写入。` : ""}${total.failed > 0 ? `其中 ${total.failed} 项因页面控件异常写入失败。` : ""}提交前请逐项检查。`,
       total.failed > 0 ? "warning" : "success",
       total.unmatched,
     );
@@ -1146,6 +1381,8 @@ elements.fillButton.addEventListener("click", () => {
   }
   void fillCurrentPage();
 });
+elements.reviewApply?.addEventListener("click", () => void handleReviewAction());
+elements.reviewSaveOnly?.addEventListener("click", () => void handleReviewAction({ saveOnly: true }));
 elements.openSync.addEventListener("click", () => openPage("/extension#sync"));
 elements.openSyncFromEmpty.addEventListener("click", () => openPage("/extension#sync"));
 elements.openGuide.addEventListener("click", () => openPage("/extension/guide"));
@@ -1158,7 +1395,7 @@ elements.clearData.addEventListener("click", async () => {
   resetClearConfirmation();
   await chrome.storage.local.remove(STORAGE_KEYS);
   await render();
-  showResult("本地数据已清除", "扩展中保存的拾星简历已删除。", "success");
+  showResult("本地数据已清除", "扩展中保存的拾星简历和答案库已删除。", "success");
 });
 
 function renderPreview() {

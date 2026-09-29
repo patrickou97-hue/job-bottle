@@ -90,7 +90,9 @@ export function GalaxyJobsClient({ kind, slug }: { kind: GalaxyKind; slug: strin
 
   const applicationByJobId = useMemo(() => {
     const map = new Map<string, UserApplication>();
-    applications.forEach((application) => map.set(application.job_id, application));
+    applications.forEach((application) => {
+      if (application.job_id) map.set(application.job_id, application);
+    });
     return map;
   }, [applications]);
 

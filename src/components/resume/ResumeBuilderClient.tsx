@@ -47,6 +47,7 @@ import type { ApplicationWithJob, Job } from "@/lib/types";
 import { formatDateTime } from "@/lib/utils";
 import { track } from "@/lib/track";
 import { createResumeFromImport, type ImportedResumeDraft } from "@/lib/resume-import";
+import { analyzeResumeForJob } from "@/lib/resume-match";
 import {
   createResumeFromTranslation,
   requestResumeTranslation,
@@ -54,7 +55,15 @@ import {
 } from "@/lib/resume-translation";
 
 type StorageMode = "local" | "cloud";
-type TargetJobContext = { company: string; id: string; role: string };
+type TargetJobContext = {
+  company: string;
+  id: string;
+  role: string;
+  responsibilities?: string;
+  mustHave?: string;
+  preferredQualifications?: string;
+  keywords?: string[];
+};
 type PendingCloudSave = {
   attempts: number;
   fingerprint: string;
@@ -383,6 +392,11 @@ export function ResumeBuilderClient({
   const targetResume = targetJob
     ? resumes.find((resume) => resume.linkedJobId === targetJob.id) ?? null
     : null;
+  const targetJobRecord = targetJob ? jobs.find((job) => job.id === targetJob.id) ?? null : null;
+  const jobMatch = selectedResume && targetJob ? analyzeResumeForJob(selectedResume, {
+    keywords: targetJobRecord?.keywords?.length ? targetJobRecord.keywords : targetJob.keywords,
+    must_have: targetJobRecord?.must_have || targetJob.mustHave,
+  }) : null;
 
   useEffect(() => {
     const timer = window.setTimeout(() => setPendingDeleteId(null), 0);
@@ -590,7 +604,10 @@ export function ResumeBuilderClient({
     }
   }
 
-  if (!loaded || !selectedResume) {
+  if (!loaded || !selectedResume || (isSupabaseConfigured() && !authResolved)) {
+    const loadingLabel = isSupabaseConfigured() && !authResolved
+      ? "正在载入账户简历"
+      : "正在整理简历";
     return (
       <div className="observatory-page space-y-8">
         <section className="page-hero">
@@ -599,7 +616,7 @@ export function ResumeBuilderClient({
           </div>
         </section>
         <div className="empty-state">
-          <span className="loading-line">正在整理简历</span>
+          <span className="loading-line" role="status" aria-live="polite">{loadingLabel}</span>
         </div>
       </div>
     );
@@ -711,6 +728,28 @@ export function ResumeBuilderClient({
             <FileText aria-hidden="true" className="size-4" />
             {targetResume ? "打开岗位版本" : "创建岗位版本"}
           </Button>
+        </section>
+      ) : null}
+
+      {targetJob && selectedResume && jobMatch ? (
+        <section className="grid gap-6 border-y border-[color:var(--line-ghost)] py-5 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.8fr)]" aria-label="岗位简历匹配与基础预检">
+          <div>
+            <div className="flex flex-wrap items-baseline justify-between gap-3"><h2 className="text-sm font-semibold text-ink-primary">岗位要求对照</h2><span className="text-xs text-ink-muted">简历中出现 {jobMatch.present.length} / {jobMatch.keywords.length} 个岗位词</span></div>
+            {jobMatch.keywords.length === 0 ? <p className="mt-3 text-xs leading-5 text-ink-muted">岗位信息尚无可用的结构化要求，可继续编辑岗位版本；系统不会猜测岗位关键词。</p> : (
+              <>
+                <p className="mt-3 text-[10px] font-medium text-ink-muted">简历中能找到</p>
+                <div className="mt-2 flex flex-wrap gap-1.5">{jobMatch.present.length ? jobMatch.present.map((keyword) => <span key={`hit-${keyword}`} className="rounded-sm bg-[color:var(--surface-selected-bg)] px-2 py-1 text-[10px] text-ink-secondary">{keyword}</span>) : <span className="text-xs text-ink-muted">暂未找到明确对应词</span>}</div>
+                <p className="mt-3 text-[10px] font-medium text-ink-muted">岗位要求中出现，但简历没有匹配到</p>
+                <div className="mt-2 flex flex-wrap gap-1.5">{jobMatch.missing.length ? jobMatch.missing.map((keyword) => <span key={`missing-${keyword}`} className="rounded-sm border border-[color:var(--line)] px-2 py-1 text-[10px] text-ink-muted">{keyword}</span>) : <span className="text-xs text-ink-muted">没有未匹配词</span>}</div>
+              </>
+            )}
+            <p className="mt-3 text-[10px] leading-5 text-ink-muted">只做原文关键词提示，不代表 ATS 评分；请确认每项都能由真实经历支撑。</p>
+          </div>
+          <div className="border-t border-[color:var(--line-ghost)] pt-4 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
+            <h2 className="text-sm font-semibold text-ink-primary">投递前基础预检</h2>
+            <ul className="mt-3 space-y-2">{jobMatch.checks.map((check) => <li key={check.label} className="flex items-start gap-2 text-xs"><span aria-hidden="true" className={check.passed ? "mt-1 size-1.5 shrink-0 rounded-full bg-[color:var(--aurora)]" : "mt-1 size-1.5 shrink-0 rounded-full bg-[color:var(--text-danger)]"} /><span><strong className="font-medium text-ink-secondary">{check.label}：</strong><span className="text-ink-muted">{check.detail}</span></span></li>)}</ul>
+            <p className="mt-3 text-[10px] leading-5 text-ink-muted">这是信息完整度预检，不能预测企业 ATS 的筛选结果。</p>
+          </div>
         </section>
       ) : null}
 

@@ -46,19 +46,19 @@ export function ExtensionGuide() {
         <div className="max-w-4xl">
           <h1 className="page-title">安装拾星网申助手</h1>
           <div className="mt-5 max-w-3xl space-y-2 text-sm leading-7 text-ink-secondary">
-            <p>当前版本 1.1.5，适用于 Chrome、Edge 及其他 Chromium 浏览器。</p>
+            <p>当前版本 1.1.6，适用于 Chrome、Edge 及其他 Chromium 浏览器。</p>
             <div className="flex flex-wrap items-center gap-3 pt-3">
               <a
-                href="/downloads/starjob-resume-assistant-v1.1.5.zip"
+                href="/downloads/starjob-resume-assistant-v1.1.6.zip"
                 download
                 className="gold-button pressable inline-flex min-h-12 items-center gap-2 rounded-xl px-5 text-base font-semibold"
               >
                 <ArrowDownIcon aria-hidden="true" className="size-5" />
-                下载 1.1.5 安装包
+                下载 1.1.6 安装包
               </a>
               <span className="text-xs text-ink-muted">ZIP 安装包 · 下载后完整解压</span>
             </div>
-            <p>下载后请完整解压。1.1.5 会按批次完成分析、重新识别当前控件、写入并回读结果；优先使用 MiMo，并增强性别、学历等自定义下拉与自我描述填写。简历只记录年月而页面要求完整日期时，开始月写为 1 日，结束月写为当月最后一天；只收年月的控件保持原格式。每段工作和项目描述仍只使用当前记录的证据。最多支持 100 个 AI 批次和 1500 个安全字段；验证码、密码和最终提交仍由你处理。</p>
+            <p>下载后请完整解压。1.1.6 会按批次分析、重新识别当前控件、写入并回读结果；低置信建议和已保存答案会进入人工复核队列，确认后才写入，答案库仅保存在当前浏览器并按网站和问题匹配。简历只记录年月而页面要求完整日期时，开始月写为 1 日，结束月写为当月最后一天；只收年月的控件保持原格式。每段工作和项目描述仍只使用当前记录的证据。最多支持 100 个 AI 批次和 1500 个安全字段；验证码、密码和最终提交仍由你处理。</p>
           </div>
         </div>
       </section>

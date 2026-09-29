@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       .order("updated_at", { ascending: false })
       .limit(100);
     if (error) throw error;
-    const jobIds = [...new Set((applications ?? []).map((item) => item.job_id))];
+    const jobIds = [...new Set((applications ?? []).flatMap((item) => item.job_id ? [item.job_id] : []))];
     const { data: jobs, error: jobError } = jobIds.length
       ? await admin.from("jobs").select("*").in("id", jobIds)
       : { data: [], error: null };
@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
       {
         data: {
           applications: (applications ?? []).flatMap((application) => {
+            if (!application.job_id) return [];
             const job = jobMap.get(application.job_id);
             return job ? [toMiniProgramApplication(application, job)] : [];
           }),
@@ -227,6 +228,9 @@ export async function PUT(request: NextRequest) {
     if (error) throw error;
     if (!application) {
       return NextResponse.json({ error: "星瓶记录不存在。" }, { status: 404 });
+    }
+    if (!application.job_id) {
+      return NextResponse.json({ error: "自建岗位暂不支持通过小程序编辑。" }, { status: 400 });
     }
     const { data: job, error: jobError } = await admin
       .from("jobs")

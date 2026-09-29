@@ -309,7 +309,7 @@ function buildCompanyBreakdown(rows: ApplicationRow[], jobs: JobUsageRow[]) {
   const jobCompanies = new Map(jobs.map((job) => [job.id, job.company_name]));
   const counts = new Map<string, { value: number; users: Set<string> }>();
   rows.forEach((row) => {
-    const label = jobCompanies.get(row.job_id) ?? "岗位已下线";
+    const label = row.job_id ? jobCompanies.get(row.job_id) ?? "岗位已下线" : "自建岗位";
     const entry = counts.get(label) ?? { value: 0, users: new Set<string>() };
     entry.value += 1;
     entry.users.add(row.user_id);

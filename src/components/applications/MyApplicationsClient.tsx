@@ -1,14 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ChevronDown, ExternalLink, RefreshCw, Search, Settings2, SlidersHorizontal } from "lucide-react";
+import { ArrowRight, CalendarClock, ChevronDown, Download, ExternalLink, Plus, RefreshCw, Search, Settings2, SlidersHorizontal } from "lucide-react";
 import { motion } from "motion/react";
 import { APPLICATION_PRIORITY_LABELS } from "@/lib/constants";
-import { fetchMyApplications, getApplicationDisplayPosition, updateApplication } from "@/lib/applications";
+import { createCustomApplication, fetchApplicationHistories, fetchMyApplications, getApplicationDisplayPosition, updateApplication } from "@/lib/applications";
+import { createCalendarIcs, getApplicationCalendarEntries, getApplicationFunnel, type CalendarEntry, type JobCalendarRecord } from "@/lib/application-workspace";
 import { getNextAction } from "@/lib/career-workspace";
 import { getCurrentUserOrNull } from "@/lib/auth";
+import { fetchJobCalendarRecords } from "@/lib/jobs";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { formatDateTime, isValidHttpUrl, sanitizeApplicationUrl } from "@/lib/utils";
 import { ProgressDrawer } from "@/components/applications/ProgressDrawer";
@@ -17,7 +19,7 @@ import { ApplicationWorkflowEditor } from "@/components/applications/Application
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
-import type { ApplicationStatus, ApplicationWithJob } from "@/lib/types";
+import type { ApplicationStatus, ApplicationWithJob, JobSnapshot, StatusHistory } from "@/lib/types";
 import { layoutTransition } from "@/lib/motion";
 import {
   cloneDefaultApplicationWorkflow,
@@ -38,6 +40,9 @@ const ENDED_STATUSES: ApplicationStatus[] = ["rejected", "withdrawn"];
 export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { loginNextPath?: string }) {
   const router = useRouter();
   const [applications, setApplications] = useState<ApplicationWithJob[]>([]);
+  const [jobCalendarRecords, setJobCalendarRecords] = useState<JobCalendarRecord[]>([]);
+  const [statusHistory, setStatusHistory] = useState<StatusHistory[]>([]);
+  const [statusHistoryUnavailable, setStatusHistoryUnavailable] = useState(false);
   const [drawerApplication, setDrawerApplication] = useState<ApplicationWithJob | null>(null);
   const [workflowEditorApplication, setWorkflowEditorApplication] = useState<ApplicationWithJob | null>(null);
   const [keyword, setKeyword] = useState("");
@@ -47,6 +52,11 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
   const [workflowSaving, setWorkflowSaving] = useState(false);
   const [endedExpanded, setEndedExpanded] = useState(false);
   const [workspaceMessage, setWorkspaceMessage] = useState("");
+  const [customJobOpen, setCustomJobOpen] = useState(false);
+  const [customJobSaving, setCustomJobSaving] = useState(false);
+  const [funnelExpanded, setFunnelExpanded] = useState(false);
+  const [calendarExpanded, setCalendarExpanded] = useState(false);
+  const [calendarReferenceTime, setCalendarReferenceTime] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
   const [loadError, setLoadError] = useState("");
@@ -57,6 +67,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
     loadRequestRef.current = requestId;
     setLoading(true);
     setLoadError("");
+    setStatusHistoryUnavailable(false);
     try {
       if (!isSupabaseConfigured()) {
         setLoadError("投递记录暂时无法读取，请稍后重试。");
@@ -73,6 +84,21 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
       const applicationRows = await fetchMyApplications(supabase, user.id);
       if (requestId !== loadRequestRef.current) return;
       setApplications(applicationRows);
+      setJobCalendarRecords([]);
+      void fetchJobCalendarRecords(supabase)
+        .then((calendarJobs) => {
+          if (requestId === loadRequestRef.current) setJobCalendarRecords(calendarJobs);
+        })
+        .catch(() => undefined);
+      try {
+        const histories = await fetchApplicationHistories(supabase, user.id, applicationRows.map((item) => item.id));
+        if (requestId === loadRequestRef.current) setStatusHistory(histories);
+      } catch {
+        if (requestId === loadRequestRef.current) {
+          setStatusHistory([]);
+          setStatusHistoryUnavailable(true);
+        }
+      }
     } catch {
       if (requestId !== loadRequestRef.current) return;
       setLoadError("投递记录暂时无法读取，请稍后重试。");
@@ -82,7 +108,10 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
   }
 
   useEffect(() => {
-    const timer = window.setTimeout(() => void loadData(), 0);
+    const timer = window.setTimeout(() => {
+      setCalendarReferenceTime(Date.now());
+      void loadData();
+    }, 0);
     return () => {
       window.clearTimeout(timer);
       loadRequestRef.current += 1;
@@ -100,6 +129,77 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
   }), [applications]);
 
   const staleCount = applications.filter((application) => isActive(application) && getDaysSinceUpdate(application) >= 7).length;
+  const calendarEntries = useMemo(() => getApplicationCalendarEntries(
+    applications,
+    new Date(calendarReferenceTime ?? 0),
+    jobCalendarRecords,
+  ), [applications, calendarReferenceTime, jobCalendarRecords]);
+  const calendarEntriesInWindow = useMemo(() => calendarReferenceTime === null ? [] : calendarEntries.filter((entry) => entry.date.getTime() >= calendarReferenceTime - 14 * 86_400_000), [calendarEntries, calendarReferenceTime]);
+  const visibleCalendarEntries = useMemo(() => calendarExpanded ? calendarEntriesInWindow : calendarEntriesInWindow.slice(0, 6), [calendarEntriesInWindow, calendarExpanded]);
+  const funnel = useMemo(() => getApplicationFunnel(applications, statusHistory), [applications, statusHistory]);
+
+  async function handleAddCustomJob(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    const company = String(form.get("company") || "").trim().slice(0, 120);
+    const role = String(form.get("role") || "").trim().slice(0, 240);
+    const sourceUrl = String(form.get("sourceUrl") || "").trim();
+    const applyUrl = String(form.get("applyUrl") || "").trim() || sourceUrl;
+    const location = String(form.get("location") || "").trim().slice(0, 160);
+    const batch = String(form.get("batch") || "").trim().slice(0, 80);
+    const deadline = String(form.get("deadline") || "").trim();
+    const responsibilities = String(form.get("responsibilities") || "").trim().slice(0, 6000);
+    const requirements = String(form.get("requirements") || "").trim().slice(0, 6000);
+    if (!company || !role || !isValidHttpUrl(sourceUrl) || !isValidHttpUrl(applyUrl)) {
+      setWorkspaceMessage("请填写公司、岗位和有效的招聘来源链接。");
+      return;
+    }
+    setCustomJobSaving(true);
+    setWorkspaceMessage("");
+    try {
+      const supabase = createClient();
+      const user = await getCurrentUserOrNull(supabase);
+      if (!user) throw new Error("登录状态已失效，请重新登录后再添加。");
+      const snapshot: JobSnapshot = {
+        company_name: company,
+        job_titles: role,
+        locations: location || null,
+        industry: null,
+        batch_type: batch || "外部岗位",
+        apply_url: applyUrl,
+        start_date: null,
+        responsibilities: responsibilities || null,
+        must_have: requirements || null,
+        preferred_qualifications: null,
+        keywords: [],
+        closes_at: deadline ? new Date(`${deadline}T23:59:00+08:00`).toISOString() : null,
+        source_url: sourceUrl,
+      };
+      const created = await createCustomApplication(supabase, user.id, snapshot);
+      setApplications((current) => [created, ...current]);
+      setCustomJobOpen(false);
+      setWorkspaceMessage(`${company} 已加入投递工作台，可继续保存材料与进度。`);
+      formElement.reset();
+    } catch (error) {
+      setWorkspaceMessage(error instanceof Error ? error.message : "岗位添加失败，请稍后重试。");
+    } finally {
+      setCustomJobSaving(false);
+    }
+  }
+
+  function downloadCalendar() {
+    const blob = new Blob([createCalendarIcs(calendarEntries)], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "starjob-application-calendar.ics";
+    anchor.hidden = true;
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
+  }
 
   const filtered = useMemo(() => {
     const key = keyword.trim().toLowerCase();
@@ -201,14 +301,74 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
           <p className="page-kicker">投递总览</p>
           <h1 className="page-title">投递管理</h1>
           <p className="page-description">记录投递进度，安排下一步跟进。</p>
+          <Button variant="secondary" className="mt-4 gap-2" onClick={() => setCustomJobOpen((open) => !open)}>
+            <Plus aria-hidden="true" className="size-4" />添加外部岗位
+          </Button>
         </div>
-        <div className="progress-summary grid grid-cols-2 gap-x-6 gap-y-5 px-4 py-3 md:grid-cols-4 md:px-5">
-          <StatBlock value={applications.length} label="全部岗位" />
-          <StatBlock value={stageCounts.interview} label="笔试 / 面试" />
-          <StatBlock value={stageCounts.offer} label="收到 Offer" />
-          <StatBlock value={staleCount} label="7 天以上无进展" urgent={staleCount > 0} />
+        <div className="progress-summary grid grid-cols-2 gap-x-6 gap-y-5 px-4 py-3 md:grid-cols-4 md:px-5" aria-busy={loading || redirecting}>
+          <StatBlock value={loading || redirecting ? "—" : applications.length} label="全部岗位" />
+          <StatBlock value={loading || redirecting ? "—" : stageCounts.interview} label="笔试 / 面试" />
+          <StatBlock value={loading || redirecting ? "—" : stageCounts.offer} label="收到 Offer" />
+          <StatBlock value={loading || redirecting ? "—" : staleCount} label="7 天以上无进展" urgent={!loading && !redirecting && staleCount > 0} />
         </div>
       </section>
+
+      {customJobOpen ? (
+        <section className="border-y border-[color:var(--line-ghost)] py-5" aria-labelledby="custom-job-title">
+          <div className="mb-5 flex items-start justify-between gap-4">
+            <div><h2 id="custom-job-title" className="section-title">收录站外岗位</h2><p className="mt-1 text-xs text-ink-muted">岗位链接、要求和后续材料只保存在你的投递记录中。</p></div>
+            <button type="button" className="text-action text-xs" onClick={() => setCustomJobOpen(false)}>收起</button>
+          </div>
+          <form className="grid gap-4 sm:grid-cols-2" onSubmit={(event) => void handleAddCustomJob(event)}>
+            <label className="grid gap-1.5 text-xs text-ink-secondary">公司名称<Input name="company" required maxLength={120} placeholder="例如：某某科技" /></label>
+            <label className="grid gap-1.5 text-xs text-ink-secondary">岗位名称<Input name="role" required maxLength={240} placeholder="例如：产品运营（校招）" /></label>
+            <label className="grid gap-1.5 text-xs text-ink-secondary sm:col-span-2">招聘来源链接<Input name="sourceUrl" type="url" required placeholder="https://..." /></label>
+            <label className="grid gap-1.5 text-xs text-ink-secondary">投递链接（可与来源相同）<Input name="applyUrl" type="url" placeholder="https://..." /></label>
+            <label className="grid gap-1.5 text-xs text-ink-secondary">工作地点<Input name="location" maxLength={160} placeholder="城市或远程" /></label>
+            <label className="grid gap-1.5 text-xs text-ink-secondary">招聘批次<Input name="batch" maxLength={80} placeholder="27 秋招 / 实习" /></label>
+            <label className="grid gap-1.5 text-xs text-ink-secondary">岗位截止日期<Input name="deadline" type="date" /></label>
+            <label className="grid gap-1.5 text-xs text-ink-secondary">工作职责<textarea name="responsibilities" maxLength={6000} className="min-h-24 rounded-md border border-[color:var(--line)] bg-transparent px-3 py-2 text-sm text-ink-primary" placeholder="粘贴岗位职责，之后可用于简历匹配" /></label>
+            <label className="grid gap-1.5 text-xs text-ink-secondary">任职要求<textarea name="requirements" maxLength={6000} className="min-h-24 rounded-md border border-[color:var(--line)] bg-transparent px-3 py-2 text-sm text-ink-primary" placeholder="粘贴岗位要求，之后可用于简历匹配" /></label>
+            <div className="flex items-center gap-3 sm:col-span-2"><Button type="submit" disabled={customJobSaving}>{customJobSaving ? "正在收录…" : "保存岗位档案"}</Button><span className="text-xs text-ink-muted">保存后可记录状态、跟进、简历版本和问答。</span></div>
+          </form>
+        </section>
+      ) : null}
+
+      {!loading && !redirecting && !loadError ? (
+        <>
+          <section className="border-y border-[color:var(--line-ghost)] py-5" aria-labelledby="application-calendar-title">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-start gap-3"><CalendarClock aria-hidden="true" className="mt-0.5 size-5 text-nebula-blue" /><div><h2 id="application-calendar-title" className="section-title">校招与跟进日历</h2><p className="mt-1 text-xs text-ink-muted">收录公开岗位的开放/截止时间，以及你为投递设置的下一步计划。</p></div></div>
+              <Button variant="secondary" className="gap-2" disabled={calendarEntries.length === 0} onClick={downloadCalendar}><Download aria-hidden="true" className="size-4" />导出日历</Button>
+            </div>
+            {visibleCalendarEntries.length === 0 ? <p className="mt-5 text-sm text-ink-muted">暂时没有截止日期或跟进计划；打开投递详情即可添加下一步时间。</p> : (
+              <>
+                <ol id="application-calendar-list" className="mt-4 divide-y divide-[color:var(--line-ghost)]">
+                  {visibleCalendarEntries.map((entry) => <CalendarReminderRow key={entry.id} entry={entry} />)}
+                </ol>
+                {calendarEntriesInWindow.length > 6 ? <button type="button" className="text-action mt-4 min-h-9 text-xs" aria-controls="application-calendar-list" aria-expanded={calendarExpanded} onClick={() => setCalendarExpanded((expanded) => !expanded)}>{calendarExpanded ? "收起日程" : `查看全部 ${calendarEntriesInWindow.length} 条日程`}</button> : null}
+              </>
+            )}
+          </section>
+
+          <section className="border-y border-[color:var(--line-ghost)] py-4" aria-labelledby="application-funnel-title">
+            <button type="button" className="flex min-h-10 w-full items-center justify-between gap-4 text-left" aria-expanded={funnelExpanded} onClick={() => setFunnelExpanded((value) => !value)}>
+              <span><span id="application-funnel-title" className="block text-sm font-semibold text-ink-primary">近 180 天投递漏斗</span><span className="mt-1 block text-xs text-ink-muted">{statusHistoryUnavailable ? "阶段历史读取失败，暂不计算转化率。" : "只统计拾星中有记录的岗位；有历史时取最高阶段，无历史时按当前阶段。"}</span></span>
+              <ChevronDown aria-hidden="true" className={`size-4 text-ink-muted transition-transform ${funnelExpanded ? "rotate-180" : ""}`} />
+            </button>
+            {funnelExpanded && statusHistoryUnavailable ? (
+              <div className="mt-4 flex flex-wrap items-center gap-3" role="alert">
+                <p className="text-xs text-ink-muted">为避免把当前状态误当成历史转化，漏斗已暂停显示。</p>
+                <Button variant="secondary" onClick={() => void loadData()}>重试读取</Button>
+              </div>
+            ) : funnelExpanded ? (
+              <div className="mt-5 grid gap-3 sm:grid-cols-5">
+                {funnel.map((step) => <div key={step.key} className="min-w-0 border-l border-[color:var(--line-ghost)] pl-3 first:border-0 first:pl-0"><div className="flex items-baseline justify-between gap-2"><strong className="font-display text-2xl tabular-nums text-ink-primary">{step.count}</strong><span className="text-[10px] tabular-nums text-ink-muted">{step.fromStart}%</span></div><p className="mt-1 text-xs text-ink-secondary">{step.label}</p><div className="mt-2 h-1 overflow-hidden rounded-full bg-[color:var(--surface-hover-bg)]"><span className="block h-full rounded-full bg-[color:var(--aurora)]" style={{ width: `${step.fromStart}%` }} /></div></div>)}
+              </div>
+            ) : null}
+          </section>
+        </>
+      ) : null}
 
       {loading || redirecting ? (
         <div className="empty-state"><span className="loading-line">{redirecting ? "正在前往登录" : "正在整理投递记录"}</span></div>
@@ -218,7 +378,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
         </section>
       ) : applications.length === 0 ? (
         <section className="empty-state border-y border-[color:var(--line-ghost)]">
-          <div><h2>还没有投递记录</h2><p>先从岗位坐标收录一个岗位，再在这里补充实际投递岗位并管理进度。</p><Link href="/explore" className="gold-button mt-5 inline-flex rounded-lg px-4 py-2 text-sm font-medium">去岗位坐标</Link></div>
+          <div><h2>还没有投递记录</h2><p>从岗位坐标收录岗位，也可以先把官网职位添加到个人档案。</p><div className="mt-5 flex flex-wrap justify-center gap-2"><Link href="/explore" className="gold-button inline-flex rounded-lg px-4 py-2 text-sm font-medium">去岗位坐标</Link><Button variant="secondary" onClick={() => setCustomJobOpen(true)}>添加外部岗位</Button></div></div>
         </section>
       ) : (
         <>
@@ -412,6 +572,16 @@ function ApplicationListRow({ application, ended = false, onOpen, onEditWorkflow
   );
 }
 
+function CalendarReminderRow({ entry }: { entry: CalendarEntry }) {
+  const safeUrl = sanitizeApplicationUrl(entry.url);
+  return (
+    <li className="flex flex-wrap items-center justify-between gap-x-5 gap-y-2 py-3 first:pt-0 last:pb-0">
+      <div className="min-w-0"><p className="truncate text-sm font-medium text-ink-primary">{entry.company}<span className="mx-2 text-ink-muted">/</span>{entry.role}</p><p className="mt-1 text-xs text-ink-secondary">{entry.label}{entry.overdue ? <span className="ml-2 font-medium text-[color:var(--text-danger)]">已逾期</span> : null}</p></div>
+      <div className="flex items-center gap-3"><time dateTime={entry.date.toISOString()} className="shrink-0 text-xs tabular-nums text-ink-muted">{formatDateTime(entry.date.toISOString())}</time>{isValidHttpUrl(safeUrl) ? <a href={safeUrl} target="_blank" rel="noreferrer" className="text-action inline-flex shrink-0 items-center gap-1 text-xs">查看岗位<ExternalLink aria-hidden="true" className="size-3" /></a> : null}</div>
+    </li>
+  );
+}
+
 function StageFilterButton({ label, count, active, onClick }: { label: string; count: number; active: boolean; onClick: () => void }) {
   return (
     <button type="button" className={active ? "inline-flex min-h-9 shrink-0 items-center gap-2 rounded-md border border-[color:var(--aurora)]/20 bg-[color:var(--surface-selected-bg)] px-3 text-xs text-ink-primary" : "inline-flex min-h-9 shrink-0 items-center gap-2 rounded-md border border-transparent px-3 text-xs text-ink-secondary hover:bg-[color:var(--surface-hover-bg)]"} aria-pressed={active} onClick={onClick}>
@@ -420,7 +590,7 @@ function StageFilterButton({ label, count, active, onClick }: { label: string; c
   );
 }
 
-function StatBlock({ value, label, urgent = false }: { value: number; label: string; urgent?: boolean }) {
+function StatBlock({ value, label, urgent = false }: { value: number | string; label: string; urgent?: boolean }) {
   return <div><div className={urgent ? "font-display text-2xl font-semibold leading-none tabular-nums text-[color:var(--text-danger)] md:text-3xl" : "font-display text-2xl font-semibold leading-none tabular-nums text-ink-primary md:text-3xl"}>{value}</div><div className="mt-2 whitespace-nowrap text-xs text-ink-muted">{label}</div></div>;
 }
 

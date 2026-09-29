@@ -210,7 +210,9 @@ export function HomeClient() {
 
   const applicationByJobId = useMemo(() => {
     const map = new Map<string, UserApplication>();
-    applications.forEach((item) => map.set(item.job_id, item));
+    applications.forEach((item) => {
+      if (item.job_id) map.set(item.job_id, item);
+    });
     return map;
   }, [applications]);
 

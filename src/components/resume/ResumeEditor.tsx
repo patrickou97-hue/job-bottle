@@ -51,7 +51,15 @@ export function ResumeEditor({
 }: {
   resume: ResumeDocument;
   jobs: Job[];
-  linkedJobContext?: { company: string; id: string; role: string } | null;
+  linkedJobContext?: {
+    company: string;
+    id: string;
+    role: string;
+    responsibilities?: string;
+    mustHave?: string;
+    preferredQualifications?: string;
+    keywords?: string[];
+  } | null;
   activeSection: EditorSection;
   onSectionChange: (section: EditorSection) => void;
   onChange: (resume: ResumeDocument) => void;
@@ -60,15 +68,14 @@ export function ResumeEditor({
   const [undo, setUndo] = useState<{ label: string; run: () => void } | null>(null);
   const linkedJob = useMemo(() => jobs.find((job) => job.id === resume.linkedJobId), [jobs, resume.linkedJobId]);
   const jobDescription = useMemo(() => {
-    if (!linkedJob) return "";
     return [
-      linkedJob.job_titles,
-      linkedJob.responsibilities,
-      linkedJob.must_have,
-      linkedJob.preferred_qualifications,
-      linkedJob.keywords?.join("、"),
+      linkedJobContext?.role || linkedJob?.job_titles,
+      linkedJob?.responsibilities || linkedJobContext?.responsibilities,
+      linkedJob?.must_have || linkedJobContext?.mustHave,
+      linkedJob?.preferred_qualifications || linkedJobContext?.preferredQualifications,
+      (linkedJob?.keywords?.length ? linkedJob.keywords : linkedJobContext?.keywords)?.join("、"),
     ].filter(Boolean).join("\n").slice(0, 6_000);
-  }, [linkedJob]);
+  }, [linkedJob, linkedJobContext]);
 
   function patchResume(patch: Partial<ResumeDocument>) {
     onChange(touchResume({ ...resume, ...patch }));
@@ -99,7 +106,7 @@ export function ResumeEditor({
       ) : null}
       <SegmentedControl
         ariaLabel="简历编辑章节"
-        className="w-full"
+        className="w-full resume-editor-section-tabs"
         options={EDITOR_SECTIONS.map((section) => ({ value: section.id, label: section.label }))}
         value={activeSection}
         onChange={onSectionChange}

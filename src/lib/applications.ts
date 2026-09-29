@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   ApplicationWithJob,
   Database,
+  Job,
   StatusHistory,
   UserApplication,
 } from "@/lib/types";
@@ -24,6 +25,10 @@ const APPLICATION_REQUEST_TIMEOUT_MS = 12_000;
 
 const LEGACY_UPDATE_KEYS = ["status", "progress_note", "note", "interview_round", "applied_at"] as const;
 const WORKFLOW_UPDATE_KEYS = [
+  "job_snapshot",
+  "resume_snapshot",
+  "form_answers",
+  "material_records",
   "applied_position",
   "candidate_stage",
   "priority",
@@ -56,7 +61,39 @@ export async function fetchMyApplications(
     .abortSignal(signal));
 
   if (error) throw error;
-  return (data ?? []) as unknown as ApplicationWithJob[];
+  return (data ?? []).map((row) => normalizeApplicationRow(row as unknown as UserApplication & { job?: Job | null }));
+}
+
+export function normalizeApplicationRow(
+  row: UserApplication & { job?: Job | null },
+): ApplicationWithJob {
+  if (row.job) return { ...row, job: row.job } as ApplicationWithJob;
+  const snapshot = row.job_snapshot;
+  if (!snapshot) throw new Error("投递记录缺少岗位信息快照。");
+  const timestamp = row.saved_at ?? row.updated_at;
+  const job: Job = {
+    id: row.job_id ?? `external-${row.id}`,
+    company_name: snapshot.company_name,
+    start_date: snapshot.start_date ?? null,
+    industry: snapshot.industry ?? null,
+    batch_type: snapshot.batch_type ?? "自建岗位",
+    job_titles: snapshot.job_titles,
+    job_categories: [],
+    locations: snapshot.locations ?? null,
+    apply_url: snapshot.apply_url || snapshot.source_url,
+    notes: snapshot.notes ?? null,
+    responsibilities: snapshot.responsibilities ?? null,
+    must_have: snapshot.must_have ?? null,
+    preferred_qualifications: snapshot.preferred_qualifications ?? null,
+    keywords: snapshot.keywords ?? [],
+    logo_url: null,
+    tags: [],
+    is_active: true,
+    closes_at: snapshot.closes_at ?? null,
+    created_at: timestamp,
+    updated_at: row.updated_at,
+  };
+  return { ...row, job } as ApplicationWithJob;
 }
 
 export async function upsertApplication(
@@ -64,6 +101,7 @@ export async function upsertApplication(
   userId: string,
   jobId: string,
   candidateStage: "evaluating" | "saved" | "preparing" = "evaluating",
+  jobSnapshot?: UserApplication["job_snapshot"],
 ) {
   const { data: existing, error: existingError } = await runApplicationRequest(async (signal) => await supabase
     .from("user_applications")
@@ -74,13 +112,23 @@ export async function upsertApplication(
     .maybeSingle());
 
   if (existingError) throw existingError;
-  if (existing) return existing as UserApplication;
+  if (existing) {
+    if (jobSnapshot && !(existing as UserApplication).job_snapshot) {
+      try {
+        return await updateApplication(supabase, (existing as UserApplication).id, { job_snapshot: jobSnapshot });
+      } catch (snapshotError) {
+        if (!isMissingApplicationWorkspaceColumnsError(snapshotError)) throw snapshotError;
+      }
+    }
+    return existing as UserApplication;
+  }
 
   const { data, error } = await runApplicationRequest(async (signal) => await supabase
     .from("user_applications")
     .insert({
       user_id: userId,
       job_id: jobId,
+      ...(jobSnapshot ? { job_snapshot: jobSnapshot } : {}),
       status: "opened",
       candidate_stage: candidateStage,
     })
@@ -108,6 +156,36 @@ export async function upsertApplication(
   return legacyData as UserApplication;
 }
 
+export async function createCustomApplication(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  snapshot: NonNullable<UserApplication["job_snapshot"]>,
+) {
+  const { data, error } = await runApplicationRequest(async (signal) => await supabase
+    .from("user_applications")
+    .insert({
+      user_id: userId,
+      job_id: null,
+      job_snapshot: snapshot,
+      status: "opened",
+      candidate_stage: "saved",
+      saved_at: new Date().toISOString(),
+    })
+    .select("*, job:jobs(*)")
+    .abortSignal(signal)
+    .single());
+  if (error) {
+    if (isMissingApplicationWorkspaceColumnsError(error)) {
+      throw new Error("自建岗位和投递档案需要先执行最新 Supabase migration。");
+    }
+    if (getErrorCode(error) === "23505") {
+      throw new Error("这个岗位已经在你的投递列表中了。");
+    }
+    throw error;
+  }
+  return normalizeApplicationRow(data as unknown as UserApplication & { job?: Job | null });
+}
+
 export async function updateApplication(
   supabase: SupabaseClient<Database>,
   id: string,
@@ -128,7 +206,7 @@ export async function updateApplication(
   if (compatibleMissingKeys.length > 0) {
     const compatibleValues = omitApplicationUpdateKeys(values, compatibleMissingKeys);
     if (Object.keys(compatibleValues).length === 0) {
-      throw new Error("投递详情字段尚未升级。请先执行最新 Supabase migration，再保存这些信息。");
+      throw new Error("投递工作台的数据结构尚未升级。请先执行最新 Supabase migration，再保存这些信息。");
     }
 
     const { data: compatibleData, error: compatibleError } = await runApplicationRequest(async (signal) => await supabase
@@ -146,7 +224,7 @@ export async function updateApplication(
       };
     }
     if (isMissingApplicationWorkflowColumnsError(compatibleError)) {
-      throw new Error("投递详情字段尚未升级，你填写的内容仍保留在当前页面。请先执行最新 Supabase migration 后重试。");
+      throw new Error("投递工作台的数据结构尚未升级，你填写的内容仍保留在当前页面。请先执行最新 Supabase migration 后重试。");
     }
     throw compatibleError;
   }
@@ -192,6 +270,23 @@ export async function fetchApplicationHistory(
   return (data ?? []) as StatusHistory[];
 }
 
+export async function fetchApplicationHistories(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  applicationIds: string[],
+) {
+  if (applicationIds.length === 0) return [] as StatusHistory[];
+  const { data, error } = await runApplicationRequest(async (signal) => await supabase
+    .from("status_history")
+    .select("*")
+    .eq("user_id", userId)
+    .in("application_id", applicationIds)
+    .order("changed_at", { ascending: true })
+    .abortSignal(signal));
+  if (error) throw error;
+  return (data ?? []) as StatusHistory[];
+}
+
 export async function deleteApplication(
   supabase: SupabaseClient<Database>,
   id: string,
@@ -206,7 +301,13 @@ export async function deleteApplication(
 
 export function isMissingApplicationWorkflowColumnsError(error: unknown) {
   const message = getErrorMessage(error);
-  return /applied_position|candidate_stage|priority|saved_at|application_channel|application_account|contact_name|next_action|resume_id|custom_stage_label|workflow_node_id|workflow_nodes|review_note/i.test(message)
+  return /job_snapshot|resume_snapshot|form_answers|material_records|applied_position|candidate_stage|priority|saved_at|application_channel|application_account|contact_name|next_action|resume_id|custom_stage_label|workflow_node_id|workflow_nodes|review_note/i.test(message)
+    && /column|schema cache|does not exist|could not find/i.test(message);
+}
+
+export function isMissingApplicationWorkspaceColumnsError(error: unknown) {
+  const message = getErrorMessage(error);
+  return /job_snapshot|resume_snapshot|form_answers|material_records/i.test(message)
     && /column|schema cache|does not exist|could not find/i.test(message);
 }
 

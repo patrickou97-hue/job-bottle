@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Archive } from "lucide-react";
 import { AnimatePresence } from "motion/react";
 import { getCurrentUserOrNull } from "@/lib/auth";
-import { normalizeAppliedPosition, updateApplication, upsertApplication } from "@/lib/applications";
+import { isMissingApplicationWorkspaceColumnsError, normalizeAppliedPosition, updateApplication, upsertApplication } from "@/lib/applications";
 import { getApplicationStageLabel, getCandidateStage, getJobPrimaryAction } from "@/lib/career-workspace";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { isValidHttpUrl, safeOpenUrl, sanitizeApplicationUrl } from "@/lib/utils";
@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/Button";
 import { StatusPill } from "@/components/applications/StatusPill";
 import { ApplyReturnConfirm } from "@/components/jobs/ApplyReturnConfirm";
 import type { Job, UserApplication } from "@/lib/types";
+import { createJobSnapshot } from "@/lib/application-workspace";
 
 export function JobDetailActions({
   job,
@@ -101,7 +102,13 @@ export function JobDetailActions({
           setMessage("投递链接无法识别，岗位尚未收入星瓶。请通过反馈告知我们。");
           return;
         }
-        const nextApplication = await upsertApplication(supabase, user.id, job.id, "preparing");
+        const nextApplication = await upsertApplication(
+          supabase,
+          user.id,
+          job.id,
+          "preparing",
+          createJobSnapshot(job),
+        );
         setApplication(nextApplication);
         void track("job_saved", { job_id: job.id });
         if (applyWindow) {
@@ -172,11 +179,25 @@ export function JobDetailActions({
     setMessage("");
     try {
       const normalizedAppliedPosition = normalizeAppliedPosition(appliedPosition);
-      const nextApplication = await updateApplication(createClient(), application.id, {
+      const values = {
         status,
         progress_note: application.progress_note,
-        ...(status === "applied" ? { applied_position: normalizedAppliedPosition } : {}),
-      });
+        ...(status === "applied" ? {
+          applied_position: normalizedAppliedPosition,
+          job_snapshot: application.job_snapshot ?? createJobSnapshot(job),
+        } : {}),
+      };
+      let nextApplication;
+      try {
+        nextApplication = await updateApplication(createClient(), application.id, values);
+      } catch (snapshotError) {
+        if (status !== "applied" || !isMissingApplicationWorkspaceColumnsError(snapshotError)) throw snapshotError;
+        nextApplication = await updateApplication(createClient(), application.id, {
+          status,
+          progress_note: application.progress_note,
+          applied_position: normalizedAppliedPosition,
+        });
+      }
       setApplication(nextApplication);
       if (status === "applied") void track("application_recorded", { job_id: job.id });
       applyConfirmationArmedRef.current = false;

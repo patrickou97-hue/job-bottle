@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
-import { ExternalLink, Settings2 } from "lucide-react";
+import { ExternalLink, Plus, Settings2, Trash2 } from "lucide-react";
 import {
   APPLICATION_CANDIDATE_STAGE,
   APPLICATION_CANDIDATE_STAGE_LABELS,
@@ -10,6 +10,7 @@ import {
   TERMINAL_APPLICATION_STATUS,
 } from "@/lib/constants";
 import { deleteApplication, fetchApplicationHistory, updateApplication } from "@/lib/applications";
+import { createJobSnapshot, createResumeSnapshot, getResumeSnapshotHighlights, normalizeFormAnswers, normalizeMaterialRecords } from "@/lib/application-workspace";
 import { getCandidateStage } from "@/lib/career-workspace";
 import { fetchMyResumes, isMissingResumeTableError } from "@/lib/resume-sync";
 import { createClient } from "@/lib/supabase/client";
@@ -21,7 +22,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { CompanyBadge } from "@/components/jobs/CompanyBadge";
 import type { ResumeDocument } from "@/lib/resume";
-import type { ApplicationCandidateStage, ApplicationStatus, ApplicationWithJob, StatusHistory } from "@/lib/types";
+import type { ApplicationCandidateStage, ApplicationFormAnswer, ApplicationMaterial, ApplicationStatus, ApplicationWithJob, StatusHistory } from "@/lib/types";
 import {
   DEFAULT_APPLICATION_WORKFLOW,
   getApplicationWorkflowNode,
@@ -65,6 +66,9 @@ export function ProgressDrawer({
   const [reviewNote, setReviewNote] = useState("");
   const [savedWorkflowFingerprint, setSavedWorkflowFingerprint] = useState("");
   const [resumes, setResumes] = useState<ResumeDocument[]>([]);
+  const [formAnswers, setFormAnswers] = useState<ApplicationFormAnswer[]>([]);
+  const [materialRecords, setMaterialRecords] = useState<ApplicationMaterial[]>([]);
+  const [dossierMessage, setDossierMessage] = useState("");
   const [history, setHistory] = useState<StatusHistory[]>([]);
   const [historyState, setHistoryState] = useState<"loading" | "ready" | "error">("loading");
   const [message, setMessage] = useState("");
@@ -112,6 +116,9 @@ export function ProgressDrawer({
       setNextAction(nextWorkflow.nextAction);
       setNextActionAt(nextWorkflow.nextActionAt);
       setResumeId(nextWorkflow.resumeId);
+      setFormAnswers(normalizeFormAnswers(currentApplication.form_answers));
+      setMaterialRecords(normalizeMaterialRecords(currentApplication.material_records));
+      setDossierMessage("");
       setCustomStageLabel(nextWorkflow.customStageLabel);
       setWorkflowNodeId(nextWorkflow.workflowNodeId);
       setReviewNote(nextWorkflow.reviewNote);
@@ -165,6 +172,9 @@ export function ProgressDrawer({
     }, workflowNodes);
     return currentNode ? workflowNodes.findIndex((node) => node.id === currentNode.id) : -1;
   }, [customStageLabel, status, workflowNodeId, workflowNodes]);
+  const resumeSnapshotHighlights = application?.resume_snapshot
+    ? getResumeSnapshotHighlights(application.resume_snapshot)
+    : [];
   const ended = TERMINAL_APPLICATION_STATUS.includes(status as (typeof TERMINAL_APPLICATION_STATUS)[number]);
   const workflowFingerprint = JSON.stringify({
     appliedPosition,
@@ -404,6 +414,37 @@ export function ProgressDrawer({
     if (saving) return;
     if (note.trim() === savedNote.trim() && status === savedStatus) return;
     await saveProgress(status, note, "已保存");
+  }
+
+  async function saveDossier() {
+    if (!application || saving) return;
+    const selectedResume = resumes.find((resume) => resume.id === resumeId);
+    const cleanedAnswers = normalizeFormAnswers(formAnswers);
+    const cleanedMaterials = normalizeMaterialRecords(materialRecords);
+    if (cleanedMaterials.some((material) => material.url && !isValidHttpUrl(material.url))) {
+      setDossierMessage("材料链接需使用有效的 http 或 https 地址。");
+      return;
+    }
+    setSaving(true);
+    setDossierMessage("");
+    try {
+      const updated = await updateApplication(createClient(), application.id, {
+        job_snapshot: application.job_snapshot ?? createJobSnapshot(application.job),
+        resume_id: cleanOptional(resumeId),
+        resume_snapshot: selectedResume ? createResumeSnapshot(selectedResume) : application.resume_snapshot ?? null,
+        form_answers: cleanedAnswers,
+        material_records: cleanedMaterials,
+      });
+      const nextApplication: ApplicationWithJob = { ...application, ...updated, job: application.job };
+      await onChanged(nextApplication);
+      setFormAnswers(cleanedAnswers);
+      setMaterialRecords(cleanedMaterials);
+      setDossierMessage(selectedResume || application.resume_snapshot ? "岗位、简历版本、材料和问答已归档。" : "岗位、材料与问答已归档；选择简历后可补充简历快照。");
+    } catch (error) {
+      setDossierMessage(error instanceof Error ? error.message : "档案暂未保存，请稍后重试。");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleDelete() {
@@ -653,6 +694,64 @@ export function ProgressDrawer({
               <Input type="datetime-local" value={nextActionAt} onChange={(event) => setNextActionAt(event.target.value)} />
             </WorkflowField>
           </div>
+        </section>
+
+        <section className="border-y border-[color:var(--line-ghost)] py-5" aria-labelledby="application-dossier-title">
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div><h4 id="application-dossier-title" className="text-sm font-semibold text-ink-primary">单岗位投递档案</h4><p className="mt-1 text-xs text-ink-muted">固定岗位来源、投递时使用的简历版本、其他材料和申请问答。</p></div>
+            {application.resume_snapshot ? <span className="text-[10px] text-ink-muted">已归档 · {application.resume_snapshot.title || "未命名简历"}</span> : null}
+          </div>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-[color:var(--line-ghost)] pb-4">
+            <div className="min-w-0"><p className="text-xs font-medium text-ink-secondary">岗位来源</p><p className="mt-1 truncate text-xs text-ink-muted">{application.job_snapshot?.source_url || application.job.apply_url}</p></div>
+            <a href={sanitizeApplicationUrl(application.job_snapshot?.source_url || application.job.apply_url)} target="_blank" rel="noreferrer" className="text-action inline-flex shrink-0 items-center gap-1.5 text-xs"><ExternalLink aria-hidden="true" className="size-3.5" />打开来源</a>
+          </div>
+          <label className="mb-5 block max-w-xl">
+            <span className="mb-2 block text-xs font-medium text-ink-secondary">投递使用的简历</span>
+            <Select value={resumeId} onChange={(event) => setResumeId(event.target.value)} aria-label="选择投递使用的简历">
+              <option value="">暂不关联</option>
+              {resumes.map((resume) => <option key={resume.id} value={resume.id}>{resume.title || "未命名简历"}</option>)}
+            </Select>
+            <span className="mt-1.5 block text-[10px] leading-5 text-ink-muted">保存档案时会复制当前内容与模板；之后继续编辑简历不会改变已归档版本。照片文件和已导出的 PDF 不包含在快照中。</span>
+          </label>
+          {application.resume_snapshot ? (
+            <div className="mb-5 rounded-md border border-[color:var(--line-ghost)] bg-[color:var(--surface-subtle-bg)] px-3 py-3">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <p className="text-xs font-medium text-ink-secondary">{application.resume_snapshot.title || "未命名简历"}<span className="mx-2 text-ink-muted">·</span>{application.resume_snapshot.targetRole || "未注明目标岗位"}{application.resume_snapshot.jobTarget ? <span className="ml-2 font-normal text-ink-muted">· {application.resume_snapshot.jobTarget}</span> : null}</p>
+                <time dateTime={application.resume_snapshot.capturedAt} className="text-[10px] text-ink-muted">归档于 {formatDateTime(application.resume_snapshot.capturedAt)}</time>
+              </div>
+              <details className="mt-2 text-xs">
+                <summary className="text-action min-h-8 cursor-pointer py-1">查看归档内容预览</summary>
+                {resumeSnapshotHighlights.length ? <ul className="mt-2 space-y-2 pl-4 text-ink-muted">{resumeSnapshotHighlights.map((highlight, index) => <li key={`${index}-${highlight}`} className="list-disc leading-5">{highlight}</li>)}</ul> : <p className="mt-2 text-ink-muted">结构化简历版本已保存，当前没有可预览的经历摘要。</p>}
+                <p className="mt-2 text-[10px] leading-5 text-ink-muted">最多显示 8 条摘要；完整结构化简历内容已随此岗位档案保存。</p>
+              </details>
+            </div>
+          ) : null}
+          <div className="mb-5">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><span className="text-xs font-medium text-ink-secondary">其他投递材料记录</span><button type="button" className="text-action inline-flex items-center gap-1 text-xs" disabled={materialRecords.length >= 20} onClick={() => setMaterialRecords((current) => [...current, { name: "", url: "", note: "" }])}><Plus aria-hidden="true" className="size-3.5" />添加材料</button></div>
+            {materialRecords.length === 0 ? <p className="text-xs text-ink-muted">可记录作品集、求职信或作品链接；这里只保存名称、链接和备注，不上传文件。</p> : (
+              <div className="space-y-3">
+                {materialRecords.map((material, index) => <div key={`material-${index}`} className="relative grid gap-3 rounded-md border border-[color:var(--line-ghost)] p-3 sm:grid-cols-2">
+                  <label className="grid gap-1.5 text-[10px] text-ink-muted">材料名称<Input maxLength={160} value={material.name} onChange={(event) => setMaterialRecords((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, name: event.target.value } : item))} placeholder="例如：产品作品集 PDF" /></label>
+                  <label className="grid gap-1.5 text-[10px] text-ink-muted">材料链接<Input type="url" maxLength={1200} value={material.url} onChange={(event) => setMaterialRecords((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, url: event.target.value } : item))} placeholder="https://..." /></label>
+                  <label className="grid gap-1.5 text-[10px] text-ink-muted sm:col-span-2">备注<Input maxLength={1000} value={material.note} onChange={(event) => setMaterialRecords((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, note: event.target.value } : item))} placeholder="记录提交的版本或说明" /></label>
+                  <button type="button" className="absolute -right-2 -top-2 rounded-full border border-[color:var(--line)] bg-[color:var(--background)] p-1 text-ink-muted hover:text-ink-primary" aria-label={`删除第 ${index + 1} 份材料`} onClick={() => setMaterialRecords((current) => current.filter((_, itemIndex) => itemIndex !== index))}><Trash2 aria-hidden="true" className="size-3" /></button>
+                </div>)}
+              </div>
+            )}
+          </div>
+          <div>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><span className="text-xs font-medium text-ink-secondary">网申问答</span><button type="button" className="text-action inline-flex items-center gap-1 text-xs" disabled={formAnswers.length >= 20} onClick={() => setFormAnswers((current) => [...current, { question: "", answer: "" }])}><Plus aria-hidden="true" className="size-3.5" />添加问题</button></div>
+            {formAnswers.length === 0 ? <p className="mb-4 text-xs text-ink-muted">还没有保存答案。可记录申请表问题和你最终提交的回答。</p> : (
+              <div className="space-y-4">
+                {formAnswers.map((item, index) => <div key={`answer-${index}`} className="relative grid gap-3 rounded-md border border-[color:var(--line-ghost)] p-3 sm:grid-cols-2">
+                  <label className="grid gap-1.5 text-[10px] text-ink-muted">问题<Input maxLength={400} value={item.question} onChange={(event) => setFormAnswers((current) => current.map((answer, answerIndex) => answerIndex === index ? { ...answer, question: event.target.value } : answer))} placeholder="例如：为什么选择这个岗位？" /></label>
+                  <label className="grid gap-1.5 text-[10px] text-ink-muted">最终回答<textarea maxLength={4000} value={item.answer} onChange={(event) => setFormAnswers((current) => current.map((answer, answerIndex) => answerIndex === index ? { ...answer, answer: event.target.value } : answer))} className="min-h-20 rounded-md border border-[color:var(--line)] bg-transparent px-3 py-2 text-xs leading-5 text-ink-primary" placeholder="记录你实际提交的回答" /></label>
+                  <button type="button" className="absolute -right-2 -top-2 rounded-full border border-[color:var(--line)] bg-[color:var(--background)] p-1 text-ink-muted hover:text-ink-primary" aria-label={`删除第 ${index + 1} 个问题`} onClick={() => setFormAnswers((current) => current.filter((_, answerIndex) => answerIndex !== index))}><Trash2 aria-hidden="true" className="size-3" /></button>
+                </div>)}
+              </div>
+            )}
+          </div>
+          <div className="mt-4 flex flex-wrap items-center gap-3"><Button variant="secondary" disabled={saving} onClick={() => void saveDossier()}>{saving ? "正在保存…" : "保存投递档案"}</Button>{dossierMessage ? <span className="text-xs text-ink-muted" role="status">{dossierMessage}</span> : null}</div>
         </section>
 
         <section className="grid gap-5 lg:grid-cols-2">

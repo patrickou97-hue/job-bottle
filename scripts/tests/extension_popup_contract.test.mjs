@@ -41,6 +41,22 @@ test("网申助手同步时保留网页端选中的当前简历", () => {
   assert.match(syncBridge, /message\.activeResumeId/);
   assert.match(syncBridge, /activeResumeId,/);
 });
+
+test("低置信建议和本地答案库都必须经用户复核", () => {
+  assert.match(popupHtml, /id="reviewPanel"/);
+  assert.match(popupHtml, /id="reviewApply"/);
+  assert.match(popupHtml, /id="reviewSaveOnly"/);
+  assert.match(popup, /elements\.reviewApply\?\.addEventListener/);
+  assert.match(popup, /elements\.reviewSaveOnly\?\.addEventListener/);
+  assert.match(popup, /starjobAnswerBank/);
+  assert.match(popup, /candidate\.hostname.*candidate\.question/);
+  assert.match(popup, /mapping\.needsReview === true \|\| confidence < AI_AUTOFILL_MIN_CONFIDENCE/);
+  assert.match(popup, /document\.createElement\("textarea"\)/);
+  assert.match(popup, /pageUrl: pageUrl\.href/);
+  assert.match(popup, /isSameReviewPage\(pendingReviewContext\.pageUrl, currentTab\?\.url\)/);
+  assert.match(popup, /if \(!selected\.length\)/);
+  assert.match(popup, /elements\.reviewPanel\.hidden = reviewDrafts\.length === 0/);
+});
 const durableRateMigration = await readFile(
   new URL("../../supabase/migrations/20260810110000_extension_autofill_durable_rate_limit.sql", import.meta.url),
   "utf8",
@@ -78,7 +94,9 @@ test("单字段异常不会中断整页并会如实汇总", () => {
 test("服务端和扩展统一接受阈值，硬事实优先取简历且叙述字段允许 AI 改写", () => {
   assert.match(popup, /const AI_AUTOFILL_MIN_CONFIDENCE = 0\.68/);
   assert.match(fill, /const AI_AUTOFILL_MIN_CONFIDENCE = 0\.68/);
-  assert.match(popup, /Number\(mapping\.confidence\) >= AI_AUTOFILL_MIN_CONFIDENCE/);
+  assert.match(popup, /Number\(mapping\?\.confidence\) \|\| 0/);
+  assert.match(popup, /mapping\.needsReview === true \|\| confidence < AI_AUTOFILL_MIN_CONFIDENCE/);
+  assert.match(popup, /mapping\.needsReview !== true && confidence >= AI_AUTOFILL_MIN_CONFIDENCE/);
   assert.match(fill, /Number\(mapping\.confidence\) >= AI_AUTOFILL_MIN_CONFIDENCE/);
   assert.match(route, /function isHardResumeFactField/);
   const hardFactIndex = route.indexOf("if (isHardResumeFactField(field)");
