@@ -123,7 +123,7 @@ export function ResumePolishDialog({
           <div>
             <p className="text-xs text-ink-muted">{target.label}</p>
             <h2 id="resume-polish-title" className="mt-1 text-xl font-semibold text-ink-primary">智能润色</h2>
-            <p className="mt-2 text-sm leading-6 text-ink-secondary">仅处理当前段落，不发送联系方式、照片或整份简历；经历按 STAR 重组，缺少的量化细节会作为 AI 推测单独标出，核实前不能应用。</p>
+            <p className="mt-2 text-sm leading-6 text-ink-secondary">仅处理当前段落，不发送联系方式、照片或整份简历；经历按 STAR 重组，原文缺少量化结果时会给出完整数字候选并标为 AI 推测，核实前不能应用。</p>
           </div>
           <button type="button" className="muted-button pressable inline-flex size-9 shrink-0 items-center justify-center rounded-lg" aria-label="关闭" onClick={closeDialog}>
             <X aria-hidden="true" className="size-4" />
