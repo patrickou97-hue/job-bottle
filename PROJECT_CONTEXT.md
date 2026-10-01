@@ -17,16 +17,16 @@
 - 兼容与数据：未改 Supabase schema/RLS，不新增 migration，没有执行生产数据写入。未登录上传返回 401；无效岗位游标/页数返回 400；旧岗位接口仍返回首批 500 条。小程序版本号按上传流程设为 `0.5.0`。
 - 验证：`npm run build -- --webpack` 成功，含 65 个页面/路由及 `/api/miniprogram/referrals`；`starjob-miniprogram/npm run check` 通过，12 个页面、64 个客户端源码文件、无服务端密钥；`git diff --check` 通过。正式域名只读探针分页读取 2,309/2,309 个不重复岗位（12 页），旧请求仍兼容首批 500 条；内推 API 返回 177 条，腾讯公司匹配 4 项；未登录上传返回 401，非法游标/页数返回 400。开发者工具模拟器发布后界面状态不稳定，iPhone/Android 真机验收待完成。
 - 本轮代码文件：`src/app/api/miniprogram/jobs/route.ts`、`src/app/api/miniprogram/referrals/route.ts`、`src/app/api/referrals/route.ts`、`src/lib/referral-submission.ts`；`starjob-miniprogram/miniprogram/app.json`、`pages/jobs/detail.{ts,wxml,wxss}`、`pages/jobs/index.{ts,wxml,wxss}`、`pages/profile/index.{ts,wxml}`、`pages/support/index.{ts,wxml,wxss}`、`pages/referrals/{index.ts,index.wxml,index.wxss,index.json}`、`types/api.ts` 与 `MINIPROGRAM_PROGRESS.md`。
-- 发布状态：网站提交 `f94bcf2` 已部署到 Production，[Vercel 部署检查](https://vercel.com/job-bottle/job-bottle/22oc7ToEey3TbmfN4WYSsY6hHDj3)成功，正式域名 API 只读核验通过。微信 `0.5.0` 已通过开发者工具上传成功并覆盖先前体验版；尚无提交审核、审核通过或正式发布的确认。iPhone/Android 真机验收待完成。
+- 发布状态：包含本轮小程序和简历服务端代码的主线提交 `b90f99c` 已部署到 Production，[Vercel 部署检查](https://vercel.com/job-bottle/job-bottle/36qCcbuCXFNU8mccHWe4goTqtXTY)成功，正式域名 API 只读核验通过。微信 `0.5.0` 已通过开发者工具上传成功并覆盖先前体验版；尚未提交公众平台审核、未获批或正式发布。iPhone/Android 真机验收待完成。
 
-## 2026-10-01 简历翻译可恢复与 AI 润色实质改写（本地待发布）
+## 2026-10-01 简历翻译可恢复与 AI 润色实质改写（Web 已部署）
 
 - 翻译中断诊断：服务端分块结果此前只保存在单次请求内存中；页面离开会中止请求，浏览器等待上限为 165 秒，服务端整批上限为 150 秒。已确认这是“中途退出后无法接续”的结构性原因；没有本次用户请求的日志，无法断定那一次具体由超时、页面卸载还是网络中断触发。
 - 翻译恢复：浏览器按目标语言和简历源内容计算摘要，在当前标签页的 `sessionStorage` 按完成区块保存检查点；重试把检查点交给服务端，服务端按当前翻译计划校验区块和短键，只重跑未完成区块。成功后清除检查点；仍创建独立译本，失败不会改动原简历。未保存登录态、手机号等额外数据，也未改变旧调用方契约、鉴权和限流。
 - AI 润色重复：新请求使用唯一变体标识、叙事切入点和上一版建议作为避重上下文，降低十分钟精确响应缓存与“重新生成”产生同稿的概率。经历类强制按 STAR 实质重组；教育和获奖使用匹配模块的事实—贡献—结果结构。服务端以归一化字符二元组相似度做改写门槛，过于接近原文的结果会失败返回，不会作为建议稿展示。
 - 推测内容边界：原文缺少职责、背景、范围或量化结果时，模型被要求生成无占位符的完整候选表达，并将新增数字、职责等级、规模、背景和结果逐项标进核实清单。服务端校验新增数字与常见职责标记的核实覆盖；界面明确标注推测不是已确认事实，并要求用户逐项勾选确认后才能应用。组织、客户、证书、技能、日期及因果关系仍禁止虚构；推测内容须经用户核实，不应直接当作已证事实使用。
-- 本地验证：`npx tsc --noEmit`、六个相关文件定向 ESLint 与 `git diff --check` 通过。未运行测试套件；未做正式登录账号 E2E。
-- 状态边界：本区块的六个简历代码文件仅在主工作区保持未提交；简历改动没有提交、推送或部署，也没有执行 migration、Supabase 数据写入或小程序客户端发布。当前 Production 上的小程序/内推改动属于独立提交 `f94bcf2`，不包含简历改动。
+- 验证：`npx tsc --noEmit`、`npm run lint`、`npm run build -- --webpack` 与 `git diff --check` 通过；Vercel 对提交 `b90f99c` 的 Production 检查成功。正式域名匿名 POST `/api/resume/translate` 与 `/api/resume/ai-polish` 均返回预期 401，验证了认证边界；未用真实登录账号完成 AI E2E，也未运行自动化测试套件。
+- 发布边界：六个 Web 简历代码文件已提交为 `b90f99c`、推送至 `origin/main` 并部署到 Production；没有执行 migration 或岗位数据写入。微信端 `/api/miniprogram/resume/*` 包装路由复用同一服务端处理器，但小程序简历编辑器没有保存/回传翻译检查点，也没有发送润色变体码和上一版建议，因此浏览器续翻与多样化再生成只在 Web 客户端完成验证。微信 `0.5.0` 仍是开发者工具上传的体验版本，未提交公众平台审核、未获批或正式发布。
 
 ## 来源区块：最终交接
 
