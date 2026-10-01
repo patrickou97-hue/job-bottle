@@ -260,9 +260,9 @@ type PolishValidation = {
 function parseResult(
   content: string,
   source: z.infer<typeof inputSchema>["content"],
-  previousSuggestion?: z.infer<typeof polishContentSchema>,
-  sectionType?: z.infer<typeof inputSchema>["sectionType"],
-  language?: z.infer<typeof inputSchema>["language"],
+  previousSuggestion: z.infer<typeof polishContentSchema> | undefined,
+  sectionType: z.infer<typeof inputSchema>["sectionType"],
+  language: z.infer<typeof inputSchema>["language"],
 ): PolishValidation {
   const candidate = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
   let parsedCandidate: unknown;
@@ -284,7 +284,11 @@ function parseResult(
   const quantifiedResult = sectionType && language
     ? ensureQuantifiedOutcomeCandidate(parsed.data, source, sectionType, language)
     : parsed.data;
-  const result = addUnverifiedClaimItems(quantifiedResult, source);
+  const result = addResponsibilityUpgradeRiskNotes(
+    addUnverifiedClaimItems(quantifiedResult, source),
+    source,
+    language,
+  );
   const sourceSimilarity = getBulletSimilarity(source.bullets, result.revised.bullets);
   if (sourceSimilarity > 0.94) {
     return { result: null, reason: "similar_to_source", sourceSimilarity };
@@ -310,16 +314,22 @@ const responsibilityMarkers = [
   "improved", "reduced", "optimized", "optimised", "streamlined", "drove",
 ];
 
+const elevatedResponsibilityMarkers = [
+  "主导", "牵头", "统筹", "负责", "独立完成", "带领", "管理",
+  "led", "owned", "managed", "drove", "spearheaded", "directed", "oversaw", "headed",
+];
+
 function addUnverifiedClaimItems(result: PolishResult, source: z.infer<typeof inputSchema>["content"]): PolishResult {
   const sourceText = [source.title, source.subtitle, ...source.bullets].join("\n");
   const items = [...result.verificationItems];
   const sourceNumbers = new Set(extractNumericClaims(sourceText));
 
-  result.revised.bullets.forEach((bullet) => {
+  result.revised.bullets.forEach((bullet, index) => {
+    const sourceBullet = source.bullets[index] ?? sourceText;
     const missingNumbers = extractNumericClaims(bullet)
       .filter((value) => !sourceNumbers.has(value) && !hasVerificationCoverage(items, value, true));
     const missingResponsibilities = responsibilityMarkers.filter((marker) => hasResponsibilityMarker(bullet, marker)
-      && !hasResponsibilityMarker(sourceText, marker)
+      && !hasResponsibilityMarker(sourceBullet, marker)
       && !hasVerificationCoverage(items, marker, false, true));
     const missingClaims = Array.from(new Set([...missingNumbers, ...missingResponsibilities]));
     if (missingClaims.length === 0) return;
@@ -331,6 +341,58 @@ function addUnverifiedClaimItems(result: PolishResult, source: z.infer<typeof in
   });
 
   return { ...result, verificationItems: items };
+}
+
+function addResponsibilityUpgradeRiskNotes(
+  result: PolishResult,
+  source: z.infer<typeof inputSchema>["content"],
+  language: z.infer<typeof inputSchema>["language"],
+): PolishResult {
+  const upgradedBullets = result.revised.bullets.filter((bullet, index) => {
+    const sourceBullet = source.bullets[index] ?? [source.title, source.subtitle, ...source.bullets].join("\n");
+    return elevatedResponsibilityMarkers.some((marker) => hasResponsibilityMarker(bullet, marker)
+      && !hasResponsibilityMarker(sourceBullet, marker));
+  });
+  if (upgradedBullets.length === 0) return result;
+
+  const warnings = result.warnings.filter((warning) => !claimsResponsibilityWasNotUpgraded(warning));
+  const warning = language === "en-US"
+    ? "Responsibility estimate: this draft adds lead or ownership language that the source does not establish. This is an AI inference; verify your actual role before using it."
+    : "职责推测：改写新增了“主导/负责”等职责等级表述，原文未明确证明该职责归属。这是 AI 推测；请核实实际分工，未确认前不要采用。";
+  if (!warnings.includes(warning)) {
+    if (warnings.length >= 12) warnings.pop();
+    warnings.push(warning);
+  }
+
+  const changes = result.changes.map((change) => claimsResponsibilityWasNotUpgraded(change.description)
+    ? {
+        ...change,
+        description: language === "en-US"
+          ? "The rewrite adds a lead or ownership claim that is not established by the source; verify the actual role before using it."
+          : "改写新增了原文未明确的主导/负责职责表述，需核实实际分工后再决定是否采用。",
+      }
+    : change);
+
+  const verificationItems = [...result.verificationItems];
+  for (const bullet of upgradedBullets) {
+    if (verificationItems.some((item) => item.detail === bullet)) continue;
+    if (verificationItems.length >= 36) verificationItems.pop();
+    verificationItems.push({
+      detail: bullet,
+      reason: language === "en-US"
+        ? "The source does not establish this level of ownership. This is an AI-inferred responsibility; confirm your actual role before using it."
+        : "原文未明确这项主导/负责职责。这是 AI 推测的职责表述；请核实本人实际分工，未确认前不要采用。",
+    });
+  }
+
+  return { ...result, changes, warnings, verificationItems };
+}
+
+function claimsResponsibilityWasNotUpgraded(value: string) {
+  const normalized = value.normalize("NFKC").toLocaleLowerCase();
+  const chineseAssurance = /(?:未|没有|并未|并没有|不曾|未把|没有把)(?!核实).{0,24}(?:升级|提高|提升|强化|改成|改写成).{0,18}(?:职责|主导|负责|牵头|角色)|(?:保留|维持|延续).{0,24}(?:协助|参与|支持|配合).{0,20}(?:措辞|层级|角色)/u;
+  const englishAssurance = /\b(?:no|not|did not|does not|without)\b.{0,40}\b(?:upgrade|elevat\w*|increase|raise|change)\b.{0,40}\b(?:responsibilit\w*|ownership|lead(?:ership)?|role)\b|\bpreserv\w*\b.{0,30}\b(?:assist\w*|support\w*|contribut\w*|participat\w*)\b.{0,30}\b(?:level|role|wording)\b/iu;
+  return chineseAssurance.test(normalized) || englishAssurance.test(normalized);
 }
 
 function ensureQuantifiedOutcomeCandidate(
