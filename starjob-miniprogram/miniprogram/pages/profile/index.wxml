@@ -170,6 +170,13 @@
         </view>
         <text class="menu-arrow">›</text>
       </button>
+      <button class="menu-row" bindtap="onOpenReferrals">
+        <view class="menu-copy">
+          <text>内推码广场</text>
+          <text class="menu-note">查看同学分享的内推码，或上传自己的分享</text>
+        </view>
+        <text class="menu-arrow">›</text>
+      </button>
       <button
         class="menu-row"
         wx:if="{{webLoginCodeAvailable}}"

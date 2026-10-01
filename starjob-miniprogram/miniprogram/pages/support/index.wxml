@@ -43,8 +43,12 @@
         <view class="guide-meta"><text class="guide-category">{{item.category}}</text><text wx:if="{{item.isPinned}}" class="guide-pinned">置顶</text><text class="guide-date">{{item.dateLabel}}</text></view>
         <text class="guide-title">{{item.title}}</text>
         <text class="guide-content {{expandedId === item.id ? 'guide-content-expanded' : ''}}">{{item.content}}</text>
-        <text class="guide-toggle">{{expandedId === item.id ? '收起' : '阅读全文'}}</text>
+      <text class="guide-toggle">{{expandedId === item.id ? '收起' : '阅读全文'}}</text>
       </button>
+    </view>
+    <view class="support-referrals">
+      <view><text class="support-referrals-title">内推码广场</text><text class="support-referrals-copy">查看社区分享或提交你确认可公开的内推码，使用前先到官方招聘渠道核对。</text></view>
+      <button class="support-referrals-action" bindtap="onOpenReferrals">打开广场 ›</button>
     </view>
     <view class="web-tools">
       <view class="web-tools-heading">
@@ -63,7 +67,7 @@
           <text class="web-tool-platform">{{item.platform}}</text>
         </view>
         <text class="web-tool-body">{{item.body}}</text>
-        <text class="web-tool-action">复制网页地址 ›</text>
+        <text class="web-tool-action">{{item.url ? '复制网页地址 ›' : '查看跨端说明 ›'}}</text>
       </button>
     </view>
   </block>

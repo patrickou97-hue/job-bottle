@@ -1,0 +1,114 @@
+<view class="page-shell referral-page">
+  <view class="page-brand-header">
+    <image class="brand-wordmark" src="/assets/shi-xing-wordmark-dark.png" mode="aspectFit" />
+    <text class="page-kicker">社区互助</text>
+  </view>
+  <view class="page-header">
+    <text class="page-title">内推码广场</text>
+    <text class="page-description">按公司查看同学分享的内推码。使用前请到公司官方招聘渠道核对。</text>
+  </view>
+
+  <view class="referral-summary">
+    <view class="referral-stat"><text class="referral-stat-value">{{companyCount}}</text><text class="referral-stat-label">有可用码的公司</text></view>
+    <view class="referral-stat"><text class="referral-stat-value">{{usableCount}}</text><text class="referral-stat-label">当前可用</text></view>
+    <view class="referral-stat"><text class="referral-stat-value">{{items.length}}</text><text class="referral-stat-label">全部分享</text></view>
+  </view>
+
+  <view class="referral-risk" role="note">
+    <text class="referral-risk-title">内推码由用户自行分享，拾星不为真实性背书</text>
+    <text class="referral-risk-copy">发布后会进行智能审核；不合规内容将下架。请在官方招聘渠道核对。遇到收费、转账或索取敏感信息的行为，请立即停止并举报。</text>
+  </view>
+
+  <view class="referral-search-row">
+    <input class="referral-search" type="text" value="{{keyword}}" bindinput="onKeywordInput" placeholder="搜索公司或适用岗位" confirm-type="search" />
+    <button class="referral-upload-entry" bindtap="onOpenUpload">上传内推码</button>
+  </view>
+  <view class="referral-filters">
+    <button class="referral-filter {{availability === 'usable' ? 'referral-filter-active' : ''}}" data-value="usable" bindtap="onAvailabilityTap">只看当前可用</button>
+    <button class="referral-filter {{availability === 'all' ? 'referral-filter-active' : ''}}" data-value="all" bindtap="onAvailabilityTap">包含已过期</button>
+  </view>
+
+  <view class="referral-upload-panel" wx:if="{{showUpload}}">
+    <view class="referral-panel-heading">
+      <view><text class="referral-panel-title">上传自己的内推码</text><text class="referral-panel-copy">公司和岗位必须来自当前岗位库。</text></view>
+      <button class="referral-close" bindtap="onCloseUpload" disabled="{{submitting}}">收起</button>
+    </view>
+    <label class="referral-field">
+      <text class="referral-field-label">公司</text>
+      <input class="referral-input" value="{{companyQuery}}" bindinput="onCompanyInput" placeholder="输入公司名称搜索" maxlength="80" />
+    </label>
+    <text class="referral-field-hint" wx:if="{{loadingCompanies}}">正在匹配岗位库公司…</text>
+    <view class="referral-company-suggestions" wx:if="{{companySuggestions.length > 0}}">
+      <button class="referral-company-option" wx:for="{{companySuggestions}}" wx:key="*this" data-company="{{item}}" bindtap="onCompanySuggestionTap">{{item}}</button>
+    </view>
+    <text class="referral-selected-company" wx:if="{{selectedCompany}}">已匹配：{{selectedCompany}}</text>
+    <label class="referral-field" wx:if="{{selectedCompany}}">
+      <text class="referral-field-label">适用岗位</text>
+      <picker mode="selector" range="{{companyJobTitles}}" value="{{selectedJobIndex}}" bindchange="onJobSelect">
+        <view class="referral-picker-value">{{companyJobTitles[selectedJobIndex]}}</view>
+      </picker>
+    </label>
+    <label class="referral-field">
+      <text class="referral-field-label">内推码</text>
+      <input class="referral-input referral-code-input" value="{{code}}" bindinput="onCodeInput" placeholder="2–64 位字母、数字、短横线或下划线" maxlength="64" />
+    </label>
+    <label class="referral-field">
+      <text class="referral-field-label">有效期（可选）</text>
+      <picker mode="date" value="{{expiresAt}}" start="{{todayDate}}" bindchange="onExpireDateChange">
+        <view class="referral-picker-value">{{expiresAt || '选择有效期'}}</view>
+      </picker>
+    </label>
+    <label class="referral-field">
+      <text class="referral-field-label">适用范围（可选，最多 160 字）</text>
+      <input class="referral-input" value="{{applicableRoles}}" bindinput="onApplicableRolesInput" placeholder="例如：2027 校招技术与产品岗位" maxlength="160" />
+    </label>
+    <label class="referral-field">
+      <text class="referral-field-label">使用说明（可选，最多 500 字）</text>
+      <textarea class="referral-textarea" value="{{usageNote}}" bindinput="onUsageNoteInput" placeholder="说明在官方投递页的填写位置或注意事项；不能写联系方式或外链" maxlength="500" />
+    </label>
+    <checkbox-group class="referral-agreement" bindchange="onAgreeChange">
+      <label><checkbox value="agree" checked="{{agreed}}" color="#12294E" /></label>
+      <text>我确认来源真实、可以公开分享，未收取费用，也不会要求使用者提供验证码、密码、身份证或转账。</text>
+    </checkbox-group>
+    <button class="referral-submit" loading="{{submitting}}" disabled="{{submitting}}" bindtap="onSubmitUpload">{{submitting ? '正在上传并审核' : '确认上传'}}</button>
+  </view>
+
+  <view class="referral-state" wx:if="{{loading}}">
+    <view class="skeleton-line"></view><view class="skeleton-line referral-skeleton-short"></view>
+    <text>正在整理内推码…</text>
+  </view>
+  <view class="referral-state" wx:elif="{{errorMessage}}">
+    <text class="referral-state-title">内推码暂时无法读取</text>
+    <text class="referral-state-copy">{{errorMessage}}</text>
+    <button class="referral-retry" bindtap="onRetry">重新加载</button>
+  </view>
+  <view class="referral-state" wx:elif="{{visibleItems.length === 0}}">
+    <text class="referral-state-title">没有符合条件的内推码</text>
+    <text class="referral-state-copy">换一个公司名称，或切换为包含已过期记录。</text>
+  </view>
+
+  <view class="referral-list" wx:else>
+    <view class="referral-card {{item.expired ? 'referral-card-expired' : ''}}" wx:for="{{visibleItems}}" wx:key="id">
+      <view class="referral-card-heading">
+        <text class="referral-company">{{item.company_name}}</text>
+        <text class="referral-source-badge" wx:if="{{item.source_type}}">来源同步</text>
+        <text class="referral-expired-badge" wx:if="{{item.expired}}">已过期</text>
+      </view>
+      <view class="referral-code-row">
+        <text class="referral-code">{{item.code}}</text>
+        <button class="referral-copy-button" wx:if="{{!item.expired}}" data-code="{{item.code}}" bindtap="onCopyCode">复制</button>
+      </view>
+      <text class="referral-roles">{{item.applicable_roles || '适用范围未说明，请在官方投递页确认'}}</text>
+      <text class="referral-note" wx:if="{{item.usage_note}}">{{item.usage_note}}</text>
+      <view class="referral-meta">
+        <text>{{item.sourceLabel}}</text>
+        <text>{{item.expires_at ? '有效期至 ' + item.expires_at : '未填写有效期'}}</text>
+        <text>发布于 {{item.createdLabel}}</text>
+      </view>
+      <view class="referral-actions">
+        <button class="referral-action" wx:if="{{item.sourceLink}}" data-url="{{item.sourceLink}}" bindtap="onCopySource">复制来源链接</button>
+        <button class="referral-action referral-report" wx:if="{{!item.source_type}}" data-id="{{item.id}}" bindtap="onReport">{{authenticated ? '举报' : '登录后举报'}}</button>
+      </view>
+    </view>
+  </view>
+</view>

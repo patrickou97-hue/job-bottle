@@ -32,6 +32,10 @@
       </view>
     </view>
 
+    <button class="detail-referral-link" bindtap="onOpenReferrals">
+      查看 {{job.companyName}} 的内推码 ›
+    </button>
+
     <view class="detail-section" wx:if="{{job.responsibilities}}">
       <text class="section-title">你会做什么</text>
       <text class="section-body" user-select>{{job.responsibilities}}</text>

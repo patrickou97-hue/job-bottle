@@ -17,7 +17,8 @@
       <view>
         <text class="hero-title">岗位坐标</text>
         <text class="hero-description">找到值得认真投递的下一站</text>
-        <text class="hero-meta" wx:if="{{!loading && !errorMessage}}">{{jobs.length}} 个开放岗位</text>
+        <text class="hero-meta" wx:if="{{!loading && !errorMessage}}">当前筛选 {{jobs.length}} 个岗位</text>
+        <text class="hero-submeta" wx:if="{{!loading && hasMoreJobs}}">已读取 {{loadedJobCount}} / {{totalJobCount}} 条，继续下滑可加载更多</text>
       </view>
     </view>
 
@@ -196,5 +197,24 @@
         <text class="row-arrow">›</text>
       </view>
     </button>
+  </view>
+
+  <view class="load-more-panel" wx:if="{{!loading && loadedJobCount > 0}}">
+    <text class="load-more-meta" wx:if="{{hasMoreJobs || loadingMoreJobs || paginationErrorMessage}}">
+      当前筛选 {{jobs.length}} 条 · 已读取 {{loadedJobCount}} / {{totalJobCount}} 条
+    </text>
+    <button
+      class="load-more-button"
+      wx:if="{{hasMoreJobs && !loadingMoreJobs && !paginationErrorMessage}}"
+      bindtap="onLoadMoreTap"
+    >
+      继续加载岗位
+    </button>
+    <text class="load-more-status" wx:elif="{{loadingMoreJobs}}">正在加载更多岗位…</text>
+    <view class="load-more-error" wx:elif="{{paginationErrorMessage}}">
+      <text>{{paginationErrorMessage}}</text>
+      <button class="load-more-button" bindtap="onRetryLoadMore">重试加载</button>
+    </view>
+    <text class="load-more-status" wx:else>已加载全部 {{totalJobCount || loadedJobCount}} 条开放岗位</text>
   </view>
 </view>

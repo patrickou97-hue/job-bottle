@@ -20,6 +20,7 @@ export type ApiErrorPayload = {
 export type JobListResponse = ApiEnvelope<{
   jobs: Job[];
   nextCursor: string | null;
+  totalCount: number | null;
 }>;
 
 export type JobDetailResponse = ApiEnvelope<{
@@ -122,6 +123,43 @@ export type SupportPost = {
 export type SupportResponse = ApiEnvelope<{
   posts: SupportPost[];
 }>;
+
+export type MiniReferralCode = {
+  id: string;
+  company_name: string;
+  job_id: string | null;
+  applicable_roles: string | null;
+  code: string;
+  usage_note: string | null;
+  expires_at: string | null;
+  created_at: string;
+  updated_at: string;
+  source_type?: "tencent_job_link" | "public_post";
+  publisher_name?: string;
+  source_job_ids?: string[];
+  source_urls?: string[];
+  source_platform?: string;
+  source_url?: string;
+  published_at?: string | null;
+  source_verified_at?: string;
+};
+
+export type ReferralListResponse = ApiEnvelope<{
+  items: MiniReferralCode[];
+}>;
+
+export type ReferralCompaniesResponse = ApiEnvelope<{
+  companies: string[];
+}>;
+
+export type ReferralCompanyJobsResponse = ApiEnvelope<{
+  jobs: { id: string; title: string }[];
+}>;
+
+export type ReferralCreateResponse = {
+  item: MiniReferralCode;
+  reviewStatus: "approved" | "removed" | "error" | "queued";
+};
 
 export type FeedbackResponse = ApiEnvelope<{
   submitted: true;

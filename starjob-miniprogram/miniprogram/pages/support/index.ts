@@ -26,8 +26,8 @@ const WEB_ONLY_TOOLS = [
     id: "interview",
     title: "诘星 StarInterview",
     platform: "macOS",
-    body: "系统音频面试辅助属于 macOS 原生能力。小程序保留统一账号与求职资料，安装和使用请前往网页端。",
-    url: "https://www.starjob.space/interview",
+    body: "系统音频面试辅助属于 macOS 原生能力。小程序保留统一账号与求职资料，请在 Mac 上打开诘星应用继续使用。",
+    url: "",
   },
 ] as const;
 const WORKFLOW_STEPS = [
@@ -177,6 +177,14 @@ Page({
     const id = String(event.currentTarget.dataset.id || "");
     const tool = WEB_ONLY_TOOLS.find((item) => item.id === id);
     if (!tool) return;
+    if (!tool.url) {
+      wx.showModal({
+        title: "请在 Mac 上继续",
+        content: "诘星使用 macOS 系统音频能力。请在 Mac 上打开诘星 StarInterview 应用，并从应用内连接拾星账户。",
+        showCancel: false,
+      });
+      return;
+    }
     wx.setClipboardData({
       data: tool.url,
       success() {
@@ -186,6 +194,10 @@ Page({
         });
       },
     });
+  },
+
+  onOpenReferrals() {
+    wx.navigateTo({ url: "/pages/referrals/index" });
   },
 
   onFeedbackTypeTap(event: WechatMiniprogram.TouchEvent) {

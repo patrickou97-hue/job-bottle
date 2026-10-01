@@ -143,6 +143,10 @@ Page({
     wx.navigateTo({ url: "/pages/support/index" });
   },
 
+  onOpenReferrals() {
+    wx.navigateTo({ url: "/pages/referrals/index" });
+  },
+
   async loadAccountStatus() {
     try {
       const response = await apiRequest<AccountStatusResponse>("/auth/account");

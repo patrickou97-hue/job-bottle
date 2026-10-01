@@ -125,6 +125,14 @@ Page({
     });
   },
 
+  onOpenReferrals() {
+    const companyName = this.data.job?.companyName;
+    if (!companyName) return;
+    wx.navigateTo({
+      url: `/pages/referrals/index?company=${encodeURIComponent(companyName)}`,
+    });
+  },
+
   onShareAppMessage() {
     const job = this.data.job;
     if (!job) {

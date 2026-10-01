@@ -94,6 +94,14 @@ page {
   font-variant-numeric: tabular-nums;
 }
 
+.hero-submeta {
+  display: block;
+  margin-top: 8rpx;
+  color: rgba(201, 197, 228, 0.68);
+  font-size: 20rpx;
+  font-variant-numeric: tabular-nums;
+}
+
 .search-field {
   display: flex;
   align-items: center;
@@ -515,4 +523,43 @@ page {
 .skeleton-meta {
   width: 48%;
   margin-top: 20rpx;
+}
+
+.load-more-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14rpx;
+  margin: 20rpx 32rpx 40rpx;
+  padding: 24rpx 0;
+  border-top: 1rpx solid var(--color-line);
+  color: var(--color-muted);
+  text-align: center;
+}
+
+.load-more-meta,
+.load-more-status {
+  font-size: 22rpx;
+  line-height: 1.5;
+}
+
+.load-more-button {
+  min-width: 280rpx;
+  min-height: 72rpx;
+  padding: 0 28rpx;
+  border: 1rpx solid rgba(18, 41, 78, 0.18);
+  border-radius: 999rpx;
+  background: #f7f8fa;
+  color: var(--color-navy);
+  font-size: 24rpx;
+  line-height: 70rpx;
+}
+
+.load-more-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+  color: #9d4538;
+  font-size: 22rpx;
 }

@@ -9,7 +9,10 @@ import type {
 } from "../../types/api";
 import type { Job, Profile, UserApplication } from "../../types/domain";
 
-type JobListItem = Job & {
+type JobListItem = Pick<
+  Job,
+  "id" | "companyName" | "jobTitles" | "batchType" | "locations" | "isRecent"
+> & {
   applicationLabel: string;
   categoryLabel: string;
   preferenceMatched: boolean;
@@ -68,11 +71,19 @@ const CITY_COORDINATES: Record<string, { latitude: number; longitude: number }> 
 let sourceJobs: Job[] = [];
 let sourceApplications = new Map<string, UserApplication>();
 let sourceProfile: Profile | null = null;
+let nextJobsCursor: string | null = null;
+let isLoadingMoreJobs = false;
+let jobsLoadGeneration = 0;
 
 Page({
   data: {
     loading: true,
     errorMessage: "",
+    paginationErrorMessage: "",
+    loadingMoreJobs: false,
+    hasMoreJobs: false,
+    loadedJobCount: 0,
+    totalJobCount: 0,
     keyword: "",
     selectedCity: "全部",
     selectedCategory: "全部",
@@ -111,17 +122,43 @@ Page({
     void this.loadJobs().finally(() => wx.stopPullDownRefresh());
   },
 
+  onReachBottom() {
+    void this.loadMoreJobs();
+  },
+
   async loadJobs() {
-    this.setData({ loading: true, errorMessage: "" });
+    const generation = ++jobsLoadGeneration;
+    isLoadingMoreJobs = false;
+    nextJobsCursor = null;
+    sourceJobs = [];
+    this.setData({
+      loading: true,
+      errorMessage: "",
+      paginationErrorMessage: "",
+      loadingMoreJobs: false,
+      hasMoreJobs: false,
+      loadedJobCount: 0,
+      totalJobCount: 0,
+    });
     try {
+      let totalJobCount: number | null = null;
+      let initialJobs: Job[];
+      let initialCursor: string | null = null;
       if (USE_SAMPLE_JOB_DATA) {
-        sourceJobs = SAMPLE_JOBS;
+        initialJobs = SAMPLE_JOBS;
       } else {
-        const response = await apiRequest<JobListResponse>("/jobs", {
+        const response = await apiRequest<JobListResponse>("/jobs?limit=200", {
           auth: false,
         });
-        sourceJobs = response.data.jobs;
+        initialJobs = response.data.jobs;
+        initialCursor = response.data.nextCursor;
+        totalJobCount = response.data.totalCount;
       }
+
+      if (generation !== jobsLoadGeneration) return;
+
+      sourceJobs = initialJobs;
+      nextJobsCursor = initialCursor;
       sourceApplications = new Map();
       sourceProfile = null;
       if (hasActiveSession()) {
@@ -147,15 +184,65 @@ Page({
         batchOptions: getBatchOptions(sourceJobs),
         preferenceAvailable: hasJobPreferences(sourceProfile),
         savedCount: sourceApplications.size,
+        loadedJobCount: sourceJobs.length,
+        totalJobCount: totalJobCount ?? sourceJobs.length,
+        hasMoreJobs: Boolean(nextJobsCursor),
       });
       this.applyFilters();
       this.setData({ loading: false });
     } catch (error) {
+      if (generation !== jobsLoadGeneration) return;
       this.setData({
         loading: false,
         errorMessage:
           error instanceof Error ? error.message : "岗位读取失败，请重试。",
       });
+    }
+  },
+
+  async loadMoreJobs() {
+    const cursor = nextJobsCursor;
+    if (!cursor || this.data.loading || isLoadingMoreJobs) return;
+
+    const generation = jobsLoadGeneration;
+    isLoadingMoreJobs = true;
+    this.setData({ loadingMoreJobs: true, paginationErrorMessage: "" });
+    try {
+      const response = await apiRequest<JobListResponse>(
+        `/jobs?limit=200&cursor=${encodeURIComponent(cursor)}`,
+        { auth: false },
+      );
+      if (generation !== jobsLoadGeneration) return;
+      if (response.data.nextCursor === cursor) {
+        throw new Error("岗位分页没有继续前进，请刷新岗位列表后重试。");
+      }
+
+      const knownIds = new Set(sourceJobs.map((job) => job.id));
+      const newJobs = response.data.jobs.filter((job) => !knownIds.has(job.id));
+      sourceJobs = sourceJobs.concat(newJobs);
+      nextJobsCursor = response.data.nextCursor;
+
+      this.setData({
+        cityOptions: getCityOptions(sourceJobs),
+        categoryOptions: getCategoryOptions(sourceJobs),
+        batchOptions: getBatchOptions(sourceJobs),
+        loadedJobCount: sourceJobs.length,
+        totalJobCount:
+          response.data.totalCount ?? this.data.totalJobCount ?? sourceJobs.length,
+        hasMoreJobs: Boolean(nextJobsCursor),
+      });
+      this.applyFilters();
+    } catch (error) {
+      if (generation !== jobsLoadGeneration) return;
+      this.setData({
+        paginationErrorMessage:
+          error instanceof Error ? error.message : "更多岗位加载失败，请重试。",
+      });
+    } finally {
+      if (generation === jobsLoadGeneration) {
+        isLoadingMoreJobs = false;
+        this.setData({ loadingMoreJobs: false });
+      }
     }
   },
 
@@ -225,6 +312,14 @@ Page({
 
   onRetry() {
     void this.loadJobs();
+  },
+
+  onLoadMoreTap() {
+    void this.loadMoreJobs();
+  },
+
+  onRetryLoadMore() {
+    void this.loadMoreJobs();
   },
 
   onJobTap(event: WechatMiniprogram.TouchEvent) {
@@ -323,7 +418,12 @@ Page({
 function toListItem(job: Job): JobListItem {
   const application = sourceApplications.get(job.id);
   return {
-    ...job,
+    id: job.id,
+    companyName: job.companyName,
+    jobTitles: job.jobTitles,
+    batchType: job.batchType,
+    locations: job.locations,
+    isRecent: job.isRecent,
     applicationLabel: application
       ? application.status === "opened"
         ? "已收录"
