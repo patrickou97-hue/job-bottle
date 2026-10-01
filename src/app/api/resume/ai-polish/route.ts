@@ -44,10 +44,10 @@ const resultSchema = z.object({
   suggestions: z.array(z.string().trim().min(1).max(500)).max(12),
   warnings: z.array(z.string().trim().min(1).max(500)).max(12),
   verificationItems: z.array(z.object({
-    detail: z.string().trim().min(1).max(500),
+    detail: z.string().trim().min(1).max(1_000),
     reason: z.string().trim().min(1).max(500),
-  })).max(12),
-}).strict();
+  })).max(36),
+});
 
 type PolishResult = z.infer<typeof resultSchema>;
 type CachedPolish = { expiresAt: number; result: PolishResult };
@@ -106,6 +106,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const startedAt = Date.now();
     const first = await callMimo({
       apiKey,
       baseUrl,
@@ -113,12 +114,24 @@ export async function POST(request: NextRequest) {
       messages: buildMessages(parsed.data),
       signal: request.signal,
     });
-    const firstResult = parseResult(first, parsed.data.content);
-    if (!firstResult) {
-      return NextResponse.json({ error: "AI 建议未通过格式、事实核实或改写幅度检查，原文未改变。请重新生成，或补充具体职责和结果后再试。" }, { status: 502 });
+    const validation = parseResult(first, parsed.data.content, parsed.data.previousSuggestion);
+    if (!validation.result) {
+      console.warn("[resume_ai_validation]", {
+        reason: validation.reason,
+        elapsedMs: Date.now() - startedAt,
+        sourceSimilarity: validation.sourceSimilarity,
+        previousSimilarity: validation.previousSimilarity,
+        issuePaths: validation.issuePaths,
+      });
+      const message = validation.reason === "similar_to_previous"
+        ? "这次建议与上一版过于接近，原文未改变。请重新生成，或补充具体职责和结果后再试。"
+        : validation.reason === "similar_to_source"
+          ? "这次建议与原文差别太小，原文未改变。请重新生成，或补充具体职责和结果后再试。"
+          : "AI 建议格式暂时无法识别，原文未改变。请重新生成，或补充具体职责和结果后再试。";
+      return NextResponse.json({ error: message }, { status: 502 });
     }
-    rememberPolishResult(cacheKey, firstResult);
-    return NextResponse.json(firstResult, { headers: { "Cache-Control": "no-store", "X-StarJob-AI-Cache": "MISS" } });
+    rememberPolishResult(cacheKey, validation.result);
+    return NextResponse.json(validation.result, { headers: { "Cache-Control": "no-store", "X-StarJob-AI-Cache": "MISS" } });
   } catch (error) {
     logServerError("resume_ai_upstream", error);
     return mapUpstreamError(error);
@@ -219,55 +232,124 @@ function rememberPolishResult(cacheKey: string, result: PolishResult) {
   polishCache.set(cacheKey, { expiresAt: now + RESPONSE_CACHE_TTL_MS, result });
 }
 
+type PolishValidation = {
+  result: PolishResult | null;
+  reason: "invalid_json" | "invalid_schema" | "similar_to_source" | "similar_to_previous" | null;
+  sourceSimilarity?: number;
+  previousSimilarity?: number;
+  issuePaths?: string[];
+};
+
 function parseResult(
   content: string,
   source: z.infer<typeof inputSchema>["content"],
-) {
+  previousSuggestion?: z.infer<typeof polishContentSchema>,
+): PolishValidation {
   const candidate = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  let parsedCandidate: unknown;
   try {
-    const parsed = resultSchema.safeParse(normalizeResultCandidate(JSON.parse(candidate), source));
-    return parsed.success
-      && hasVerificationCoverage(parsed.data, source)
-      && hasMeaningfulRewrite(parsed.data, source)
-      ? parsed.data
-      : null;
+    parsedCandidate = JSON.parse(candidate);
   } catch {
-    return null;
+    return { result: null, reason: "invalid_json" };
   }
+
+  const parsed = resultSchema.safeParse(normalizeResultCandidate(parsedCandidate, source));
+  if (!parsed.success) {
+    return {
+      result: null,
+      reason: "invalid_schema",
+      issuePaths: parsed.error.issues.slice(0, 8).map((issue) => issue.path.join(".")),
+    };
+  }
+
+  const result = addUnverifiedClaimItems(parsed.data, source);
+  const sourceSimilarity = getBulletSimilarity(source.bullets, result.revised.bullets);
+  if (sourceSimilarity > 0.94) {
+    return { result: null, reason: "similar_to_source", sourceSimilarity };
+  }
+
+  const previousSimilarity = previousSuggestion
+    ? getBulletSimilarity(previousSuggestion.bullets, result.revised.bullets)
+    : undefined;
+  if (previousSimilarity !== undefined && previousSimilarity > 0.94) {
+    return { result: null, reason: "similar_to_previous", sourceSimilarity, previousSimilarity };
+  }
+
+  return { result, reason: null, sourceSimilarity, previousSimilarity };
 }
 
-function hasVerificationCoverage(result: PolishResult, source: z.infer<typeof inputSchema>["content"]) {
-  const revisedText = normalizeClaimText(result.revised.bullets.join("\n"));
-  const verificationText = normalizeClaimText(result.verificationItems.map((item) => item.detail).join("\n"));
-  if (result.verificationItems.some((item) => {
-    const detail = normalizeClaimText(item.detail);
-    return !detail || !revisedText.includes(detail);
-  })) return false;
+const responsibilityMarkers = [
+  "主导", "牵头", "统筹", "负责", "独立完成", "带领", "搭建", "制定",
+  "推进", "策划", "设计", "执行", "组织", "协调", "管理", "运营",
+  "分析", "优化", "构建", "实施", "复盘", "调研", "评估", "交付",
+  "提升", "提高", "增长", "增加", "降低", "减少", "转化", "改善",
+  "led", "owned", "managed", "built", "developed", "designed", "implemented",
+  "analyzed", "analysed", "coordinated", "launched", "delivered", "increased",
+  "improved", "reduced", "optimized", "optimised", "streamlined", "drove",
+];
 
-  const sourceText = normalizeClaimText([source.title, source.subtitle, ...source.bullets].join("\n"));
-  const revisedNumbers = revisedText.match(/\d+(?:[,.]\d+)*(?:%|％)?/gu) ?? [];
-  if (revisedNumbers.some((value) => !sourceText.includes(normalizeClaimText(value))
-    && !verificationText.includes(normalizeClaimText(value)))) return false;
+function addUnverifiedClaimItems(result: PolishResult, source: z.infer<typeof inputSchema>["content"]): PolishResult {
+  const sourceText = [source.title, source.subtitle, ...source.bullets].join("\n");
+  const items = [...result.verificationItems];
+  const sourceNumbers = new Set(extractNumericClaims(sourceText));
 
-  const responsibilityMarkers = [
-    "主导", "牵头", "统筹", "负责", "独立完成", "带领", "搭建", "制定",
-    "推进", "策划", "设计", "执行", "组织", "协调", "管理", "运营",
-    "分析", "优化", "构建", "实施", "复盘", "调研", "评估", "交付",
-  ];
-  return responsibilityMarkers.every((marker) => !revisedText.includes(marker)
-    || sourceText.includes(marker)
-    || verificationText.includes(marker));
+  result.revised.bullets.forEach((bullet) => {
+    const missingNumbers = extractNumericClaims(bullet)
+      .filter((value) => !sourceNumbers.has(value) && !hasVerificationCoverage(items, value, true));
+    const missingResponsibilities = responsibilityMarkers.filter((marker) => hasResponsibilityMarker(bullet, marker)
+      && !hasResponsibilityMarker(sourceText, marker)
+      && !hasVerificationCoverage(items, marker, false, true));
+    const missingClaims = Array.from(new Set([...missingNumbers, ...missingResponsibilities]));
+    if (missingClaims.length === 0) return;
+
+    items.push({
+      detail: makeVerificationExcerpt(bullet, missingClaims),
+      reason: "该数字或职责无法从原文确认，是 AI 补充的候选细节。请核实具体口径；无法确认时不要应用。",
+    });
+  });
+
+  return { ...result, verificationItems: items };
 }
 
-function hasMeaningfulRewrite(
-  result: PolishResult,
-  source: z.infer<typeof inputSchema>["content"],
+function makeVerificationExcerpt(bullet: string, claims: string[]) {
+  if (bullet.length <= 1_000) return bullet;
+  const firstClaimIndex = Math.min(...claims.map((claim) => bullet.indexOf(claim)).filter((index) => index >= 0));
+  const start = Number.isFinite(firstClaimIndex) ? Math.max(0, firstClaimIndex - 180) : 0;
+  const excerpt = bullet.slice(start, start + 500);
+  return `${start > 0 ? "…" : ""}${excerpt}${start + 500 < bullet.length ? "…" : ""}`;
+}
+
+function extractNumericClaims(value: string) {
+  return Array.from(value.matchAll(/\d+(?:[,.]\d+)*(?:\s*(?:%|％|倍|万|千|亿|k|m|bn|million|billion|percent(?:age)?))?/giu))
+    .map(([claim]) => claim.normalize("NFKC").toLocaleLowerCase().replace(/,/gu, "").replace(/\s+/gu, ""));
+}
+
+function hasVerificationCoverage(
+  items: PolishResult["verificationItems"],
+  claim: string,
+  numeric = false,
+  responsibility = false,
 ) {
-  const sourceText = normalizeClaimText(source.bullets.join("\n"));
-  const revisedText = normalizeClaimText(result.revised.bullets.join("\n"));
-  if (!sourceText || !revisedText) return false;
-  if (sourceText === revisedText) return false;
+  return items.some((item) => {
+    if (responsibility) return hasResponsibilityMarker(item.detail, claim);
+    if (!numeric) return normalizeClaimText(item.detail).includes(claim);
+    return extractNumericClaims(item.detail).includes(claim);
+  });
+}
 
+function hasResponsibilityMarker(value: string, marker: string) {
+  if (/^[a-z]+$/iu.test(marker)) {
+    const words: string[] = value.normalize("NFKC").toLocaleLowerCase().match(/[a-z]+/gu) ?? [];
+    return words.includes(marker);
+  }
+  return normalizeClaimText(value).includes(marker);
+}
+
+function getBulletSimilarity(sourceBullets: string[], revisedBullets: string[]) {
+  const sourceText = normalizeClaimText(sourceBullets.join("\n"));
+  const revisedText = normalizeClaimText(revisedBullets.join("\n"));
+  if (sourceText === revisedText) return 1;
+  if (!sourceText || !revisedText) return 0;
   const sourceBigrams = countCharacterBigrams(sourceText);
   const revisedBigrams = countCharacterBigrams(revisedText);
   const sharedCount = Array.from(sourceBigrams.entries()).reduce(
@@ -276,8 +358,8 @@ function hasMeaningfulRewrite(
   );
   const sourceCount = Array.from(sourceBigrams.values()).reduce((total, count) => total + count, 0);
   const revisedCount = Array.from(revisedBigrams.values()).reduce((total, count) => total + count, 0);
-  const similarity = (2 * sharedCount) / (sourceCount + revisedCount);
-  return similarity <= 0.88;
+  if (sourceCount + revisedCount === 0) return 0;
+  return (2 * sharedCount) / (sourceCount + revisedCount);
 }
 
 function countCharacterBigrams(value: string) {
@@ -313,6 +395,9 @@ function normalizeResultCandidate(value: unknown, source: z.infer<typeof inputSc
 
   return {
     ...candidate,
+    summary: typeof candidate.summary === "string" && candidate.summary.trim()
+      ? candidate.summary
+      : "已生成改写建议，请对照原文核实后再决定是否应用。",
     revised: {
       ...revised,
       title: source.title,
