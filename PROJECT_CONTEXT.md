@@ -2,15 +2,31 @@
 
 > 同步日期：2026-10-01。以下三个来源区块完整保留各原文件内容；在三个根文件中保持完全相同，避免同一提交中的交接状态分叉。
 
+## 2026-10-01 岗位详情资料直接写入生产（已核验）
+
+- Supabase 正式项目 `uzzdcjdjlbnxmhvilldj` 的 `public.jobs` 表按 inventory UUID 更新了 `responsibilities`、`must_have`、`preferred_qualifications`、`keywords` 四个详情字段；没有执行 migration 或改权限。
+- 已更新并独立读回：Akuna Capital `def82ba3-3460-540c-9d0d-0a739b75cfc7`、小马智行 `ca2727f7-5ccc-590a-bebb-e3cf861f8aff`、海大集团 `3730c7d5-b9c2-4f61-9b8f-0b5ea19e263f`、徽商银行 `015d2f2f-c14d-5236-9bad-4e1af90612df`、优衣库 UMC `e9972f22-adbd-5795-9c10-64617af23fdc`。写入前详情字段均为空，更新条件同时核对 UUID、公司、岗位类别、批次、地点及上架状态；这些身份和状态字段未由更新语句修改。优衣库来源将 UMC 对应到单一管培项目，保留既有岗位类别，不拆分销售岗位。
+- 五个公开详情页均返回 HTTP 200，响应 HTML 含各自详情标记。研究原始记录位于 `/Users/wangrui/Documents/Codex/2026-09-29/starjob-job-details-research/outputs/`。
+- 惠普记录含市场与运营多个岗位类别，4399记录为多岗位聚合；两者未写入，以免把单岗内容发布到聚合岗位。未建立数据库结构或权限变更，也未部署代码。
+
 ## 2026-10-01 微信小程序岗位分页与内推码广场发布候选
 
 - 基线：`main` 已对齐 `origin/main` 的 `9a34a63`。本轮改动限于小程序岗位分页、内推码广场及其服务端 API/共享提交逻辑、跨端入口和小程序进度记录。
 - 岗位问题：`/api/miniprogram/jobs` 支持稳定游标分页和首屏准确总数；小程序每页请求 200 条，触底续载、去重，并提供继续加载/重试状态；原调用默认仍返回 500 条，保留旧客户端兼容。模拟器与本地只读分页共读到 2,309 个不重复有效岗位，共 12 页。
 - 新增功能：小程序内推码广场覆盖公开列表、搜索、有效/全部筛选、已登录上传和智能审核、举报、复制代码/来源链接、企业与岗位选择；在个人中心、指南和岗位详情可进入。网页及小程序上传共用原有验证、限流、创建和单次审核链路。指南的旧 `/interview` 404 链接改为明确的 macOS StarInterview 跨端说明。
 - 兼容与数据：未改 Supabase schema/RLS，不新增 migration，没有执行生产数据写入。未登录上传返回 401；无效岗位游标/页数返回 400；旧岗位接口仍返回首批 500 条。小程序版本号按上传流程设为 `0.5.0`。
-- 验证：`npm run build -- --webpack` 成功，含 65 个页面/路由及 `/api/miniprogram/referrals`；`starjob-miniprogram/npm run check` 通过，12 个页面、64 个客户端源码文件、无服务端密钥；`git diff --check` 通过。微信开发者工具 iPhone 模拟器能进入并渲染内推码广场。本地 API 只读探针读取 2,309/2,309 个不重复岗位；广场 177 条，腾讯公司匹配 4 项；模拟器直连生产新 API 的 404 是部署前状态，发布后须复查。
+- 验证：`npm run build -- --webpack` 成功，含 65 个页面/路由及 `/api/miniprogram/referrals`；`starjob-miniprogram/npm run check` 通过，12 个页面、64 个客户端源码文件、无服务端密钥；`git diff --check` 通过。正式域名只读探针分页读取 2,309/2,309 个不重复岗位（12 页），旧请求仍兼容首批 500 条；内推 API 返回 177 条，腾讯公司匹配 4 项；未登录上传返回 401，非法游标/页数返回 400。开发者工具模拟器发布后界面状态不稳定，iPhone/Android 真机验收待完成。
 - 本轮代码文件：`src/app/api/miniprogram/jobs/route.ts`、`src/app/api/miniprogram/referrals/route.ts`、`src/app/api/referrals/route.ts`、`src/lib/referral-submission.ts`；`starjob-miniprogram/miniprogram/app.json`、`pages/jobs/detail.{ts,wxml,wxss}`、`pages/jobs/index.{ts,wxml,wxss}`、`pages/profile/index.{ts,wxml}`、`pages/support/index.{ts,wxml,wxss}`、`pages/referrals/{index.ts,index.wxml,index.wxss,index.json}`、`types/api.ts` 与 `MINIPROGRAM_PROGRESS.md`。
-- 发布状态：网站 Production 尚未推送/部署，待完成后用正式域名核验岗位分页和内推 API。微信 `0.5.0` 开发版本尚未确认上传、提交审核、审核通过或正式发布；iPhone/Android 真机验收仍待完成，需与网站部署分别记录。
+- 发布状态：网站提交 `f94bcf2` 已部署到 Production，[Vercel 部署检查](https://vercel.com/job-bottle/job-bottle/22oc7ToEey3TbmfN4WYSsY6hHDj3)成功，正式域名 API 只读核验通过。微信 `0.5.0` 已通过开发者工具上传成功并覆盖先前体验版；尚无提交审核、审核通过或正式发布的确认。iPhone/Android 真机验收待完成。
+
+## 2026-10-01 简历翻译可恢复与 AI 润色实质改写（本地待发布）
+
+- 翻译中断诊断：服务端分块结果此前只保存在单次请求内存中；页面离开会中止请求，浏览器等待上限为 165 秒，服务端整批上限为 150 秒。已确认这是“中途退出后无法接续”的结构性原因；没有本次用户请求的日志，无法断定那一次具体由超时、页面卸载还是网络中断触发。
+- 翻译恢复：浏览器按目标语言和简历源内容计算摘要，在当前标签页的 `sessionStorage` 按完成区块保存检查点；重试把检查点交给服务端，服务端按当前翻译计划校验区块和短键，只重跑未完成区块。成功后清除检查点；仍创建独立译本，失败不会改动原简历。未保存登录态、手机号等额外数据，也未改变旧调用方契约、鉴权和限流。
+- AI 润色重复：新请求使用唯一变体标识、叙事切入点和上一版建议作为避重上下文，降低十分钟精确响应缓存与“重新生成”产生同稿的概率。经历类强制按 STAR 实质重组；教育和获奖使用匹配模块的事实—贡献—结果结构。服务端以归一化字符二元组相似度做改写门槛，过于接近原文的结果会失败返回，不会作为建议稿展示。
+- 推测内容边界：原文缺少职责、背景、范围或量化结果时，模型被要求生成无占位符的完整候选表达，并将新增数字、职责等级、规模、背景和结果逐项标进核实清单。服务端校验新增数字与常见职责标记的核实覆盖；界面明确标注推测不是已确认事实，并要求用户逐项勾选确认后才能应用。组织、客户、证书、技能、日期及因果关系仍禁止虚构；推测内容须经用户核实，不应直接当作已证事实使用。
+- 本地验证：`npx tsc --noEmit`、六个相关文件定向 ESLint 与 `git diff --check` 通过。未运行测试套件；未做正式登录账号 E2E。
+- 状态边界：本区块的六个简历代码文件仅在主工作区保持未提交；简历改动没有提交、推送或部署，也没有执行 migration、Supabase 数据写入或小程序客户端发布。当前 Production 上的小程序/内推改动属于独立提交 `f94bcf2`，不包含简历改动。
 
 ## 来源区块：最终交接
 

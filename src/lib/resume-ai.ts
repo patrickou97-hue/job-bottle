@@ -33,6 +33,8 @@ export type ResumePolishRequest = {
   language: ResumePolishLanguage;
   instruction: ResumePolishInstruction;
   customInstruction?: string;
+  variationSeed?: string;
+  previousSuggestion?: ResumePolishContent;
 };
 
 export type ResumePolishChange = {

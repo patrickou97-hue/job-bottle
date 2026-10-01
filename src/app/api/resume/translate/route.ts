@@ -16,6 +16,9 @@ const REQUEST_TIMEOUT_MS = 150_000;
 const CHUNK_TIMEOUT_MS = 60_000;
 const MAX_CHUNK_OUTPUT_TOKENS = 2_200;
 const TRANSLATION_CONCURRENCY = 2;
+const MAX_REQUEST_BYTES = 512_000;
+const MAX_SOURCE_BYTES = 80_000;
+const MAX_TRANSLATION_CHUNKS = 100;
 
 const boundedText = (max: number) => z.string().trim().max(max);
 const translatedText = (sourceMax: number) => z.string().trim().max(getTranslationOutputLimit(sourceMax));
@@ -85,11 +88,24 @@ const resumeSchema = z.object({
   languages: z.array(customSectionSchema).max(8),
   customSections: z.array(customSectionSchema).max(8),
 }).strict();
+const chunkResultSchema = z.object({
+  translations: z.array(z.object({
+    key: z.string().regex(/^t\d+$/),
+    value: translatedText(1_000),
+  }).strict()).max(24),
+  warnings: z.array(boundedText(500)).max(10),
+}).strict();
+const checkpointSchema = z.object({
+  chunkIndex: z.number().int().min(0).max(MAX_TRANSLATION_CHUNKS - 1),
+  translations: chunkResultSchema.shape.translations,
+  warnings: chunkResultSchema.shape.warnings,
+}).strict();
 const inputSchema = z.object({
   sourceLanguage: z.enum(["zh-CN", "en-US"]),
   targetLanguage: z.enum(["zh-CN", "en-US"]),
   resume: resumeSchema,
   progressMode: z.literal("ndjson").optional(),
+  completedChunks: z.array(checkpointSchema).max(MAX_TRANSLATION_CHUNKS).optional().default([]),
 }).strict().refine((value) => value.sourceLanguage !== value.targetLanguage, {
   message: "source and target languages must differ",
 });
@@ -98,19 +114,17 @@ const resultSchema = z.object({
   translated: resumeSchema,
   warnings: z.array(boundedText(500)).max(20),
 }).strict();
-const chunkResultSchema = z.object({
-  translations: z.array(z.object({
-    key: z.string().regex(/^t\d+$/),
-    value: translatedText(1_000),
-  }).strict()).max(24),
-  warnings: z.array(boundedText(500)).max(10),
-}).strict();
-
 type ResumeDraft = z.infer<typeof resumeSchema>;
 type TranslationResult = z.infer<typeof resultSchema>;
 type ChatMessage = { role: "system" | "user"; content: string };
 type ChunkResult = { values: Map<string, string>; warnings: string[] };
-type TranslationProgress = { completed: number; total: number; label: string };
+type TranslationCheckpoint = z.infer<typeof checkpointSchema>;
+type TranslationProgress = {
+  completed: number;
+  total: number;
+  label: string;
+  checkpoint?: TranslationCheckpoint;
+};
 type ChatCompletionPayload = {
   choices?: Array<{
     finish_reason?: string | null;
@@ -123,7 +137,7 @@ type ChatCompletionPayload = {
 
 export async function POST(request: NextRequest) {
   const contentLength = Number(request.headers.get("content-length") ?? 0);
-  if (contentLength > 80_000) {
+  if (contentLength > MAX_REQUEST_BYTES) {
     return NextResponse.json({ error: "整份简历内容过长，请精简后再翻译" }, { status: 413 });
   }
 
@@ -137,12 +151,24 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: "当前简历格式无效或内容过长，请检查后重试" }, { status: 400 });
   }
+  if (Buffer.byteLength(JSON.stringify(parsed.data.resume), "utf8") > MAX_SOURCE_BYTES) {
+    return NextResponse.json({ error: "整份简历内容过长，请精简后再翻译" }, { status: 413 });
+  }
 
   const apiKey = process.env.MIMO_API_KEY;
   const baseUrl = process.env.MIMO_BASE_URL;
   const model = resolveMimoModel();
   if (!apiKey || !baseUrl || !model) {
     return NextResponse.json({ error: "翻译暂时不可用，原简历未改动。" }, { status: 503 });
+  }
+
+  const plan = createTranslationPlan(parsed.data.resume, parsed.data.targetLanguage);
+  if (plan.chunks.length > MAX_TRANSLATION_CHUNKS) {
+    return NextResponse.json({ error: "简历区块过多，请精简后再翻译" }, { status: 413 });
+  }
+  const completedChunkResults = restoreCompletedChunks(parsed.data.completedChunks, plan);
+  if (!completedChunkResults) {
+    return NextResponse.json({ error: "已保存的翻译进度与当前简历不匹配，请重新开始翻译" }, { status: 400 });
   }
 
   const { data: rateSlot, error: rateSlotError } = await access.takeRateSlot();
@@ -154,7 +180,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "翻译请求较频繁，请十分钟后再试。" }, { status: 429, headers: { "Retry-After": "600" } });
   }
 
-  const plan = createTranslationPlan(parsed.data.resume, parsed.data.targetLanguage);
   const options = {
     apiKey,
     baseUrl,
@@ -162,6 +187,7 @@ export async function POST(request: NextRequest) {
     sourceLanguage: parsed.data.sourceLanguage,
     targetLanguage: parsed.data.targetLanguage,
     plan,
+    completedChunkResults,
   };
 
   if (parsed.data.progressMode === "ndjson") {
@@ -203,9 +229,11 @@ function createProgressResponse(
 
       send({
         type: "start",
-        completed: 0,
+        completed: options.completedChunkResults.size,
         total: options.plan.chunks.length,
-        label: "正在准备翻译区块",
+        label: options.completedChunkResults.size > 0
+          ? `已恢复 ${options.completedChunkResults.size} 个区块，继续翻译`
+          : "正在准备翻译区块",
       });
 
       void executeTranslationPlan({
@@ -247,6 +275,7 @@ type TranslationExecutionOptions = {
   sourceLanguage: "zh-CN" | "en-US";
   targetLanguage: "zh-CN" | "en-US";
   plan: TranslationPlan;
+  completedChunkResults: Map<number, ChunkResult>;
   signal?: AbortSignal;
   onProgress?: (progress: TranslationProgress) => void;
 };
@@ -258,6 +287,7 @@ async function executeTranslationPlan({
   sourceLanguage,
   targetLanguage,
   plan,
+  completedChunkResults,
   signal,
   onProgress,
 }: TranslationExecutionOptions): Promise<TranslationResult> {
@@ -275,13 +305,17 @@ async function executeTranslationPlan({
   if (signal?.aborted) batchController.abort();
   const overallTimeout = setTimeout(() => batchController.abort(), REQUEST_TIMEOUT_MS);
   const chunkResults: Array<ChunkResult | undefined> = new Array(plan.chunks.length);
+  completedChunkResults.forEach((result, chunkIndex) => {
+    chunkResults[chunkIndex] = result;
+  });
   let nextChunkIndex = 0;
-  let completedChunks = 0;
+  let completedChunks = completedChunkResults.size;
 
   const worker = async () => {
     while (!batchController.signal.aborted) {
       const chunkIndex = nextChunkIndex++;
       if (chunkIndex >= plan.chunks.length) return;
+      if (chunkResults[chunkIndex]) continue;
       const chunk = plan.chunks[chunkIndex];
       const result = await translateChunk({
         apiKey,
@@ -298,6 +332,7 @@ async function executeTranslationPlan({
         completed: completedChunks,
         total: plan.chunks.length,
         label: chunk.label,
+        checkpoint: createTranslationCheckpoint(chunkIndex, result),
       });
     }
   };
@@ -348,6 +383,32 @@ async function executeTranslationPlan({
     throw new UpstreamError(502, "invalid_result");
   }
   return parsed.data;
+}
+
+function restoreCompletedChunks(
+  checkpoints: TranslationCheckpoint[],
+  plan: TranslationPlan,
+): Map<number, ChunkResult> | null {
+  const restored = new Map<number, ChunkResult>();
+  for (const checkpoint of checkpoints) {
+    const chunk = plan.chunks[checkpoint.chunkIndex];
+    if (!chunk || restored.has(checkpoint.chunkIndex)) return null;
+    const result = parseChunkCandidate(
+      { translations: checkpoint.translations, warnings: checkpoint.warnings },
+      chunk,
+    );
+    if (!result) return null;
+    restored.set(checkpoint.chunkIndex, result);
+  }
+  return restored;
+}
+
+function createTranslationCheckpoint(chunkIndex: number, result: ChunkResult): TranslationCheckpoint {
+  return {
+    chunkIndex,
+    translations: Array.from(result.values, ([key, value]) => ({ key, value })),
+    warnings: result.warnings,
+  };
 }
 
 async function translateChunk({
@@ -470,21 +531,25 @@ function buildChunkMessages(
 function parseChunkResult(content: string, chunk: TranslationChunk): ChunkResult | null {
   const candidate = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
   try {
-    const parsed = chunkResultSchema.safeParse(JSON.parse(candidate));
-    if (!parsed.success || parsed.data.translations.length !== chunk.entries.length) return null;
-    const expectedByKey = new Map(chunk.entries.map((entry) => [entry.key, entry]));
-    const values = new Map<string, string>();
-    for (const item of parsed.data.translations) {
-      const expected = expectedByKey.get(item.key);
-      if (!expected || values.has(item.key) || !item.value || item.value.length > expected.maxLength) return null;
-      if (expected.kind === "person_name_pinyin" && !isSafeLatinName(item.value)) return null;
-      values.set(item.key, item.value);
-    }
-    if (values.size !== expectedByKey.size) return null;
-    return { values, warnings: parsed.data.warnings };
+    return parseChunkCandidate(JSON.parse(candidate), chunk);
   } catch {
     return null;
   }
+}
+
+function parseChunkCandidate(candidate: unknown, chunk: TranslationChunk): ChunkResult | null {
+  const parsed = chunkResultSchema.safeParse(candidate);
+  if (!parsed.success || parsed.data.translations.length !== chunk.entries.length) return null;
+  const expectedByKey = new Map(chunk.entries.map((entry) => [entry.key, entry]));
+  const values = new Map<string, string>();
+  for (const item of parsed.data.translations) {
+    const expected = expectedByKey.get(item.key);
+    if (!expected || values.has(item.key) || !item.value || item.value.length > expected.maxLength) return null;
+    if (expected.kind === "person_name_pinyin" && !isSafeLatinName(item.value)) return null;
+    values.set(item.key, item.value);
+  }
+  if (values.size !== expectedByKey.size) return null;
+  return { values, warnings: parsed.data.warnings };
 }
 
 function isSafeLatinName(value: string) {

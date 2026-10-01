@@ -70,7 +70,16 @@ export type ResumeTranslationProgress = {
   completed: number;
   total: number;
   label: string;
+  checkpoint?: ResumeTranslationCheckpoint;
 };
+
+export type ResumeTranslationCheckpoint = {
+  chunkIndex: number;
+  translations: Array<{ key: string; value: string }>;
+  warnings: string[];
+};
+
+const TRANSLATION_CHECKPOINT_PREFIX = "starjob:resume-translation-checkpoint:v1:";
 
 export function createResumeTranslationSource(resume: ResumeDocument): ResumeTranslationDraft {
   return {
@@ -98,6 +107,70 @@ export function createResumeTranslationSource(resume: ResumeDocument): ResumeTra
   };
 }
 
+async function getTranslationCheckpointStorageKey(resume: ResumeDocument, targetLanguage: ResumeLanguage) {
+  if (typeof window === "undefined" || !globalThis.crypto?.subtle) return null;
+  try {
+    const payload = JSON.stringify({ targetLanguage, resume: createResumeTranslationSource(resume) });
+    const digest = await globalThis.crypto.subtle.digest("SHA-256", new TextEncoder().encode(payload));
+    const hash = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+    return `${TRANSLATION_CHECKPOINT_PREFIX}${hash}`;
+  } catch {
+    return null;
+  }
+}
+
+function readTranslationCheckpoints(storageKey: string | null) {
+  if (!storageKey) return [] as ResumeTranslationCheckpoint[];
+  try {
+    const raw = window.sessionStorage.getItem(storageKey);
+    if (!raw) return [] as ResumeTranslationCheckpoint[];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length > 100) return [] as ResumeTranslationCheckpoint[];
+    return parsed.filter(isResumeTranslationCheckpoint);
+  } catch {
+    return [] as ResumeTranslationCheckpoint[];
+  }
+}
+
+function writeTranslationCheckpoints(storageKey: string | null, checkpoints: ResumeTranslationCheckpoint[]) {
+  if (!storageKey) return false;
+  try {
+    window.sessionStorage.setItem(storageKey, JSON.stringify(checkpoints));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function clearTranslationCheckpoints(storageKey: string | null) {
+  if (!storageKey) return;
+  try {
+    window.sessionStorage.removeItem(storageKey);
+  } catch {
+    // Session storage may be unavailable in restricted browser contexts.
+  }
+}
+
+function isResumeTranslationCheckpoint(value: unknown): value is ResumeTranslationCheckpoint {
+  if (!value || typeof value !== "object") return false;
+  const checkpoint = value as Partial<ResumeTranslationCheckpoint>;
+  return Number.isInteger(checkpoint.chunkIndex)
+    && typeof checkpoint.chunkIndex === "number"
+    && checkpoint.chunkIndex >= 0
+    && checkpoint.chunkIndex < 100
+    && Array.isArray(checkpoint.translations)
+    && checkpoint.translations.length > 0
+    && checkpoint.translations.length <= 24
+    && checkpoint.translations.every((item) => item
+      && typeof item.key === "string"
+      && /^t\d+$/u.test(item.key)
+      && typeof item.value === "string"
+      && item.value.length <= 4_000)
+    && Array.isArray(checkpoint.warnings)
+    && checkpoint.warnings.length <= 10
+    && checkpoint.warnings.every((warning) => typeof warning === "string" && warning.length <= 500);
+}
+
 export async function requestResumeTranslation(
   resume: ResumeDocument,
   targetLanguage: ResumeLanguage,
@@ -108,7 +181,24 @@ export async function requestResumeTranslation(
   const cancelFromOutside = () => controller.abort("cancelled");
   externalSignal?.addEventListener("abort", cancelFromOutside, { once: true });
   const timeout = window.setTimeout(() => controller.abort(), TRANSLATION_TIMEOUT_MS);
+  let checkpointStorageKey: string | null = null;
+  let persistedCheckpointCount = 0;
   try {
+    checkpointStorageKey = await getTranslationCheckpointStorageKey(resume, targetLanguage);
+    const checkpointByIndex = new Map<number, ResumeTranslationCheckpoint>();
+    readTranslationCheckpoints(checkpointStorageKey).forEach((checkpoint) => {
+      checkpointByIndex.set(checkpoint.chunkIndex, checkpoint);
+    });
+    persistedCheckpointCount = checkpointByIndex.size;
+    const notifyProgress = (progress: ResumeTranslationProgress) => {
+      if (progress.checkpoint) {
+        checkpointByIndex.set(progress.checkpoint.chunkIndex, progress.checkpoint);
+        if (writeTranslationCheckpoints(checkpointStorageKey, Array.from(checkpointByIndex.values()))) {
+          persistedCheckpointCount = checkpointByIndex.size;
+        }
+      }
+      onProgress?.(progress);
+    };
     const response = await fetch("/api/resume/translate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -117,26 +207,43 @@ export async function requestResumeTranslation(
         targetLanguage,
         resume: createResumeTranslationSource(resume),
         progressMode: onProgress ? "ndjson" : undefined,
+        completedChunks: Array.from(checkpointByIndex.values()),
       }),
       signal: controller.signal,
     });
     if (response.ok && response.headers.get("content-type")?.includes("application/x-ndjson")) {
-      return await readTranslationProgressStream(response, onProgress);
+      const result = await readTranslationProgressStream(response, notifyProgress);
+      clearTranslationCheckpoints(checkpointStorageKey);
+      return result;
     }
     const payload = await response.json().catch(() => null) as ResumeTranslationResult | { error?: string } | null;
     if (!response.ok) {
-      throw new Error(payload && "error" in payload && payload.error ? payload.error : "翻译暂时不可用，原简历未改动。");
+      const message = payload && "error" in payload && payload.error
+        ? payload.error
+        : "翻译暂时不可用，原简历未改动。";
+      if (response.status === 400 && message.includes("翻译进度")) {
+        clearTranslationCheckpoints(checkpointStorageKey);
+        persistedCheckpointCount = 0;
+      }
+      throw new Error(message);
     }
     if (!isResumeTranslationResult(payload)) {
       throw new Error("译文结构异常，原简历未改动，请重试。");
     }
+    clearTranslationCheckpoints(checkpointStorageKey);
     return payload;
   } catch (error) {
+    const message = error instanceof Error ? error.message : "翻译暂时不可用，原简历未改动。";
+    let failureMessage = message;
     if (controller.signal.aborted) {
-      if (externalSignal?.aborted) throw new Error("已取消翻译，原简历未改动。");
-      throw new Error("翻译请求超时，原简历未改动，请重试。");
+      failureMessage = externalSignal?.aborted
+        ? "已取消翻译，原简历未改动。"
+        : "翻译请求超时，原简历未改动，请重试。";
     }
-    throw error;
+    if (persistedCheckpointCount > 0) {
+      failureMessage += ` 已在当前标签页保存 ${persistedCheckpointCount} 个完成区块，再次点击可继续。`;
+    }
+    throw new Error(failureMessage);
   } finally {
     window.clearTimeout(timeout);
     externalSignal?.removeEventListener("abort", cancelFromOutside);
@@ -169,10 +276,12 @@ async function readTranslationProgressStream(
         && typeof payload.total === "number"
         && typeof payload.label === "string"
       ) {
+        const checkpoint = isResumeTranslationCheckpoint(payload.checkpoint) ? payload.checkpoint : undefined;
         onProgress?.({
           completed: payload.completed,
           total: payload.total,
           label: payload.label,
+          ...(checkpoint ? { checkpoint } : {}),
         });
       }
       return;

@@ -79,6 +79,8 @@ export function ResumePolishDialog({
     setBusy(true);
     setError("");
     setVerificationConfirmed(false);
+    const previousSuggestion = result?.revised;
+    setResult(null);
     const controller = new AbortController();
     requestAbortRef.current = controller;
     try {
@@ -90,6 +92,8 @@ export function ResumePolishDialog({
         language,
         instruction,
         customInstruction: customInstruction.trim(),
+        variationSeed: createVariationSeed(),
+        ...(previousSuggestion ? { previousSuggestion } : {}),
       }, controller.signal);
       if (!mountedRef.current) return;
       setResult(next);
@@ -119,7 +123,7 @@ export function ResumePolishDialog({
           <div>
             <p className="text-xs text-ink-muted">{target.label}</p>
             <h2 id="resume-polish-title" className="mt-1 text-xl font-semibold text-ink-primary">智能润色</h2>
-            <p className="mt-2 text-sm leading-6 text-ink-secondary">仅处理当前段落，不会发送联系方式、照片或整份简历。</p>
+            <p className="mt-2 text-sm leading-6 text-ink-secondary">仅处理当前段落，不发送联系方式、照片或整份简历；经历按 STAR 重组，缺少的量化细节会作为 AI 推测单独标出，核实前不能应用。</p>
           </div>
           <button type="button" className="muted-button pressable inline-flex size-9 shrink-0 items-center justify-center rounded-lg" aria-label="关闭" onClick={closeDialog}>
             <X aria-hidden="true" className="size-4" />
@@ -190,7 +194,7 @@ export function ResumePolishDialog({
                   <AlertTriangle aria-hidden="true" className="mt-1 size-4 shrink-0" />
                   <div>
                     <h3 className="font-semibold">AI 补充的细节，采用前请核实</h3>
-                    <p className="mt-1 text-xs leading-5">以下内容来自上下文推断，不是你已确认的事实。请确认自己确实做过，并能在面试中解释。</p>
+                    <p className="mt-1 text-xs leading-5">以下具体职责、数字或背景不是已确认事实。请逐项确认真实、准确且能在面试中解释；不真实的内容不要应用。</p>
                   </div>
                 </div>
                 <ul className="mt-3 space-y-2">
@@ -239,6 +243,16 @@ export function ResumePolishDialog({
         </footer>
     </MotionDialog>
   );
+}
+
+function createVariationSeed() {
+  const strategies = ["背景目标优先", "具体行动优先", "业务结果优先", "问题解决优先", "协作影响优先"];
+  const strategy = strategies[Math.floor(Math.random() * strategies.length)];
+  try {
+    return `${globalThis.crypto.randomUUID()}:${strategy}`;
+  } catch {
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}:${strategy}`;
+  }
 }
 
 function PolishColumn({ title, bullets, placeholder }: { title: string; bullets: string[]; placeholder?: string }) {

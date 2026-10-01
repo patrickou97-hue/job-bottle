@@ -710,7 +710,7 @@ export function ResumeBuilderClient({
             label={translationProgress.label}
             completed={translationProgress.completed}
             total={translationProgress.total}
-            protection="原简历不会改动；全部区块完成后才创建译本"
+            protection="原简历不会改动；已完成区块暂存在当前标签页，中断后可继续"
             onCancel={() => translationAbortRef.current?.abort()}
           />
         ) : null}
