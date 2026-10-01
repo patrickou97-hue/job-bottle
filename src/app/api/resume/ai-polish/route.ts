@@ -114,7 +114,13 @@ export async function POST(request: NextRequest) {
       messages: buildMessages(parsed.data),
       signal: request.signal,
     });
-    const validation = parseResult(first, parsed.data.content, parsed.data.previousSuggestion);
+    const validation = parseResult(
+      first,
+      parsed.data.content,
+      parsed.data.previousSuggestion,
+      parsed.data.sectionType,
+      parsed.data.language,
+    );
     if (!validation.result) {
       console.warn("[resume_ai_validation]", {
         reason: validation.reason,
@@ -197,7 +203,7 @@ function getChatCompletionsUrl(baseUrl: string) {
 
 function buildMessages(input: z.infer<typeof inputSchema>): ChatMessage[] {
   return [
-    { role: "system", content: SYSTEM_PROMPT },
+    { role: "system", content: [SYSTEM_PROMPT, buildQuantificationDirective(input)].join("\n\n") },
     {
       role: "user",
       content: [
@@ -210,10 +216,21 @@ function buildMessages(input: z.infer<typeof inputSchema>): ChatMessage[] {
         `当前段落：${JSON.stringify(input.content)}`,
         `本次改写切入点：${input.variationSeed.split(":").at(-1) || "综合 STAR"}`,
         `上一版建议（仅用于避免重复，不是事实来源）：${JSON.stringify(input.previousSuggestion ?? "无")}`,
+        "量化候选硬要求：" + buildQuantificationDirective(input),
         RESULT_SHAPE,
       ].join("\n"),
     },
   ];
+}
+
+function buildQuantificationDirective(input: z.infer<typeof inputSchema>) {
+  if (!["work", "project", "campus", "custom"].includes(input.sectionType)) {
+    return "这是教育或荣誉类内容，不推测成绩、排名或奖项数据；只优化已有事实。";
+  }
+  if (hasQuantifiedResult(input.content.bullets)) {
+    return "原文已有量化口径，保留并优化其表达，不另猜数字。";
+  }
+  return "原文没有量化结果；用户已明确授权AI提出保守的数字假设。必须在revised.bullets中直接给出至少一项、最多两项带阿拉伯数字和单位的完整结果候选，且在verificationItems中逐项标明待核实。不能只建议用户补数据，也不能因为原文没有数字而省略候选。数字是假设，不是已确认事实。";
 }
 
 function createPolishCacheKey(userId: string, input: z.infer<typeof inputSchema>) {
@@ -244,6 +261,8 @@ function parseResult(
   content: string,
   source: z.infer<typeof inputSchema>["content"],
   previousSuggestion?: z.infer<typeof polishContentSchema>,
+  sectionType?: z.infer<typeof inputSchema>["sectionType"],
+  language?: z.infer<typeof inputSchema>["language"],
 ): PolishValidation {
   const candidate = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
   let parsedCandidate: unknown;
@@ -262,7 +281,10 @@ function parseResult(
     };
   }
 
-  const result = addUnverifiedClaimItems(parsed.data, source);
+  const quantifiedResult = sectionType && language
+    ? ensureQuantifiedOutcomeCandidate(parsed.data, source, sectionType, language)
+    : parsed.data;
+  const result = addUnverifiedClaimItems(quantifiedResult, source);
   const sourceSimilarity = getBulletSimilarity(source.bullets, result.revised.bullets);
   if (sourceSimilarity > 0.94) {
     return { result: null, reason: "similar_to_source", sourceSimilarity };
@@ -309,6 +331,90 @@ function addUnverifiedClaimItems(result: PolishResult, source: z.infer<typeof in
   });
 
   return { ...result, verificationItems: items };
+}
+
+function ensureQuantifiedOutcomeCandidate(
+  result: PolishResult,
+  source: z.infer<typeof inputSchema>["content"],
+  sectionType: z.infer<typeof inputSchema>["sectionType"],
+  language: z.infer<typeof inputSchema>["language"],
+): PolishResult {
+  // MiMo can decline to estimate missing outcomes despite the prompt; fulfill the user's explicit request without a second slow upstream call.
+  if (!["work", "project", "campus", "custom"].includes(sectionType)
+    || hasQuantifiedResult(source.bullets)
+    || hasQuantifiedResult(result.revised.bullets)) return result;
+
+  const revisedBullets = [...result.revised.bullets];
+  const context = [...source.bullets, ...revisedBullets].join("\n");
+  const targetIndex = revisedBullets.findIndex((bullet) => /缩短|降低|减少|节省|提升|提高|改善|完成|交付|周期|效率|时间|shorten|reduce|save|improve|deliver|cycle|turnaround|efficiency/iu.test(bullet));
+  const bulletIndex = targetIndex >= 0 ? targetIndex : revisedBullets.length - 1;
+  const targetBullet = revisedBullets[bulletIndex] ?? "";
+  const clause = makeConservativeMetricClause(targetBullet, context, language);
+  const updatedBullet = appendMetricClause(targetBullet, clause, language);
+  revisedBullets[bulletIndex] = updatedBullet;
+  const warnings = [...result.warnings];
+  const warning = "AI按缺少的信息估算了量化候选，数字不是根据你的真实数据测得；请核对真实口径，未确认前不要采用。";
+  if (!warnings.includes(warning)) warnings.push(warning);
+
+  return {
+    ...result,
+    revised: { ...result.revised, bullets: revisedBullets },
+    warnings,
+    verificationItems: [
+      ...result.verificationItems,
+      {
+        detail: updatedBullet,
+        reason: "原文没有量化结果，系统按谨慎估算规则补入了数字假设；该数字不是从你的真实数据测得。请核对真实口径，无法确认时不要采用。",
+      },
+    ],
+  };
+}
+
+function hasQuantifiedResult(bullets: string[]) {
+  const outcomePattern = /提升|提高|增长|增加|降低|减少|缩短|压缩|节省|节约|改善|转化|实现|完成|交付|提高效率|节约成本|改善周期|increase|grow|improve|reduce|shorten|save|deliver|complete|convert|cut|lower|raise/iu;
+  return bullets.some((bullet) => outcomePattern.test(bullet) && extractNumericClaims(bullet)
+    .some((claim) => /[^\d,.]/u.test(claim) && !/^(?:19|20)\d{2}年?$/u.test(claim)));
+}
+
+function makeConservativeMetricClause(
+  targetBullet: string,
+  context: string,
+  language: z.infer<typeof inputSchema>["language"],
+) {
+  if (language === "en-US") {
+    if (/(?:shorten|reduce|cut)[^;,.!?]*?(?:cycle|time|turnaround)/iu.test(targetBullet)) return "about 15%";
+    if (/customer|visit|interview|client/iu.test(context)) return "and shorten the post-visit follow-up cycle by about 15%";
+    if (/indicator|metric|dashboard|report|monitor|analysis|data/iu.test(context)) return "and shorten the operating review cycle by about 15%";
+    return "and reduce the related turnaround time by about 15%";
+  }
+  if (/(?:缩短|减少|压缩)[^，,；;。.!?]*?(?:周期|时间)/u.test(targetBullet)) return "约15%";
+  if (/周期|效率|时间|准备|处理|清洗|流程/u.test(targetBullet)) return "并将相关处理周期缩短约15%";
+  if (/客户|拜访|访谈|回访/u.test(context)) return "并将客户拜访后的跟进周期缩短约15%";
+  if (/指标|看板|报表|监控|分析|数据/u.test(context)) return "并将经营指标复盘周期缩短约15%";
+  return "并将相关交付周期缩短约15%";
+}
+
+function appendMetricClause(
+  bullet: string,
+  clause: string,
+  language: z.infer<typeof inputSchema>["language"],
+) {
+  const trimmed = bullet.trim().replace(/[。；;.!?…]+$/u, "");
+  if (language === "zh-CN" && clause === "约15%") {
+    const cycle = /(?:缩短|减少|压缩)[^，,；;。.!?]*?(?:周期|时间)/u;
+    const match = cycle.exec(trimmed);
+    if (match?.[0]) return trimmed.replace(match[0], match[0] + "约15%") + "。";
+  }
+  if (language === "en-US" && clause === "about 15%") {
+    const cycle = /(?:shorten|reduce|cut)[^;,.!?]*?(?:cycle|time|turnaround)/iu;
+    const match = cycle.exec(trimmed);
+    if (match?.[0]) return trimmed.replace(match[0], match[0] + " by about 15%") + ".";
+  }
+  const separator = trimmed ? (language === "en-US" ? "; " : "，") : "";
+  const punctuation = language === "en-US" ? "." : "。";
+  const suffix = separator + clause + punctuation;
+  const prefix = trimmed.slice(0, Math.max(0, 1_000 - suffix.length)).trimEnd();
+  return prefix + suffix;
 }
 
 function makeVerificationExcerpt(bullet: string, claims: string[]) {
