@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
+import Image from "next/image";
 import { Eye, EyeOff } from "lucide-react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -17,6 +18,7 @@ import {
   toggleProfileOption,
 } from "@/lib/profile-options";
 import { cn } from "@/lib/utils";
+import { isArcSweepAuthorizationReturn } from "@/lib/arcsweep/login-context";
 
 const loginSchema = z.object({
   account: z.string().min(1, "请输入账号或邮箱。"),
@@ -35,6 +37,8 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const isArcSweepConnect = searchParams.get("reason") === "arcsweep-connect"
+    && isArcSweepAuthorizationReturn(searchParams.get("next"));
   const [mode, setMode] = useState<"login" | "register">(
     searchParams.get("mode") === "register" ? "register" : "login",
   );
@@ -167,12 +171,23 @@ export function LoginForm() {
 
   return (
     <div className="login-form mx-auto w-full max-w-md py-4 sm:py-8 lg:py-10">
+      {isArcSweepConnect ? (
+        <aside className="login-form__product-return" aria-label="ArcSweep 授权登录说明">
+          <Image src="/brand/arcsweep-icon-mark.png" width={32} height={32} alt="" />
+          <div>
+            <strong>继续连接 ArcSweep</strong>
+            <span>登录后返回授权确认页；是否连接由你决定。此时不会扫描或上传文件。</span>
+          </div>
+        </aside>
+      ) : null}
       <h1 className="login-form__title text-3xl font-semibold tracking-[-0.02em] text-ink-primary">
         {isRegister ? "创建拾星账号" : "登录拾星"}
       </h1>
       <p className="login-form__subtitle mt-3 text-center text-sm leading-6 text-ink-secondary">
         {searchParams.get("reason") === "resume-download"
           ? "当前简历已保存在本浏览器。完成注册或登录后，将自动返回下载页面。"
+          : isArcSweepConnect
+          ? "登录仅用于使用 ArcSweep 的云端 AI 复核；文件内容和完整路径仍留在本机。"
           : isRegister
           ? "注册后，保存岗位、简历与投递记录。"
           : "继续整理你的岗位、简历与投递进展。"}

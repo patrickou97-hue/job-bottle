@@ -17,6 +17,11 @@
 .auth-gateway__layout { max-width: 1320px; min-height: min(740px, calc(100svh - 180px)); margin: auto; display: grid; grid-template-columns: 1fr 1fr; gap: clamp(40px, 7vw, 112px); }
 .auth-gateway__form { display: flex; align-items: center; justify-content: center; padding: 40px 0; min-width: 0; }
 .auth-gateway .login-form { padding: 0; max-width: 380px; }
+.auth-gateway .login-form__product-return { display: grid; grid-template-columns: 36px 1fr; align-items: center; gap: 12px; margin: 0 0 26px; padding: 14px 15px; border: 1px solid #e2e7e4; border-left: 3px solid #a98b5b; border-radius: 12px; background: #f1f4f1; }
+.auth-gateway .login-form__product-return img { width: 32px; height: 32px; object-fit: contain; }
+.auth-gateway .login-form__product-return strong, .auth-gateway .login-form__product-return span { display: block; }
+.auth-gateway .login-form__product-return strong { color: #24374a; font-size: 13px; line-height: 1.45; }
+.auth-gateway .login-form__product-return span { margin-top: 3px; color: #697583; font-size: 12px; line-height: 1.6; }
 .auth-gateway .login-form__title { text-align: left; font-size: 32px; line-height: 1.3; letter-spacing: -.04em; color: var(--auth-ink); }
 .auth-gateway .login-form__subtitle { text-align: left; color: var(--auth-muted); margin-top: 12px; line-height: 1.8; }
 .auth-gateway .login-form__method-switch { background: #edf0ef; border: 1px solid #e4e8e7; padding: 4px; border-radius: 14px; margin-top: 30px; }
