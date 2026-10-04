@@ -112,9 +112,9 @@ export async function issueCode(
 }
 export async function callMimo(request: AdviceRequest, signal?: AbortSignal) {
   const key = process.env.MIMO_API_KEY, base = process.env.MIMO_BASE_URL;
-  if (!key || !base) throw new ServiceError(503, "service_unavailable");
+  if (!key || !base) throw new ServiceError(503, "mimo_not_configured");
   const endpoint = resolveMimoEndpoint(base);
-  if (!endpoint) throw new ServiceError(503, "service_unavailable");
+  if (!endpoint) throw new ServiceError(503, "mimo_not_configured");
   const timeout = AbortSignal.timeout(25000);
   const response = await fetch(endpoint, { method: "POST", cache: "no-store", redirect: "error", signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },

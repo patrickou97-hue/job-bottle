@@ -72,6 +72,8 @@ test("Arc account consent and code exchange failures expose only safe diagnostic
   for (const stage of ["arc_account_membership", "retire_previous_codes", "insert_authorization_code", "redeem_authorization_code"]) {
     assert.match(service, new RegExp(`onStage\\?\\.\\("${stage}"\\)`));
   }
+  assert.match(service, /if \(!key \|\| !base\) throw new ServiceError\(503, "mimo_not_configured"\)/);
+  assert.match(service, /if \(!endpoint\) throw new ServiceError\(503, "mimo_not_configured"\)/);
 });
 test("MiMo API credentials can only be sent to the fixed provider endpoint", () => {
   assert.equal(resolveMimoEndpoint("https://token-plan-cn.xiaomimimo.com/v1")?.href,
