@@ -60,6 +60,19 @@ test("Arc account membership shares Auth identity but stays isolated behind serv
   assert.match(profileMigration, /raw_user_meta_data->>'account_surface' = 'arc'/);
   assert.match(profileMigration, /return new;/);
 });
+test("Arc account consent and code exchange failures expose only safe diagnostic stages", () => {
+  const route = readFileSync(fileURLToPath(new URL("../../src/app/api/mac-cleaner/v1/auth/[action]/route.ts", import.meta.url)), "utf8");
+  assert.match(route, /consent failed", \{ diagnosticID, stage: failureStage, code, status \}/);
+  assert.match(route, /exchange failed", \{ diagnosticID, stage, code, status: response\.status \}/);
+  assert.match(route, /action === "exchange" \|\| action === "refresh"/);
+  assert.match(route, /X-ArcSweep-Diagnostic-ID/);
+  assert.doesNotMatch(route, /console\.error\([^\n]*(?:email|user\.id|state|token|response\.url)/i);
+
+  const service = readFileSync(fileURLToPath(new URL("../../src/lib/arcsweep/service.ts", import.meta.url)), "utf8");
+  for (const stage of ["arc_account_membership", "retire_previous_codes", "insert_authorization_code", "redeem_authorization_code"]) {
+    assert.match(service, new RegExp(`onStage\\?\\.\\("${stage}"\\)`));
+  }
+});
 test("MiMo API credentials can only be sent to the fixed provider endpoint", () => {
   assert.equal(resolveMimoEndpoint("https://token-plan-cn.xiaomimimo.com/v1")?.href,
     "https://token-plan-cn.xiaomimimo.com/v1/chat/completions");

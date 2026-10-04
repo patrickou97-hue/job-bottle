@@ -36,19 +36,42 @@ export async function usage(db: ReturnType<typeof database>, userID: string) {
   return { used, remaining: Math.max(0, 100 - used), limit: 100, reset_at: new Date(Date.parse(day) + 86400000).toISOString() };
 }
 const credentials = (userID: string, access: string, refresh: string, refreshExpires = 30 * 86400) => ({ user_id: userID, token_type: "Bearer", access_token: access, refresh_token: refresh, expires_in: 900, refresh_expires_in: refreshExpires });
-export async function exchangeOrRefresh(request: Request, action: string) {
-  const body = await boundedJSON(request); const db = database(); const access = token(), refresh = token();
+export type AuthorizationExchangeStage =
+  | "read_grant_request"
+  | "service_database_config"
+  | "validate_authorization_grant"
+  | "redeem_authorization_code"
+  | "validate_refresh_grant"
+  | "read_refresh_session"
+  | "rotate_refresh_token";
+
+export async function exchangeOrRefresh(
+  request: Request,
+  action: string,
+  onStage?: (stage: AuthorizationExchangeStage) => void,
+) {
+  onStage?.("read_grant_request");
+  const body = await boundedJSON(request);
   if (!body || typeof body !== "object") throw new ServiceError(400, "invalid_request");
   if (action === "exchange") {
+    onStage?.("validate_authorization_grant");
     if (body.grant_type !== "authorization_code" || body.client_id !== CLIENT || body.redirect_uri !== CALLBACK || typeof body.code !== "string" || !/^[\w-]{43}$/.test(body.code) || typeof body.code_verifier !== "string" || !/^[A-Za-z0-9._~-]{43,128}$/.test(body.code_verifier)) throw new ServiceError(400, "invalid_request");
     const challenge = createHash("sha256").update(body.code_verifier).digest("base64url");
+    onStage?.("service_database_config");
+    const db = database(); const access = token(), refresh = token();
+    onStage?.("redeem_authorization_code");
     const userID = checked(await db.rpc("arcsweep_exchange", { p_code: hash(body.code), p_challenge: challenge, p_access: hash(access), p_refresh: hash(refresh) }));
     if (!userID) throw new ServiceError(401, "invalid_grant");
     return credentials(userID, access, refresh);
   }
+  onStage?.("validate_refresh_grant");
   if (body.grant_type !== "refresh_token" || typeof body.user_id !== "string" || !UUID.test(body.user_id) || typeof body.refresh_token !== "string" || !/^[\w-]{43}$/.test(body.refresh_token)) throw new ServiceError(400, "invalid_request");
+  onStage?.("service_database_config");
+  const db = database(); const access = token(), refresh = token();
+  onStage?.("read_refresh_session");
   const old = checked(await db.from("arcsweep_sessions").select("refresh_expires_at").eq("user_id", body.user_id).eq("refresh_hash", hash(body.refresh_token)).maybeSingle());
   if (!old) throw new ServiceError(401, "invalid_grant");
+  onStage?.("rotate_refresh_token");
   const userID = checked(await db.rpc("arcsweep_refresh", { p_user: body.user_id, p_refresh: hash(body.refresh_token), p_access: hash(access), p_next_refresh: hash(refresh) }));
   if (!userID) throw new ServiceError(401, "invalid_grant");
   return credentials(userID, access, refresh, Math.max(0, Math.floor((Date.parse(old.refresh_expires_at) - Date.now()) / 1000)));
@@ -58,16 +81,31 @@ export function authorizationParams(params: URLSearchParams) {
   if (params.get("client_id") !== CLIENT || params.get("redirect_uri") !== CALLBACK || params.get("response_type") !== "code" || params.get("code_challenge_method") !== "S256" || !/^[\w-]{43}$/.test(params.get("code_challenge") ?? "") || !/^[\w-]{32,128}$/.test(params.get("state") ?? "")) throw new ServiceError(400, "invalid_request");
   return { challenge: params.get("code_challenge")!, state: params.get("state")! };
 }
-export async function issueCode(userID: string, challenge: string, state: string) {
+export type AuthorizationWriteStage =
+  | "service_database_config"
+  | "arc_account_membership"
+  | "retire_previous_codes"
+  | "insert_authorization_code";
+
+export async function issueCode(
+  userID: string,
+  challenge: string,
+  state: string,
+  onStage?: (stage: AuthorizationWriteStage) => void,
+) {
+  onStage?.("service_database_config");
   const db = database(); const code = token();
   // Joining the Arc product namespace happens only after explicit consent.
   // The shared Auth identity is not a grant to read StarJob profile data.
+  onStage?.("arc_account_membership");
   checked(await db.from("arc_accounts").upsert({
     user_id: userID,
     last_authorized_at: new Date().toISOString(),
   }, { onConflict: "user_id" }));
   // Limit outstanding codes; expired entries are never exchangeable.
+  onStage?.("retire_previous_codes");
   checked(await db.from("arcsweep_auth_codes").delete().eq("user_id", userID));
+  onStage?.("insert_authorization_code");
   checked(await db.from("arcsweep_auth_codes").insert({ code_hash: hash(code), user_id: userID, challenge, expires_at: new Date(Date.now() + 120000).toISOString() }));
   const callback = new URL(CALLBACK); callback.searchParams.set("code", code); callback.searchParams.set("state", state);
   return callback.toString();
