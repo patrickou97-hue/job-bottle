@@ -1,8 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { authenticate, authorizationParams, errorResponse, exchangeOrRefresh, issueCode, jsonResponse } from "@/lib/arcsweep/service";
 import { ServiceError } from "@/lib/arcsweep/contract";
-import { renderAuthorizationPage } from "@/lib/arcsweep/authorization-page";
+import { renderAuthorizationFailurePage, renderAuthorizationPage } from "@/lib/arcsweep/authorization-page";
 import { isSameOriginRequest } from "@/lib/arcsweep/same-origin";
+import { randomBytes } from "node:crypto";
 export const runtime = "nodejs";
 type Context = { params: Promise<{ action: string }> };
 const CONSENT_FIELDS = ["client_id", "redirect_uri", "response_type", "code_challenge", "code_challenge_method", "state"] as const;
@@ -36,8 +37,10 @@ export async function GET(request: Request, context: Context) {
   } catch (error) { return errorResponse(error); }
 }
 export async function POST(request: Request, context: Context) {
+  let action = "";
+  let state: string | undefined;
   try {
-    const { action } = await context.params;
+    action = (await context.params).action;
     if (action === "exchange" || action === "refresh") return jsonResponse(await exchangeOrRefresh(request, action));
     if (action === "logout") {
       const { db, sessionID } = await authenticate(request); const { error } = await db.from("arcsweep_sessions").delete().eq("id", sessionID);
@@ -47,7 +50,8 @@ export async function POST(request: Request, context: Context) {
     if (action !== "authorize") throw new ServiceError(404, "not_found");
     if (!isSameOriginRequest(request) || Number(request.headers.get("content-length") ?? 0) > 8192) throw new ServiceError(403, "forbidden");
     const { boundedText } = await import("@/lib/arcsweep/contract");
-    const params = new URLSearchParams(await boundedText(request.body, 8192)); const { challenge, state } = authorizationParams(params);
+    const params = new URLSearchParams(await boundedText(request.body, 8192)); const { challenge, state: requestState } = authorizationParams(params);
+    state = requestState;
     const decision = params.get("decision");
     if (decision === "deny") {
       const callback = new URL("arcsweep://oauth/callback");
@@ -58,6 +62,23 @@ export async function POST(request: Request, context: Context) {
     if (decision !== "approve") throw new ServiceError(400, "invalid_request");
     const supabase = await createClient(); const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user) throw new ServiceError(401, "authentication_required");
-    return Response.redirect(await issueCode(user.id, challenge, state), 303);
-  } catch (error) { return errorResponse(error); }
+    return Response.redirect(await issueCode(user.id, challenge, requestState), 303);
+  } catch (error) {
+    if (action !== "authorize") return errorResponse(error);
+    const diagnosticID = randomBytes(4).toString("hex").toUpperCase();
+    const code = error instanceof ServiceError ? error.code : "service_unavailable";
+    const status = error instanceof ServiceError ? error.status : 503;
+    console.error("[ArcSweep auth] consent failed", { diagnosticID, code, status });
+    const response = new Response(renderAuthorizationFailurePage({
+      locale: authorizationLocale(request), diagnosticID, errorCode: code, state,
+    }), { status, headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-store",
+      "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'",
+      "Referrer-Policy": "no-referrer",
+      "X-Content-Type-Options": "nosniff",
+      "X-ArcSweep-Diagnostic-ID": diagnosticID,
+    } });
+    return response;
+  }
 }

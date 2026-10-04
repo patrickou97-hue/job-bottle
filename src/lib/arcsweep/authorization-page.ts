@@ -151,3 +151,70 @@ export function renderAuthorizationPage(input: AuthorizationPageInput): string {
 </body>
 </html>`;
 }
+
+type AuthorizationFailureInput = {
+  locale: AuthorizationLocale;
+  diagnosticID: string;
+  errorCode: string;
+  state?: string;
+};
+
+/** A safe, human-readable recovery page for failures after consent. */
+export function renderAuthorizationFailurePage(input: AuthorizationFailureInput): string {
+  const english = input.locale === "en";
+  const diagnosticID = /^[A-F0-9]{8}$/.test(input.diagnosticID) ? input.diagnosticID : "UNKNOWN";
+  let returnURL: string | null = null;
+  if (input.state && /^[A-Za-z0-9_-]{32,128}$/.test(input.state)) {
+    const callback = new URL("arcsweep://oauth/callback");
+    const callbackError = input.errorCode === "authentication_required"
+      ? "login_required"
+      : input.errorCode === "invalid_request" || input.errorCode === "forbidden"
+        ? "invalid_request"
+        : "temporarily_unavailable";
+    callback.searchParams.set("error", callbackError);
+    callback.searchParams.set("state", input.state);
+    returnURL = callback.toString();
+  }
+  const expired = input.errorCode === "authentication_required";
+  const invalid = input.errorCode === "invalid_request" || input.errorCode === "forbidden";
+  const copy = english ? {
+    title: expired ? "Sign in again to ArcSweep" : "ArcSweep connection could not be completed",
+    heading: expired ? "Your Arc account sign-in has expired." : invalid ? "This authorization request is no longer valid." : "We couldn’t finish connecting your Arc account.",
+    body: expired
+      ? "Return to ArcSweep, sign in to your Arc account, and connect again."
+      : invalid
+        ? "Return to ArcSweep and start a new connection request."
+        : "Your local scan and files were not changed. Return to ArcSweep and try connecting again.",
+    action: "Return to ArcSweep",
+    close: "You can close this page and return to ArcSweep.",
+    reference: "Support reference",
+  } : {
+    title: expired ? "请重新登录 Arc 账号" : "ArcSweep 连接未完成",
+    heading: expired ? "Arc 账号登录状态已失效。" : invalid ? "这次授权请求已失效。" : "暂时无法完成 Arc 账号连接。",
+    body: expired
+      ? "请返回 ArcSweep，重新登录 Arc 账号后再连接。"
+      : invalid
+        ? "请返回 ArcSweep，重新发起账号连接。"
+        : "本机扫描和文件未受影响。请返回 ArcSweep 后重试连接。",
+    action: "返回 ArcSweep",
+    close: "可以关闭此页并返回 ArcSweep。",
+    reference: "诊断编号",
+  };
+  const action = returnURL
+    ? `<a class="action" href="${escapeHTML(returnURL)}">${copy.action}</a>`
+    : `<p class="close">${copy.close}</p>`;
+
+  return `<!doctype html>
+<html lang="${english ? "en" : "zh-CN"}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>${copy.title}</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:#fbfafd;color:#201b27;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}.panel{width:min(100%,520px);padding:36px 0;border-top:2px solid #694c91;border-bottom:1px solid #e9e5ed}h1{margin:0;font-size:clamp(24px,5vw,34px);line-height:1.25;letter-spacing:-.035em}p{color:#6d6674;font-size:15px;line-height:1.7}.action{display:inline-flex;align-items:center;justify-content:center;min-height:46px;margin-top:12px;padding:0 18px;border-radius:8px;background:#694c91;color:#fff;font-size:14px;font-weight:650;text-decoration:none}.action:focus-visible{outline:3px solid #a989d4;outline-offset:3px}.reference{margin-top:28px;padding-top:14px;border-top:1px solid #e9e5ed;font-size:12px}.reference code{margin-left:8px;font-variant-numeric:tabular-nums;letter-spacing:.08em}
+  </style>
+</head>
+<body><main class="panel"><h1>${copy.heading}</h1><p>${copy.body}</p>${action}<p class="reference">${copy.reference}<code>${diagnosticID}</code></p></main></body>
+</html>`;
+}
