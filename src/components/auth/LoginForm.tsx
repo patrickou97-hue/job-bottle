@@ -18,7 +18,7 @@ import {
   toggleProfileOption,
 } from "@/lib/profile-options";
 import { cn } from "@/lib/utils";
-import { safeLocalReturnPath } from "@/lib/arcsweep/login-context";
+import { navigateAfterLogin } from "@/lib/arcsweep/login-context";
 
 const loginSchema = z.object({
   account: z.string().min(1, "请输入账号或邮箱。"),
@@ -66,6 +66,14 @@ export function LoginForm({ isArcSweepConnect = false }: { isArcSweepConnect?: b
       targetRoles: "",
     },
   });
+
+  function continueAfterLogin() {
+    navigateAfterLogin(searchParams.get("next"), isArcSweepConnect, {
+      assign: (path) => window.location.assign(path),
+      push: (path) => router.push(path),
+      refresh: () => router.refresh(),
+    });
+  }
 
   async function onSubmit(values: LoginFormValues) {
     setBusy(true);
@@ -128,8 +136,7 @@ export function LoginForm({ isArcSweepConnect = false }: { isArcSweepConnect?: b
           });
         }
         if (data.session) {
-          router.push(safeLocalReturnPath(searchParams.get("next")));
-          router.refresh();
+          continueAfterLogin();
           return;
         }
         setMode("login");
@@ -143,8 +150,7 @@ export function LoginForm({ isArcSweepConnect = false }: { isArcSweepConnect?: b
         });
         if (error) throw error;
         if (data.user && !isArcSweepConnect) await ensureProfile(supabase, data.user);
-        router.push(safeLocalReturnPath(searchParams.get("next")));
-        router.refresh();
+        continueAfterLogin();
       }
     } catch (error) {
       setMessage(translateAuthError(error instanceof Error ? error.message : undefined));
@@ -165,8 +171,7 @@ export function LoginForm({ isArcSweepConnect = false }: { isArcSweepConnect?: b
       });
       const payload = await response.json().catch(() => ({})) as { error?: string };
       if (!response.ok) throw new Error(payload.error || "微信登录未完成，请重新尝试。");
-      router.push(safeLocalReturnPath(searchParams.get("next")));
-      router.refresh();
+      continueAfterLogin();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "微信登录未完成，请重新尝试。");
     } finally {

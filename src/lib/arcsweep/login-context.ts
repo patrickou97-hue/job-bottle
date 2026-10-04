@@ -47,3 +47,29 @@ export function isArcSweepAuthorizationReturn(value: string | null): boolean {
     return false;
   }
 }
+
+type LoginReturnNavigation = {
+  assign: (path: string) => void;
+  push: (path: string) => void;
+  refresh: () => void;
+};
+
+/**
+ * ArcSweep must load its API authorization endpoint as a document. It renders
+ * the consent page and later redirects to the app's arcsweep:// callback;
+ * client-side App Router navigation can swallow that route-handler response.
+ */
+export function navigateAfterLogin(
+  next: string | null,
+  isArcSweepConnect: boolean,
+  navigation: LoginReturnNavigation,
+): void {
+  const path = safeLocalReturnPath(next);
+  if (isArcSweepConnect) {
+    navigation.assign(path);
+    return;
+  }
+
+  navigation.push(path);
+  navigation.refresh();
+}
