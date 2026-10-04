@@ -8,11 +8,13 @@ export function UserShell({
   children,
   variant = "work",
   navigation = "default",
+  showSiteFooter = true,
   contentClassName,
 }: {
   children: ReactNode;
   variant?: "scene" | "work";
   navigation?: "default" | "minimal";
+  showSiteFooter?: boolean;
   contentClassName?: string;
 }) {
   const content = (
@@ -25,7 +27,7 @@ export function UserShell({
       </a>
       {navigation === "default" ? <Navbar appearance={variant} /> : null}
       <RouteContentTransition className={contentClassName}>{children}</RouteContentTransition>
-      <SiteFooter />
+      {showSiteFooter ? <SiteFooter /> : null}
     </>
   );
 

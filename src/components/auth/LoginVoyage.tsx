@@ -12,7 +12,7 @@ function subscribeMotionPreference(onChange: () => void) {
   return () => query.removeEventListener("change", onChange);
 }
 
-export function LoginVoyage() {
+export function LoginVoyage({ isArcSweepConnect = false }: { isArcSweepConnect?: boolean }) {
   const reducedMotion = useSyncExternalStore(subscribeMotionPreference, () => motionPreference().matches, () => false);
   const [paused, setPaused] = useState(false);
   const moonRef = useRef<HTMLSpanElement>(null);
@@ -84,16 +84,16 @@ export function LoginVoyage() {
         x.set(((event.clientX - rect.left) / rect.width - .5) * 22);
         y.set(((event.clientY - rect.top) / rect.height - .5) * 18);
       }} onPointerLeave={reset}>
-      <div className="auth-gateway__caption"><span>拾星 · 航行日志</span><button className="voyage-pause" type="button" disabled={Boolean(reducedMotion)} aria-label={paused ? "继续星体运动" : "暂停星体运动"} aria-pressed={paused} onClick={() => { setPaused(!paused); reset(); }}>{paused || reducedMotion ? <Play size={15} /> : <Pause size={15} />}</button></div>
+      <div className="auth-gateway__caption"><span>{isArcSweepConnect ? "ArcSweep · Arc 账号" : "拾星 · 航行日志"}</span><button className="voyage-pause" type="button" disabled={Boolean(reducedMotion)} aria-label={reducedMotion ? "系统已减少动态效果" : paused ? "继续星体运动" : "暂停星体运动"} aria-pressed={Boolean(reducedMotion) || paused} onClick={() => { setPaused(!paused); reset(); }}>{paused && !reducedMotion ? <Play size={15} aria-hidden="true" /> : <Pause size={15} aria-hidden="true" />}</button></div>
       <motion.div className="voyage-space" style={{ x, y }} aria-hidden="true">
         <div className="voyage-float">
           <svg viewBox="0 0 600 600" className="voyage-rings" fill="none"><g transform="rotate(-28 300 300)"><path d="M35 300a265 113 0 0 1 530 0" stroke="#748e9a" strokeOpacity=".25"/><path d="M82 300a218 82 0 0 1 436 0" stroke="#b6a077" strokeOpacity=".6"/></g></svg>
-          <div className="voyage-world ink-orb ink-orb--jade" />
+          <div className={`voyage-world ink-orb ${isArcSweepConnect ? "ink-orb--indigo" : "ink-orb--jade"}`} />
           <svg viewBox="0 0 600 600" className="voyage-rings voyage-rings--front" fill="none"><g transform="rotate(-28 300 300)"><path d="M565 300a265 113 0 0 1 -530 0" stroke="#748e9a" strokeOpacity=".25"/><path d="M518 300a218 82 0 0 1 -436 0" stroke="#b6a077" strokeOpacity=".6"/></g></svg>
           <span ref={moonRef} className="voyage-moon ink-orb ink-orb--silver" />
         </div>
       </motion.div>
-      <div className="auth-gateway__story"><h2 id="auth-scene-title">下一站，<br/>是你的可能。</h2><p>从发现岗位，到记录每一步进展。<br/>把求职的方向，留在自己手里。</p></div>
+      <div className="auth-gateway__story"><h2 id="auth-scene-title">{isArcSweepConnect ? <>安心清理，<br/>从看懂空间开始。</> : <>下一站，<br/>是你的可能。</>}</h2><p>{isArcSweepConnect ? <>扫描与分类在本机完成。<br/>云端 AI 只辅助复核，由你决定是否连接。</> : <>从发现岗位，到记录每一步进展。<br/>把求职的方向，留在自己手里。</>}</p></div>
     </aside>
   );
 }

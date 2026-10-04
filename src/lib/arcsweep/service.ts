@@ -60,6 +60,12 @@ export function authorizationParams(params: URLSearchParams) {
 }
 export async function issueCode(userID: string, challenge: string, state: string) {
   const db = database(); const code = token();
+  // Joining the Arc product namespace happens only after explicit consent.
+  // The shared Auth identity is not a grant to read StarJob profile data.
+  checked(await db.from("arc_accounts").upsert({
+    user_id: userID,
+    last_authorized_at: new Date().toISOString(),
+  }, { onConflict: "user_id" }));
   // Limit outstanding codes; expired entries are never exchangeable.
   checked(await db.from("arcsweep_auth_codes").delete().eq("user_id", userID));
   checked(await db.from("arcsweep_auth_codes").insert({ code_hash: hash(code), user_id: userID, challenge, expires_at: new Date(Date.now() + 120000).toISOString() }));

@@ -18,7 +18,7 @@ import {
   toggleProfileOption,
 } from "@/lib/profile-options";
 import { cn } from "@/lib/utils";
-import { isArcSweepAuthorizationReturn } from "@/lib/arcsweep/login-context";
+import { safeLocalReturnPath } from "@/lib/arcsweep/login-context";
 
 const loginSchema = z.object({
   account: z.string().min(1, "请输入账号或邮箱。"),
@@ -34,11 +34,9 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-export function LoginForm() {
+export function LoginForm({ isArcSweepConnect = false }: { isArcSweepConnect?: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const isArcSweepConnect = searchParams.get("reason") === "arcsweep-connect"
-    && isArcSweepAuthorizationReturn(searchParams.get("next"));
   const [mode, setMode] = useState<"login" | "register">(
     searchParams.get("mode") === "register" ? "register" : "login",
   );
@@ -51,6 +49,7 @@ export function LoginForm() {
     register,
     handleSubmit,
     setValue,
+    clearErrors,
     control,
     formState: { errors },
   } = useForm<LoginFormValues>({
@@ -86,8 +85,8 @@ export function LoginForm() {
           return;
         }
         const registrationEmail = emailResult.data;
-        const preferredRegions = splitProfileInput(values.preferredRegions);
-        const targetRoles = splitProfileInput(values.targetRoles);
+        const preferredRegions = isArcSweepConnect ? [] : splitProfileInput(values.preferredRegions);
+        const targetRoles = isArcSweepConnect ? [] : splitProfileInput(values.targetRoles);
         const displayName = values.displayName?.trim();
         const city = values.city?.trim() ?? "";
         const school = values.school?.trim() ?? "";
@@ -97,19 +96,27 @@ export function LoginForm() {
           email: registrationEmail,
           password: values.password,
           options: {
-            data: {
-              display_name: displayName || registrationEmail.split("@")[0],
-              city,
-              school,
-              major,
-              graduation_year: graduationYear,
-              preferred_regions: preferredRegions,
-              target_roles: targetRoles,
-            },
+            data: isArcSweepConnect
+              ? {
+                  display_name: displayName || registrationEmail.split("@")[0],
+                  // User-editable routing metadata only. The database trigger
+                  // uses it to avoid creating a StarJob job-seeker profile;
+                  // it must never be used for authorization decisions.
+                  account_surface: "arc",
+                }
+              : {
+                  display_name: displayName || registrationEmail.split("@")[0],
+                  city,
+                  school,
+                  major,
+                  graduation_year: graduationYear,
+                  preferred_regions: preferredRegions,
+                  target_roles: targetRoles,
+                },
           },
         });
         if (error) throw error;
-        if (data.user && data.session) {
+        if (data.user && data.session && !isArcSweepConnect) {
           await ensureProfile(supabase, data.user, {
             city,
             displayName,
@@ -121,20 +128,22 @@ export function LoginForm() {
           });
         }
         if (data.session) {
-          router.push(getSafeNextPath(searchParams.get("next")));
+          router.push(safeLocalReturnPath(searchParams.get("next")));
           router.refresh();
           return;
         }
         setMode("login");
-        setMessage("注册成功。请到注册邮箱完成验证，再登录并继续刚才的操作。");
+        setMessage(isArcSweepConnect
+          ? "Arc 账号已创建。请到注册邮箱完成验证，再登录并继续连接。"
+          : "注册成功。请到注册邮箱完成验证，再登录并继续刚才的操作。");
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
           email: normalizeLoginAccount(values.account),
           password: values.password,
         });
         if (error) throw error;
-        if (data.user) await ensureProfile(supabase, data.user);
-        router.push(getSafeNextPath(searchParams.get("next")));
+        if (data.user && !isArcSweepConnect) await ensureProfile(supabase, data.user);
+        router.push(safeLocalReturnPath(searchParams.get("next")));
         router.refresh();
       }
     } catch (error) {
@@ -156,7 +165,7 @@ export function LoginForm() {
       });
       const payload = await response.json().catch(() => ({})) as { error?: string };
       if (!response.ok) throw new Error(payload.error || "微信登录未完成，请重新尝试。");
-      router.push(getSafeNextPath(searchParams.get("next")));
+      router.push(safeLocalReturnPath(searchParams.get("next")));
       router.refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "微信登录未完成，请重新尝试。");
@@ -170,18 +179,25 @@ export function LoginForm() {
   const selectedRoles = splitProfileInput(useWatch({ control, name: "targetRoles" }));
 
   return (
-    <div className="login-form mx-auto w-full max-w-md py-4 sm:py-8 lg:py-10">
+    <div className={`login-form mx-auto w-full max-w-md py-4 sm:py-8 lg:py-10${isArcSweepConnect ? " login-form--arcsweep-connect" : ""}`}>
       {isArcSweepConnect ? (
-        <aside className="login-form__product-return" aria-label="ArcSweep 授权登录说明">
-          <Image src="/brand/arcsweep-icon-mark.png" width={32} height={32} alt="" />
-          <div>
-            <strong>继续连接 ArcSweep</strong>
-            <span>登录后返回授权确认页；是否连接由你决定。此时不会扫描或上传文件。</span>
-          </div>
-        </aside>
+        <>
+          <aside className="login-form__product-return" aria-label="ArcSweep 授权登录说明">
+            <Image src="/brand/arcsweep-icon-mark.png" width={32} height={32} alt="" />
+            <div>
+              <strong>继续连接 ArcSweep</strong>
+              <span>登录后返回授权确认页；是否连接由你决定。此时不会扫描或上传文件。本地扫描和安全清理无需登录。</span>
+            </div>
+          </aside>
+          <ol className="login-form__connection-steps" aria-label="ArcSweep 连接步骤">
+            <li aria-current="step"><span>01</span><strong>{isRegister ? "创建 Arc 账号" : "登录 Arc 账号"}</strong></li>
+            <li><span>02</span><span>确认授权</span></li>
+            <li><span>03</span><span>返回 ArcSweep</span></li>
+          </ol>
+        </>
       ) : null}
       <h1 className="login-form__title text-3xl font-semibold tracking-[-0.02em] text-ink-primary">
-        {isRegister ? "创建拾星账号" : "登录拾星"}
+        {isArcSweepConnect ? (isRegister ? "创建 Arc 账号" : "登录 Arc 账号") : (isRegister ? "创建拾星账号" : "登录拾星")}
       </h1>
       <p className="login-form__subtitle mt-3 text-center text-sm leading-6 text-ink-secondary">
         {searchParams.get("reason") === "resume-download"
@@ -193,13 +209,13 @@ export function LoginForm() {
           : "继续整理你的岗位、简历与投递进展。"}
       </p>
 
-      {!isRegister ? (
+      {!isRegister && !isArcSweepConnect ? (
         <div className="login-form__method-switch">
           <SegmentedControl ariaLabel="登录方式" value={loginMethod} options={[{value: "email", label: "邮箱登录"}, {value: "wechat", label: "微信登录"}]} onChange={(value) => { setLoginMethod(value); setMessage(""); }} />
         </div>
       ) : null}
 
-      {!isRegister && loginMethod === "wechat" ? (
+      {!isRegister && !isArcSweepConnect && loginMethod === "wechat" ? (
         <form className="mt-6 space-y-5" onSubmit={onWechatCodeSubmit}>
           <div className="info-banner text-sm leading-6">
             打开拾星小程序，在“我的”中生成 8 位网页登录码。登录码 5 分钟内有效，使用一次后立即失效。
@@ -211,6 +227,7 @@ export function LoginForm() {
               onChange={(event) => setWechatCode(event.target.value.replace(/\D/g, "").slice(0, 8))}
               inputMode="numeric"
               autoComplete="one-time-code"
+              name="wechatCode"
               placeholder="请输入 8 位数字"
               className="text-center font-mono text-lg tracking-[0.24em]"
             />
@@ -225,55 +242,67 @@ export function LoginForm() {
         {isRegister ? (
           <label className="block">
             <span className="mb-2 block text-sm text-ink-secondary">用户名</span>
-            <Input type="text" autoComplete="nickname" {...register("displayName")} />
+            <Input
+              type="text"
+              autoComplete="nickname"
+              aria-invalid={Boolean(errors.displayName)}
+              aria-describedby={errors.displayName ? "auth-display-name-error" : undefined}
+              {...register("displayName")}
+            />
             {errors.displayName ? (
-              <span className="mt-2 block text-xs text-[color:var(--text-danger)]">{errors.displayName.message}</span>
+              <span id="auth-display-name-error" className="mt-2 block text-xs text-[color:var(--text-danger)]">{errors.displayName.message}</span>
             ) : null}
           </label>
         ) : null}
 
         <label className="block">
           <span className="mb-2 block text-sm text-ink-secondary">{isRegister ? "邮箱" : "账号或邮箱"}</span>
-          <Input type={isRegister ? "email" : "text"} autoComplete={isRegister ? "email" : "username"} {...register("account")} />
+          <Input
+            type={isRegister ? "email" : "text"}
+            autoComplete={isRegister ? "email" : "username"}
+            aria-invalid={Boolean(errors.account)}
+            aria-describedby={errors.account ? "auth-account-error" : undefined}
+            {...register("account")}
+          />
           {errors.account ? (
-            <span className="mt-2 block text-xs text-[color:var(--text-danger)]">{errors.account.message}</span>
+            <span id="auth-account-error" className="mt-2 block text-xs text-[color:var(--text-danger)]">{errors.account.message}</span>
           ) : null}
         </label>
 
-        {isRegister ? (
+        {isRegister && !isArcSweepConnect ? (
           <details className="auth-profile-details">
             <summary>补充求职资料 <span>选填，也可以稍后完善</span></summary>
             <div className="grid gap-5 sm:grid-cols-2 pt-5">
             <label className="block">
               <span className="mb-2 block text-sm text-ink-secondary">所在城市</span>
-              <Input type="text" {...register("city")} />
+              <Input type="text" autoComplete="address-level2" aria-invalid={Boolean(errors.city)} aria-describedby={errors.city ? "auth-city-error" : undefined} {...register("city")} />
               {errors.city ? (
-                <span className="mt-2 block text-xs text-[color:var(--text-danger)]">{errors.city.message}</span>
+                <span id="auth-city-error" className="mt-2 block text-xs text-[color:var(--text-danger)]">{errors.city.message}</span>
               ) : null}
             </label>
             <label className="block">
               <span className="mb-2 block text-sm text-ink-secondary">毕业年份</span>
-              <Input type="text" placeholder="2027" {...register("graduationYear")} />
+              <Input type="text" inputMode="numeric" autoComplete="off" placeholder="2027" aria-invalid={Boolean(errors.graduationYear)} aria-describedby={errors.graduationYear ? "auth-graduation-year-error" : undefined} {...register("graduationYear")} />
               {errors.graduationYear ? (
-                <span className="mt-2 block text-xs text-[color:var(--text-danger)]">{errors.graduationYear.message}</span>
+                <span id="auth-graduation-year-error" className="mt-2 block text-xs text-[color:var(--text-danger)]">{errors.graduationYear.message}</span>
               ) : null}
             </label>
             <label className="block">
               <span className="mb-2 block text-sm text-ink-secondary">学校</span>
-              <Input type="text" {...register("school")} />
+              <Input type="text" autoComplete="organization" aria-invalid={Boolean(errors.school)} aria-describedby={errors.school ? "auth-school-error" : undefined} {...register("school")} />
               {errors.school ? (
-                <span className="mt-2 block text-xs text-[color:var(--text-danger)]">{errors.school.message}</span>
+                <span id="auth-school-error" className="mt-2 block text-xs text-[color:var(--text-danger)]">{errors.school.message}</span>
               ) : null}
             </label>
             <label className="block">
               <span className="mb-2 block text-sm text-ink-secondary">专业</span>
-              <Input type="text" {...register("major")} />
+              <Input type="text" autoComplete="off" aria-invalid={Boolean(errors.major)} aria-describedby={errors.major ? "auth-major-error" : undefined} {...register("major")} />
               {errors.major ? (
-                <span className="mt-2 block text-xs text-[color:var(--text-danger)]">{errors.major.message}</span>
+                <span id="auth-major-error" className="mt-2 block text-xs text-[color:var(--text-danger)]">{errors.major.message}</span>
               ) : null}
             </label>
-            <label className="block">
-              <span className="mb-2 block text-sm text-ink-secondary">意向地区</span>
+            <fieldset className="min-w-0" aria-describedby={errors.preferredRegions ? "auth-regions-error" : undefined}>
+              <legend className="mb-2 block text-sm text-ink-secondary">意向地区</legend>
               <input type="hidden" {...register("preferredRegions")} />
               <LoginOptionGrid
                 options={PROFILE_REGION_OPTIONS}
@@ -286,11 +315,11 @@ export function LoginForm() {
                 }
               />
               {errors.preferredRegions ? (
-                <span className="mt-2 block text-xs text-[color:var(--text-danger)]">{errors.preferredRegions.message}</span>
+                <span id="auth-regions-error" className="mt-2 block text-xs text-[color:var(--text-danger)]">{errors.preferredRegions.message}</span>
               ) : null}
-            </label>
-            <label className="block">
-              <span className="mb-2 block text-sm text-ink-secondary">意向岗位</span>
+            </fieldset>
+            <fieldset className="min-w-0" aria-describedby={errors.targetRoles ? "auth-roles-error" : undefined}>
+              <legend className="mb-2 block text-sm text-ink-secondary">意向岗位</legend>
               <input type="hidden" {...register("targetRoles")} />
               <LoginOptionGrid
                 options={PROFILE_ROLE_OPTIONS}
@@ -303,9 +332,9 @@ export function LoginForm() {
                 }
               />
               {errors.targetRoles ? (
-                <span className="mt-2 block text-xs text-[color:var(--text-danger)]">{errors.targetRoles.message}</span>
+                <span id="auth-roles-error" className="mt-2 block text-xs text-[color:var(--text-danger)]">{errors.targetRoles.message}</span>
               ) : null}
-            </label>
+            </fieldset>
             </div>
           </details>
         ) : null}
@@ -348,6 +377,7 @@ export function LoginForm() {
           setMode(isRegister ? "login" : "register");
           setLoginMethod("email");
           setMessage("");
+          clearErrors();
         }}
       >
         {isRegister ? "已有账号？去登录" : "还没有账号？去注册"}
@@ -366,10 +396,6 @@ function splitProfileInput(value?: string) {
         .slice(0, 12),
     ),
   );
-}
-
-function getSafeNextPath(value: string | null) {
-  return value?.startsWith("/") && !value.startsWith("//") ? value : "/";
 }
 
 function normalizeLoginAccount(value: string) {

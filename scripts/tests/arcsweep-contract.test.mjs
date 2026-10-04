@@ -46,6 +46,20 @@ test("ArcSweep service migration keeps database access server-only", () => {
   assert.match(migration, /arcsweep_auth_codes_user_created_idx/);
   assert.match(migration, /arcsweep_sessions_user_id_idx/);
 });
+test("Arc account membership shares Auth identity but stays isolated behind service role", () => {
+  const migration = readFileSync(fileURLToPath(new URL("../../supabase/migrations/20261004033312_arc_accounts.sql", import.meta.url)), "utf8");
+  assert.match(migration, /create table public\.arc_accounts/);
+  assert.match(migration, /references auth\.users\(id\) on delete cascade/);
+  assert.match(migration, /alter table public\.arc_accounts enable row level security/);
+  assert.match(migration, /revoke all on public\.arc_accounts from public, anon, authenticated/);
+  assert.match(migration, /grant all on public\.arc_accounts to service_role/);
+  const service = readFileSync(fileURLToPath(new URL("../../src/lib/arcsweep/service.ts", import.meta.url)), "utf8");
+  assert.match(service, /from\("arc_accounts"\)\.upsert/);
+  assert.match(service, /Joining the Arc product namespace happens only after explicit consent/);
+  const profileMigration = readFileSync(fileURLToPath(new URL("../../supabase/migrations/20261004033715_arc_signup_profile_isolation.sql", import.meta.url)), "utf8");
+  assert.match(profileMigration, /raw_user_meta_data->>'account_surface' = 'arc'/);
+  assert.match(profileMigration, /return new;/);
+});
 test("MiMo API credentials can only be sent to the fixed provider endpoint", () => {
   assert.equal(resolveMimoEndpoint("https://token-plan-cn.xiaomimimo.com/v1")?.href,
     "https://token-plan-cn.xiaomimimo.com/v1/chat/completions");

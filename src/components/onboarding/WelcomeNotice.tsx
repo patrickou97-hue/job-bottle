@@ -11,6 +11,7 @@ import { MotionDialog } from "@/components/ui/MotionDialog";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { formatShanghaiDate } from "@/lib/dates";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { isArcSweepAuthorizationReturn } from "@/lib/arcsweep/login-context";
 
 const GUEST_NOTICE_KEY = "shi-xing:guest-welcome-seen:2026-07-13";
 const USER_NOTICE_KEY_PREFIX = "shi-xing:user-welcome-seen:2026-07-13:";
@@ -69,6 +70,13 @@ export function WelcomeNotice() {
   }, [announcement, notice, userId]);
 
   useEffect(() => {
+    const location = new URL(window.location.href);
+    if (
+      location.pathname === "/login"
+      && location.searchParams.get("reason") === "arcsweep-connect"
+      && isArcSweepAuthorizationReturn(location.searchParams.get("next"))
+    ) return;
+
     let mounted = true;
 
     async function resolveUserNotice(user: User) {

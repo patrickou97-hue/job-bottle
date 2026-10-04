@@ -1,0 +1,3 @@
+# Local preset-account fixtures must never enter a deployment upload.
+/preset-accounts-20260914.txt
+/preset-accounts-20260914-with-ids.txt
