@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { authenticate, authorizationParams, errorResponse, exchangeOrRefresh, issueCode, jsonResponse, type AuthorizationExchangeStage, type AuthorizationWriteStage } from "@/lib/arcsweep/service";
 import { ServiceError } from "@/lib/arcsweep/contract";
 import { renderAuthorizationFailurePage, renderAuthorizationPage } from "@/lib/arcsweep/authorization-page";
-import { checkSameOriginRequest } from "@/lib/arcsweep/same-origin";
+import { checkSameOriginRequest, sameOriginRequestDiagnostics } from "@/lib/arcsweep/same-origin";
 import { randomBytes } from "node:crypto";
 export const runtime = "nodejs";
 type Context = { params: Promise<{ action: string }> };
@@ -52,6 +52,7 @@ export async function POST(request: Request, context: Context) {
   let exchangeStage: AuthorizationExchangeStage = "read_grant_request";
   let failureStage: "route_dispatch" | "same_origin_check" | "parse_consent" | "read_arc_session" | AuthorizationWriteStage = "route_dispatch";
   let originCheckReason: string | undefined;
+  let originDiagnostics: ReturnType<typeof sameOriginRequestDiagnostics> | undefined;
   try {
     action = (await context.params).action;
     if (action === "exchange" || action === "refresh") {
@@ -66,6 +67,7 @@ export async function POST(request: Request, context: Context) {
     failureStage = "same_origin_check";
     const originCheck = checkSameOriginRequest(request);
     originCheckReason = originCheck.reason;
+    originDiagnostics = sameOriginRequestDiagnostics(request);
     if (!originCheck.allowed || Number(request.headers.get("content-length") ?? 0) > 8192) throw new ServiceError(403, "forbidden");
     const { boundedText } = await import("@/lib/arcsweep/contract");
     failureStage = "parse_consent";
@@ -96,7 +98,9 @@ export async function POST(request: Request, context: Context) {
       stage: failureStage,
       code,
       status,
-      ...(failureStage === "same_origin_check" && originCheckReason ? { originCheck: originCheckReason } : {}),
+      ...(failureStage === "same_origin_check" && originCheckReason
+        ? { originCheck: originCheckReason, ...(originDiagnostics ?? {}) }
+        : {}),
     });
     const response = new Response(renderAuthorizationFailurePage({
       locale: authorizationLocale(request), diagnosticID, errorCode: code, state,

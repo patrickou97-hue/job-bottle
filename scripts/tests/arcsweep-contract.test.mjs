@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { adviceRequestSchema, validateAdvice, boundedText } from "../../src/lib/arcsweep/contract.ts";
 import { resolveMimoEndpoint } from "../../src/lib/arcsweep/mimo-endpoint.ts";
-import { checkSameOriginRequest, isSameOriginRequest } from "../../src/lib/arcsweep/same-origin.ts";
+import { checkSameOriginRequest, isSameOriginRequest, sameOriginRequestDiagnostics } from "../../src/lib/arcsweep/same-origin.ts";
 const id = "aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa";
 const request = () => ({ schema_version: 1, request_id: "req_" + "a".repeat(32), run_id: "synthetic-run", rules_version: "1", scope: { kind: "group_review", mode: "local_plus_uncertain", group_count: 1 }, groups: [{ group_id: id, display_name: "Example cache", category: "app_cache", bundle_id: "com.example.test", root_path_summary: "…/Caches", file_count: 3, total_bytes: 1024, local_rule_id: "verified-cache", local_risk: "Low", ownership_evidence: [] }] });
 const advice = () => ({ advice: [{ group_id: id, decision: "KEEP", confidence: 0.8, explanation: "归属不明确，建议保留。", reason_codes: ["uncertain_owner"], concerns: [], appears_regeneratable: null }] });
@@ -62,7 +62,8 @@ test("Arc account membership shares Auth identity but stays isolated behind serv
 });
 test("Arc account consent and code exchange failures expose only safe diagnostic stages", () => {
   const route = readFileSync(fileURLToPath(new URL("../../src/app/api/mac-cleaner/v1/auth/[action]/route.ts", import.meta.url)), "utf8");
-  assert.match(route, /originCheckReason \? \{ originCheck: originCheckReason \} : \{\}/);
+  assert.match(route, /originCheck: originCheckReason/);
+  assert.match(route, /sameOriginRequestDiagnostics\(request\)/);
   assert.match(route, /exchange failed", \{ diagnosticID, stage, code, status: response\.status \}/);
   assert.match(route, /action === "exchange" \|\| action === "refresh"/);
   assert.match(route, /X-ArcSweep-Diagnostic-ID/);
@@ -118,6 +119,13 @@ test("authorization forms accept the displayed same-origin host alias and reject
       "x-forwarded-proto": "https",
     },
   })), { allowed: true, reason: "same_origin" });
+  assert.deepEqual(checkSameOriginRequest(new Request("http://job-bottle-preview.vercel.app/authorize", {
+    headers: {
+      host: "www.starjob.space",
+      origin: "https://www.starjob.space:443/",
+      "x-forwarded-proto": "https",
+    },
+  })), { allowed: true, reason: "same_origin" });
   assert.deepEqual(checkSameOriginRequest(new Request("https://www.starjob.space/authorize", {
     headers: {
       host: "www.starjob.space",
@@ -156,4 +164,20 @@ test("authorization forms accept the displayed same-origin host alias and reject
   assert.equal(isSameOriginRequest(new Request("https://www.starjob.space/authorize", {
     headers: { host: "www.starjob.space" },
   })), false);
+});
+test("same-origin failure diagnostics classify headers without exposing their values", () => {
+  const diagnostics = sameOriginRequestDiagnostics(new Request("http://job-bottle-preview.vercel.app/authorize", {
+    headers: {
+      host: "www.starjob.space",
+      origin: "https://www.starjob.space/private?token=never-log-this",
+      "x-forwarded-proto": "https",
+    },
+  }));
+  assert.deepEqual(diagnostics, {
+    originForm: "other_origin",
+    requestURLProtocol: "http",
+    forwardedProtocol: "https",
+    requestHost: "trusted_production",
+  });
+  assert.equal(JSON.stringify(diagnostics).includes("never-log-this"), false);
 });
