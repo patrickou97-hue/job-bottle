@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { renderAuthorizationPage } from "../../src/lib/arcsweep/authorization-page.ts";
+import { renderAuthorizationPage, renderAuthorizationSuccessPage } from "../../src/lib/arcsweep/authorization-page.ts";
 
 const params = {
   client_id: "arcsweep-macos",
@@ -45,4 +45,23 @@ test("English authorization page is localized and account values are HTML escape
   assert.match(html, /class="skip-link" href="#main-content">Skip to main content/);
   assert.doesNotMatch(html, /<img src=x onerror=/i);
   assert.match(html, /&lt;img src=x onerror=&quot;alert\(1\)&quot;&gt;/);
+});
+
+test("authorization success waits for an explicit Safari app-open link and keeps callback data scoped", () => {
+  const callbackURL = `arcsweep://oauth/callback?code=${"c".repeat(43)}&state=${"s".repeat(43)}`;
+  const html = renderAuthorizationSuccessPage({ locale: "zh-CN", callbackURL });
+  assert.match(html, /lang="zh-CN"/);
+  assert.match(html, /授权已确认/);
+  assert.match(html, /如果 Safari 询问是否打开应用，请允许/);
+  assert.match(html, /href="arcsweep:\/\/oauth\/callback\?code=c{43}&amp;state=s{43}"/);
+  assert.match(html, /rel="noreferrer"/);
+  assert.match(html, /name="referrer" content="no-referrer"/);
+  assert.doesNotMatch(html, /<script\b/i);
+
+  for (const invalid of [
+    "https://attacker.example/callback?code=" + "c".repeat(43) + "&state=" + "s".repeat(43),
+    "arcsweep://attacker/callback?code=" + "c".repeat(43) + "&state=" + "s".repeat(43),
+    "arcsweep://oauth/callback?code=short&state=" + "s".repeat(43),
+    "arcsweep://oauth/callback?code=" + "c".repeat(43) + "&state=" + "s".repeat(43) + "&next=https://attacker.example",
+  ]) assert.throws(() => renderAuthorizationSuccessPage({ locale: "en", callbackURL: invalid }));
 });

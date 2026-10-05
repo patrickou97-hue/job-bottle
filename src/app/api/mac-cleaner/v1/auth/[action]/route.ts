@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { authenticate, authorizationParams, errorResponse, exchangeOrRefresh, issueCode, jsonResponse, type AuthorizationExchangeStage, type AuthorizationWriteStage } from "@/lib/arcsweep/service";
 import { ServiceError } from "@/lib/arcsweep/contract";
-import { renderAuthorizationFailurePage, renderAuthorizationPage } from "@/lib/arcsweep/authorization-page";
+import { renderAuthorizationFailurePage, renderAuthorizationPage, renderAuthorizationSuccessPage } from "@/lib/arcsweep/authorization-page";
 import { checkSameOriginRequest, sameOriginRequestDiagnostics } from "@/lib/arcsweep/same-origin";
 import { randomBytes } from "node:crypto";
 export const runtime = "nodejs";
@@ -86,7 +86,17 @@ export async function POST(request: Request, context: Context) {
     failureStage = "read_arc_session";
     const supabase = await createClient(); const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user) throw new ServiceError(401, "authentication_required");
-    return Response.redirect(await issueCode(user.id, challenge, requestState, stage => { failureStage = stage; }), 303);
+    const callbackURL = await issueCode(user.id, challenge, requestState, stage => { failureStage = stage; });
+    return new Response(renderAuthorizationSuccessPage({
+      locale: authorizationLocale(request),
+      callbackURL,
+    }), { headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-store",
+      "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'",
+      "Referrer-Policy": "no-referrer",
+      "X-Content-Type-Options": "nosniff",
+    } });
   } catch (error) {
     if (action === "exchange" || action === "refresh") return exchangeFailureResponse(error, exchangeStage);
     if (action !== "authorize") return errorResponse(error);

@@ -152,6 +152,65 @@ export function renderAuthorizationPage(input: AuthorizationPageInput): string {
 </html>`;
 }
 
+type AuthorizationSuccessInput = {
+  locale: AuthorizationLocale;
+  callbackURL: string;
+};
+
+/**
+ * Safari does not consistently open a custom URL scheme from an HTTP redirect
+ * after a form POST. Keep the short-lived PKCE callback on this same-origin
+ * page until the user clicks the explicit return link.
+ */
+export function renderAuthorizationSuccessPage(input: AuthorizationSuccessInput): string {
+  let callback: URL;
+  try {
+    callback = new URL(input.callbackURL);
+  } catch {
+    throw new Error("invalid ArcSweep callback URL");
+  }
+  if (callback.protocol !== "arcsweep:"
+    || callback.hostname !== "oauth"
+    || callback.pathname !== "/callback"
+    || callback.searchParams.getAll("code").length !== 1
+    || callback.searchParams.getAll("state").length !== 1
+    || !/^[A-Za-z0-9_-]{43}$/.test(callback.searchParams.get("code") ?? "")
+    || !/^[A-Za-z0-9_-]{32,128}$/.test(callback.searchParams.get("state") ?? "")
+    || [...callback.searchParams.keys()].some(name => name !== "code" && name !== "state")) {
+    throw new Error("invalid ArcSweep callback URL");
+  }
+
+  const english = input.locale === "en";
+  const copy = english ? {
+    language: "en",
+    title: "ArcSweep account connected",
+    heading: "Authorization approved.",
+    body: "Return to ArcSweep to finish connecting your account. If Safari asks to open the app, allow it.",
+    action: "Open ArcSweep",
+  } : {
+    language: "zh-CN",
+    title: "ArcSweep 账号授权成功",
+    heading: "授权已确认。",
+    body: "返回 ArcSweep 完成账号连接。如果 Safari 询问是否打开应用，请允许。",
+    action: "打开 ArcSweep",
+  };
+
+  return `<!doctype html>
+<html lang="${copy.language}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <title>${copy.title}</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:#fbfafd;color:#201b27;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}.panel{width:min(100%,520px);padding:36px 0;border-top:2px solid #694c91;border-bottom:1px solid #e9e5ed}h1{margin:0;font-size:clamp(24px,5vw,34px);line-height:1.25;letter-spacing:-.035em}p{color:#6d6674;font-size:15px;line-height:1.7}.action{display:inline-flex;align-items:center;justify-content:center;min-height:46px;margin-top:12px;padding:0 18px;border-radius:8px;background:#694c91;color:#fff;font-size:14px;font-weight:650;text-decoration:none}.action:focus-visible{outline:3px solid #a989d4;outline-offset:3px}
+  </style>
+</head>
+<body><main class="panel"><h1>${copy.heading}</h1><p>${copy.body}</p><a class="action" rel="noreferrer" href="${escapeHTML(callback.toString())}">${copy.action}</a></main></body>
+</html>`;
+}
+
 type AuthorizationFailureInput = {
   locale: AuthorizationLocale;
   diagnosticID: string;
