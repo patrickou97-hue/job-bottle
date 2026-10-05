@@ -31,7 +31,12 @@ export function checkSameOriginRequest(request: Request): SameOriginCheck {
   try {
     const originURL = new URL(origin);
     const hostURL = new URL(hostOrigin);
-    if (originURL.origin !== origin) return { allowed: false, reason: "invalid_origin" };
+    // Some browser/proxy combinations serialize Origin with a trailing slash
+    // or an explicit default port. Compare its parsed origin below, while
+    // refusing URL components that are never part of a valid Origin value.
+    if (originURL.username || originURL.password || originURL.pathname !== "/" || originURL.search || originURL.hash) {
+      return { allowed: false, reason: "invalid_origin" };
+    }
 
     // Keep localhost/127.0.0.1 aliases useful in development, but do not let a
     // spoofed Host header make an arbitrary Origin look same-origin.

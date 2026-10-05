@@ -97,6 +97,12 @@ test("authorization forms accept the displayed same-origin host alias and reject
     headers: { host: "www.starjob.space", origin: "https://www.starjob.space" },
   })), true);
   assert.equal(isSameOriginRequest(new Request("https://www.starjob.space/authorize", {
+    headers: { host: "www.starjob.space", origin: "https://www.starjob.space/" },
+  })), true);
+  assert.equal(isSameOriginRequest(new Request("https://www.starjob.space/authorize", {
+    headers: { host: "www.starjob.space", origin: "https://www.starjob.space:443/" },
+  })), true);
+  assert.equal(isSameOriginRequest(new Request("https://www.starjob.space/authorize", {
     headers: { host: "www.starjob.space", origin: "https://starjob.space" },
   })), true);
   assert.equal(isSameOriginRequest(new Request("https://starjob.space/authorize", {
@@ -110,6 +116,9 @@ test("authorization forms accept the displayed same-origin host alias and reject
   })), false);
   assert.equal(isSameOriginRequest(new Request("https://www.starjob.space/authorize", {
     headers: { host: "www.starjob.space", origin: "https://evil.starjob.space" },
+  })), false);
+  assert.equal(isSameOriginRequest(new Request("https://www.starjob.space/authorize", {
+    headers: { host: "www.starjob.space", origin: "https://www.starjob.space/untrusted-path" },
   })), false);
   assert.equal(isSameOriginRequest(new Request("https://www.starjob.space/authorize", {
     headers: { host: "attacker.example", origin: "https://attacker.example" },
