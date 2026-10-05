@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { adviceRequestSchema, validateAdvice, boundedText } from "../../src/lib/arcsweep/contract.ts";
+import { adviceRequestHeaderChecks, adviceRequestSchema, summarizeAdviceValidationIssues, validateAdvice, boundedText } from "../../src/lib/arcsweep/contract.ts";
 import { resolveMimoEndpoint } from "../../src/lib/arcsweep/mimo-endpoint.ts";
 import { checkSameOriginRequest, isSameOriginRequest, sameOriginRequestDiagnostics } from "../../src/lib/arcsweep/same-origin.ts";
 const id = "aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa";
@@ -20,6 +20,21 @@ test("group count, identifiers and enums are checked before provider work", () =
   const input = request(); input.groups.push(input.groups[0]); input.scope.group_count = 2;
   assert.equal(adviceRequestSchema.safeParse(input).success, false);
   assert.equal(adviceRequestSchema.safeParse({ ...request(), scope: { ...request().scope, group_count: 2 } }).success, false);
+});
+test("advice rejection diagnostics expose validator locations, never submitted values", () => {
+  const input = request(); input.groups[0].display_name = "alice@example.com";
+  const parsed = adviceRequestSchema.safeParse(input);
+  assert.equal(parsed.success, false);
+  const diagnostics = summarizeAdviceValidationIssues(parsed.error.issues);
+  assert.ok(diagnostics.some(issue => issue.field === "groups.0.display_name"));
+  assert.equal(JSON.stringify(diagnostics).includes("alice@example.com"), false);
+
+  const valid = request();
+  const headers = new Headers({ "x-schema-version": "1", "idempotency-key": valid.request_id });
+  assert.deepEqual(adviceRequestHeaderChecks(new Request("https://example.test", { headers }), valid.request_id), {
+    schemaVersionMatches: true,
+    idempotencyKeyMatches: true,
+  });
 });
 test("advice must cover the exact groups without gaining deletion authority", () => {
   const parsed = adviceRequestSchema.parse(request());

@@ -18,6 +18,25 @@ export const adviceRequestSchema = z.strictObject({
   })).min(1).max(200),
 }).refine(v => v.scope.group_count === v.groups.length && new Set(v.groups.map(g => g.group_id.toLowerCase())).size === v.groups.length, "group identity mismatch");
 export type AdviceRequest = z.infer<typeof adviceRequestSchema>;
+
+/** Safe server-log summary: field paths and validator codes only, never values. */
+export function summarizeAdviceValidationIssues(
+  issues: readonly { path: readonly PropertyKey[]; code: string }[],
+) {
+  return issues.slice(0, 8).map(({ path, code }) => ({
+    field: path.map(String).join(".") || "$",
+    code,
+  }));
+}
+
+/** Header diagnostics deliberately expose booleans only. */
+export function adviceRequestHeaderChecks(request: Request, requestID: string) {
+  return {
+    schemaVersionMatches: request.headers.get("x-schema-version") === "1",
+    idempotencyKeyMatches: request.headers.get("idempotency-key") === requestID,
+  };
+}
+
 export const adviceSchema = z.strictObject({ advice: z.array(z.strictObject({
   group_id: z.uuid(), decision: z.enum(["CLEANUP_CANDIDATE", "REVIEW", "KEEP", "UNKNOWN"]),
   confidence: z.number().min(0).max(1), explanation: safeText(2000),

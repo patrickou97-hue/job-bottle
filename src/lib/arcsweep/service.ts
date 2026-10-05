@@ -2,7 +2,7 @@ import "server-only";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { resolveMimoModel, CURRENT_MIMO_MODEL } from "@/lib/mimo-model";
-import { adviceRequestSchema, boundedJSON, boundedText, MAX_RESPONSE, ServiceError, validateAdvice, type AdviceRequest } from "./contract";
+import { adviceRequestHeaderChecks, adviceRequestSchema, boundedJSON, boundedText, MAX_RESPONSE, ServiceError, summarizeAdviceValidationIssues, validateAdvice, type AdviceRequest } from "./contract";
 import { resolveMimoEndpoint } from "./mimo-endpoint";
 
 // Opaque credentials are stored only as SHA-256 hashes. No app-wide shared secret.
@@ -132,9 +132,18 @@ export async function callMimo(request: AdviceRequest, signal?: AbortSignal) {
 export async function review(request: Request) {
   const { db, userID } = await authenticate(request);
   const parsed = adviceRequestSchema.safeParse(await boundedJSON(request));
-  if (!parsed.success) throw new ServiceError(400, "invalid_request");
+  if (!parsed.success) {
+    console.warn("ArcSweep advice request rejected", {
+      issues: summarizeAdviceValidationIssues(parsed.error.issues),
+    });
+    throw new ServiceError(400, "invalid_request");
+  }
   const input = parsed.data;
-  if (request.headers.get("x-schema-version") !== "1" || request.headers.get("idempotency-key") !== input.request_id) throw new ServiceError(400, "invalid_request");
+  const headerChecks = adviceRequestHeaderChecks(request, input.request_id);
+  if (!headerChecks.schemaVersionMatches || !headerChecks.idempotencyKeyMatches) {
+    console.warn("ArcSweep advice headers rejected", headerChecks);
+    throw new ServiceError(400, "invalid_request");
+  }
   // Stable group order allows retried requests to reorder their groups.
   const canonical = { ...input, groups: [...input.groups].sort((a, b) => a.group_id.localeCompare(b.group_id)) };
   const lease = randomUUID();
