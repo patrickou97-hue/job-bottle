@@ -41,7 +41,9 @@ export async function GET(request: Request, context: Context) {
       "Content-Type": "text/html; charset=utf-8",
       "Cache-Control": "no-store",
       "Content-Security-Policy": "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
-      "Referrer-Policy": "no-referrer",
+      // Keep the PKCE challenge and OAuth state out of Referer URLs without
+      // suppressing the same-origin metadata Safari needs for a form POST.
+      "Referrer-Policy": "strict-origin",
       "X-Content-Type-Options": "nosniff",
     } });
   } catch (error) { return errorResponse(error); }

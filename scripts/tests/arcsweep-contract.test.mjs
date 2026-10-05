@@ -62,6 +62,7 @@ test("Arc account membership shares Auth identity but stays isolated behind serv
 });
 test("Arc account consent and code exchange failures expose only safe diagnostic stages", () => {
   const route = readFileSync(fileURLToPath(new URL("../../src/app/api/mac-cleaner/v1/auth/[action]/route.ts", import.meta.url)), "utf8");
+  assert.match(route, /"Referrer-Policy": "strict-origin"/);
   assert.match(route, /originCheck: originCheckReason/);
   assert.match(route, /sameOriginRequestDiagnostics\(request\)/);
   assert.match(route, /exchange failed", \{ diagnosticID, stage, code, status: response\.status \}/);
