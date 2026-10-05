@@ -111,6 +111,27 @@ test("authorization forms accept the displayed same-origin host alias and reject
   assert.deepEqual(checkSameOriginRequest(new Request("https://job-bottle-preview.vercel.app/authorize", {
     headers: { host: "www.starjob.space", origin: "https://starjob.space" },
   })), { allowed: true, reason: "production_alias" });
+  assert.deepEqual(checkSameOriginRequest(new Request("http://job-bottle-preview.vercel.app/authorize", {
+    headers: {
+      host: "www.starjob.space",
+      origin: "https://www.starjob.space",
+      "x-forwarded-proto": "https",
+    },
+  })), { allowed: true, reason: "same_origin" });
+  assert.deepEqual(checkSameOriginRequest(new Request("https://www.starjob.space/authorize", {
+    headers: {
+      host: "www.starjob.space",
+      origin: "https://www.starjob.space",
+      "x-forwarded-proto": "http",
+    },
+  })), { allowed: false, reason: "insecure_request" });
+  assert.deepEqual(checkSameOriginRequest(new Request("http://job-bottle-preview.vercel.app/authorize", {
+    headers: {
+      host: "www.starjob.space",
+      origin: "https://www.starjob.space",
+      "x-forwarded-proto": "http",
+    },
+  })), { allowed: false, reason: "insecure_request" });
   assert.equal(isSameOriginRequest(new Request("https://www.starjob.space/authorize", {
     headers: { host: "www.starjob.space", origin: "https://attacker.example" },
   })), false);

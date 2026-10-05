@@ -4,7 +4,7 @@ const PRODUCTION_ORIGIN = /^https:\/\/(starjob\.space|www\.starjob\.space)(?::44
 const PRODUCTION_HOST = /^(starjob\.space|www\.starjob\.space)(?::443)?$/i;
 
 export type SameOriginCheck = { allowed: true; reason: "same_origin" | "local_alias" | "production_alias" }
-  | { allowed: false; reason: "missing_origin" | "invalid_request_url" | "invalid_host" | "invalid_origin" | "untrusted_host" | "untrusted_origin" };
+  | { allowed: false; reason: "missing_origin" | "invalid_request_url" | "invalid_host" | "invalid_origin" | "insecure_request" | "untrusted_host" | "untrusted_origin" };
 
 /**
  * Check form submissions against the browser's origin and the request's Host.
@@ -51,11 +51,16 @@ export function checkSameOriginRequest(request: Request): SameOriginCheck {
   // Vercel may expose a deployment URL while forwarding the custom Host.
   // Avoid parsing Origin through that proxy URL: accept only the two explicit
   // HTTPS production origins, and only when the incoming Host is also one of
-  // those exact domains. Optional slash/default :443 are equivalent forms.
+  // those exact domains. Vercel documents x-forwarded-proto as the protocol
+  // used by the original request; the runtime request URL can describe the
+  // internal proxy hop instead. Optional slash/default :443 are equivalent.
   const originMatch = PRODUCTION_ORIGIN.exec(origin);
-  if (!originMatch || requestURL.protocol !== "https:") return { allowed: false, reason: "untrusted_origin" };
+  if (!originMatch) return { allowed: false, reason: "untrusted_origin" };
   const hostMatch = PRODUCTION_HOST.exec(host);
   if (!hostMatch) return { allowed: false, reason: "untrusted_host" };
+  const forwardedProto = request.headers.get("x-forwarded-proto")?.trim().toLowerCase();
+  const requestIsHTTPS = forwardedProto ? forwardedProto === "https" : requestURL.protocol === "https:";
+  if (!requestIsHTTPS) return { allowed: false, reason: "insecure_request" };
   const originHost = originMatch[1].toLowerCase();
   const requestHost = hostMatch[1].toLowerCase();
   if (!PRODUCTION_HOSTS.has(originHost) || !PRODUCTION_HOSTS.has(requestHost)) return { allowed: false, reason: "untrusted_host" };
