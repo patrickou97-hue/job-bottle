@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { authenticate, authorizationParams, errorResponse, exchangeOrRefresh, issueCode, jsonResponse, type AuthorizationExchangeStage, type AuthorizationWriteStage } from "@/lib/arcsweep/service";
 import { ServiceError } from "@/lib/arcsweep/contract";
 import { renderAuthorizationFailurePage, renderAuthorizationPage } from "@/lib/arcsweep/authorization-page";
-import { isSameOriginRequest } from "@/lib/arcsweep/same-origin";
+import { checkSameOriginRequest } from "@/lib/arcsweep/same-origin";
 import { randomBytes } from "node:crypto";
 export const runtime = "nodejs";
 type Context = { params: Promise<{ action: string }> };
@@ -51,6 +51,7 @@ export async function POST(request: Request, context: Context) {
   let state: string | undefined;
   let exchangeStage: AuthorizationExchangeStage = "read_grant_request";
   let failureStage: "route_dispatch" | "same_origin_check" | "parse_consent" | "read_arc_session" | AuthorizationWriteStage = "route_dispatch";
+  let originCheckReason: string | undefined;
   try {
     action = (await context.params).action;
     if (action === "exchange" || action === "refresh") {
@@ -63,7 +64,9 @@ export async function POST(request: Request, context: Context) {
     }
     if (action !== "authorize") throw new ServiceError(404, "not_found");
     failureStage = "same_origin_check";
-    if (!isSameOriginRequest(request) || Number(request.headers.get("content-length") ?? 0) > 8192) throw new ServiceError(403, "forbidden");
+    const originCheck = checkSameOriginRequest(request);
+    originCheckReason = originCheck.reason;
+    if (!originCheck.allowed || Number(request.headers.get("content-length") ?? 0) > 8192) throw new ServiceError(403, "forbidden");
     const { boundedText } = await import("@/lib/arcsweep/contract");
     failureStage = "parse_consent";
     const params = new URLSearchParams(await boundedText(request.body, 8192)); const { challenge, state: requestState } = authorizationParams(params);
@@ -88,7 +91,13 @@ export async function POST(request: Request, context: Context) {
     const status = error instanceof ServiceError ? error.status : 503;
     // Keep diagnostics useful without writing email, user ID, state, code,
     // callback URL, database error text, or credentials to production logs.
-    console.error("[ArcSweep auth] consent failed", { diagnosticID, stage: failureStage, code, status });
+    console.error("[ArcSweep auth] consent failed", {
+      diagnosticID,
+      stage: failureStage,
+      code,
+      status,
+      ...(failureStage === "same_origin_check" && originCheckReason ? { originCheck: originCheckReason } : {}),
+    });
     const response = new Response(renderAuthorizationFailurePage({
       locale: authorizationLocale(request), diagnosticID, errorCode: code, state,
     }), { status, headers: {

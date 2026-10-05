@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { adviceRequestSchema, validateAdvice, boundedText } from "../../src/lib/arcsweep/contract.ts";
 import { resolveMimoEndpoint } from "../../src/lib/arcsweep/mimo-endpoint.ts";
-import { isSameOriginRequest } from "../../src/lib/arcsweep/same-origin.ts";
+import { checkSameOriginRequest, isSameOriginRequest } from "../../src/lib/arcsweep/same-origin.ts";
 const id = "aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa";
 const request = () => ({ schema_version: 1, request_id: "req_" + "a".repeat(32), run_id: "synthetic-run", rules_version: "1", scope: { kind: "group_review", mode: "local_plus_uncertain", group_count: 1 }, groups: [{ group_id: id, display_name: "Example cache", category: "app_cache", bundle_id: "com.example.test", root_path_summary: "…/Caches", file_count: 3, total_bytes: 1024, local_rule_id: "verified-cache", local_risk: "Low", ownership_evidence: [] }] });
 const advice = () => ({ advice: [{ group_id: id, decision: "KEEP", confidence: 0.8, explanation: "归属不明确，建议保留。", reason_codes: ["uncertain_owner"], concerns: [], appears_regeneratable: null }] });
@@ -62,7 +62,7 @@ test("Arc account membership shares Auth identity but stays isolated behind serv
 });
 test("Arc account consent and code exchange failures expose only safe diagnostic stages", () => {
   const route = readFileSync(fileURLToPath(new URL("../../src/app/api/mac-cleaner/v1/auth/[action]/route.ts", import.meta.url)), "utf8");
-  assert.match(route, /consent failed", \{ diagnosticID, stage: failureStage, code, status \}/);
+  assert.match(route, /originCheckReason \? \{ originCheck: originCheckReason \} : \{\}/);
   assert.match(route, /exchange failed", \{ diagnosticID, stage, code, status: response\.status \}/);
   assert.match(route, /action === "exchange" \|\| action === "refresh"/);
   assert.match(route, /X-ArcSweep-Diagnostic-ID/);
@@ -102,6 +102,9 @@ test("authorization forms accept the displayed same-origin host alias and reject
   assert.equal(isSameOriginRequest(new Request("https://starjob.space/authorize", {
     headers: { host: "starjob.space", origin: "https://www.starjob.space" },
   })), true);
+  assert.deepEqual(checkSameOriginRequest(new Request("https://job-bottle-preview.vercel.app/authorize", {
+    headers: { host: "www.starjob.space", origin: "https://starjob.space" },
+  })), { allowed: true, reason: "production_alias" });
   assert.equal(isSameOriginRequest(new Request("https://www.starjob.space/authorize", {
     headers: { host: "www.starjob.space", origin: "https://attacker.example" },
   })), false);
@@ -114,6 +117,9 @@ test("authorization forms accept the displayed same-origin host alias and reject
   assert.equal(isSameOriginRequest(new Request("http://www.starjob.space/authorize", {
     headers: { host: "www.starjob.space", origin: "http://starjob.space" },
   })), false);
+  assert.deepEqual(checkSameOriginRequest(new Request("https://www.starjob.space/authorize", {
+    headers: { host: "www.starjob.space" },
+  })), { allowed: false, reason: "missing_origin" });
   assert.equal(isSameOriginRequest(new Request("https://www.starjob.space/authorize", {
     headers: { host: "attacker.example#fragment", origin: "https://attacker.example" },
   })), false);
