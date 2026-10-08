@@ -51,7 +51,7 @@ test("body limits apply to streamed data, not only Content-Length", async () => 
   assert.equal(await boundedText(make(), 10), "0123456789");
 });
 test("ArcSweep service migration keeps database access server-only", () => {
-  const migration = readFileSync(fileURLToPath(new URL("../../supabase/migrations/20261002011729_arcsweep_service.sql", import.meta.url)), "utf8");
+  const migration = readFileSync(fileURLToPath(new URL("../../supabase/migrations/20261003170455_arcsweep_service.sql", import.meta.url)), "utf8");
   for (const table of ["arcsweep_auth_codes", "arcsweep_sessions", "arcsweep_budgets", "arcsweep_requests"]) {
     assert.match(migration, new RegExp(`alter table public\\.${table} enable row level security`));
   }
@@ -77,6 +77,12 @@ test("Arc account membership shares Auth identity but stays isolated behind serv
 });
 test("Arc account consent and code exchange failures expose only safe diagnostic stages", () => {
   const route = readFileSync(fileURLToPath(new URL("../../src/app/api/mac-cleaner/v1/auth/[action]/route.ts", import.meta.url)), "utf8");
+  const proxy = readFileSync(fileURLToPath(new URL("../../src/proxy.ts", import.meta.url)), "utf8");
+  assert.match(proxy, /matcher:\s*\["\/api\/mac-cleaner\/v1\/auth\/authorize"\]/);
+  assert.match(proxy, /supabase\.auth\.getClaims\(\)/);
+  assert.match(proxy, /request\.cookies\.set\(name, value\)/);
+  assert.match(proxy, /response\.cookies\.set\(name, value, options\)/);
+  assert.match(route, /supabase\.auth\.getUser\(\)/);
   assert.match(route, /"Referrer-Policy": "strict-origin"/);
   assert.match(route, /renderAuthorizationSuccessPage/);
   assert.match(route, /"Referrer-Policy": "no-referrer"/);

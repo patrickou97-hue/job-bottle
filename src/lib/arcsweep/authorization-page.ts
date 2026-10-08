@@ -232,6 +232,9 @@ export function renderAuthorizationFailurePage(input: AuthorizationFailureInput)
         : "temporarily_unavailable";
     callback.searchParams.set("error", callbackError);
     callback.searchParams.set("state", input.state);
+    if (callbackError === "temporarily_unavailable" && /^[A-F0-9]{8}$/.test(diagnosticID)) {
+      callback.searchParams.set("diagnostic_id", diagnosticID);
+    }
     returnURL = callback.toString();
   }
   const expired = input.errorCode === "authentication_required";

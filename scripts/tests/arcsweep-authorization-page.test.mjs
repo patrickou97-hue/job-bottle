@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { renderAuthorizationPage, renderAuthorizationSuccessPage } from "../../src/lib/arcsweep/authorization-page.ts";
+import { renderAuthorizationFailurePage, renderAuthorizationPage, renderAuthorizationSuccessPage } from "../../src/lib/arcsweep/authorization-page.ts";
 
 const params = {
   client_id: "arcsweep-macos",
@@ -45,6 +45,25 @@ test("English authorization page is localized and account values are HTML escape
   assert.match(html, /class="skip-link" href="#main-content">Skip to main content/);
   assert.doesNotMatch(html, /<img src=x onerror=/i);
   assert.match(html, /&lt;img src=x onerror=&quot;alert\(1\)&quot;&gt;/);
+});
+
+test("temporary consent failure returns its bounded diagnostic reference to ArcSweep", () => {
+  const html = renderAuthorizationFailurePage({
+    locale: "zh-CN",
+    diagnosticID: "A1B2C3D4",
+    errorCode: "service_unavailable",
+    state: "s".repeat(43),
+  });
+  assert.match(html, /诊断编号|Support reference/);
+  assert.match(html, /href="arcsweep:\/\/oauth\/callback\?error=temporarily_unavailable&amp;state=s{43}&amp;diagnostic_id=A1B2C3D4"/);
+
+  const invalid = renderAuthorizationFailurePage({
+    locale: "en",
+    diagnosticID: "unsafe-text",
+    errorCode: "service_unavailable",
+    state: "s".repeat(43),
+  });
+  assert.doesNotMatch(invalid, /diagnostic_id=/);
 });
 
 test("authorization success waits for an explicit Safari app-open link and keeps callback data scoped", () => {
