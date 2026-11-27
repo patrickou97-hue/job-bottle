@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createResumePdfBytes } from "@/components/resume/resumePdf";
 import { authenticateMiniProgramRequest } from "@/lib/miniprogram-auth";
-import { toMiniProgramResumeDetail } from "@/lib/miniprogram-api";
-import type { ResumeDocument } from "@/lib/resume";
+import { resumeRowToDocument } from "@/lib/resume-sync";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -40,7 +39,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
         { status: 404 },
       );
     }
-    const resume = toMiniProgramResumeDetail(data) as ResumeDocument;
+    const resume = resumeRowToDocument(data);
     const bytes = await createResumePdfBytes(resume, request.nextUrl.origin);
     const fileName = safeFileName(
       resume.content.basics.name || resume.title || "StarJob-Resume",

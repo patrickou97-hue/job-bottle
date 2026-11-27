@@ -477,7 +477,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/resume/resumePdf.ts",
-    mustInclude: ["jsPDF", "NotoSerifSC-Regular-common-v1.ttf", "NotoSerifSC-Bold-common-v1.ttf", "NotoSerifSC-Regular-full-v1.ttf", "NotoSerifSC-Bold-full-v1.ttf", "NEXT_PUBLIC_RESUME_FONT_FULL_REGULAR_URL", "NEXT_PUBLIC_RESUME_FONT_FULL_BOLD_URL", "same-origin-common", "cos-full", "same-origin-full", "FONT_TIMEOUT_MS = 10_000", "resetResumePdfCaches", "selectedFontCache", "fontSourceCache", "previewMeasurementPdfCache", "bundleId", "__resumeFontFamily", "regularFileName", "boldFileName", "cache: \"force-cache\"", "format: \"a4\"", "PAGE_WIDTH = 595.28", "PAGE_HEIGHT = 841.89", "exportResumeToPdf", "createResumePreviewLayout", "ResumePreviewOperation", "width: state.pdf.getTextWidth(text)", "addPage(\"a4\", \"portrait\")", "addFileToVFS", "getTemplateOptions", "getResumeTargetLine", "consulting", "technical", "academic", "english_classic", "english_modern", "isEnglishResumeTemplate", "EDUCATION", "Boolean(basics.photoDataUrl) && !isEnglish", "const photoBottom = photoY + photoHeight", "Math.max(y, hasPhoto ? photoBottom", "state.y = headerContentBottom + 15", "items.filter(hasEducationContent)", "items.filter(hasExperienceContent)", "items.filter(hasProjectContent)", "section.date ?? \"\"", "sectionTitle(state, title || copy.additional, options, headingDate)", "function sectionTitle(state: LayoutState, title: string, options: PdfOptions, rightText = \"\")", "if (!cleanLeftText && !cleanRightText) return", "hasInterests ? copy.skills : \"技能\""],
+    mustInclude: ["jsPDF", "NotoSerifSC-Regular-common-v1.ttf", "NotoSerifSC-Bold-common-v1.ttf", "NotoSerifSC-Regular-full-v1.ttf", "NotoSerifSC-Bold-full-v1.ttf", "NEXT_PUBLIC_RESUME_FONT_FULL_REGULAR_URL", "NEXT_PUBLIC_RESUME_FONT_FULL_BOLD_URL", "same-origin-common", "cos-full", "same-origin-full", "FONT_TIMEOUT_MS = 10_000", "resetResumePdfCaches", "selectedFontCache", "fontSourceCache", "previewMeasurementPdfCache", "__resumeFontFamily", "__resumeFontRoutes", "regularFileName", "boldFileName", "cache: \"force-cache\"", "format: \"a4\"", "PAGE_WIDTH = 595.28", "PAGE_HEIGHT = 841.89", "exportResumeToPdf", "createResumePreviewLayout", "ResumePreviewOperation", "measureText(state, text", "fontFamily,", "addPage(\"a4\", \"portrait\")", "addFileToVFS", "getTemplateOptions", "getResumeTargetLine", "consulting", "technical", "academic", "english_classic", "english_modern", "isEnglishResumeTemplate", "EDUCATION", "Boolean(basics.photoDataUrl) && !isEnglish", "const photoBottom = photoY + photoHeight", "Math.max(y, hasPhoto ? photoBottom", "state.y = headerContentBottom + 15", "items.filter(hasEducationContent)", "items.filter(hasExperienceContent)", "items.filter(hasProjectContent)", "section.date ?? \"\"", "sectionTitle(state, title || copy.additional, options, headingDate)", "function sectionTitle(state: LayoutState, title: string, options: PdfOptions, rightText = \"\")", "if (!cleanLeftText && !cleanRightText) return", "hasInterests ? copy.skills : \"技能\""],
     mustNotInclude: ["NEXT_PUBLIC_RESUME_FONT_REGULAR_URL", "NEXT_PUBLIC_RESUME_FONT_BOLD_URL", "html2canvas", "window.print", "addPage(\"letter\""],
     label: "简历预览与 PDF 共用排版并隐藏空字段、空经历和未填写的兴趣标题",
   },
@@ -1882,10 +1882,14 @@ async function checkResumeFontProbe() {
   const coverageSource = readFileSync(new URL("src/generated/resumeFontCommonCoverage.ts", ROOT), "utf8");
   const coverageModule = typescript.transpileModule(coverageSource, { compilerOptions }).outputText;
   const coverageUrl = `data:text/javascript;base64,${Buffer.from(coverageModule).toString("base64")}`;
+  const familyCoverageSource = readFileSync(new URL("src/generated/resumeFontFamilyCoverage.ts", ROOT), "utf8");
+  const familyCoverageModule = typescript.transpileModule(familyCoverageSource, { compilerOptions }).outputText;
+  const familyCoverageUrl = `data:text/javascript;base64,${Buffer.from(familyCoverageModule).toString("base64")}`;
   const resumeStub = "export const isEnglishResumeTemplate = (id) => id === 'english_classic' || id === 'english_modern';";
   const resumeStubUrl = `data:text/javascript;base64,${Buffer.from(resumeStub).toString("base64")}`;
   const profileSource = readFileSync(new URL("src/lib/resume-font-profile.ts", ROOT), "utf8")
     .replace("@/generated/resumeFontCommonCoverage", coverageUrl)
+    .replace("@/generated/resumeFontFamilyCoverage", familyCoverageUrl)
     .replace("@/lib/resume", resumeStubUrl);
   const profileModule = typescript.transpileModule(profileSource, { compilerOptions }).outputText;
   const profileUrl = `data:text/javascript;base64,${Buffer.from(profileModule).toString("base64")}`;

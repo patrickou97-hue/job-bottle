@@ -3,18 +3,31 @@ import type {
   ResumeDocument,
   ResumeEducation,
   ResumeExperience,
+  ResumeLatinFontId,
+  ResumeLocalFontId,
   ResumeProject,
   ResumeSkillGroup,
   ResumeTemplateId,
 } from "@/lib/resume";
-import { getResumeTargetLine, getResumeTemplateStyle, isEnglishResumeTemplate } from "@/lib/resume";
+import { getResumeLanguage, getResumeTargetLine, getResumeTemplateStyle, isEnglishResumeTemplate, isResumeLocalFont, normalizeResumeFontId, normalizeResumeLatinFontId } from "@/lib/resume";
 import {
-  selectResumeDocumentFontProfile,
+  collectResumeText,
+  isResumeFangCharacter,
+  isNotoSerifOnlyCharacter,
+  isWesternResumeCharacter,
+  selectResumeFontProfile,
+  type BundledWesternFontId,
   type ResumeFontProfile,
 } from "@/lib/resume-font-profile";
+import { readLocalResumeFont } from "@/lib/resume-local-fonts";
 
 type JsPdf = import("jspdf").jsPDF;
-type ResumeJsPdf = JsPdf & { __resumeFontFamily?: string };
+type FontWeight = "bold" | "normal";
+type FontMatcher = (character: string, weight: FontWeight) => boolean;
+type ResumeJsPdf = JsPdf & {
+  __resumeFontFamily: string;
+  __resumeFontRoutes: { fontFamily: string; matches: FontMatcher }[];
+};
 
 type PdfOptions = {
   bodySize: number;
@@ -87,6 +100,7 @@ export type ResumePreviewOperation =
       type: "text";
       page: number;
       color: string;
+      fontFamily: string;
       size: number;
       text: string;
       width: number;
@@ -96,7 +110,6 @@ export type ResumePreviewOperation =
     };
 
 export type ResumePreviewLayout = {
-  fontFamily: string;
   pageCount: number;
   pageHeight: number;
   pageWidth: number;
@@ -116,22 +129,37 @@ const FULL_FONT_BOLD = "/fonts/resume/NotoSerifSC-Bold-full-v1.ttf";
 const FONT_TIMEOUT_MS = 10_000;
 const BLACK = "#111111";
 
-type ResumeFontSourceName = "same-origin-common" | "cos-full" | "same-origin-full";
+const WESTERN_FONT_FILES: Record<BundledWesternFontId, string> = {
+  "liberation-serif": "LiberationSerif",
+  "liberation-sans": "LiberationSans",
+  carlito: "Carlito",
+};
+
+type ResumeFontSourceName = "same-origin-common" | "cos-full" | "same-origin-full" | "same-origin-latin" | "same-origin-alternate";
 
 type ResumeFontSource = {
   boldUrl: string;
-  profile: ResumeFontProfile;
+  family: string;
+  profile: ResumeFontProfile | "latin" | "alternate";
   regularUrl: string;
   source: ResumeFontSourceName;
 };
 
 type ResumeFontBundle = {
   bold: string;
+  boldName?: string;
   cacheKey: string;
   fontFamily: string;
-  profile: ResumeFontProfile;
   regular: string;
-  source: ResumeFontSourceName;
+  regularName?: string;
+};
+
+type ResumeFontSet = {
+  primary: ResumeFontBundle;
+  routes: {
+    fonts: ResumeFontBundle;
+    matches: FontMatcher;
+  }[];
 };
 
 const COMPACT_OPTIONS: PdfOptions[] = [
@@ -145,6 +173,35 @@ const fontSourceCache = new Map<string, Promise<ResumeFontBundle>>();
 const selectedFontCache = new Map<string, Promise<ResumeFontBundle>>();
 const previewMeasurementPdfCache = new Map<string, Promise<JsPdf>>();
 const installedFontFaces = new Set<FontFace>();
+const localResumeFonts = new Map<ResumeLocalFontId, { fonts: ResumeFontBundle; covers: (character: string) => boolean }>();
+const localFontRequests = new Map<ResumeLocalFontId, Promise<void>>();
+
+export function hasLocalResumeFont(id: ResumeLocalFontId) {
+  return localResumeFonts.has(id);
+}
+
+export async function enableLocalResumeFont(id: ResumeLocalFontId) {
+  if (localResumeFonts.has(id)) return;
+  const existing = localFontRequests.get(id);
+  if (existing) return existing;
+  const pending = readLocalResumeFont(id).then(async (local) => {
+    const fontFamily = `StarJobLocal-${local.regularName}`;
+    await installAndValidateFontPair(fontFamily, local.regular, local.bold, false);
+    localResumeFonts.set(id, {
+      covers: local.covers,
+      fonts: {
+        fontFamily,
+        cacheKey: fontFamily,
+        regular: arrayBufferToBase64(local.regular),
+        bold: arrayBufferToBase64(local.bold),
+        regularName: local.regularName,
+        boldName: local.boldName,
+      },
+    });
+  }).finally(() => { localFontRequests.delete(id); });
+  localFontRequests.set(id, pending);
+  return pending;
+}
 
 export function resetResumePdfCaches() {
   fontSourceCache.clear();
@@ -182,7 +239,6 @@ export async function createResumePreviewLayout(resume: ResumeDocument): Promise
   });
 
   return {
-    fontFamily: fonts.fontFamily,
     pageCount: result.page,
     pageHeight: PAGE_HEIGHT,
     pageWidth: PAGE_WIDTH,
@@ -209,16 +265,24 @@ function chooseOptions(resume: ResumeDocument, pdf: JsPdf) {
   return optionSet[optionSet.length - 1];
 }
 
-function getPreviewMeasurementPdf(fonts: ResumeFontBundle) {
-  let cached = previewMeasurementPdfCache.get(fonts.cacheKey);
-  if (!cached) {
+function getPreviewMeasurementPdf(fonts: ResumeFontSet) {
+  const cacheKey = JSON.stringify([fonts.primary.cacheKey, ...fonts.routes.map(({ fonts }) => fonts.cacheKey)]);
+  let cached = previewMeasurementPdfCache.get(cacheKey);
+  if (cached) {
+    previewMeasurementPdfCache.delete(cacheKey);
+  } else {
     cached = import("jspdf")
       .then((module) => createPdf(module.jsPDF, fonts))
       .catch((error) => {
-        previewMeasurementPdfCache.delete(fonts.cacheKey);
+        if (previewMeasurementPdfCache.get(cacheKey) === cached) previewMeasurementPdfCache.delete(cacheKey);
         throw error;
       });
-    previewMeasurementPdfCache.set(fonts.cacheKey, cached);
+  }
+  previewMeasurementPdfCache.set(cacheKey, cached);
+  // Measurement documents parse each embedded font. Keep only the most recent combinations.
+  if (previewMeasurementPdfCache.size > 3) {
+    const oldest = previewMeasurementPdfCache.keys().next().value;
+    if (oldest) previewMeasurementPdfCache.delete(oldest);
   }
 
   return cached;
@@ -226,26 +290,34 @@ function getPreviewMeasurementPdf(fonts: ResumeFontBundle) {
 
 function createPdf(
   jsPDF: typeof import("jspdf").jsPDF,
-  fonts: ResumeFontBundle,
+  fonts: ResumeFontSet,
 ) {
   const pdf = new jsPDF({
     compress: true,
     format: "a4",
     orientation: "portrait",
+    putOnlyUsedFonts: true,
     unit: "pt",
-  });
-  const bundleId = fonts.cacheKey.replace(/[^a-z0-9-]/gi, "-");
-  const fontFamily = `${FONT_FAMILY}-${bundleId}`;
-  const regularFileName = `NotoSerifSC-${bundleId}-Regular.ttf`;
-  const boldFileName = `NotoSerifSC-${bundleId}-Bold.ttf`;
+  }) as ResumeJsPdf;
+  pdf.__resumeFontFamily = registerPdfFont(pdf, fonts.primary);
+  pdf.__resumeFontRoutes = fonts.routes.map(({ fonts, matches }) => ({
+    fontFamily: registerPdfFont(pdf, fonts),
+    matches,
+  }));
+  pdf.setFont(pdf.__resumeFontFamily, "normal");
+  pdf.setTextColor(BLACK);
+  return pdf;
+}
+
+function registerPdfFont(pdf: JsPdf, fonts: ResumeFontBundle) {
+  const fontFamily = fonts.fontFamily;
+  const regularFileName = `${fonts.regularName ?? `${fontFamily}-Regular`}.ttf`;
+  const boldFileName = `${fonts.boldName ?? `${fontFamily}-Bold`}.ttf`;
   pdf.addFileToVFS(regularFileName, fonts.regular);
   pdf.addFileToVFS(boldFileName, fonts.bold);
   pdf.addFont(regularFileName, fontFamily, "normal");
   pdf.addFont(boldFileName, fontFamily, "bold");
-  (pdf as ResumeJsPdf).__resumeFontFamily = fontFamily;
-  pdf.setFont(fontFamily, "normal");
-  pdf.setTextColor(BLACK);
-  return pdf;
+  return fontFamily;
 }
 
 function renderResume(
@@ -567,11 +639,11 @@ function sectionTitle(state: LayoutState, title: string, options: PdfOptions, ri
   ensureSpace(state, isEnglish ? firstRowOffset + firstRowHeight : options.headingSize + 5);
   setFont(state, options.headingSize, "bold");
   drawText(state, title, state.left, state.y);
-  const titleWidth = state.pdf.getTextWidth(title);
+  const titleWidth = measureText(state, title);
   let lineRight = state.right;
   if (cleanRightText) {
     setFont(state, options.bodySize, "normal");
-    const rightWidth = state.pdf.getTextWidth(cleanRightText);
+    const rightWidth = measureText(state, cleanRightText);
     drawRight(state, cleanRightText, state.right, state.y);
     lineRight = state.right - rightWidth - 5;
   }
@@ -600,7 +672,7 @@ function row(
 
   ensureSpace(state, options.bodySize * options.lineHeight + 1);
   setFont(state, options.bodySize, bold ? "bold" : "normal");
-  const rightWidth = cleanRightText ? state.pdf.getTextWidth(cleanRightText) + 8 : 0;
+  const rightWidth = cleanRightText ? measureText(state, cleanRightText) + 8 : 0;
   const leftWidth = state.right - state.left - rightWidth;
   const lines = wrapText(state, cleanLeftText, leftWidth);
   drawText(state, lines[0] ?? "", state.left, state.y);
@@ -665,7 +737,7 @@ function wrapText(
   let current = "";
   for (const char of Array.from(clean)) {
     const next = current + char;
-    if (current && state.pdf.getTextWidth(next) > maxWidth) {
+    if (current && measureText(state, next) > maxWidth) {
       lines.push(current.trim());
       current = char.trimStart();
     } else {
@@ -691,18 +763,66 @@ function setFont(
 }
 
 function drawText(state: LayoutState, text: string, x: number, y: number) {
-  if (state.draw) state.pdf.text(text, x, y);
-  state.operations?.push({
-    type: "text",
-    page: state.page,
-    color: state.color,
-    size: state.fontSize,
-    text,
-    width: state.pdf.getTextWidth(text),
-    weight: state.fontWeight,
-    x,
-    y,
+  if (!text || (!state.draw && !state.operations)) return;
+  measureText(state, text, (run, fontFamily, width, offset) => {
+    if (state.draw) state.pdf.text(run, x + offset, y);
+    state.operations?.push({
+      type: "text",
+      page: state.page,
+      color: state.color,
+      fontFamily,
+      size: state.fontSize,
+      text: run,
+      width,
+      weight: state.fontWeight,
+      x: x + offset,
+      y,
+    });
   });
+}
+
+function measureText(
+  state: LayoutState,
+  text: string,
+  visit?: (text: string, fontFamily: string, width: number, offset: number) => void,
+) {
+  const pdf = state.pdf as ResumeJsPdf;
+  const primary = pdf.__resumeFontFamily;
+  const routes = pdf.__resumeFontRoutes;
+  if (routes.length === 0) {
+    const width = pdf.getTextWidth(text);
+    visit?.(text, primary, width, 0);
+    return width;
+  }
+
+  let run = "";
+  let runFamily = primary;
+  let activeFamily = primary;
+  let totalWidth = 0;
+
+  const flush = () => {
+    if (!run) return;
+    if (activeFamily !== runFamily) {
+      pdf.setFont(runFamily, state.fontWeight);
+      activeFamily = runFamily;
+    }
+    const width = pdf.getTextWidth(run);
+    visit?.(run, runFamily, width, totalWidth);
+    totalWidth += width;
+  };
+
+  for (const character of text) {
+    const family = routes.find(({ matches }) => matches(character, state.fontWeight))?.fontFamily ?? primary;
+    if (family !== runFamily) {
+      flush();
+      run = "";
+      runFamily = family;
+    }
+    run += character;
+  }
+  flush();
+  if (activeFamily !== primary) pdf.setFont(primary, state.fontWeight);
+  return totalWidth;
 }
 
 function drawLine(
@@ -724,7 +844,7 @@ function drawLine(
 
 function drawCentered(state: LayoutState, text: string, y: number) {
   if (!text) return;
-  const x = (PAGE_WIDTH - state.pdf.getTextWidth(text)) / 2;
+  const x = (PAGE_WIDTH - measureText(state, text)) / 2;
   drawText(state, text, x, y);
 }
 
@@ -767,29 +887,122 @@ function drawWrappedAt(
 }
 
 function drawRight(state: LayoutState, text: string, right: number, y: number) {
-  drawText(state, text, right - state.pdf.getTextWidth(text), y);
+  drawText(state, text, right - measureText(state, text), y);
 }
 
-async function loadResumeFonts(resume: ResumeDocument, fontBaseUrl?: string) {
-  const profile = selectResumeDocumentFontProfile(resume);
-  const selectionKey = `${profile}:${fontBaseUrl ?? "browser"}`;
-  const existing = selectedFontCache.get(selectionKey);
-  if (existing) return existing;
+async function loadResumeFonts(resume: ResumeDocument, fontBaseUrl?: string): Promise<ResumeFontSet> {
+  const language = getResumeLanguage(resume.templateId);
+  const fontId = normalizeResumeFontId(resume.fontId, language);
+  const text = collectResumeText(resume);
 
-  const promise = resolveResumeFontBundle(profile, fontBaseUrl).catch((error) => {
-    selectedFontCache.delete(selectionKey);
+  if (language === "en-US") {
+    const westernFont = resolveWesternFont(normalizeResumeLatinFontId(fontId), fontBaseUrl);
+    if (!westernFont) {
+      return { primary: await resolveResumeSerif(selectResumeFontProfile(text), fontBaseUrl), routes: [] };
+    }
+
+    const matches = (character: string) => !/\s/u.test(character) && !westernFont.covers(character);
+    const fallbackText = Array.from(text).filter(matches).join("");
+    const [primary, fallback] = await Promise.all([
+      westernFont.load(),
+      fallbackText ? resolveResumeSerif(selectResumeFontProfile(fallbackText), fontBaseUrl) : undefined,
+    ]);
+    return { primary, routes: fallback ? [{ fonts: fallback, matches }] : [] };
+  }
+
+  const westernFont = resolveWesternFont(normalizeResumeLatinFontId(resume.latinFontId), fontBaseUrl);
+  const matchesWestern = (character: string) =>
+    !!westernFont &&
+    (/^[ -~]$|[\p{Script=Latin}\p{M}\p{Nd}]/u.test(character)) &&
+    westernFont.covers(character);
+  const chineseText = Array.from(text).filter((character) => !matchesWestern(character)).join("");
+  const matchesSerif = (character: string, weight: FontWeight) => {
+    if (fontId === "noto-sans-sc") return isNotoSerifOnlyCharacter(character);
+    return fontId === "fangsong" && (weight === "bold" || (!/\s/u.test(character) && !isResumeFangCharacter(character)));
+  };
+  // The released FangSong has one weight. Song bold preserves the hierarchy.
+  const fallbackText = fontId === "fangsong" ? chineseText : Array.from(chineseText)
+    .filter((character) => matchesSerif(character, "normal")).join("");
+  const chineseProfile = selectResumeFontProfile(chineseText);
+  const chineseFont = fontId === "fangsong" ? loadFangSong(fontBaseUrl)
+    : fontId === "noto-sans-sc" ? loadResumeSans(chineseProfile, fontBaseUrl)
+    : resolveResumeSerif(chineseProfile, fontBaseUrl);
+  const [primary, western, fallback] = await Promise.all([
+    chineseFont,
+    westernFont?.load(),
+    fallbackText ? resolveResumeSerif(selectResumeFontProfile(fallbackText), fontBaseUrl) : undefined,
+  ]);
+  const routes: ResumeFontSet["routes"] = [];
+  if (western) routes.push({ fonts: western, matches: matchesWestern });
+  if (fallback) routes.push({ fonts: fallback, matches: matchesSerif });
+  return { primary, routes };
+}
+
+function resolveWesternFont(fontId: ResumeLatinFontId, fontBaseUrl?: string) {
+  if (fontId === "default") return undefined;
+  const local = !fontBaseUrl && isResumeLocalFont(fontId) ? localResumeFonts.get(fontId) : undefined;
+  if (local) {
+    const { fonts, covers } = local;
+    return { covers, load: () => Promise.resolve(fonts) };
+  }
+  const bundled = fontId === "times-new-roman" ? "liberation-serif"
+    : fontId === "helvetica-neue" ? "liberation-sans" : fontId;
+  return {
+    covers: (character: string) => isWesternResumeCharacter(bundled, character),
+    load: () => loadWesternResumeFont(bundled, fontBaseUrl),
+  };
+}
+
+function loadWesternResumeFont(fontId: BundledWesternFontId, fontBaseUrl?: string) {
+  const family = WESTERN_FONT_FILES[fontId];
+  return loadFontSource({
+    family,
+    profile: "latin",
+    source: "same-origin-latin",
+    regularUrl: resolveFontUrl(`/fonts/resume/${family}-Regular.ttf`, fontBaseUrl),
+    boldUrl: resolveFontUrl(`/fonts/resume/${family}-Bold.ttf`, fontBaseUrl),
+  });
+}
+
+function loadFangSong(fontBaseUrl?: string) {
+  const regularUrl = resolveFontUrl("/fonts/resume/StarJobFang-Regular-v1.ttf", fontBaseUrl);
+  return loadFontSource({
+    family: "StarJobFang",
+    profile: "alternate",
+    source: "same-origin-alternate",
+    regularUrl,
+    boldUrl: regularUrl,
+  });
+}
+
+function loadResumeSans(profile: ResumeFontProfile, fontBaseUrl?: string) {
+  return loadFontSource({
+    family: "NotoSansSC",
+    profile,
+    source: profile === "common" ? "same-origin-common" : "same-origin-full",
+    regularUrl: resolveFontUrl(`/fonts/resume/NotoSansSC-Regular-${profile}-v1.ttf`, fontBaseUrl),
+    boldUrl: resolveFontUrl(`/fonts/resume/NotoSansSC-Bold-${profile}-v1.ttf`, fontBaseUrl),
+  });
+}
+
+function resolveResumeSerif(profile: ResumeFontProfile, fontBaseUrl?: string) {
+  const key = JSON.stringify([profile, fontBaseUrl]);
+  const cached = selectedFontCache.get(key);
+  if (cached) return cached;
+
+  const promise = loadResumeSerifBundle(profile, fontBaseUrl).catch((error) => {
+    selectedFontCache.delete(key);
     throw error;
   });
-  selectedFontCache.set(selectionKey, promise);
+  selectedFontCache.set(key, promise);
   return promise;
 }
 
-async function resolveResumeFontBundle(
-  profile: ResumeFontProfile,
-  fontBaseUrl?: string,
-) {
+async function loadResumeSerifBundle(profile: ResumeFontProfile, fontBaseUrl?: string) {
+  const family = FONT_FAMILY;
   if (profile === "common") {
     return loadFontSource({
+      family,
       profile,
       source: "same-origin-common",
       regularUrl: resolveFontUrl(COMMON_FONT_REGULAR, fontBaseUrl),
@@ -802,6 +1015,7 @@ async function resolveResumeFontBundle(
   if (cosRegularUrl && cosBoldUrl) {
     try {
       return await loadFontSource({
+        family,
         profile,
         source: "cos-full",
         regularUrl: cosRegularUrl,
@@ -813,6 +1027,7 @@ async function resolveResumeFontBundle(
   }
 
   return loadFontSource({
+    family,
     profile,
     source: "same-origin-full",
     regularUrl: resolveFontUrl(FULL_FONT_REGULAR, fontBaseUrl),
@@ -821,24 +1036,22 @@ async function resolveResumeFontBundle(
 }
 
 function loadFontSource(source: ResumeFontSource) {
-  const cacheKey = `${source.profile}:${source.source}:${source.regularUrl}:${source.boldUrl}`;
+  const cacheKey = `${source.family}:${source.profile}:${source.source}:${source.regularUrl}:${source.boldUrl}`;
   const existing = fontSourceCache.get(cacheKey);
   if (existing) return existing;
 
-  const promise = Promise.all([
-    fetchFontBuffer(source.regularUrl),
-    fetchFontBuffer(source.boldUrl),
-  ])
+  const regularRequest = fetchFontBuffer(source.regularUrl);
+  const boldRequest = source.boldUrl === source.regularUrl ? regularRequest : fetchFontBuffer(source.boldUrl);
+  const promise = Promise.all([regularRequest, boldRequest])
     .then(async ([regularBuffer, boldBuffer]) => {
-      const fontFamily = `StarJobResume-${cacheKey.replace(/[^a-z-]/g, "-")}-v1`;
+      const fontFamily = `StarJobResume-${source.family}-${source.profile}-${source.source}`;
       await installAndValidateFontPair(fontFamily, regularBuffer, boldBuffer);
+      const regular = arrayBufferToBase64(regularBuffer);
       return {
-        bold: arrayBufferToBase64(boldBuffer),
+        bold: boldBuffer === regularBuffer ? regular : arrayBufferToBase64(boldBuffer),
         cacheKey,
         fontFamily,
-        profile: source.profile,
-        regular: arrayBufferToBase64(regularBuffer),
-        source: source.source,
+        regular,
       } satisfies ResumeFontBundle;
     })
     .catch((error) => {
@@ -882,6 +1095,7 @@ async function installAndValidateFontPair(
   fontFamily: string,
   regularBuffer: ArrayBuffer,
   boldBuffer: ArrayBuffer,
+  resettable = true,
 ) {
   if (typeof FontFace === "undefined" || typeof document === "undefined") return;
   const regularFace = new FontFace(fontFamily, regularBuffer.slice(0), { style: "normal", weight: "400" });
@@ -889,7 +1103,7 @@ async function installAndValidateFontPair(
   const loadedFaces = await Promise.all([regularFace.load(), boldFace.load()]);
   for (const face of loadedFaces) {
     document.fonts.add(face);
-    installedFontFaces.add(face);
+    if (resettable) installedFontFaces.add(face);
   }
 }
 

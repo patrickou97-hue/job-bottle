@@ -1,0 +1,60 @@
+@font-face {
+  font-family: "Resume Sample Serif SC";
+  src: url("/fonts/resume/NotoSerifSC-sample.woff") format("woff");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Resume Sample Sans SC";
+  src: url("/fonts/resume/NotoSansSC-sample.woff") format("woff");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Resume Sample Fang";
+  src: url("/fonts/resume/StarJobFang-sample-v1.woff") format("woff");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Resume Sample Times";
+  src: url("/fonts/resume/LiberationSerif-sample.woff") format("woff");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Resume Sample Arial";
+  src: url("/fonts/resume/LiberationSans-sample.woff") format("woff");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Resume Sample Calibri";
+  src: url("/fonts/resume/Carlito-sample.woff") format("woff");
+  font-display: swap;
+}
+
+.serifSC {
+  font-family: "Resume Sample Serif SC", serif;
+}
+
+.sansSC {
+  font-family: "Resume Sample Sans SC", sans-serif;
+}
+
+.fang {
+  font-family: "Resume Sample Fang", serif;
+}
+
+.localTimes {
+  font-family: "Times New Roman", "Resume Sample Times", serif;
+}
+
+.localHelvetica {
+  font-family: "Helvetica Neue", "Resume Sample Arial", sans-serif;
+}
+
+.calibri {
+  font-family: "Resume Sample Calibri", sans-serif;
+}
+

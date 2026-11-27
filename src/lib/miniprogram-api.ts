@@ -5,6 +5,7 @@ import {
   normalizeResumeSectionOrder,
   type ResumeContent,
 } from "@/lib/resume";
+import { getResumeRowTemplateId } from "@/lib/resume-sync";
 import type { Job, Profile, ResumeRow, UserApplication } from "@/lib/types";
 
 export function toMiniProgramJob(job: Job) {
@@ -60,7 +61,7 @@ export function toMiniProgramResume(resume: ResumeRow) {
     id: resume.id,
     title: resume.title,
     targetRole: resume.target_role ?? resume.job_target ?? "",
-    templateId: resume.template_id,
+    templateId: getResumeRowTemplateId(resume),
     updatedAt: resume.updated_at,
   };
 }

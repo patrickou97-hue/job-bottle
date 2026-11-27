@@ -6,7 +6,8 @@ import type {
   ResumeDocument,
   ResumeTemplateId,
 } from "@/lib/resume";
-import { DEFAULT_RESUME_SECTION_ORDER, RESUME_SECTION_KEYS } from "@/lib/resume";
+import { DEFAULT_RESUME_SECTION_ORDER, getResumeLanguage, RESUME_SECTION_KEYS } from "@/lib/resume";
+import { resumeFontMetadata } from "@/lib/resume-fonts";
 
 const text = (max: number) => z.string().trim().max(max);
 const itemId = z.string().trim().min(1).max(100);
@@ -137,10 +138,12 @@ export function parseMiniProgramResumeUpdate(value: unknown) {
 export function resumeContentForStorage(
   content: ResumeContent,
   templateId: ResumeTemplateId,
+  fonts: Pick<ResumeDocument, "fontId" | "latinFontId"> = {},
 ) {
   return {
     ...content,
     __job_bottle_template_id: templateId,
+    ...resumeFontMetadata(fonts, getResumeLanguage(templateId)),
   };
 }
 

@@ -9,6 +9,48 @@ export type ResumeTemplateId =
   | "english_modern";
 
 export type ResumeLanguage = "zh-CN" | "en-US";
+export type ResumeLocalFontId = "times-new-roman" | "helvetica-neue";
+export type ResumeLatinFontId = "default" | ResumeLocalFontId | "carlito";
+export type ResumeFontId = ResumeLatinFontId | "noto-sans-sc" | "fangsong";
+
+const CHINESE_RESUME_FONT_OPTIONS = [
+  { id: "default", label: "经典宋体" },
+  { id: "fangsong", label: "朱雀仿宋" },
+  { id: "noto-sans-sc", label: "现代黑体" },
+] as const;
+
+const WESTERN_RESUME_FONT_OPTIONS = [
+  { id: "times-new-roman", label: "Times New Roman" },
+  { id: "helvetica-neue", label: "Helvetica Neue" },
+  { id: "carlito", label: "Calibri 风格" },
+] as const;
+
+export function getResumeLatinFontOptions(language: ResumeLanguage): readonly { id: ResumeLatinFontId; label: string }[] {
+  return [
+    { id: "default", label: language === "zh-CN" ? "跟随中文" : "原版字体" },
+    ...WESTERN_RESUME_FONT_OPTIONS,
+  ];
+}
+
+export function getResumeFontOptions(language: ResumeLanguage): readonly { id: ResumeFontId; label: string }[] {
+  return language === "zh-CN" ? CHINESE_RESUME_FONT_OPTIONS : getResumeLatinFontOptions(language);
+}
+
+export function normalizeResumeFontId(value: unknown, language: ResumeLanguage): ResumeFontId {
+  if (language === "en-US") return normalizeResumeLatinFontId(value);
+  if (value === "yahei-style") return "noto-sans-sc";
+  return getResumeFontOptions(language).find(({ id }) => id === value)?.id ?? "default";
+}
+
+export function normalizeResumeLatinFontId(value: unknown): ResumeLatinFontId {
+  if (value === "liberation-serif") return "times-new-roman";
+  if (value === "liberation-sans") return "helvetica-neue";
+  return WESTERN_RESUME_FONT_OPTIONS.find(({ id }) => id === value)?.id ?? "default";
+}
+
+export function isResumeLocalFont(id: ResumeFontId): id is ResumeLocalFontId {
+  return id === "times-new-roman" || id === "helvetica-neue";
+}
 
 export type ResumeBasics = {
   name: string;
@@ -114,6 +156,8 @@ export type ResumeDocument = {
   jobTarget: string;
   linkedJobId: string | null;
   templateId: ResumeTemplateId;
+  fontId?: ResumeFontId;
+  latinFontId?: ResumeLatinFontId;
   content: ResumeContent;
   createdAt: string;
   updatedAt: string;
@@ -570,6 +614,7 @@ function normalizeResumeDocument(value: unknown): ResumeDocument | null {
   const resume = value as Partial<ResumeDocument>;
   const content = resume.content && typeof resume.content === "object" ? resume.content : fallback.content;
   const basics = content.basics && typeof content.basics === "object" ? content.basics : fallback.content.basics;
+  const templateId = normalizeTemplateId(resume.templateId);
 
   const normalized: ResumeDocument = {
     ...fallback,
@@ -579,7 +624,9 @@ function normalizeResumeDocument(value: unknown): ResumeDocument | null {
     targetRole: typeof resume.targetRole === "string" ? resume.targetRole : "",
     jobTarget: typeof resume.jobTarget === "string" ? resume.jobTarget : "",
     linkedJobId: typeof resume.linkedJobId === "string" ? resume.linkedJobId : null,
-    templateId: normalizeTemplateId(resume.templateId),
+    templateId,
+    fontId: normalizeResumeFontId(resume.fontId, getResumeLanguage(templateId)),
+    latinFontId: isEnglishResumeTemplate(templateId) ? undefined : normalizeResumeLatinFontId(resume.latinFontId),
     content: {
       ...fallback.content,
       ...content,

@@ -1,7 +1,15 @@
 import {
   RESUME_FONT_COMMON_RANGES,
 } from "@/generated/resumeFontCommonCoverage";
+import {
+  CARLITO_RANGES,
+  LIBERATION_RANGES,
+  NOTO_SERIF_ONLY_RANGES,
+  STARJOBFANG_RANGES,
+} from "@/generated/resumeFontFamilyCoverage";
 import { isEnglishResumeTemplate, type ResumeDocument } from "@/lib/resume";
+
+export type BundledWesternFontId = "liberation-serif" | "liberation-sans" | "carlito";
 
 export type ResumeFontProfile = "common" | "full";
 
@@ -19,6 +27,7 @@ const ENGLISH_TEMPLATE_COPY = [
 
 export function collectResumeText(resume: ResumeDocument) {
   const basics = resume.content.basics;
+  const english = isEnglishResumeTemplate(resume.templateId);
   const text: string[] = [
     basics.name,
     basics.englishName,
@@ -31,8 +40,8 @@ export function collectResumeText(resume: ResumeDocument) {
     basics.targetRole,
     resume.targetRole,
     resume.jobTarget,
-    "LinkedIn GitHub | - • ： 、",
-    ...(isEnglishResumeTemplate(resume.templateId) ? ENGLISH_TEMPLATE_COPY : CHINESE_TEMPLATE_COPY),
+    "LinkedIn GitHub | - • ·",
+    ...(english ? ENGLISH_TEMPLATE_COPY : [...CHINESE_TEMPLATE_COPY, "： 、"]),
   ];
 
   for (const item of resume.content.education) {
@@ -69,12 +78,32 @@ export function selectResumeFontProfile(text: string): ResumeFontProfile {
 }
 
 export function isCommonResumeCodePoint(codePoint: number) {
+  return hasCodePoint(RESUME_FONT_COMMON_RANGES, codePoint);
+}
+
+export function isWesternResumeCharacter(fontId: BundledWesternFontId, character: string) {
+  const codePoint = character.codePointAt(0);
+  const ranges = fontId === "carlito" ? CARLITO_RANGES : LIBERATION_RANGES;
+  return codePoint !== undefined && hasCodePoint(ranges, codePoint);
+}
+
+export function isResumeFangCharacter(character: string) {
+  const codePoint = character.codePointAt(0);
+  return codePoint !== undefined && hasCodePoint(STARJOBFANG_RANGES, codePoint);
+}
+
+export function isNotoSerifOnlyCharacter(character: string) {
+  const codePoint = character.codePointAt(0);
+  return codePoint !== undefined && hasCodePoint(NOTO_SERIF_ONLY_RANGES, codePoint);
+}
+
+function hasCodePoint(ranges: ReadonlyArray<readonly [number, number]>, codePoint: number) {
   let low = 0;
-  let high = RESUME_FONT_COMMON_RANGES.length - 1;
+  let high = ranges.length - 1;
 
   while (low <= high) {
     const middle = (low + high) >> 1;
-    const [start, end] = RESUME_FONT_COMMON_RANGES[middle];
+    const [start, end] = ranges[middle];
     if (codePoint < start) high = middle - 1;
     else if (codePoint > end) low = middle + 1;
     else return true;

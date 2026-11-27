@@ -7,6 +7,7 @@ import { ChevronDown, Copy, FileText, FileUp, Languages, Plus, Puzzle, Trash2 } 
 import { AnimatePresence } from "motion/react";
 import { ResumeCreateDialog } from "@/components/resume/ResumeCreateDialog";
 import { ResumeEditor, type EditorSection } from "@/components/resume/ResumeEditor";
+import { ResumeFontPicker } from "@/components/resume/ResumeFontPicker";
 import { ResumeImportDialog, type ResumeImportMode } from "@/components/resume/ResumeImportDialog";
 import { ResumePdfExportButton } from "@/components/resume/ResumePdfExportButton";
 import { ResumePreview } from "@/components/resume/ResumePreview";
@@ -26,9 +27,13 @@ import {
   getResumeLanguage,
   isSampleResume,
   loadLocalResumes,
+  normalizeResumeFontId,
+  normalizeResumeLatinFontId,
   saveLocalResumes,
   touchResume,
   type ResumeDocument,
+  type ResumeFontId,
+  type ResumeLatinFontId,
   type ResumeLanguage,
   type ResumeTemplateId,
 } from "@/lib/resume";
@@ -91,6 +96,7 @@ export function ResumeBuilderClient({
   const [userId, setUserId] = useState<string | null>(null);
   const [showImportDialog, setShowImportDialog] = useState(initialAction === "import");
   const [showCreateDialog, setShowCreateDialog] = useState(initialAction === "create");
+  const [previewFontRevision, setPreviewFontRevision] = useState(0);
   const [translating, setTranslating] = useState(false);
   const [translationProgress, setTranslationProgress] = useState<ResumeTranslationProgress | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
@@ -412,7 +418,25 @@ export function ResumeBuilderClient({
   }
 
   function updateTemplate(templateId: ResumeTemplateId) {
-    updateResume(touchResume({ ...selectedResume, templateId }));
+    const language = getResumeLanguage(templateId);
+    const fontId = normalizeResumeFontId(selectedResume.fontId, language);
+    const latinFontId = language === "zh-CN" ? normalizeResumeLatinFontId(selectedResume.latinFontId) : undefined;
+    updateResume(touchResume({ ...selectedResume, templateId, fontId, latinFontId }));
+  }
+
+  function updateFont(fontId: ResumeFontId) {
+    const language = getResumeLanguage(selectedResume.templateId);
+    if (fontId === normalizeResumeFontId(selectedResume.fontId, language)) return;
+    setSaveState("正在保存");
+    setResumes((current) => current.map((resume) =>
+      resume.id === selectedResume.id ? touchResume({ ...resume, fontId }) : resume));
+  }
+
+  function updateLatinFont(latinFontId: ResumeLatinFontId) {
+    if (latinFontId === normalizeResumeLatinFontId(selectedResume.latinFontId)) return;
+    setSaveState("正在保存");
+    setResumes((current) => current.map((resume) =>
+      resume.id === selectedResume.id ? touchResume({ ...resume, latinFontId }) : resume));
   }
 
   function createResume(language: ResumeLanguage, templateId: ResumeTemplateId) {
@@ -853,6 +877,15 @@ export function ResumeBuilderClient({
               </div>
             </div>
             <div className="mb-6">
+              <ResumeFontPicker
+                key={selectedResume.id}
+                language={getResumeLanguage(selectedResume.templateId)}
+                fontId={normalizeResumeFontId(selectedResume.fontId, getResumeLanguage(selectedResume.templateId))}
+                latinFontId={normalizeResumeLatinFontId(selectedResume.latinFontId)}
+                onChange={updateFont}
+                onLatinChange={updateLatinFont}
+                onLocalFontEnabled={() => setPreviewFontRevision((revision) => revision + 1)}
+              />
               <ResumeTemplatePicker
                 language={getResumeLanguage(selectedResume.templateId)}
                 selectedTemplateId={selectedResume.templateId}
@@ -883,7 +916,7 @@ export function ResumeBuilderClient({
               />
             </div>
             <div className="pb-4">
-              <ResumePreview resume={selectedResume} />
+              <ResumePreview key={previewFontRevision} resume={selectedResume} />
             </div>
           </section>
       </section>

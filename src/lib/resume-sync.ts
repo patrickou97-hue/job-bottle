@@ -1,11 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   createEmptyResume,
+  getResumeLanguage,
   normalizeResumeSectionOrder,
   type ResumeContent,
   type ResumeDocument,
   type ResumeTemplateId,
 } from "@/lib/resume";
+import { getStoredResumeFonts, resumeFontMetadata } from "@/lib/resume-fonts";
 import type { Database, ResumeRow } from "@/lib/types";
 
 type ResumeClient = SupabaseClient<Database>;
@@ -87,17 +89,22 @@ function getStoredTemplateId(value: unknown) {
   return typeof templateId === "string" ? templateId : null;
 }
 
+export function getResumeRowTemplateId(row: Pick<ResumeRow, "content_json" | "template_id">) {
+  return normalizeTemplateId(getStoredTemplateId(row.content_json) ?? row.template_id);
+}
+
 function getStoredSampleFlag(value: unknown) {
   if (!value || typeof value !== "object") return undefined;
   const flag = (value as Record<string, unknown>)[SAMPLE_META_KEY];
   return typeof flag === "boolean" ? flag : undefined;
 }
 
-function contentForStorage(content: ResumeContent, templateId: ResumeTemplateId, isSample?: boolean) {
+function contentForStorage({ content, templateId, fontId, latinFontId, isSample }: ResumeDocument) {
   return {
     ...content,
     [TEMPLATE_META_KEY]: templateId,
     [SAMPLE_META_KEY]: isSample,
+    ...resumeFontMetadata({ fontId, latinFontId }, getResumeLanguage(templateId)),
   };
 }
 
@@ -157,13 +164,15 @@ export function getResumeSyncErrorMessage(error: unknown) {
 
 export function resumeRowToDocument(row: ResumeRow): ResumeDocument {
   const isSample = getStoredSampleFlag(row.content_json);
+  const templateId = getResumeRowTemplateId(row);
   return {
     id: row.id,
     title: row.title,
     targetRole: row.target_role ?? "",
     jobTarget: row.job_target ?? "",
     linkedJobId: row.linked_job_id,
-    templateId: normalizeTemplateId(getStoredTemplateId(row.content_json) ?? row.template_id),
+    templateId,
+    ...getStoredResumeFonts(row.content_json, getResumeLanguage(templateId)),
     content: normalizeContent(row.content_json),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -197,7 +206,7 @@ export async function upsertMyResume(
     job_target: resume.jobTarget || null,
     linked_job_id: resume.linkedJobId,
     template_id: resume.templateId,
-    content_json: contentForStorage(resume.content, resume.templateId, resume.isSample),
+    content_json: contentForStorage(resume),
     created_at: resume.createdAt,
     updated_at: resume.updatedAt || now,
   };

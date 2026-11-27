@@ -6,6 +6,8 @@ import {
   parseMiniProgramResumeUpdate,
   resumeContentForStorage,
 } from "@/lib/miniprogram-resume";
+import { getResumeLanguage } from "@/lib/resume";
+import { getStoredResumeFonts } from "@/lib/resume-fonts";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -112,6 +114,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       content_json: resumeContentForStorage(
         parsed.data.content,
         parsed.data.templateId,
+        getStoredResumeFonts(current.content_json, getResumeLanguage(parsed.data.templateId)),
       ),
       updated_at: updatedAt,
     };
