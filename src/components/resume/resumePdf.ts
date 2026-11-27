@@ -534,23 +534,32 @@ function renderSkills(
 
 function sectionTitle(state: LayoutState, title: string, options: PdfOptions, rightText = "") {
   state.y += options.sectionGap;
-  ensureSpace(state, options.headingSize + 5);
-  setFont(state, options.headingSize, "bold");
 
   const templateStyle = getResumeTemplateStyle(options.templateId);
   const cleanRightText = cleanText(rightText);
   if (templateStyle.section === "accent") {
+    const ruleOffset = 4.2;
+    const ruleWidth = 0.7;
+    const gapBelowRule = 2.5;
+    // Text is drawn on its baseline. Leave room for the first row's glyphs
+    // above that baseline as well as the visible gap below the rule.
+    const firstRowOffset = ruleOffset + ruleWidth / 2 + gapBelowRule + options.bodySize;
+    ensureSpace(state, firstRowOffset + options.bodySize * options.lineHeight + 1);
+
     setFont(state, options.headingSize, "bold", templateStyle.accent);
     drawText(state, title, state.left, state.y);
     if (cleanRightText) {
       setFont(state, options.bodySize, "normal", templateStyle.accent);
       drawRight(state, cleanRightText, state.right, state.y);
     }
-    drawLine(state, state.left, state.y + 4.2, state.right, state.y + 4.2, "#cfd6df", 0.7);
-    state.y += options.headingSize * 1.08;
+    const ruleY = state.y + ruleOffset;
+    drawLine(state, state.left, ruleY, state.right, ruleY, "#cfd6df", ruleWidth);
+    state.y += firstRowOffset;
     return;
   }
 
+  ensureSpace(state, options.headingSize + 5);
+  setFont(state, options.headingSize, "bold");
   drawText(state, title, state.left, state.y);
   const titleWidth = state.pdf.getTextWidth(title);
   let lineRight = state.right;
