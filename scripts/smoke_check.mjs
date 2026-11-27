@@ -50,6 +50,12 @@ const SOURCE_INVARIANTS = [
     label: "诘星 ASR durable request 以用户钱包锁防并发透支并由全局 cron 回收失联预留",
   },
   {
+    file: "src/lib/deepseek-config.ts",
+    mustInclude: ["server-only", "DEEPSEEK_API_KEY", "DEEPSEEK_BASE_URL", "DEEPSEEK_MODEL", "https://api.deepseek.com", "deepseek-v4-flash"],
+    mustNotInclude: ["NEXT_PUBLIC_", "MIMO_API_KEY"],
+    label: "网站 AI 文本功能统一读取服务端 DeepSeek 配置",
+  },
+  {
     file: "src/lib/star-interview-server.ts",
     mustInclude: ["server-only", "x-starinterview-client", "x-starinterview-install-id", "x-forwarded-for", "getStarInterviewLLMConfiguration", "DEEPSEEK_API_KEY", "DEEPSEEK_BASE_URL", "DEEPSEEK_MODEL", "https://api.deepseek.com", "deepseek-v4-flash", "getStarInterviewASRConfiguration", "MIMO_API_KEY", "MIMO_ASR_MODEL", "MIMO_ASR_BASE_URL", "https://token-plan-cn.xiaomimimo.com/v1"],
     mustNotInclude: ["NEXT_PUBLIC_", "SUPABASE_SERVICE_ROLE_KEY"],
@@ -525,7 +531,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/resume/import/route.ts",
-    mustInclude: ["resolveResumeAiAccess", "access.takeRateSlot", "MIMO_API_KEY", "response_format", "json_object", "localDraft", "sourceText", "preserveDeterministicBasics", "language", "zh-CN", "en-US", "role", "不得虚构", "区块", "Cache-Control", "no-store", "maxDuration = 120", "REQUEST_TIMEOUT_MS = 100_000", "buildWholeReviewHints", "bulletCount", "elapsedMs", "progressMode", "application/x-ndjson", "REVIEW_PARTS_TOTAL = 2", "buildWholeResumeMessages", "sanitizeReviewedDraft", "holistic_structure_v3", "enable_thinking: false", "本地识别结果仍可直接导入"],
+    mustInclude: ["getDeepSeekConfiguration", 'thinking: { type: "disabled" }', "resolveResumeAiAccess", "access.takeRateSlot", "response_format", "json_object", "localDraft", "sourceText", "preserveDeterministicBasics", "language", "zh-CN", "en-US", "role", "不得虚构", "区块", "Cache-Control", "no-store", "maxDuration = 120", "REQUEST_TIMEOUT_MS = 100_000", "buildWholeReviewHints", "bulletCount", "elapsedMs", "progressMode", "application/x-ndjson", "REVIEW_PARTS_TOTAL = 2", "buildWholeResumeMessages", "sanitizeReviewedDraft", "holistic_structure_v3", "本地识别结果仍可直接导入"],
     mustNotInclude: ["createAdminClient", "SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_", "request.formData", "console.log", "createFallbackPart", "Promise.all(REVIEW_PARTS"],
     label: "AI 先通读整份原文再一次性决定全部区块归属，完整校验后才返回且保留旧 JSON 契约",
   },
@@ -561,7 +567,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/resume/translate/route.ts",
-    mustInclude: ["resolveResumeAiAccess", "access.takeRateSlot", "MIMO_API_KEY", "response_format", "json_object", "hasMatchingStructure", "createTranslationPlan", "applyTranslationValues", "TRANSLATION_CONCURRENCY = 2", "CHUNK_TIMEOUT_MS = 60_000", "progressMode", "application/x-ndjson", "translations", "structuredClone", "person_name_pinyin", "isSafeLatinName", "不得创造英文名", "不得润色", "Cache-Control", "no-store", "maxDuration = 180", "REQUEST_TIMEOUT_MS = 150_000", "chat_template_kwargs", "enable_thinking: false", "invalid_json", "invalid_result", "isAbortError", "elapsedMs", "finishReason", "reasoningLength"],
+    mustInclude: ["getDeepSeekConfiguration", 'thinking: { type: "disabled" }', "resolveResumeAiAccess", "access.takeRateSlot", "response_format", "json_object", "hasMatchingStructure", "createTranslationPlan", "applyTranslationValues", "TRANSLATION_CONCURRENCY = 2", "CHUNK_TIMEOUT_MS = 60_000", "progressMode", "application/x-ndjson", "translations", "structuredClone", "person_name_pinyin", "isSafeLatinName", "不得创造英文名", "不得润色", "Cache-Control", "no-store", "maxDuration = 180", "REQUEST_TIMEOUT_MS = 150_000", "invalid_json", "invalid_result", "isAbortError", "elapsedMs", "finishReason", "reasoningLength"],
     mustNotInclude: ["createAdminClient", "SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_", "console.log", "const payload = await response.json().catch", "待翻译简历 JSON"],
     label: "整份简历 AI 翻译在一次鉴权和限流内用短键分块并原子合并",
   },
@@ -888,9 +894,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/resume/ai-polish/route.ts",
-    mustInclude: ["MIMO_API_KEY", "MIMO_BASE_URL", "resolveMimoModel", "resolveResumeAiAccess", "access.takeRateSlot", "REQUEST_TIMEOUT_MS", "MAX_OUTPUT_TOKENS", "chat_template_kwargs", "enable_thinking: false", "response_format", "json_object", "createPolishCacheKey", "X-StarJob-AI-Cache", "logServerError", "kind: \"kind\" in error", "不得虚构", "不把“协助/参与/支持”升级", "不强补结果", "verificationItems", "待确认信息", "只用于用户核实", "warnings", "严格 JSON", "resultSchema", "parseResult", "normalizeResultCandidate", "typeof change === \"string\"", "title: source.title", "subtitle: source.subtitle", "customInstruction: z.string().trim().max(600).optional().default(\"\")", "用户补充要求", "不得覆盖以上事实约束", "原文未改变"],
+    mustInclude: ["getDeepSeekConfiguration", 'thinking: { type: "disabled" }', "resolveResumeAiAccess", "access.takeRateSlot", "REQUEST_TIMEOUT_MS", "MAX_OUTPUT_TOKENS", "response_format", "json_object", "createPolishCacheKey", "X-StarJob-AI-Cache", "logServerError", "kind: \"kind\" in error", "不得虚构", "不把“协助/参与/支持”升级", "不强补结果", "verificationItems", "待确认信息", "只用于用户核实", "warnings", "严格 JSON", "resultSchema", "parseResult", "normalizeResultCandidate", "typeof change === \"string\"", "title: source.title", "subtitle: source.subtitle", "customInstruction: z.string().trim().max(600).optional().default(\"\")", "用户补充要求", "不得覆盖以上事实约束", "原文未改变"],
     mustNotInclude: ["NEXT_PUBLIC_MIMO", "console.log", "SUPABASE_SERVICE_ROLE_KEY"],
-    label: "简历分段润色仅在服务端调用 MiMo 并限制幻觉、输入、超时和频率",
+    label: "简历分段润色仅在服务端调用 DeepSeek 并限制幻觉、输入、超时和频率",
   },
   {
     file: "src/components/resume/ResumePolishDialog.tsx",
@@ -942,15 +948,21 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/referrals/route.ts",
-    mustInclude: ["supabase.auth.getUser()", "createAdminClient", "validateReferralCodeInput", "create_referral_code_for_review", "referral_upload_rate_limit", "claim_referral_code_for_review", "reviewReferralCodeWithMimo", "complete_referral_code_review", "reviewStatus", "Cache-Control"],
-    mustNotInclude: ["console.log", "MIMO_API_KEY"],
-    label: "内推码上传先公开，再原子登记唯一一次 MiMo 审核并自动下架明确违规内容",
+    mustInclude: ["supabase.auth.getUser()", "submitReferralCode", "Cache-Control"],
+    mustNotInclude: ["console.log", "DEEPSEEK_API_KEY"],
+    label: "内推码上传先鉴权，再调用独立的提交服务",
+  },
+  {
+    file: "src/lib/referral-submission.ts",
+    mustInclude: ["createAdminClient", "validateReferralCodeInput", "create_referral_code_for_review", "referral_upload_rate_limit", "claim_referral_code_for_review", "getDeepSeekConfiguration", "reviewReferralCode", "complete_referral_code_review", "reviewStatus"],
+    mustNotInclude: ["getReferralMimoConfiguration", "reviewReferralCodeWithMimo", "console.log"],
+    label: "内推码发布后原子登记唯一一次 DeepSeek 即时审核",
   },
   {
     file: "src/lib/referral-moderation.ts",
     mustInclude: ["MIMO_API_KEY", "MIMO_BASE_URL", "MIMO_MODEL", "enable_thinking: false", "response_format", "job_agency", "career_coaching", "proxy_application", "lead_generation", "confidence >= 0.8", "不可信数据", "证据不足时 keep"],
     mustNotInclude: ["NEXT_PUBLIC_MIMO", "console.log"],
-    label: "MiMo 内推码审核采用保守分类、提示注入防护与高置信度下架阈值",
+    label: "内推码审核采用保守分类、提示注入防护与高置信度下架阈值",
   },
   {
     file: "supabase/migrations/20260817180000_referral_code_plaza.sql",
@@ -1209,15 +1221,15 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/resume/extension-match/route.ts",
-    mustInclude: ["verifyExtensionMatchToken", "resolveMimoModel", "MIMO_API_KEY", "MIMO_BASE_URL", "REQUEST_TIMEOUT_MS", "RATE_LIMIT", "CANONICAL_KEYS", "max_tokens", "response_format", "json_object", "deterministicKey", "不包含输入框现有值", "不得把姓名映射为学校", "区块是硬边界", "awards.title", "awards.description", "resultSchema", "Cache-Control", "no-store"],
+    mustInclude: ["getDeepSeekConfiguration", 'thinking: { type: "disabled" }', "verifyExtensionMatchToken", "REQUEST_TIMEOUT_MS", "RATE_LIMIT", "CANONICAL_KEYS", "max_tokens", "response_format", "json_object", "deterministicKey", "不包含输入框现有值", "不得把姓名映射为学校", "区块是硬边界", "awards.title", "awards.description", "resultSchema", "Cache-Control", "no-store"],
     mustNotInclude: ["createAdminClient", "SUPABASE_SERVICE_ROLE_KEY", "document.cookie", "resume.content"],
     label: "扩展智能匹配只上传字段元数据并校验令牌、频率和标准字段键",
   },
   {
     file: "src/app/api/resume/extension-autofill/route.ts",
-    mustInclude: ["export const maxDuration = 90", "preferredRegion = \"hkg1\"", "REQUEST_TIMEOUT_MS = 75_000", "verifyExtensionMatchToken", "takeExtensionAutofillRateSlot", "MIMO_API_KEY", "MIMO_BASE_URL", "resolveMimoModel", "DEEPSEEK_API_KEY", "DEEPSEEK_BASE_URL", "DEEPSEEK_MODEL", "https://api.deepseek.com", "deepseek-v4-flash", "chat_template_kwargs: { enable_thinking: false }", "thinking: { type: \"disabled\" }", "REQUEST_TIMEOUT_MS", "MIN_CONFIDENCE = 0.68", "MAX_REPAIR_PASSES = 2", "pendingGroups", "repairGroupIndex", "repair_upstream_error", "modelCallCount", "MAX_MODEL_OUTPUT_TOKENS = 5_000", "MIN_MODEL_OUTPUT_TOKENS = 1_200", "extractPartialOutcomeRows(content)", "normalizeModelOutcomeCandidate(row)", "isHardBlockedApplicationField(field)", "isHardResumeFactField(field)", "ownDescriptor", "deriveExactResumeValue", "extension_autofill_partial_contract", "AI_RESPONSE_INCOMPLETE", "degraded: missingAfterRepair.length > 0", "operationId", "pageSnapshotId", "batchId", "rateSlotAllowed", "response_format", "json_object", "resumeSchema", "fieldSchema", "resultSchema", "outcomes", "semantic_inference", "grounded_generation", "recordIndex", "deriveRecordDateValue", "deriveRecordDescriptionValue", "getScopedFieldFacts", "hasFieldSpecificResumeBasis", "isEducationDescriptionField", "normalizeMonthBoundaryDate", "简历是候选人的事实与能力证据", "允许重写、归纳、翻译和有证据的语义推断", "职位上下文只能决定表达重点", "只要存在课程、荣誉或职责内容就必须填写经历描述", "严禁交换开始和结束日期", "结束日期规范为当月最后一天", "normalizeChoice", "field.options.some", "returnedByKey", "discardedUnknown", "discardedDuplicate", "discardedMalformed", "fieldKey: `f${index}`", "originalFields", "collectResumeFacts", "collectResumeSummaryFacts", "hasResumeBasis", "isAllowedDerivedValue", "isSafeResumeSummary", "basics.birthDate", "自我描述", "deriveGraduationValue", "parseYearMonth", "不可信文本", "中文姓名的无声调汉语拼音", "不得推断或填写身份证", "可以回答有事实证据的开放申请题", "每个 fieldKey 必须恰好返回一个 outcome", "不能填写时返回 manual 或 skip", "Wang Xiaoxing", "Cache-Control", "no-store"],
+    mustInclude: ["getDeepSeekConfiguration", 'thinking: { type: "disabled" }', "export const maxDuration = 90", "preferredRegion = \"hkg1\"", "REQUEST_TIMEOUT_MS = 75_000", "verifyExtensionMatchToken", "takeExtensionAutofillRateSlot", "REQUEST_TIMEOUT_MS", "MIN_CONFIDENCE = 0.68", "MAX_REPAIR_PASSES = 2", "pendingGroups", "repairGroupIndex", "repair_upstream_error", "modelCallCount", "MAX_MODEL_OUTPUT_TOKENS = 5_000", "MIN_MODEL_OUTPUT_TOKENS = 1_200", "extractPartialOutcomeRows(content)", "normalizeModelOutcomeCandidate(row)", "isHardBlockedApplicationField(field)", "isHardResumeFactField(field)", "ownDescriptor", "deriveExactResumeValue", "extension_autofill_partial_contract", "AI_RESPONSE_INCOMPLETE", "degraded: missingAfterRepair.length > 0", "operationId", "pageSnapshotId", "batchId", "rateSlotAllowed", "response_format", "json_object", "resumeSchema", "fieldSchema", "resultSchema", "outcomes", "semantic_inference", "grounded_generation", "recordIndex", "deriveRecordDateValue", "deriveRecordDescriptionValue", "getScopedFieldFacts", "hasFieldSpecificResumeBasis", "isEducationDescriptionField", "normalizeMonthBoundaryDate", "简历是候选人的事实与能力证据", "允许重写、归纳、翻译和有证据的语义推断", "职位上下文只能决定表达重点", "只要存在课程、荣誉或职责内容就必须填写经历描述", "严禁交换开始和结束日期", "结束日期规范为当月最后一天", "normalizeChoice", "field.options.some", "returnedByKey", "discardedUnknown", "discardedDuplicate", "discardedMalformed", "fieldKey: `f${index}`", "originalFields", "collectResumeFacts", "collectResumeSummaryFacts", "hasResumeBasis", "isAllowedDerivedValue", "isSafeResumeSummary", "basics.birthDate", "自我描述", "deriveGraduationValue", "parseYearMonth", "不可信文本", "中文姓名的无声调汉语拼音", "不得推断或填写身份证", "可以回答有事实证据的开放申请题", "每个 fieldKey 必须恰好返回一个 outcome", "不能填写时返回 manual 或 skip", "Wang Xiaoxing", "Cache-Control", "no-store"],
     mustNotInclude: ["createAdminClient", "SUPABASE_SERVICE_ROLE_KEY", "document.cookie", "console.log"],
-    label: "AI 智能填写优先使用 MiMo，并在未配置 MiMo 时兼容 DeepSeek，同时保留受限令牌、结构化简历白名单和全表单保守规则",
+    label: "AI 智能填写使用 DeepSeek，同时保留受限令牌、结构化简历白名单和全表单保守规则",
   },
   {
     file: "supabase/migrations/20260810110000_extension_autofill_durable_rate_limit.sql",

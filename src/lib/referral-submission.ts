@@ -1,6 +1,6 @@
+import { getDeepSeekConfiguration } from "@/lib/deepseek-config";
 import {
-  getReferralMimoConfiguration,
-  reviewReferralCodeWithMimo,
+  reviewReferralCode,
   type ReferralReviewRecord,
 } from "@/lib/referral-moderation";
 import {
@@ -88,7 +88,7 @@ export async function submitReferralCode(
 }
 
 async function runSingleReview(record: ReferralReviewRecord, signal: AbortSignal) {
-  const configuration = getReferralMimoConfiguration();
+  const configuration = getDeepSeekConfiguration();
   if (!configuration) {
     return {
       outcome: "error" as const,
@@ -98,9 +98,9 @@ async function runSingleReview(record: ReferralReviewRecord, signal: AbortSignal
     };
   }
   try {
-    return await reviewReferralCodeWithMimo(record, configuration, signal);
+    return await reviewReferralCode(record, configuration, signal);
   } catch (error) {
-    logReferralServerError("mimo", error);
+    logReferralServerError("deepseek", error);
     return {
       outcome: "error" as const,
       category: "upstream_error",

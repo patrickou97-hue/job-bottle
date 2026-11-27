@@ -3,7 +3,7 @@ import { createExtensionMatchToken } from "@/lib/extension-match-token";
 import { getApplicationPrepSummary } from "@/lib/application-prep";
 import { resumeRowToDocument } from "@/lib/resume-sync";
 import { createClient } from "@/lib/supabase/server";
-import { resolveMimoModel } from "@/lib/mimo-model";
+import { getDeepSeekConfiguration } from "@/lib/deepseek-config";
 
 export async function GET() {
   try {
@@ -47,10 +47,7 @@ export async function GET() {
         version: 1,
         resumes,
         syncedAt: new Date().toISOString(),
-        aiMatchingAvailable: Boolean(matchToken && (
-          (process.env.MIMO_API_KEY && process.env.MIMO_BASE_URL && resolveMimoModel())
-          || process.env.DEEPSEEK_API_KEY
-        )),
+        aiMatchingAvailable: Boolean(matchToken && getDeepSeekConfiguration()),
         matchToken: matchToken?.token || null,
         matchTokenExpiresAt: matchToken?.expiresAt || null,
       },

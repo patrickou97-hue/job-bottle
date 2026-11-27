@@ -56,7 +56,7 @@ export function ExtensionHubClient() {
           : detectedVersion && SHORT_TIMEOUT_AI_VERSIONS.has(detectedVersion)
             ? `${detectedVersion} 的 AI 填写仍可使用；建议升级到 1.1.6，获得稳定的自定义控件、日期填写和人工复核。`
             : detectedVersion && PREVIOUS_AI_VERSIONS.has(detectedVersion)
-              ? `${detectedVersion} 仍可继续使用；升级到 1.1.6 后可获得自定义下拉、完整日期月末、MiMo 优先策略和答案复核。`
+              ? `${detectedVersion} 仍可继续使用；升级到 1.1.6 后可获得自定义下拉、完整日期月末和答案复核。`
               : "网申助手已安装，可同步当前账户的云端简历。");
       }
       if (payload.type === "SYNC_COMPLETE") {

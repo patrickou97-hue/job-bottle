@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { verifyExtensionMatchToken } from "@/lib/extension-match-token";
-import { resolveMimoModel } from "@/lib/mimo-model";
+import { getDeepSeekConfiguration } from "@/lib/deepseek-config";
 
 const REQUEST_TIMEOUT_MS = 8_000;
 const RATE_WINDOW_MS = 10 * 60 * 1_000;
@@ -70,10 +70,10 @@ export async function POST(request: NextRequest) {
   const parsed = inputSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "页面字段格式无法识别" }, { status: 400 });
 
-  const apiKey = process.env.MIMO_API_KEY;
-  const baseUrl = process.env.MIMO_BASE_URL;
-  const model = resolveMimoModel();
-  if (!apiKey || !baseUrl || !model) return NextResponse.json({ error: "智能匹配服务尚未配置" }, { status: 503 });
+  const configuration = getDeepSeekConfiguration();
+  if (!configuration) return NextResponse.json({ error: "智能匹配服务尚未配置" }, { status: 503 });
+
+  const { apiKey, baseUrl, model } = configuration;
 
   try {
     const controller = new AbortController();
@@ -88,6 +88,7 @@ export async function POST(request: NextRequest) {
           temperature: 0,
           stream: false,
           max_tokens: 800,
+          thinking: { type: "disabled" },
           response_format: { type: "json_object" },
           messages: [
             { role: "system", content: SYSTEM_PROMPT },

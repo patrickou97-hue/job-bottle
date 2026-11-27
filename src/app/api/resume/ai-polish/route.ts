@@ -3,7 +3,7 @@ import { z } from "zod";
 import { createHash } from "node:crypto";
 import { RESUME_POLISH_INSTRUCTIONS, RESUME_POLISH_SECTION_TYPES } from "@/lib/resume-ai";
 import { resolveResumeAiAccess } from "@/lib/resume-ai-access";
-import { resolveMimoModel } from "@/lib/mimo-model";
+import { getDeepSeekConfiguration } from "@/lib/deepseek-config";
 
 export const maxDuration = 60;
 
@@ -73,15 +73,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "当前段落为空，请先填写内容" }, { status: 400 });
   }
 
-  const apiKey = process.env.MIMO_API_KEY;
-  const baseUrl = process.env.MIMO_BASE_URL;
-  const model = resolveMimoModel();
-  if (!apiKey || !baseUrl || !model) {
+  const configuration = getDeepSeekConfiguration();
+  if (!configuration) {
     return NextResponse.json(
       { error: "润色暂时不可用，请稍后重试。" },
       { status: 503 },
     );
   }
+
+  const { apiKey, baseUrl, model } = configuration;
 
   const cacheKey = createPolishCacheKey(access.userId, parsed.data);
   const cached = polishCache.get(cacheKey);
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const startedAt = Date.now();
-    const first = await callMimo({
+    const first = await callDeepSeek({
       apiKey,
       baseUrl,
       model,
@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
 
 type ChatMessage = { role: "system" | "user"; content: string };
 
-async function callMimo({
+async function callDeepSeek({
   apiKey,
   baseUrl,
   model,
@@ -177,7 +177,7 @@ async function callMimo({
         temperature: 0.68,
         stream: false,
         max_tokens: MAX_OUTPUT_TOKENS,
-        chat_template_kwargs: { enable_thinking: false },
+        thinking: { type: "disabled" },
         response_format: { type: "json_object" },
       }),
       signal: controller.signal,
@@ -401,7 +401,7 @@ function ensureQuantifiedOutcomeCandidate(
   sectionType: z.infer<typeof inputSchema>["sectionType"],
   language: z.infer<typeof inputSchema>["language"],
 ): PolishResult {
-  // MiMo can decline to estimate missing outcomes despite the prompt; fulfill the user's explicit request without a second slow upstream call.
+  // The model can decline to estimate missing outcomes despite the prompt; fulfill the user's explicit request without a second slow upstream call.
   if (!["work", "project", "campus", "custom"].includes(sectionType)
     || hasQuantifiedResult(source.bullets)
     || hasQuantifiedResult(result.revised.bullets)) return result;
@@ -584,7 +584,7 @@ function isChangeType(value: unknown): value is "clarity" | "structure" | "relev
 
 class UpstreamError extends Error {
   constructor(public status: number, public kind = "http") {
-    super(`MiMo upstream ${status}`);
+    super(`DeepSeek upstream ${status}`);
   }
 }
 

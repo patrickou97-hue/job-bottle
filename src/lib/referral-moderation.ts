@@ -16,11 +16,19 @@ export type ReferralReviewResult = {
   reason: string;
 };
 
-type MimoConfiguration = {
+type ReviewConfiguration = {
   apiKey: string;
   baseUrl: string;
   model: string;
 };
+
+export function reviewReferralCodeWithMimo(
+  record: ReferralReviewRecord,
+  configuration: ReviewConfiguration,
+  requestSignal?: AbortSignal,
+) {
+  return reviewReferralCode(record, configuration, requestSignal, "mimo");
+}
 
 const REQUEST_TIMEOUT_MS = 45_000;
 const DISALLOWED_CATEGORIES = new Set([
@@ -31,10 +39,11 @@ const DISALLOWED_CATEGORIES = new Set([
   "lead_generation",
 ]);
 
-export async function reviewReferralCodeWithMimo(
+export async function reviewReferralCode(
   record: ReferralReviewRecord,
-  configuration: MimoConfiguration,
+  configuration: ReviewConfiguration,
   requestSignal?: AbortSignal,
+  provider: "deepseek" | "mimo" = "deepseek",
 ): Promise<ReferralReviewResult> {
   const controller = new AbortController();
   const forwardAbort = () => controller.abort();
@@ -55,18 +64,20 @@ export async function reviewReferralCodeWithMimo(
         temperature: 0,
         stream: false,
         max_tokens: 320,
-        chat_template_kwargs: { enable_thinking: false },
+        ...(provider === "deepseek"
+          ? { thinking: { type: "disabled" } }
+          : { chat_template_kwargs: { enable_thinking: false } }),
         response_format: { type: "json_object" },
       }),
       signal: controller.signal,
       cache: "no-store",
     });
-    if (!response.ok) throw new Error(`REFERRAL_MIMO_HTTP_${response.status}`);
+    if (!response.ok) throw new Error(`REFERRAL_REVIEW_HTTP_${response.status}`);
     const payload = await response.json().catch(() => null) as {
       choices?: { message?: { content?: string } }[];
     } | null;
     const content = payload?.choices?.[0]?.message?.content;
-    if (!content) throw new Error("REFERRAL_MIMO_EMPTY");
+    if (!content?.trim()) throw new Error("REFERRAL_REVIEW_EMPTY");
     return parseReferralReviewResult(content);
   } finally {
     clearTimeout(timeout);
@@ -80,10 +91,10 @@ export function parseReferralReviewResult(content: string): ReferralReviewResult
   try {
     value = JSON.parse(candidate);
   } catch {
-    throw new Error("REFERRAL_MIMO_INVALID_JSON");
+    throw new Error("REFERRAL_REVIEW_INVALID_JSON");
   }
   if (!value || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("REFERRAL_MIMO_INVALID_RESULT");
+    throw new Error("REFERRAL_REVIEW_INVALID_RESULT");
   }
   const result = value as Record<string, unknown>;
   const verdict = result.verdict;
@@ -93,7 +104,7 @@ export function parseReferralReviewResult(content: string): ReferralReviewResult
     : null;
   const reason = typeof result.reason === "string" ? result.reason.trim().slice(0, 240) : "";
   if ((verdict !== "keep" && verdict !== "remove") || !category || confidence === null || !reason) {
-    throw new Error("REFERRAL_MIMO_INVALID_RESULT");
+    throw new Error("REFERRAL_REVIEW_INVALID_RESULT");
   }
 
   const shouldRemove = verdict === "remove"
@@ -123,7 +134,8 @@ export function buildReferralReviewMessages(record: ReferralReviewRecord) {
   ];
 }
 
-export function getReferralMimoConfiguration(): MimoConfiguration | null {
+// The scheduled GitHub fallback has its own provider credentials.
+export function getReferralMimoConfiguration(): ReviewConfiguration | null {
   const apiKey = process.env.MIMO_API_KEY;
   const baseUrl = process.env.MIMO_BASE_URL;
   const model = resolveReferralMimoModel();

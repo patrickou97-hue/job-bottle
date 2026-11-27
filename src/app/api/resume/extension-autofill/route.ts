@@ -6,7 +6,7 @@ import {
   isAutofillRecordNarrativeMappingCompatible,
 } from "@/lib/extension-autofill-field-compat";
 import { verifyExtensionMatchToken } from "@/lib/extension-match-token";
-import { resolveMimoModel } from "@/lib/mimo-model";
+import { getDeepSeekConfiguration } from "@/lib/deepseek-config";
 import {
   analyzeOutcomeCompleteness,
   extractPartialOutcomeRows,
@@ -247,17 +247,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "AI 智能填写请求较频繁，请稍后重试" }, { status: 429, headers: { "Retry-After": "600" } });
   }
 
-  const deepSeekApiKey = process.env.DEEPSEEK_API_KEY?.trim();
-  const mimoApiKey = process.env.MIMO_API_KEY?.trim();
-  const provider = mimoApiKey ? "mimo" : "deepseek";
-  const apiKey = mimoApiKey || deepSeekApiKey;
-  const baseUrl = provider === "mimo"
-    ? process.env.MIMO_BASE_URL?.trim() || ""
-    : process.env.DEEPSEEK_BASE_URL?.trim() || "https://api.deepseek.com";
-  const model = provider === "mimo"
-    ? resolveMimoModel() || ""
-    : process.env.DEEPSEEK_MODEL?.trim() || "deepseek-v4-flash";
-  if (!apiKey || !baseUrl || !model) return NextResponse.json({ error: "AI 智能填写服务尚未配置" }, { status: 503 });
+  const configuration = getDeepSeekConfiguration();
+  if (!configuration) return NextResponse.json({ error: "AI 智能填写服务尚未配置" }, { status: 503 });
 
   try {
     const modelFields = parsed.data.fields.map((field, index) => ({ ...field, fieldKey: `f${index}` }));
@@ -289,10 +280,7 @@ export async function POST(request: NextRequest) {
         const startedAt = Date.now();
         try {
           const reply = await callAutofillModel({
-            apiKey,
-            baseUrl,
-            model,
-            provider,
+            ...configuration,
             requestSignal: request.signal,
             resume: parsed.data.resume,
             fields: attemptFields,
@@ -430,7 +418,6 @@ async function callAutofillModel(input: {
   apiKey: string;
   baseUrl: string;
   model: string;
-  provider: "deepseek" | "mimo";
   requestSignal: AbortSignal;
   resume: z.infer<typeof resumeSchema>;
   fields: z.infer<typeof fieldSchema>[];
@@ -455,9 +442,7 @@ async function callAutofillModel(input: {
         model: input.model,
         temperature: input.repairPass === 0 ? 0.15 : 0,
         stream: false,
-        ...(input.provider === "mimo"
-          ? { chat_template_kwargs: { enable_thinking: false } }
-          : { thinking: { type: "disabled" } }),
+        thinking: { type: "disabled" },
         max_tokens: outputBudget,
         response_format: { type: "json_object" },
         messages: [

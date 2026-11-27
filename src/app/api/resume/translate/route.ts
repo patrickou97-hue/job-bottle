@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { resolveResumeAiAccess } from "@/lib/resume-ai-access";
-import { resolveMimoModel } from "@/lib/mimo-model";
+import { getDeepSeekConfiguration } from "@/lib/deepseek-config";
 import {
   applyTranslationValues,
   createTranslationPlan,
@@ -155,10 +155,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "整份简历内容过长，请精简后再翻译" }, { status: 413 });
   }
 
-  const apiKey = process.env.MIMO_API_KEY;
-  const baseUrl = process.env.MIMO_BASE_URL;
-  const model = resolveMimoModel();
-  if (!apiKey || !baseUrl || !model) {
+  const configuration = getDeepSeekConfiguration();
+  if (!configuration) {
     return NextResponse.json({ error: "翻译暂时不可用，原简历未改动。" }, { status: 503 });
   }
 
@@ -170,6 +168,8 @@ export async function POST(request: NextRequest) {
   if (!completedChunkResults) {
     return NextResponse.json({ error: "已保存的翻译进度与当前简历不匹配，请重新开始翻译" }, { status: 400 });
   }
+
+  const { apiKey, baseUrl, model } = configuration;
 
   const { data: rateSlot, error: rateSlotError } = await access.takeRateSlot();
   if (rateSlotError) {
@@ -431,7 +431,7 @@ async function translateChunk({
   const messages = buildChunkMessages(sourceLanguage, targetLanguage, chunk);
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      const content = await callMimo({ apiKey, baseUrl, model, messages, signal });
+      const content = await callDeepSeek({ apiKey, baseUrl, model, messages, signal });
       const result = parseChunkResult(content, chunk);
       if (result) return result;
       if (attempt === 1) throw new UpstreamError(502, "invalid_result");
@@ -444,7 +444,7 @@ async function translateChunk({
   throw new UpstreamError(502, "invalid_result");
 }
 
-async function callMimo({
+async function callDeepSeek({
   apiKey,
   baseUrl,
   model,
@@ -473,7 +473,7 @@ async function callMimo({
         temperature: 0,
         stream: false,
         max_tokens: MAX_CHUNK_OUTPUT_TOKENS,
-        chat_template_kwargs: { enable_thinking: false },
+        thinking: { type: "disabled" },
         response_format: { type: "json_object" },
       }),
       signal: controller.signal,
