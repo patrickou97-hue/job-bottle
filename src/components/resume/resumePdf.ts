@@ -533,18 +533,21 @@ function renderSkills(
 }
 
 function sectionTitle(state: LayoutState, title: string, options: PdfOptions, rightText = "") {
-  state.y += options.sectionGap;
-
   const templateStyle = getResumeTemplateStyle(options.templateId);
+  const isEnglish = isEnglishResumeTemplate(options.templateId);
+  const headingShift = isEnglish ? (templateStyle.section === "accent" ? 2.5 : 3.5) : 0;
+  state.y += options.sectionGap + headingShift;
+
   const cleanRightText = cleanText(rightText);
+  const firstRowHeight = options.bodySize * options.lineHeight + 1;
   if (templateStyle.section === "accent") {
-    const ruleOffset = 4.2;
+    const ruleOffset = isEnglish ? 3.5 : 4.2;
     const ruleWidth = 0.7;
     const gapBelowRule = 2.5;
     // Text is drawn on its baseline. Leave room for the first row's glyphs
     // above that baseline as well as the visible gap below the rule.
     const firstRowOffset = ruleOffset + ruleWidth / 2 + gapBelowRule + options.bodySize;
-    ensureSpace(state, firstRowOffset + options.bodySize * options.lineHeight + 1);
+    ensureSpace(state, firstRowOffset + firstRowHeight);
 
     setFont(state, options.headingSize, "bold", templateStyle.accent);
     drawText(state, title, state.left, state.y);
@@ -558,7 +561,10 @@ function sectionTitle(state: LayoutState, title: string, options: PdfOptions, ri
     return;
   }
 
-  ensureSpace(state, options.headingSize + 5);
+  // For English Classic, move the heading within the existing block so the
+  // extra space above it comes from the excess space below it.
+  const firstRowOffset = options.headingSize * 1.38 + 1 - headingShift;
+  ensureSpace(state, isEnglish ? firstRowOffset + firstRowHeight : options.headingSize + 5);
   setFont(state, options.headingSize, "bold");
   drawText(state, title, state.left, state.y);
   const titleWidth = state.pdf.getTextWidth(title);
@@ -578,9 +584,7 @@ function sectionTitle(state: LayoutState, title: string, options: PdfOptions, ri
     templateStyle.accent,
     templateStyle.section === "strong" ? 1 : 0.7,
   );
-  // Reserve a full text-line after the rule. Without this clearance, the first
-  // education or experience row visually collides with the section heading.
-  state.y += options.headingSize * 1.38 + 1;
+  state.y += firstRowOffset;
 }
 
 function row(
