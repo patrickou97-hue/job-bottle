@@ -198,3 +198,4 @@
 .job-search-answer .job-company-source { color: var(--discovery-accent); font-size: 12px; text-decoration: underline; text-underline-offset: 3px; }
 .job-company-overview details { margin-block: 10px; }
 .job-company-overview summary { cursor: pointer; color: var(--text-secondary); font-size: 13px; }
+.job-search-answer .job-answer-notice { margin-top: 12px; font-size: 12px; line-height: 1.5; color: var(--text-secondary); }

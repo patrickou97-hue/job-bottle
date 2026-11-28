@@ -510,7 +510,7 @@ export function HomeClient() {
         <span>搜索岗位</span>
         <div className="discovery-search__field">
           <Search aria-hidden="true" size={20} />
-          <Input type="search" value={filters.keyword} onChange={(event) => handleFiltersChange({ ...filters, keyword: event.target.value })} placeholder="搜索公司或岗位名称" />
+          <Input type="search" value={filters.keyword} onChange={(event) => handleFiltersChange({ ...filters, keyword: event.target.value, role: null })} placeholder="搜索公司或岗位名称" />
         </div>
       </label>);
 
@@ -886,6 +886,7 @@ function getActiveFilterChips(
   const chips: string[] = [];
   const keyword = filters.keyword.trim();
   if (filters.employerGroup) chips.push("世界500强科技公司");
+  if (filters.role) chips.push(filters.role.name, "按匹配度优先");
   if (keyword) chips.push(`关键词：${keyword}`);
   if (filters.industry) chips.push(`行业：${filters.industry}`);
   if (filters.batchType) chips.push(`批次：${filters.batchType}`);

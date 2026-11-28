@@ -102,7 +102,7 @@ function VipMembershipPage({ basicModelId, status, statusError }: {
           <li><Search /><div><h3>问公司，也能找岗位</h3><p>问“中金公司怎么样？”，直接看公司业务和招聘方向。也可以问“有哪些世界五百强科技公司的产品岗？”，对照榜单、公司简介和招聘公告，再追问感兴趣的那一家。</p><Link href="/explore#job-assistant" className="vip-text-link">去找岗位 <ArrowRight size={15} /></Link></div><strong>AI 岗位问答</strong></li>
           <li><FileText /><div><h3>把手头的材料写成简历</h3><p>把周报、项目文档和 SQL 一起交给{VIP_FLASH_LABEL}，按教育、实习、项目等模块整理成初稿。缺少的学校、专业和照片可在编辑器补充。</p><Link href="/resume/materials" className="vip-text-link">从材料开始 <ArrowRight size={15} /></Link></div><strong>每天 {VIP_COMPOSE_DAILY_LIMIT} 次 · 每周 {VIP_COMPOSE_WEEKLY_LIMIT} 次</strong></li>
           <li><Zap /><div><h3>按目标岗位润色一段经历</h3><p>在简历编辑器选中一段，交给基础模型精简或改写。普通用户每小时 {BASIC_POLISH_HOURLY_LIMIT} 次、每周 {BASIC_POLISH_WEEKLY_LIMIT} 次。</p><Link href="/resume" className="vip-text-link">去简历制作 <ArrowRight size={15} /></Link></div><strong>每小时 {VIP_BASIC_POLISH_HOURLY_LIMIT} 次 · 每周 {VIP_BASIC_POLISH_WEEKLY_LIMIT} 次</strong></li>
-          <li><MessageSquareText /><div><h3>跟进已经投出的岗位</h3><p>问“哪些投递一周没进展了？”，或说“把第三条改成一面”。修改、追加备注和删除记录前，都能先核对公司和岗位。</p><Link href="/my#application-assistant" className="vip-text-link">打开投递助手 <ArrowRight size={15} /></Link></div><strong>AI 投递助手</strong></li>
+          <li><MessageSquareText /><div><h3>跟进已经投出的岗位</h3><p>说“帮我记录路易威登管培生的一面”，核对后即可新增外部投递。也可以问哪些投递该跟进，更新面试阶段、追加备注或删除记录。</p><Link href="/my#application-assistant" className="vip-text-link">打开投递助手 <ArrowRight size={15} /></Link></div><strong>AI 投递助手</strong></li>
         </ul>
         <div className="vip-upgrade"><Sparkles size={20} aria-hidden="true" /><div><h3>高级模型 <small>（将与正式付费版一起发布）</small></h3><p>正式付费版可在材料工作台继续修改整份简历，也可在编辑器高级润色单段。两处共用每小时 {VIP_ADVANCED_HOURLY_LIMIT} 次、每周 {VIP_ADVANCED_WEEKLY_LIMIT} 次的额度。限免会员需另行升级，届时享折扣优惠。</p></div></div>
       </section>
@@ -135,7 +135,7 @@ function VipMembershipPage({ basicModelId, status, statusError }: {
           <div><dt>限免与升级</dt><dd>限时免费开通的会员不含高级模型访问权限。正式付费版发布后，也需升级才能使用高级模型。我们将为限免会员提供折扣升级优惠，具体价格、时间和规则将在正式版发布时公布，敬请期待。</dd></div>
           <div><dt>模型与更新</dt><dd>基础模型当前配置为 {basicModelId === "deepseek-v4-flash" ? "DeepSeek V4 Flash" : basicModelId}，正式付费版计划使用的高级模型为 {VIP_ADVANCED_MODEL.name}。对应型号可能随模型迭代或供应商调整而更新，最新对应关系会在此列明。</dd></div>
           <div><dt>计费与服务</dt><dd>当前限免开通实付 ¥0，无自动续费。各功能按上方权益额度使用。网络中断或模型服务异常可能导致请求失败。如遇扣费、额度或开通异常，可通过<Link href="/feedback">帮助与反馈</Link>联系我们，依法享有的消费者权益不受影响。</dd></div>
-          <div><dt>岗位与投递问答</dt><dd>找岗位时，模型接收问题、当前筛选和可选条件。推荐依据当前岗位库和已填的求职偏好。问公司时，会展示有来源的企业简介及本站招聘记录，也可能按公司名称查询维基数据和维基百科。世界500强推荐采用标明年份的《财富》全球榜单，仅覆盖已核实企业名称和业务的招聘记录。可打开资料来源或岗位详情核对。投递助手会发送指令及近期问题，投递记录在浏览器内匹配。两项问答均不扣减简历生成或润色额度。岗位要求和招聘进度请以招聘方公告为准。</dd></div>
+          <div><dt>岗位与投递问答</dt><dd>找岗位时，模型接收问题、当前筛选和可选条件。推荐依据当前岗位库和已填的求职偏好。问公司时，AI 可结合已有知识回答，并按全称、简称和相关名称查找本站招聘记录。部分企业资料可追溯到官网、维基数据或维基百科。世界500强推荐采用标明年份的《财富》全球榜单，仅覆盖已核实企业名称和业务的招聘记录。可打开资料来源或岗位详情核对。投递助手会发送指令及近期问题，投递记录在浏览器内匹配。岗位问答、投递问答与简历 AI 导入共用每滚动 10 分钟 15 次的请求限制。管理员免除此限制。确认新增或修改投递不再消耗 AI 请求，问答也不扣简历生成或润色额度。岗位要求和招聘进度请以招聘方公告为准。</dd></div>
           <div><dt>材料与生成结果</dt><dd>提交生成时，材料文字会发送给模型服务处理。请仅提交有权使用的内容，并先移除客户身份、访问凭据等敏感信息。AI 可能误读日期、职责或数字，请核对后再投递。招聘方独立决定面试与录用结果。</dd></div>
         </dl>
       </section>

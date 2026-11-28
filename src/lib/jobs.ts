@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { jobRoleFields, matchJobRole, roleLevelOrder } from "@/lib/job-role-search";
 import { verifiedCompanyProfile } from "@/lib/company-overview";
 import { JOB_CATEGORIES, jobMatchesSelectedCategories, normalizeJobCategories } from "@/lib/categories";
 import { sanitizeApplicationUrl } from "@/lib/application-url";
@@ -10,7 +11,7 @@ const DEFAULT_JOBS_TIMEOUT_MS = 7000;
 const PUBLIC_JOB_PAGE_SIZE = 1000;
 const PUBLIC_JOB_CACHE_TTL_MS = 30_000;
 export const RECENT_JOB_WINDOW_DAYS = 7;
-const PUBLIC_JOB_LIST_COLUMNS = "id,company_name,start_date,industry,batch_type,job_titles,job_categories,locations,apply_url,logo_url,tags,is_active,opens_at,closes_at,created_at,updated_at";
+const PUBLIC_JOB_LIST_COLUMNS = "id,company_name,start_date,industry,batch_type,job_titles,job_categories,locations,apply_url,logo_url,tags,keywords,is_active,opens_at,closes_at,created_at,updated_at";
 const JOB_CALENDAR_COLUMNS = "id,company_name,job_titles,apply_url,is_active,opens_at,closes_at";
 const JOB_CALENDAR_PAGE_SIZE = 1000;
 const JOB_CALENDAR_CACHE_TTL_MS = 30_000;
@@ -238,9 +239,15 @@ function escapePostgrestSearch(value: string) {
 export function filterJobs(jobs: Job[], filters: JobFilters) {
   const keyword = filters.keyword.trim().toLowerCase();
   const now = Date.now();
+  const relevance = new Map<string, number>();
   const filtered = jobs.filter((job) => {
-    if (filters.employerGroup === "global500_tech" && (
-      !verifiedCompanyProfile(job.company_name)?.globalTechRank ||
+    if (filters.employerGroup === "global500_tech" && !verifiedCompanyProfile(job.company_name)?.globalTechRank) return false;
+    if (filters.role) {
+      const evidence = matchJobRole(job, filters.role);
+      if (!evidence) return false;
+      relevance.set(job.id, roleLevelOrder[evidence.level]);
+    }
+    if ((filters.employerGroup || filters.role) && (
       (job.closes_at && Date.parse(job.closes_at) <= now) ||
       (job.opens_at && Date.parse(job.opens_at) > now)
     )) return false;
@@ -272,7 +279,8 @@ export function filterJobs(jobs: Job[], filters: JobFilters) {
     );
   });
 
-  return sortJobs(filtered, filters.sortBy);
+  const sorted = sortJobs(filtered, filters.sortBy);
+  return filters.role ? sorted.sort((a, b) => relevance.get(a.id)! - relevance.get(b.id)!) : sorted;
 }
 
 export function isRecentlyListedJob(
@@ -373,12 +381,16 @@ function getStartTime(job: Job) {
 }
 
 export function getJobFacetOptions(jobs: Job[]) {
+  const roleTerms = new Set<string>();
   const industries = new Set<string>();
   const batchTypes = new Set<string>();
   const locations = new Set<string>();
   const tags = new Set<string>();
 
   jobs.forEach((job) => {
+    for (const field of jobRoleFields(job)) {
+      if (field.term.length <= 80) roleTerms.add(field.term);
+    }
     if (job.industry) {
       job.industry.split(",").forEach((v) => {
         const trimmed = v.trim();
@@ -391,6 +403,7 @@ export function getJobFacetOptions(jobs: Job[]) {
   });
 
   return {
+    roleTerms: Array.from(roleTerms).slice(0, 1200),
     industries: Array.from(industries).sort(),
     batchTypes: Array.from(batchTypes).sort(),
     locations: Array.from(locations).sort(),

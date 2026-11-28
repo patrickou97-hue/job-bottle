@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { assistantEdit, editorPatch } from "@/lib/application-assistant";
+import { createCustomApplication } from "@/lib/applications";
+import { assistantCreate, assistantEdit, editorPatch } from "@/lib/application-assistant";
 import { interpretApplicationMessage } from "@/lib/application-assistant-model";
 import { UpstreamError } from "@/lib/deepseek-json";
 import { createClient } from "@/lib/supabase/server";
@@ -10,6 +11,7 @@ export const maxDuration = 60;
 const target = { accountId: z.uuid(), id: z.uuid(), updatedAt: z.iso.datetime({ offset: true }) };
 const bodySchema = z.discriminatedUnion("mode", [
   z.object({ mode: z.literal("chat"), accountId: z.uuid(), message: z.string().trim().min(1).max(700), history: z.array(z.string().max(1000)).max(6) }).strict(),
+  z.object({ mode: z.literal("create"), accountId: z.uuid(), id: z.uuid(), draft: assistantCreate }).strict(),
   z.object({ mode: z.literal("update"), ...target, edit: assistantEdit }).strict(),
   z.object({ mode: z.literal("delete"), ...target }).strict(),
 ]);
@@ -39,6 +41,19 @@ export async function POST(request: NextRequest) {
         return vipJson({ error: "投递助手的模型服务暂不可用，请稍后再试。" }, 503);
       }
       return vipJson({ error: "这次未能解析指令，投递记录保持原样。请重试。" }, 502);
+    }
+  }
+
+  if (input.mode === "create") {
+    const { company, position, status, appliedDate } = input.draft;
+    try {
+      const created = await createCustomApplication(db, userId, {
+        company_name: company, job_titles: position, batch_type: "外部岗位", locations: null, industry: null,
+        apply_url: "", source_url: "", start_date: null,
+      }, { id: input.id, status, appliedAt: appliedDate ? new Date(appliedDate + "T12:00:00+08:00").toISOString() : undefined });
+      return vipJson({ created: created.id, updatedAt: created.updated_at });
+    } catch {
+      return vipJson({ error: "暂时未能确认保存结果，可以重试这次新增。" }, 503);
     }
   }
 

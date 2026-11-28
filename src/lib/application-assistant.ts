@@ -23,7 +23,16 @@ const selector = z.object({
   previousResults: z.boolean().optional(),
 }).strict();
 
+export const assistantCreate = z.object({
+  company: z.string().trim().min(1).max(120),
+  position: z.string().trim().min(1).max(160),
+  status: z.enum(APPLICATION_STATUS),
+  appliedDate: z.iso.date().optional(),
+}).strict();
+export type AssistantCreate = z.infer<typeof assistantCreate>;
+
 export const assistantIntent = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("create"), draft: assistantCreate }).strict(),
   z.object({ action: z.literal("query"), filter: selector }).strict(),
   z.object({ action: z.literal("update"), filter: selector, edit: assistantEdit }).strict(),
   z.object({ action: z.literal("delete"), filter: selector }).strict(),

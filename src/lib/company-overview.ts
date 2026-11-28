@@ -80,6 +80,17 @@ export function namedCompanyOverview(question: string) {
   return plain && verifiedCompanyProfile(plain) ? plain : undefined;
 }
 
+// A shared name fragment identifies leads only; it does not establish a corporate relationship.
+export function companyLookupTerms(name: string, suggestions: string[] = []) {
+  const terms = [name, ...suggestions].flatMap(value => {
+    const full = value.trim();
+    const stem = full.replace(/(?:集团|控股|股份有限公司|有限责任公司|有限公司|公司)+$/u, "").trim();
+    return [full, stem];
+  });
+  return [...new Set(terms)].filter(term => term.length >= 2 && term.length <= 100 &&
+    !/^(?:中国|国际|集团|公司|科技|金融|商业|控股|投资|股份)$/u.test(term)).slice(0, 6);
+}
+
 type Posting = { industry: string | null; batch_type: string | null; locations: string | null; job_titles: string | null };
 
 export function companyRecruitmentFacts(rows: Posting[]) {

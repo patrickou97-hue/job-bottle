@@ -160,6 +160,7 @@ export async function createCustomApplication(
   supabase: SupabaseClient<Database>,
   userId: string,
   snapshot: NonNullable<UserApplication["job_snapshot"]>,
+  initial?: { id: string; status: UserApplication["status"]; appliedAt?: string },
 ) {
   const { data, error } = await runApplicationRequest(async (signal) => await supabase
     .from("user_applications")
@@ -167,7 +168,8 @@ export async function createCustomApplication(
       user_id: userId,
       job_id: null,
       job_snapshot: snapshot,
-      status: "opened",
+      ...(initial && { id: initial.id, applied_position: snapshot.job_titles, applied_at: initial.appliedAt }),
+      status: initial?.status ?? "opened",
       candidate_stage: "saved",
       saved_at: new Date().toISOString(),
     })
@@ -179,6 +181,15 @@ export async function createCustomApplication(
       throw new Error("自建岗位和投递档案需要先执行最新 Supabase migration。");
     }
     if (getErrorCode(error) === "23505") {
+      if (initial) {
+        const previous = await supabase.from("user_applications").select("*, job:jobs(*)")
+          .eq("id", initial.id).eq("user_id", userId).maybeSingle();
+        if (previous.error) throw previous.error;
+        if (previous.data?.job_id === null && previous.data.job_snapshot?.company_name === snapshot.company_name &&
+            previous.data.job_snapshot?.job_titles === snapshot.job_titles) {
+          return normalizeApplicationRow(previous.data as unknown as UserApplication & { job?: Job | null });
+        }
+      }
       throw new Error("这个岗位已经在你的投递列表中了。");
     }
     throw error;

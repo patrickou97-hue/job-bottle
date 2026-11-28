@@ -136,6 +136,7 @@ export type ApplicationWithJob = UserApplication & {
 };
 
 export type JobFilters = {
+  role?: import("./job-role-search").RoleSearch | null;
   employerGroup?: "global500_tech" | "";
   keyword: string;
   industry: string;

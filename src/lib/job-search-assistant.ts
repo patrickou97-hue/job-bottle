@@ -5,7 +5,10 @@ const term = z.string().trim().max(120);
 const values = z.array(term).max(200);
 const scopes = z.enum(["all", "recent", "recent_preference", "with_referral"]);
 const views = z.enum(["all", "applied", "unapplied"]);
+const roleTerms = z.array(z.string().trim().min(1).max(80)).max(16);
+const role = z.object({ name: term.min(1), exact: roleTerms, related: roleTerms }).strict();
 const filterFields = {
+  role: role.nullable().optional(),
   employerGroup: z.enum(["global500_tech", ""]).optional(),
   keyword: term, location: term, industry: term, batchType: term,
   categories: z.array(term).max(20), tags: z.array(term).max(50),
@@ -14,6 +17,7 @@ const filterFields = {
 export const searchState = z.object({ ...filterFields, scope: scopes, view: views }).strict();
 export type SearchState = JobFilters & { scope: JobDiscoveryScope; view: z.infer<typeof views> };
 export const searchOptions = z.object({
+  roleTerms: z.array(z.string().min(1).max(80)).max(1200).optional(),
   locations: z.array(term).max(1500), industries: values, batchTypes: values, categories: values, hasPreferences: z.boolean(),
 }).strict();
 export const searchQuestion = z.object({
@@ -23,7 +27,7 @@ export const searchQuestion = z.object({
 
 export const searchIntent = z.discriminatedUnion("action", [
   z.object({ action: z.literal("clarify"), question: z.string().trim().min(1).max(240) }).strict(),
-  z.object({ action: z.literal("company"), name: term.min(1), topic: z.enum(["overview", "business", "roles", "locations", "requirements", "deadline", "salary"]) }).strict(),
+  z.object({ action: z.literal("company"), name: term.min(1), searchNames: z.array(term.min(2)).max(3).optional(), background: z.string().trim().max(500).optional(), topic: z.enum(["overview", "business", "roles", "locations", "requirements", "deadline", "salary"]) }).strict(),
   ...(["filter", "recommend"] as const).map(action => z.object({ action: z.literal(action), reset: z.boolean().optional(), changes: searchState.omit({ tags: true }).partial() }).strict()),
 ]);
 
@@ -31,7 +35,7 @@ export const searchIntent = z.discriminatedUnion("action", [
 export function directRankedProductIntent(message: string) {
   const text = message.replace(/\s+/gu, "").replace(/^(?:(?:请|帮我|给我|我想要?|想要|推荐|找|看|一些|几个|一下|有没有|有哪些))+/u, "");
   if (!/^(?:2026年?)?(?:财富)?(?:世界|全球)(?:五百|500)强(?:的)?科技(?:公司|企业)?(?:的)?产品(?:类)?岗(?:位)?[？?。！!]*$/u.test(text)) return;
-  return { action: "recommend" as const, changes: { employerGroup: "global500_tech" as const, categories: ["产品类"] } };
+  return { action: "recommend" as const, changes: { employerGroup: "global500_tech" as const, categories: ["产品类"], role: null } };
 }
 
 export function resolveSearch(input: z.infer<typeof searchQuestion>, intent: z.infer<typeof searchIntent>) {
@@ -46,6 +50,13 @@ export function resolveSearch(input: z.infer<typeof searchQuestion>, intent: z.i
     return { action: "clarify" as const, question: "要按 2026 年《财富》世界500强中已核实的科技公司筛选吗？" };
   }
   const allowed = input.options;
+  if (next.role) {
+    const vocabulary = new Set(allowed.roleTerms);
+    const exact = next.role.exact.filter(word => vocabulary.has(word));
+    const related = next.role.related.filter(word => vocabulary.has(word) && !exact.includes(word));
+    next.role = { name: next.role.name, exact, related };
+    if (next.keyword && next.keyword === next.role.name) next.keyword = "";
+  }
   if ((next.location && !allowed.locations.includes(next.location)) ||
       (next.industry && !allowed.industries.includes(next.industry)) ||
       (next.batchType && !allowed.batchTypes.includes(next.batchType)) ||

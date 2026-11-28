@@ -6,19 +6,20 @@ import { AssistantComposer } from "@/components/ui/AssistantComposer";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { buildLocationGroups } from "@/lib/locations";
 import { hasJobPreferences, jobMatchesProfilePreferences } from "@/lib/jobs";
+import { matchJobRole } from "@/lib/job-role-search";
 import { globalRanking, verifiedCompanyProfile, type CompanyProfile } from "@/lib/company-overview";
 import type { SearchState } from "@/lib/job-search-assistant";
 import type { Job, Profile } from "@/lib/types";
 
 type Props = {
   current: SearchState;
-  facets: { locations: string[]; industries: string[]; batchTypes: string[]; categories: string[] };
+  facets: { roleTerms: string[]; locations: string[]; industries: string[]; batchTypes: string[]; categories: string[] };
   profile: Profile | null;
   focusedCompany?: string;
   onApply: (state: SearchState) => { jobs: Job[]; chips: string[] };
 };
-type Row = { id: string; company: string; title: string; detail: string; profile?: CompanyProfile };
-type Overview = { name: string; introduction?: string; profile?: CompanyProfile; facts: { label: string; value: string }[]; count: number };
+type Row = { id: string; company: string; title: string; detail: string; evidenceUrl?: string; profile?: CompanyProfile };
+type Overview = { name: string; related?: boolean; introduction?: string; profile?: CompanyProfile; facts: { label: string; value: string }[]; count: number };
 type Turn = { ranked?: boolean; overview?: Overview; message: string; answer: string; rows?: Row[]; question?: string; companies?: string[]; total?: number };
 
 function rowFor(job: Job, state: SearchState, reason: string): Row {
@@ -70,7 +71,7 @@ function SearchConversation({ current, facets, profile, focusedCompany, onApply,
       if (group.province !== "其他") locations.add("province:" + group.province);
       for (const city of group.cities) locations.add("city:" + city);
     }
-    return { locations: [...locations], industries: facets.industries, categories: facets.categories, batchTypes: facets.batchTypes, hasPreferences };
+    return { roleTerms: facets.roleTerms, locations: [...locations], industries: facets.industries, categories: facets.categories, batchTypes: facets.batchTypes, hasPreferences };
   }, [facets, hasPreferences]);
 
   async function ask(message: string) {
@@ -104,8 +105,8 @@ function SearchConversation({ current, facets, profile, focusedCompany, onApply,
         turn = { message, answer: data.question, question: data.question, companies: data.companies ?? last?.companies };
       } else if (data.action === "company") {
         if (data.overview) {
-          turn = { message, answer: "", rows: data.rows, companies: [data.company],
-            overview: { name: data.company, introduction: data.introduction, profile: data.profile, facts: data.facts, count: data.count } };
+          turn = { message, answer: "", rows: data.rows, companies: data.relatedCompanies && data.rows.length ? data.rows.map((row: Row) => row.company) : [data.company],
+            overview: { name: data.company, related: data.relatedCompanies, introduction: data.introduction, profile: data.profile, facts: data.facts, count: data.count } };
         } else {
           turn = { message, companies: [data.company], rows: data.rows, answer: data.company + "在拾星有 " + data.count + " 条招聘信息。" +
             (data.hasEvidence ? "以下内容摘自该公司的招聘资料。" : "所查招聘资料没有披露你问到的具体信息，可打开岗位详情核对招聘公告。") };
@@ -114,24 +115,53 @@ function SearchConversation({ current, facets, profile, focusedCompany, onApply,
         const results = onApply(data.state);
         const ranked = data.state.employerGroup === "global500_tech";
         const recommend = ranked || data.action === "recommend";
-        const preferred = recommend && hasPreferences ? results.jobs.filter(job => jobMatchesProfilePreferences(job, profile)) : [];
-        const candidates = preferred.length ? preferred : results.jobs;
-        const seen = new Set<string>();
-        const suggestions = recommend ? candidates.filter(job => {
-          const name = verifiedCompanyProfile(job.company_name)?.catalogueName ?? job.company_name;
-          if (seen.has(name)) return false;
-          seen.add(name);
-          return true;
-        }) : candidates;
-        const rows = suggestions.slice(0, 3).map(job => rowFor(job, data.state, recommend ?
-          [preferred.length ? "符合已保存的求职偏好" : "", job.locations, job.batch_type, job.industry].filter(Boolean).join(" · ") : ""));
-        const criteria = results.chips.join(" · ");
-        let answer = criteria + "。共匹配 " + results.jobs.length + " 条招聘信息。";
-        if (ranked) answer = criteria + "。在已核实上榜的科技公司中，拾星有 " + results.jobs.length + " 条符合条件的招聘信息。";
-        if (!rows.length) answer += "可以换个城市或放宽条件。";
-        else if (recommend) answer += preferred.length ? "优先推荐与你的求职偏好匹配的岗位。" :
-          hasPreferences ? "当前没有同时符合已存偏好的岗位，以下为当前筛选中的备选。" : "按当前筛选和排序，建议先看这几条。";
-        turn = { message, answer, ranked, rows, total: results.jobs.length, companies: rows.map(row => row.company) };
+        const role = data.state.role as SearchState["role"];
+        if (role) {
+          const matches = results.jobs.flatMap(job => {
+            const evidence = matchJobRole(job, role);
+            return evidence ? [{ job, evidence }] : [];
+          });
+          const rows: Row[] = [];
+          const companies = new Set<string>();
+          let named = 0, related = 0;
+          for (const { job, evidence } of matches) {
+            if (evidence.level === "named") named++;
+            if (evidence.level === "related") related++;
+            if (rows.length >= 3 || companies.has(job.company_name)) continue;
+            companies.add(job.company_name);
+            const title = evidence.level === "named" ? evidence.term :
+              evidence.level === "category" ? "校招大类含「" + evidence.term + "」" : "相关方向 · " + evidence.term;
+            rows.push({ id: job.id, company: job.company_name, title, evidenceUrl: evidence.url, profile: verifiedCompanyProfile(job.company_name),
+              detail: [evidence.source + "列出「" + evidence.term + "」", job.batch_type, job.locations && "公告地点：" + job.locations].filter(Boolean).join(" · ") });
+          }
+          const category = matches.length - named - related;
+          let answer = "你想找「" + role.name + "」。";
+          if (named) answer += "有 " + named + " 条招聘或内推资料明确列出了这个岗位方向。";
+          else answer += "当前范围内还没找到明确列出这个岗位的资料。";
+          if (related) answer += "另有 " + related + " 条公告提到相近方向或相关关键词。";
+          if (category) answer += "还有 " + category + " 条只在招聘大类的说明中提到相关方向，具体职位需看招聘方岗位表。";
+          if (!matches.length) answer += data.state.location ? "可以试试「不限城市，继续找这个方向」。" : "你也可以说说想做的具体工作，我会按职责方向再找。";
+          turn = { message, answer, ranked, rows, total: matches.length, companies: rows.map(row => row.company) };
+        } else {
+          const preferred = recommend && hasPreferences ? results.jobs.filter(job => jobMatchesProfilePreferences(job, profile)) : [];
+          const candidates = preferred.length ? preferred : results.jobs;
+          const seen = new Set<string>();
+          const suggestions = recommend ? candidates.filter(job => {
+            const name = verifiedCompanyProfile(job.company_name)?.catalogueName ?? job.company_name;
+            if (seen.has(name)) return false;
+            seen.add(name);
+            return true;
+          }) : candidates;
+          const rows = suggestions.slice(0, 3).map(job => rowFor(job, data.state, recommend ?
+            [preferred.length ? "符合已保存的求职偏好" : "", job.locations, job.batch_type, job.industry].filter(Boolean).join(" · ") : ""));
+          const criteria = results.chips.join(" · ");
+          let answer = criteria + "。共匹配 " + results.jobs.length + " 条招聘信息。";
+          if (ranked) answer = criteria + "。在已核实上榜的科技公司中，拾星有 " + results.jobs.length + " 条符合条件的招聘信息。";
+          if (!rows.length) answer += data.state.location ? "可以试试放宽地区条件。" : "可以描述你想做的具体工作，我会按岗位方向再找。";
+          else if (recommend) answer += preferred.length ? "优先推荐与你的求职偏好匹配的岗位。" :
+            hasPreferences ? "当前没有同时符合已存偏好的岗位，以下为当前筛选中的备选。" : "按当前筛选和排序，建议先看这几条。";
+          turn = { message, answer, ranked, rows, total: results.jobs.length, companies: rows.map(row => row.company) };
+        }
       }
       if (controller.signal.aborted) return;
       setTurns(all => [...all.slice(-7), turn]);
@@ -165,18 +195,20 @@ function SearchConversation({ current, facets, profile, focusedCompany, onApply,
               {turn.overview.facts.length > 0 && <details><summary>查看招聘概况</summary><dl>{turn.overview.facts.map(fact =>
                 <div key={fact.label}><dt>{fact.label}</dt><dd>{fact.value}</dd></div>)}</dl></details>}
               <p className="job-company-listings">{turn.overview.count > 0 ? "拾星收录 " + turn.overview.count + " 条招聘信息" +
-                (turn.overview.count > 3 ? "，以下为最近更新的 3 条。" : "。") : "拾星暂未收录这家公司的在招信息。"}</p>
+                (turn.overview.count > 3 ? "，以下为最近更新的 3 条。" : "。") : turn.rows?.length ? "以下为库中名称或检索词相关的招聘记录，公司主体关系待核实。" : "岗位库暂未匹配到这家公司的招聘记录。"}</p>
             </article> : <p>{turn.answer}</p>}
             {turn.ranked && <a className="job-company-source" href={globalRanking.url} target="_blank" rel="noreferrer">{globalRanking.year} 年《财富》世界500强榜单 ↗</a>}
             {Boolean(turn.rows?.length) && <ol>{turn.rows?.map(row => <li key={row.id}>
               <Link href={`/jobs/${row.id}`}>{row.company} · {row.title}</Link>{row.detail && <small>{row.detail}</small>}
+              {row.evidenceUrl && <a className="job-company-source" href={row.evidenceUrl} target="_blank" rel="noreferrer">查看内推原文 ↗</a>}
               {!turn.overview && row.profile && <div className="job-recommendation-profile">
                 {turn.ranked && <strong>世界500强第 {row.profile.globalTechRank} 位</strong>}
                 <p>{row.profile.summary}</p><a className="job-company-source" href={row.profile.sourceUrl} target="_blank" rel="noreferrer">{row.profile.sourceLabel} ↗</a>
               </div>}
-              {!turn.overview && !row.profile && <button type="button" disabled={busy} onClick={() => void ask("介绍一下" + row.company)}>了解公司</button>}
+              {(!turn.overview || turn.overview.related) && !row.profile && <button type="button" disabled={busy} onClick={() => void ask("介绍一下" + row.company)}>了解公司</button>}
             </li>)}</ol>}
             {index === turns.length - 1 && (turn.total ?? 0) > 3 && <a href="#job-list" className="text-action">查看岗位清单</a>}
+            <small className="job-answer-notice">回答由AI生成，请谨慎判断招聘信息是否真实。</small>
           </div>)}
           {busy && <p role="status">正在查看岗位资料…</p>}
           {error && <p role="alert" className="job-chat-feedback">{error}{vipRequired && <> <Link href="/vip">去开通 VIP</Link></>}</p>}

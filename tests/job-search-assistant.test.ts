@@ -61,3 +61,21 @@ test("公司概况使用正式名称，世界500强推荐按上榜企业匹配�
   assert.equal(directRankedProductIntent("找一些上海的世界五百强科技公司产品岗"), undefined);
   assert.equal(directRankedProductIntent("2025年世界五百强科技公司产品岗"), undefined);
 });
+
+test("语义找岗位只接受当前资料里出现的字段，追问城市沿用同一个方向", () => {
+  const role = { name: "看数据做业务判断", exact: ["数据分析师", "虚构头衔"], related: ["商分", "经营分析", "数据分析师"] };
+  const question = { ...input, options: { ...input.options, roleTerms: ["数据分析师", "经营分析", "商分"] } };
+  const first = resolveSearch(question, searchIntent.parse({ action: "recommend", changes: { role, categories: [] } }));
+  assert.deepEqual(first.state.role, { name: role.name, exact: ["数据分析师"], related: ["商分", "经营分析"] });
+  const next = resolveSearch({ ...question, current: first.state }, { action: "filter", changes: { location: "city:上海" } });
+  assert.deepEqual(next.state.role, first.state.role);
+  assert.equal(resolveSearch({ ...question, current: next.state }, { action: "filter", reset: true, changes: {} }).state.role, undefined);
+});
+
+test("公司词干及模型给出的别名仅用作候选检索，已知全称对应实际库名", async () => {
+  const { companyLookupTerms, verifiedCompanyProfile } = await import(new URL("../src/lib/company-overview.ts", import.meta.url).href);
+  assert.deepEqual(companyLookupTerms("星盛集团"), ["星盛集团", "星盛"]);
+  assert.equal(verifiedCompanyProfile("星盛集团"), undefined);
+  assert.equal(verifiedCompanyProfile("中国国际金融有限公司").catalogueName, "中金公司");
+  assert.ok(companyLookupTerms("示例企业", ["某品牌"]).includes("某品牌"));
+});
