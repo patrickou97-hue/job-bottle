@@ -1,7 +1,7 @@
 "use client";
 
-import { RotateCcw } from "lucide-react";
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { VipAnimationFigure } from "./VipAnimationFigure";
+import { useId, type ReactNode } from "react";
 
 function JobSearchScene() {
   return <>
@@ -84,24 +84,9 @@ function ApplicationScene() {
 }
 
 function Scene({ title, description, children }: { title: string; description: string; children: ReactNode }) {
-  const ref = useRef<HTMLElement>(null);
-  const [play, setPlay] = useState(0);
-  useEffect(() => {
-    const figure = ref.current;
-    if (!figure || !("IntersectionObserver" in window)) return;
-    const observer = new IntersectionObserver(entries => {
-      if (entries.some(entry => entry.isIntersecting)) {
-        setPlay(1);
-        observer.disconnect();
-      }
-    }, { threshold: .45 });
-    observer.observe(figure);
-    return () => observer.disconnect();
-  }, []);
-  return <figure className="vip-demo" ref={ref}>
-    <svg key={play} viewBox="0 0 360 214" role="img" aria-label={description} data-play={play > 0}>{children}</svg>
-    <figcaption><span>{title}</span><button type="button" aria-label={`重播${title}`} title="重播演示" onClick={() => setPlay(n => n + 1)}><RotateCcw size={15} /></button></figcaption>
-  </figure>;
+  return <VipAnimationFigure className="vip-demo" title={title} caption={title}>
+    <svg viewBox="0 0 360 214" role="img" aria-label={description}>{children}</svg>
+  </VipAnimationFigure>;
 }
 
 export function VipBenefitDemos() {

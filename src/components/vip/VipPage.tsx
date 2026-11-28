@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Check, ChevronDown, ChevronRight, FileText, LoaderCircle, MessageSquareText, RotateCcw, Search, Sparkles, X, Zap } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, ChevronRight, FileText, LoaderCircle, MessageSquareText, Search, Sparkles, X, Zap } from "lucide-react";
 import { useState } from "react";
 import { MotionDialog } from "@/components/ui/MotionDialog";
+import { VipFeatureStories } from "./VipFeatureStories";
+import { VipAnimationFigure } from "./VipAnimationFigure";
 import { VipBenefitDemos } from "@/components/vip/VipBenefitDemos";
 import { VipMark } from "@/components/vip/VipMark";
 import { StarJobWordmark } from "@/components/brand/StarJobWordmark";
@@ -95,6 +97,7 @@ function VipMembershipPage({ basicModelId, status, statusError }: {
       <nav className="vip-index" aria-label="本页目录">
         <a href="#vip-benefits">权益内容 <ChevronDown size={14} /></a>
         <a href="#vip-materials">材料如何成稿 <ChevronDown size={14} /></a>
+        <a href="#vip-workflow">更多功能 <ChevronDown size={14} /></a>
         <a href="#vip-faq">开通与额度 <ChevronDown size={14} /></a>
       </nav>
       <section className="vip-benefits" id="vip-benefits" aria-labelledby="vip-benefits-title">
@@ -106,7 +109,7 @@ function VipMembershipPage({ basicModelId, status, statusError }: {
           <li><Zap /><div><h3>按目标岗位润色一段经历</h3><p>在简历编辑器选中一段，交给基础模型精简或改写。普通用户每小时 {BASIC_POLISH_HOURLY_LIMIT} 次、每周 {BASIC_POLISH_WEEKLY_LIMIT} 次。</p><Link href="/resume" className="vip-text-link">去简历制作 <ArrowRight size={15} /></Link></div><strong>每小时 {VIP_BASIC_POLISH_HOURLY_LIMIT} 次 · 每周 {VIP_BASIC_POLISH_WEEKLY_LIMIT} 次</strong></li>
           <li><MessageSquareText /><div><h3>跟进已经投出的岗位</h3><p>说“帮我记录路易威登管培生的一面”，核对后即可新增外部投递。也可以问哪些投递该跟进，更新面试阶段、追加备注或删除记录。</p><Link href="/my#application-assistant" className="vip-text-link">打开投递助手 <ArrowRight size={15} /></Link></div><strong>AI 投递助手</strong></li>
         </ul>
-        <div className="vip-upgrade"><Sparkles size={20} aria-hidden="true" /><div><h3>高级模型 <small>（将与正式付费版一起发布）</small></h3><p>正式付费版可在材料工作台继续修改整份简历，也可在编辑器高级润色单段。两处共用每小时 {VIP_ADVANCED_HOURLY_LIMIT} 次、每周 {VIP_ADVANCED_WEEKLY_LIMIT} 次的额度。限免会员需另行升级，届时享折扣优惠。</p></div></div>
+        <div className="vip-upgrade"><Sparkles size={20} aria-hidden="true" /><div><h3>高级模型 <small>（将与正式付费版一起发布）</small></h3><p>正式付费版可在材料工作台继续修改整份简历，也可在编辑器高级润色单段。两处共用每小时 {VIP_ADVANCED_HOURLY_LIMIT} 次、每周 {VIP_ADVANCED_WEEKLY_LIMIT} 次的额度。限免会员需另行升级，届时享折扣优惠。</p><a className="vip-text-link" href="#vip-models">查看高级模型预告 <ArrowRight size={15} /></a></div></div>
       </section>
       <section className="vip-feature vip-materials-feature" id="vip-materials" aria-labelledby="materials-heading">
         <div className="vip-feature-copy">
@@ -122,6 +125,7 @@ function VipMembershipPage({ basicModelId, status, statusError }: {
         <VipMaterialsAnimation />
       </section>
       <MaterialExample />
+      <VipFeatureStories />
       <section className="vip-faq" id="vip-faq" aria-labelledby="vip-faq-title">
         <h2 id="vip-faq-title">开通前，你可能想问</h2>
         <div>
@@ -135,7 +139,7 @@ function VipMembershipPage({ basicModelId, status, statusError }: {
         <h2 id="vip-terms-heading">会员服务说明</h2>
         <dl>
           <div><dt>限免与升级</dt><dd>限时免费开通的会员不含高级模型访问权限。正式付费版发布后，也需升级才能使用高级模型。我们将为限免会员提供折扣升级优惠，具体价格、时间和规则将在正式版发布时公布，敬请期待。</dd></div>
-          <div><dt>模型与更新</dt><dd>基础模型当前配置为 {basicModelId === "deepseek-v4-flash" ? "DeepSeek V4 Flash" : basicModelId}，正式付费版计划使用的高级模型为 {VIP_ADVANCED_MODEL.name}。对应型号可能随模型迭代或供应商调整而更新，最新对应关系会在此列明。</dd></div>
+          <div><dt>模型与更新</dt><dd>基础模型当前配置为 {basicModelId === "deepseek-v4-flash" ? "DeepSeek V4 Flash" : basicModelId}，正式付费版首期计划使用 {VIP_ADVANCED_MODEL.name}，Claude 与 Gemini 系列仍在接入评估中。对应型号可能随模型迭代或供应商调整而更新，最新对应关系会在此列明。</dd></div>
           <div><dt>计费与服务</dt><dd>当前限免开通实付 ¥0，无自动续费。各功能按上方权益额度使用。网络中断或模型服务异常可能导致请求失败。如遇扣费、额度或开通异常，可通过<Link href="/feedback">帮助与反馈</Link>联系我们，依法享有的消费者权益不受影响。</dd></div>
           <div><dt>岗位与投递问答</dt><dd>找岗位时，模型接收问题、当前筛选和可选条件。推荐依据当前岗位库和已填的求职偏好。问公司时，AI 可结合已有知识回答，并按全称、简称和相关名称查找本站招聘记录。部分企业资料可追溯到官网、维基数据或维基百科。世界500强推荐采用标明年份的《财富》全球榜单，仅覆盖已核实企业名称和业务的招聘记录。可打开资料来源或岗位详情核对。投递助手会发送指令及近期问题，投递记录在浏览器内匹配。岗位问答、投递问答与简历 AI 导入共用每滚动 10 分钟 15 次的请求限制。管理员免除此限制。确认新增或修改投递不再消耗 AI 请求，问答也不扣简历生成或润色额度。岗位要求和招聘进度请以招聘方公告为准。</dd></div>
           <div><dt>材料与生成结果</dt><dd>提交生成时，材料文字会发送给模型服务处理。请仅提交有权使用的内容，并先移除客户身份、访问凭据等敏感信息。AI 可能误读日期、职责或数字，请核对后再投递。招聘方独立决定面试与录用结果。</dd></div>
@@ -194,10 +198,9 @@ function MaterialExample() {
 }
 
 function VipMaterialsAnimation() {
-  const [revision, setRevision] = useState(0);
   return (
-    <figure className="vip-artwork">
-      <svg key={revision} viewBox="0 0 620 485" role="img" aria-label="插画演示，三份零散材料整理成一页 A4 简历">
+    <VipAnimationFigure className="vip-artwork" title="材料整理动画">
+      <svg viewBox="0 0 620 485" role="img" aria-label="插画演示，三份零散材料整理成一页 A4 简历">
         <defs>
           <pattern id="vip-print-dot" x="0" y="0" width="9" height="9" patternUnits="userSpaceOnUse">
             <circle cx="1.2" cy="1.2" r=".6" fill="#244a7c" opacity=".14" />
@@ -247,18 +250,9 @@ function VipMaterialsAnimation() {
           <path className="vip-svg-arrow" d="m316 214 13 10-13 9" />
         </g>
         <g className="vip-svg-flow" fill="#fff8dc">
-          <circle r="4" opacity="0">
-            <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.2;.72;1" begin=".55s" dur=".73s" />
-            <animateMotion path="M243 155q31 8 52 38l32 34" begin=".55s" dur=".73s" />
-          </circle>
-          <circle r="3.5" opacity="0">
-            <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.2;.72;1" begin=".68s" dur=".63s" />
-            <animateMotion path="M274 240q26 0 54-15" begin=".68s" dur=".63s" />
-          </circle>
-          <circle r="4" opacity="0">
-            <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.2;.72;1" begin=".72s" dur=".74s" />
-            <animateMotion path="M223 340q64-12 103-105" begin=".72s" dur=".74s" />
-          </circle>
+          <circle r="4" className="vip-particle-one" />
+          <circle r="3.5" className="vip-particle-two" />
+          <circle r="4" className="vip-particle-three" />
         </g>
         <g transform="translate(334 65) rotate(7)" filter="url(#vip-paper-shadow)">
           <g className="vip-svg-resume">
@@ -294,7 +288,6 @@ function VipMaterialsAnimation() {
           <path d="M577 354q1.7 10 11 11-9 1.7-11 11-1.7-9-11-11 9-1 11-11Z" />
         </g>
       </svg>
-      <figcaption><button type="button" className="vip-replay" onClick={() => setRevision((value) => value + 1)}><RotateCcw size={14} /> 重播整理动画</button></figcaption>
-    </figure>
+    </VipAnimationFigure>
   );
 }
