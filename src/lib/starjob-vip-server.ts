@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { VipStatus, VipUsageKind } from "@/lib/starjob-vip";
+import { resolveVipCard, type VipStatus, type VipUsageKind } from "@/lib/starjob-vip";
 import { getVipModel } from "@/lib/starjob-vip-model";
 
 export type VipIdentity = { userId: string; plan: "full" | "free_launch" };
@@ -63,6 +63,7 @@ export async function getVipStatus(request: NextRequest): Promise<VipStatus> {
   return {
     ...base,
     ...quota?.data,
+    cardEdition: resolveVipCard(Boolean(quota?.data?.active), Boolean(quota?.data?.unlimited), quota?.data?.plan ?? null, user?.app_metadata?.starjob_card),
     signedIn: Boolean(user),
     account: user ? { id: user.id, email: user.email ?? null } : null,
     advancedAvailable: quota?.data?.plan === "full" && isVipSalesEnabled(),

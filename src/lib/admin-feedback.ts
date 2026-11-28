@@ -32,7 +32,7 @@ export async function fetchAdminFeedback(input: {
   query: string;
   status: AdminFeedbackStatus;
   platform: AdminFeedbackPlatform;
-}) {
+}, signal?: AbortSignal) {
   const params = new URLSearchParams({
     page: String(input.page),
     pageSize: String(input.pageSize),
@@ -40,7 +40,7 @@ export async function fetchAdminFeedback(input: {
     status: input.status,
     platform: input.platform,
   });
-  const response = await fetch(`/api/admin/feedback?${params.toString()}`, { cache: "no-store" });
+  const response = await fetch(`/api/admin/feedback?${params.toString()}`, { cache: "no-store", signal });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
     const error = payload && typeof payload === "object" && "error" in payload ? payload.error : null;

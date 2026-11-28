@@ -68,30 +68,6 @@
 .vip-price span, .vip-preview-note { font-size: 12px; color: var(--vip-copy); }
 .vip-preview-note { margin-top: 10px; }
 .vip-hero-error { color: #922d43; font-size: 13px; margin-top: 8px; }
-.vip-pass-stage { position: relative; isolation: isolate; display: grid; place-items: center; min-width: 0; padding: 7% 5%; perspective: 950px; }
-.vip-pass-stage::before {
-  content: ""; position: absolute; width: 80%; height: 24%; bottom: 4%; left: 10%;
-  background: #293e5e; opacity: .23; border-radius: 50%; filter: blur(22px); transform: rotate(-7deg);
-}
-.vip-pass {
-  position: relative; width: 100%; max-width: 490px; aspect-ratio: 1.66; overflow: hidden; isolation: isolate; border-radius: clamp(15px,1.75vw,25px);
-  transform: rotateY(-10deg) rotateX(6deg) rotateZ(-7deg);
-  background: linear-gradient(135deg,#344b69 0%,#1a304e 28%,#10233e 57%,#243d5b 86%,#54677b);
-  border: 1px solid #8494a7; box-shadow: inset 0 0 0 1px #ffffff2c, 1px 2px 0 #617489, 2px 3px 0 #46596e, 2px 6px 0 #22364a, 0 12px 20px -12px #182a45b0;
-  container-type: inline-size;
-}
-.vip-pass::before { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(107deg, transparent 0 2px,#c6d7ef05 3px,transparent 4px); pointer-events: none; }
-.vip-pass-etch { position: absolute; inset: 0; width: 100%; height: 100%; fill: none; stroke: #d5dfeb; stroke-opacity: .19; stroke-width: .65; }
-.vip-pass-top, .vip-pass-foot { position: absolute; left: 7%; right: 7%; display: flex; justify-content: space-between; align-items: center; color: #dae3ed; }
-.vip-pass-top { top: 12%; }
-.vip-pass-top .starjob-wordmark { width: 24%; filter: brightness(0) invert(1); }
-.vip-pass-top > span:last-child, .vip-pass-foot > span:last-child { font: 500 clamp(8px,2.1cqw,12px)/1.3 ui-monospace,monospace; letter-spacing: .13em; }
-.vip-pass .vip-metal-mark { position: absolute; width: 41%; height: auto; top: 16%; right: 6%; transform: rotate(5deg); filter: drop-shadow(1px 6px 3px #0008); }
-.vip-pass-type { position: absolute; top: 31%; left: 7%; color: #eadbbc; font: italic 500 20cqw/1 Georgia,serif; letter-spacing: -.09em; text-shadow: 0 1px #171f31; }
-.vip-pass-foot { gap: 2.5%; bottom: 9%; padding-top: 3%; border-top: 1px solid #bdc9db4d; }
-.vip-pass-foot > span:first-child { font-size: clamp(10px,2.9cqw,15px); letter-spacing: .16em; }
-.vip-pass-foot > .vip-pass-email:first-child { min-width: 0; font: 500 clamp(11px,3.1cqw,15px)/1.3 ui-monospace,monospace; letter-spacing: 0; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
-.vip-pass-foot > span:last-child { flex: none; }
 .vip-index { display: flex; gap: clamp(24px,4vw,70px); align-items: center; border-bottom: 1px solid var(--vip-rule); }
 .vip-index a { display: inline-flex; align-items: center; gap: 7px; min-height: 56px; color: #405672; font-size: 13px; font-weight: 650; }
 .vip-index a:hover, .vip-text-link:hover { text-decoration: underline; text-underline-offset: 4px; }
@@ -235,68 +211,58 @@
 @media (max-width: 800px) {
   .vip-demos { grid-template-columns: repeat(auto-fit, minmax(min(100%, 285px), 1fr)); }
 }
-/* The four storyboards share a 9.5-second timeline, including time to read the result. */
 .vip-svg-flow circle { opacity: 0; offset-rotate: 0deg; }
 .vip-particle-one { offset-path: path("M243 155q31 8 52 38l32 34"); --particle-delay: .55s; }
 .vip-particle-two { offset-path: path("M274 240q26 0 54-15"); --particle-delay: .68s; }
 .vip-particle-three { offset-path: path("M223 340q64-12 103-105"); --particle-delay: .72s; }
 
 @media (prefers-reduced-motion: no-preference) {
-  .vip-loop { --cycle: 9.5s; }
-  .vip-loop[data-running=true] { --play-state: running; }
-  .vip-loop[data-started=true] > svg {
-    animation: vip-loop-scene var(--cycle) ease-in-out infinite both;
-    animation-play-state: var(--play-state, paused);
-  }
-  .vip-loop[data-started=true] :is(.vip-demo-first, .vip-demo-middle, .vip-demo-last, .vip-demo-line, .vip-demo-highlight,
+  .vip-animation { --duration: 5.5s; }
+  .vip-animation[data-started=false] :is(.vip-demo-first, .vip-demo-middle, .vip-demo-last, .vip-demo-line, .vip-demo-highlight,
+    .vip-svg-note, .vip-svg-route, .vip-svg-arrow, .vip-svg-asterisk, .vip-svg-resume, .vip-svg-ink) { opacity: 0; }
+  .vip-animation[data-started=true] :is(.vip-demo-first, .vip-demo-middle, .vip-demo-last, .vip-demo-line, .vip-demo-highlight,
     .vip-svg-note, .vip-svg-route, .vip-svg-arrow, .vip-svg-asterisk, .vip-svg-resume, .vip-svg-ink) {
-    animation: var(--track, vip-loop-arrive) var(--cycle) ease-out infinite both;
-    /* Stage the entrance within the cycle so every layer resets on the same invisible frame. */
+    animation: var(--track, vip-arrive) var(--duration) ease-out 1 both;
+    /* Stagger the storyboard elements while keeping the completed frame visible. */
     animation-timing-function: linear(0 0% var(--start, 0%), .45 calc(var(--start, 0%) + 4%), .86 calc(var(--start, 0%) + 9%), 1 calc(var(--start, 0%) + 14%) 100%);
-    animation-play-state: var(--play-state, paused);
   }
   .vip-demo-first, .vip-demo-middle, .vip-demo-last { --entry: translateY(5px); }
-  .vip-demo-middle { --start: 6%; }
-  .vip-demo-last { --start: 12%; }
-  .vip-demo-line, .vip-svg-route { --track: vip-loop-trace; stroke-dasharray: 1; }
-  .vip-demo-line { --start: 3%; }
-  .vip-demo-highlight { --track: vip-loop-highlight; --start: 10%; transform-box: fill-box; transform-origin: left; }
+  .vip-demo-middle { --start: 24%; }
+  .vip-demo-last { --start: 48%; }
+  .vip-demo-line, .vip-svg-route { --track: vip-trace; stroke-dasharray: 1; }
+  .vip-demo-line { --start: 12%; }
+  .vip-demo-highlight { --track: vip-highlight; --start: 40%; transform-box: fill-box; transform-origin: left; }
   .vip-svg-note { --entry: translate(-19px, 11px) rotate(-3deg); }
-  .vip-svg-note--two { --start: 1%; }
-  .vip-svg-note--three { --start: 2.5%; }
-  .vip-svg-route { --start: 4.5%; }
-  .vip-svg-route--second { --start: 5.5%; }
-  .vip-svg-route--third { --start: 6.5%; }
-  .vip-svg-arrow, .vip-svg-asterisk { --start: 9%; }
-  .vip-svg-resume { --entry: translate(13px, 12px) rotate(2deg); --start: 8%; }
-  .vip-svg-ink { --start: 11%; }
-  .vip-svg-ink--two { --start: 13%; }
-  .vip-svg-ink--three { --start: 15%; }
-  .vip-loop[data-started=true] .vip-svg-flow circle {
-    animation: vip-loop-particle var(--cycle) var(--particle-delay) ease-out infinite both;
-    animation-play-state: var(--play-state, paused);
+  .vip-svg-note--two { --start: 4%; }
+  .vip-svg-note--three { --start: 10%; }
+  .vip-svg-route { --start: 18%; }
+  .vip-svg-route--second { --start: 22%; }
+  .vip-svg-route--third { --start: 26%; }
+  .vip-svg-arrow, .vip-svg-asterisk { --start: 36%; }
+  .vip-svg-resume { --entry: translate(13px, 12px) rotate(2deg); --start: 32%; }
+  .vip-svg-ink { --start: 44%; }
+  .vip-svg-ink--two { --start: 52%; }
+  .vip-svg-ink--three { --start: 60%; }
+  .vip-animation[data-started=true] .vip-svg-flow circle {
+    animation: vip-particle var(--duration) var(--particle-delay) ease-out 1 both;
   }
 }
-@keyframes vip-loop-scene {
-  0%, 96%, 100% { opacity: 0; }
-  10%, 78% { opacity: 1; }
-}
-@keyframes vip-loop-arrive {
+@keyframes vip-arrive {
   from { opacity: 0; transform: var(--entry, none); }
   to { opacity: 1; transform: none; }
 }
-@keyframes vip-loop-trace {
+@keyframes vip-trace {
   from { stroke-dashoffset: 1; }
   to { stroke-dashoffset: 0; }
 }
-@keyframes vip-loop-highlight {
+@keyframes vip-highlight {
   from { transform: scaleX(0); }
   to { transform: scaleX(1); }
 }
-@keyframes vip-loop-particle {
+@keyframes vip-particle {
   0% { offset-distance: 0%; opacity: 0; }
   4% { opacity: 1; }
-  16%, 100% { offset-distance: 100%; opacity: 0; }
+  32%, 100% { offset-distance: 100%; opacity: 1; }
 }
 @media (prefers-reduced-motion: reduce) {
   .vip-demo figcaption { padding-block: 10px; }

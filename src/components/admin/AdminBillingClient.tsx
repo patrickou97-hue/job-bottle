@@ -53,24 +53,35 @@ export function AdminBillingClient() {
   const [messageTone, setMessageTone] = useState<"info" | "success" | "error">("info");
   const pendingOperationKeysRef = useRef(new Map<string, PendingGrantOperation>());
   const submitInFlightRef = useRef(false);
+  const searchRequest = useRef<AbortController | null>(null);
+  const ledgerRequest = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    void loadSummary();
+    const controller = new AbortController();
+    void loadSummary(controller.signal);
+    return () => {
+      controller.abort();
+      searchRequest.current?.abort();
+      ledgerRequest.current?.abort();
+    };
   }, []);
 
-  async function loadSummary() {
+  async function loadSummary(signal?: AbortSignal) {
     setSummaryState("loading");
-    const response = await fetch("/api/admin/star-interview-balance?summaryOnly=1", { cache: "no-store" });
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      setSummaryState("error");
-      return;
+    try {
+      const response = await fetch("/api/admin/star-interview-balance?summaryOnly=1", { cache: "no-store", signal });
+      if (!response.ok) throw new Error("余额概览暂时无法读取。");
+      const payload = await response.json();
+      if (signal?.aborted) return;
+      setSummary(payload.summary as BalanceSummary);
+      setSummaryState("ready");
+    } catch {
+      if (!signal?.aborted) setSummaryState("error");
     }
-    setSummary(payload.summary as BalanceSummary);
-    setSummaryState("ready");
   }
 
   async function searchUsers(nextPage = 1) {
+    searchRequest.current?.abort();
     const normalizedQuery = query.trim();
     if (!normalizedQuery) {
       setSearchState("idle");
@@ -86,20 +97,25 @@ export function AdminBillingClient() {
     setMessage("");
     setConfirming(false);
     const params = new URLSearchParams({ query: normalizedQuery, page: String(nextPage) });
-    const response = await fetch(`/api/admin/star-interview-balance?${params}`, { cache: "no-store" });
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      setMessage(typeof payload.error === "string" ? payload.error : "用户余额暂时无法读取。");
+    const controller = new AbortController();
+    searchRequest.current = controller;
+    try {
+      const response = await fetch(`/api/admin/star-interview-balance?${params}`, { cache: "no-store", signal: controller.signal });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(typeof payload.error === "string" ? payload.error : "用户余额暂时无法读取。");
+      if (controller.signal.aborted) return;
+      setUsers(payload.users as BalanceUser[]);
+      setSearchedQuery(normalizedQuery);
+      setPage(payload.page as number);
+      setTotal(payload.total as number);
+      setTotalPages(payload.totalPages as number);
+      setSearchState("ready");
+    } catch (error) {
+      if (controller.signal.aborted) return;
+      setMessage(error instanceof Error ? error.message : "用户余额暂时无法读取。");
       setMessageTone("error");
       setSearchState("error");
-      return;
     }
-    setUsers(payload.users as BalanceUser[]);
-    setSearchedQuery(normalizedQuery);
-    setPage(payload.page as number);
-    setTotal(payload.total as number);
-    setTotalPages(payload.totalPages as number);
-    setSearchState("ready");
   }
 
   async function selectUser(user: BalanceUser) {
@@ -110,17 +126,23 @@ export function AdminBillingClient() {
     setMessage("");
     setLedger([]);
     setLedgerState("loading");
-    const response = await fetch(`/api/admin/star-interview-balance?userId=${encodeURIComponent(user.id)}`, {
-      cache: "no-store",
-    });
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      setLedgerState("error");
-      return;
+    ledgerRequest.current?.abort();
+    const controller = new AbortController();
+    ledgerRequest.current = controller;
+    try {
+      const response = await fetch(`/api/admin/star-interview-balance?userId=${encodeURIComponent(user.id)}`, {
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      if (!response.ok) throw new Error("账本暂时无法读取。");
+      const payload = await response.json();
+      if (controller.signal.aborted) return;
+      setSelectedUser(payload.user as BalanceUser);
+      setLedger(payload.ledger as LedgerEntry[]);
+      setLedgerState("ready");
+    } catch {
+      if (!controller.signal.aborted) setLedgerState("error");
     }
-    setSelectedUser(payload.user as BalanceUser);
-    setLedger(payload.ledger as LedgerEntry[]);
-    setLedgerState("ready");
   }
 
   function resetConfirmation() {

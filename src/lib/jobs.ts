@@ -205,7 +205,7 @@ export async function fetchAllJobsForAdmin(supabase: SupabaseClient<Database>) {
 
 export async function fetchAdminJobsPage(
   supabase: SupabaseClient<Database>,
-  input: { page?: number; pageSize?: number; keyword?: string } = {},
+  input: { page?: number; pageSize?: number; keyword?: string; signal?: AbortSignal } = {},
 ) {
   const pageSize = Math.max(1, Math.min(100, input.pageSize ?? 40));
   const page = Math.max(1, input.page ?? 1);
@@ -223,6 +223,7 @@ export async function fetchAdminJobsPage(
       `locations.ilike.%${keyword}%`,
     ].join(","));
   }
+  if (input.signal) query = query.abortSignal(input.signal);
   const { data, count, error } = await withTimeout(
     Promise.resolve(query),
     DEFAULT_JOBS_TIMEOUT_MS,

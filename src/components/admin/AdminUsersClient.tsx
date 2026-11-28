@@ -27,6 +27,7 @@ import {
   fetchAdminUsers,
   recoverAdminUserMutation,
   updateAdminUser,
+  setVipCard,
   updateVipMembership,
   type AdminUserActivityFilter,
   type AdminUserMetrics,
@@ -37,6 +38,7 @@ import {
   type AdminUserStatusFilter,
   type AdminUserSummary,
 } from "@/lib/admin-users";
+import { assignedVipCard, resolveVipCard, vipCardName } from "@/lib/starjob-vip";
 import type { ProfileRole } from "@/lib/types";
 import { cn, formatDateTime } from "@/lib/utils";
 
@@ -50,6 +52,11 @@ const EMPTY_METRICS: AdminUserMetrics = {
   disabledUsers: 0,
   vipMembers: 0,
 };
+
+function cardLabel(user: AdminUserSummary) {
+  const card = resolveVipCard(user.vipActive === true, user.role === "admin", user.vipPlan, user.cardAssignment);
+  return card ? vipCardName(card) : user.vipActive === null ? "待同步" : "VIP 未开通";
+}
 
 export function AdminUsersClient() {
   const [users, setUsers] = useState<AdminUserSummary[]>([]);
@@ -87,6 +94,7 @@ export function AdminUsersClient() {
   const [recoveringToken, setRecoveringToken] = useState("");
   const [recoveryNow, setRecoveryNow] = useState(() => Date.now());
   const hasLoadedRef = useRef(false);
+  const lastRequestedQuery = useRef("");
   const recoveryLoadIdRef = useRef(0);
 
   const loadMutationGuards = useCallback(async (showLoading = false) => {
@@ -131,11 +139,13 @@ export function AdminUsersClient() {
 
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
     const timer = window.setTimeout(() => {
+      lastRequestedQuery.current = query;
       if (hasLoadedRef.current) setRefreshing(true);
       else setState("loading");
       setMessage("");
-      void fetchAdminUsers({ page, pageSize, query, activity, role, status, vipMembership, sort })
+      void fetchAdminUsers({ page, pageSize, query, activity, role, status, vipMembership, sort }, controller.signal)
         .then((result) => {
           if (cancelled) return;
           setUsers(result.users);
@@ -161,9 +171,10 @@ export function AdminUsersClient() {
         .finally(() => {
           if (!cancelled) setRefreshing(false);
         });
-    }, query ? 260 : 0);
+    }, query && lastRequestedQuery.current !== query ? 240 : 0);
     return () => {
       cancelled = true;
+      controller.abort();
       window.clearTimeout(timer);
     };
   }, [activity, page, pageSize, query, revision, role, sort, vipMembership, status]);
@@ -293,6 +304,19 @@ export function AdminUsersClient() {
       );
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "StarJob VIP 会员资格未能更新，原设置未改变。");
+    } finally {
+      setSavingId("");
+    }
+  }
+
+  async function changeCard(user: AdminUserSummary, value: string) {
+    setSavingId(user.id);
+    try {
+      const saved = await setVipCard(user.id, assignedVipCard(value));
+      setUsers(rows => rows.map(row => row.id === saved.id ? { ...row, cardAssignment: saved.edition } : row));
+      setMessage(`${user.email} 的会员卡面已保存。`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "未能保存卡面，请重试。");
     } finally {
       setSavingId("");
     }
@@ -528,10 +552,7 @@ export function AdminUsersClient() {
 
   return (
     <div className="admin-page admin-page--users space-y-5">
-      {recoveryDisclosure}
-      {recoveryOpen ? <div id="admin-account-recovery-panel">{recoveryPanel}</div> : null}
-
-      <section aria-label="用户概览" className="grid gap-px overflow-hidden rounded-xl border border-[color:var(--line-ghost)] bg-[color:var(--line-ghost)] sm:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))_minmax(210px,1.2fr)]">
+      <section aria-label="用户概览" className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-[color:var(--line-ghost)] bg-[color:var(--line-ghost)] sm:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))_minmax(210px,1.2fr)]">
         {metricItems.map((item) => {
           const Icon = item.icon;
           const active = activity === item.activity;
@@ -575,7 +596,7 @@ export function AdminUsersClient() {
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
             <h2 className="text-sm font-semibold text-ink-primary">筛选用户</h2>
-            <p className="mt-1 text-xs text-ink-muted">多个条件会同时生效</p>
+
           </div>
           {hasFilters ? (
             <button type="button" className="text-action h-9 px-2.5 text-sm" onClick={resetFilters}>
@@ -689,7 +710,7 @@ export function AdminUsersClient() {
                   </span>
                   <span className="flex flex-wrap items-center gap-2">
                     <StatusTag tone={user.role === "admin" ? "blue" : "neutral"}>{user.role === "admin" ? "管理员" : "普通用户"}</StatusTag>
-                    <StatusTag tone={user.role === "admin" || user.vipActive ? "gold" : "neutral"}>{user.role === "admin" ? "管理员 · 不限额" : user.vipActive === null ? "会员状态待同步" : user.vipActive ? "StarJob VIP" : "VIP 未开通"}</StatusTag>
+                    <StatusTag tone={user.role === "admin" || user.vipActive ? "gold" : "neutral"}>{cardLabel(user)}</StatusTag>
                     {disabled ? <StatusTag tone="danger">已停用</StatusTag> : null}
                     {user.accountType !== "wechat" && !user.emailConfirmedAt ? <StatusTag tone="neutral">邮箱未确认</StatusTag> : null}
                   </span>
@@ -722,6 +743,17 @@ export function AdminUsersClient() {
                           {user.role !== "admin" && <button type="button" role="switch" aria-checked={user.vipActive === true} aria-label={`调整 ${user.email} 的 StarJob VIP`} disabled={!canManageVipMembership || refreshing || savingId === user.id} onClick={() => void requestVipMembershipToggle(user)} className={cn("relative h-7 w-12 shrink-0 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--aurora)] disabled:cursor-not-allowed disabled:opacity-45", user.vipActive ? "border-nebula-blue/70 bg-nebula-blue/75" : "border-[color:var(--line)] bg-[color:var(--surface-hover-bg)]")}>
                             <span className={cn("absolute left-0 top-1 size-[18px] rounded-full bg-white shadow-sm transition-transform", user.vipActive ? "translate-x-6" : "translate-x-1")} />
                           </button>}
+                        </div>
+                        <div className="admin-card-setting">
+                          <span id={`card-label-${user.id}`}>收藏卡面</span>
+                          {user.role === "admin" ? <strong>Legend</strong> : (
+                            <Select aria-labelledby={`card-label-${user.id}`} value={user.cardAssignment ?? "auto"} disabled={!canManageVipMembership || refreshing || Boolean(savingId)}
+                              onChange={event => void changeCard(user, event.target.value)}>
+                              <option value="auto">跟随开通方式</option><option value="vip">VIP · 深蓝</option>
+                              <option value="premium">Premium · 香槟金</option><option value="jade">Jade · 翡翠绿</option>
+                            </Select>
+                          )}
+                          <small>{user.role === "admin" ? "管理员专属白金卡面。" : "仅更换卡面，会员资格与额度单独管理。"}</small>
                         </div>
                         {!canManageVipMembership && user.vipActive !== null ? <p className="mt-3 text-xs leading-5 text-ink-muted">仅主管理员可调整此权限。</p> : confirmAccessId === user.id ? <p className="mt-3 text-xs leading-5 text-[#d8a8b7]">请再次点击开关确认变更。</p> : null}
                       </div>
@@ -761,6 +793,8 @@ export function AdminUsersClient() {
           </Button>
         </div>
       </div>
+      {recoveryDisclosure}
+      {recoveryOpen ? <div id="admin-account-recovery-panel">{recoveryPanel}</div> : null}
     </div>
   );
 }

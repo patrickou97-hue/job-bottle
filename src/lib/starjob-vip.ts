@@ -18,6 +18,7 @@ export type VipUsageKind = "compose" | "advanced" | "flash";
 export type VipStatus = {
   account?: { id: string; email: string | null } | null;
   unlimited?: boolean;
+  cardEdition?: VipCardEdition | null;
   active: boolean;
   plan: "free_launch" | "full" | null;
   advancedAvailable: boolean;
@@ -56,4 +57,20 @@ export function formatVipReset(value: string | null) {
   return value ? new Intl.DateTimeFormat("zh-CN", {
     timeZone: "Asia/Shanghai", weekday: "short", hour: "2-digit", minute: "2-digit",
   }).format(new Date(value)) : null;
+}
+
+export type VipCardEdition = "vip" | "premium" | "jade" | "legend";
+export type AssignedVipCard = Exclude<VipCardEdition, "legend">;
+
+export const vipCardNames = { vip: "VIP", premium: "Premium", jade: "Jade", legend: "Legend" } as const;
+export function assignedVipCard(value: unknown): AssignedVipCard | null {
+  return value === "vip" || value === "premium" || value === "jade" ? value : null;
+}
+export function resolveVipCard(active: boolean, admin: boolean, plan: string | null, assignment: unknown): VipCardEdition | null {
+  if (admin) return "legend";
+  if (!active) return null;
+  return assignedVipCard(assignment) ?? (plan === "full" ? "premium" : "vip");
+}
+export function vipCardName(edition: VipCardEdition) {
+  return edition === "vip" ? "StarJob VIP" : `StarJob ${vipCardNames[edition]} VIP`;
 }

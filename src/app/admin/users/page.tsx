@@ -13,11 +13,11 @@ export default function AdminUsersPage() {
     <div className="admin-page admin-page--users-page observatory-page space-y-7">
       <section className="page-hero">
         <div>
-          <p className="page-kicker">账户、状态与产品权限</p>
           <h1 className="page-title">用户管理</h1>
-          <p className="page-description">查找用户并查看使用情况，集中管理账户身份、登录状态与 StarJob VIP 会员资格。</p>
+          <p className="page-description">查找账户、分配会员卡面，查看投递与简历使用情况。</p>
         </div>
       </section>
+      <AdminUsersClient />
       <details className="rounded-xl border border-[color:var(--line-ghost)] px-5 py-4 text-sm">
         <summary className="cursor-pointer font-semibold">简历 AI 额度规则</summary>
         <ul className="mt-3 space-y-2 text-ink-secondary">
@@ -28,7 +28,6 @@ export default function AdminUsersPage() {
         </ul>
         <p className="mt-3 text-xs text-ink-muted">成功生成新结果计一次。失败、取消或读取缓存结果不另扣次数。小时额度按最近 60 分钟滚动计算，日额度在北京时间零点恢复，周额度在周一零点恢复。</p>
       </details>
-      <AdminUsersClient />
     </div>
   );
 }

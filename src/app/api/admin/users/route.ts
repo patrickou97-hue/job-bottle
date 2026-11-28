@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { assignedVipCard } from "@/lib/starjob-vip";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import type {
   AdminUserActivityFilter,
@@ -110,6 +111,7 @@ export async function GET(request: NextRequest) {
       applicationCounts.get(user.id) ?? 0,
       resumeCounts.get(user.id) ?? 0,
       members?.has(user.id) ?? null,
+      members?.get(user.id) ?? null,
     ));
 
     return NextResponse.json({
@@ -201,6 +203,20 @@ export async function PATCH(request: NextRequest) {
     if ("response" in access) return access.response;
     authUsersCache = null;
     directoryCache = null;
+    if (body?.action === "set_vip_card") {
+      if (!access.isPrimaryAdmin) return NextResponse.json({ error: "只有主管理员可以调整会员卡面。" }, { status: 403 });
+      if (typeof body.id !== "string" || !UUID_PATTERN.test(body.id) || (body.edition !== null && !assignedVipCard(body.edition))) {
+        return NextResponse.json({ error: "请选择有效的用户和卡面。" }, { status: 400 });
+      }
+      const admin = createAdminClient();
+      const profile = await admin.from("profiles").select("role").eq("id", body.id).maybeSingle();
+      if (profile.error) throw profile.error;
+      if (profile.data?.role === "admin") return NextResponse.json({ error: "管理员使用 Legend 卡面。" }, { status: 409 });
+      const { data, error } = await admin.auth.admin.updateUserById(body.id, { app_metadata: { starjob_card: body.edition } });
+      if (error) throw error;
+      authUsersCache = null;
+      return NextResponse.json({ id: body.id, edition: assignedVipCard(data.user.app_metadata.starjob_card) });
+    }
     if (isVipMembershipUpdate(body)) {
       if (!access.isPrimaryAdmin) {
         return NextResponse.json({ error: "只有主管理员可以调整 StarJob VIP。" }, { status: 403 });
@@ -334,6 +350,7 @@ export async function PATCH(request: NextRequest) {
         applicationCountResult.count ?? 0,
         resumeCountResult.count ?? 0,
         members?.has(input.id) ?? null,
+        members?.get(input.id) ?? null,
       ),
     });
   } catch (error) {
@@ -404,6 +421,7 @@ async function confirmUserEmail(id: string) {
       applicationCountResult.count ?? 0,
       resumeCountResult.count ?? 0,
       members?.has(id) ?? null,
+      members?.get(id) ?? null,
     ),
   });
 }
@@ -572,6 +590,7 @@ function toSummary(
   applicationCount: number,
   resumeCount: number,
   vipActive: boolean | null,
+  vipPlan: AdminUserSummary["vipPlan"],
 ): AdminUserSummary {
   const accountType = getAccountType(user.email, Boolean(wechatIdentity));
   const realEmail = user.email && !isWechatInternalEmail(user.email)
@@ -592,7 +611,7 @@ function toSummary(
     resumeCount,
     school: profile?.school ?? null,
     targetRoles: profile?.target_roles ?? [],
-    vipActive,
+    vipActive, vipPlan, cardAssignment: assignedVipCard(user.app_metadata?.starjob_card),
   };
 }
 
@@ -717,7 +736,7 @@ async function fetchUsageCounts(
   throw new Error("用户使用记录超过当前管理页的安全读取上限。");
 }
 
-function buildMetrics(users: User[], members: Set<string> | null): AdminUserMetrics {
+function buildMetrics(users: User[], members: Map<string, AdminUserSummary["vipPlan"]> | null): AdminUserMetrics {
   const now = Date.now();
   return users.reduce<AdminUserMetrics>((metrics, user) => {
     const lastSignIn = getTimestamp(user.last_sign_in_at);
@@ -776,14 +795,14 @@ function matchesFilters(
 }
 
 async function fetchVipMembers(admin: SupabaseClient<Database>, ids: string[]) {
-  const members = new Set<string>();
+  const members = new Map<string, AdminUserSummary["vipPlan"]>();
   for (let offset = 0; offset < ids.length; offset += DATABASE_CHUNK_SIZE) {
-    const { data, error } = await admin.from("starjob_vip_memberships").select("user_id")
+    const { data, error } = await admin.from("starjob_vip_memberships").select("user_id,plan")
       .eq("active", true).in("user_id", ids.slice(offset, offset + DATABASE_CHUNK_SIZE));
     // Keep account management available while a deployment is waiting for the VIP migration.
     if (error && ["42P01", "42703", "PGRST204", "PGRST205"].includes(error.code)) return null;
     if (error) throw error;
-    for (const member of data ?? []) members.add(member.user_id);
+    for (const member of data ?? []) members.set(member.user_id, member.plan);
   }
   return members;
 }

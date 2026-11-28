@@ -291,7 +291,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/layout/AdminShell.tsx",
-    mustInclude: ["theme-work", "admin-shell__mobile-nav", "admin-shell__nav-group-block", "管理导航", "nav-account", "返回首页", "StarJobWordmark"],
+    mustInclude: ["theme-work", "admin-shell__mobile-nav", "admin-shell__nav-group-block", "管理导航", "nav-account", "返回首页", "shi-xing-wordmark-lockup.png"],
     mustNotInclude: ["StarFieldBackground", "rounded-[28px]", "rounded-full"],
     label: "管理页使用分层导航和轻量工作区壳层",
   },

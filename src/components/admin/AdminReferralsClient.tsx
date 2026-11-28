@@ -22,16 +22,16 @@ export function AdminReferralsClient() {
   const [target, setTarget] = useState<AdminReferralCode | null>(null);
 
   useEffect(() => {
-    let active = true;
-    void fetch("/api/admin/referrals", { cache: "no-store" })
+    const controller = new AbortController();
+    void fetch("/api/admin/referrals", { cache: "no-store", signal: controller.signal })
       .then(async (response) => {
         const body = await response.json().catch(() => null) as { codes?: AdminReferralCode[]; error?: string } | null;
         if (!response.ok) throw new Error(body?.error || "内推码记录读取失败。");
-        if (active) setCodes(body?.codes ?? []);
+        if (!controller.signal.aborted) setCodes(body?.codes ?? []);
       })
-      .catch((loadError) => { if (active) setError(loadError instanceof Error ? loadError.message : "内推码记录读取失败。"); })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
+      .catch((loadError) => { if (!controller.signal.aborted) setError(loadError instanceof Error ? loadError.message : "内推码记录读取失败。"); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
   }, []);
 
   const filtered = useMemo(() => {

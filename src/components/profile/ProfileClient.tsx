@@ -15,6 +15,8 @@ import {
   Target,
   UserRound,
 } from "lucide-react";
+import { MembershipPass } from "@/components/vip/MembershipPass";
+import { useVipStatus } from "@/components/vip/useVipStatus";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { fetchMyApplications } from "@/lib/applications";
@@ -39,6 +41,7 @@ import { cn } from "@/lib/utils";
 
 export function ProfileClient() {
   const router = useRouter();
+  const { status: vip } = useVipStatus();
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState("");
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -441,16 +444,29 @@ export function ProfileClient() {
           title="账号"
           description="查看账户信息与隐私说明。"
         >
-          <div className="max-w-2xl space-y-5">
-            <InfoLine icon={<Mail aria-hidden="true" className="size-4" />} label="登录邮箱" value={userEmail || "未读取"} />
-            <button
-              type="button"
-              className="text-action pressable inline-flex min-h-10 items-center gap-2 text-sm text-[color:var(--text-danger)]"
-              onClick={() => void handleLogout()}
-            >
-              <LogOut aria-hidden="true" className="size-4" />
-              退出登录
-            </button>
+          <div className="profile-pass-layout">
+            <div className="max-w-2xl space-y-5">
+              <InfoLine icon={<Mail aria-hidden="true" className="size-4" />} label="登录邮箱" value={userEmail || "未读取"} />
+              <button
+                type="button"
+                className="text-action pressable inline-flex min-h-10 items-center gap-2 text-sm text-[color:var(--text-danger)]"
+                onClick={() => void handleLogout()}
+              >
+                <LogOut aria-hidden="true" className="size-4" />
+                退出登录
+              </button>
+            </div>
+            {vip?.signedIn && vip.account?.id === userId && (
+              <div className="min-w-0">
+                <MembershipPass email={userEmail} edition={vip.active ? vip.cardEdition ?? "vip" : "one"} />
+                <div className="flex justify-center">
+                  <Link href={vip.active ? "/vip#vip-benefits" : "/vip"} className="text-action inline-flex min-h-11 items-center gap-2 text-sm font-medium">
+                    {vip.active ? "查看我的权益" : "升级"}
+                    <ArrowRight aria-hidden="true" className="size-4" />
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
         </ProfileSection>
       </div>

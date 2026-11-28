@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useMemo, useState } from "react";
 import {
   Activity,
   ArrowDownRight,
@@ -62,25 +62,39 @@ export function AdminAnalyticsClient() {
   const [refreshing, setRefreshing] = useState(false);
   const [message, setMessage] = useState("");
 
+  const pending = useRef<AbortController | null>(null);
+
   const load = useCallback(async (showRefresh = false) => {
+    pending.current?.abort();
+    const controller = new AbortController();
+    pending.current = controller;
     if (showRefresh) setRefreshing(true);
     else setState("loading");
     setMessage("");
     try {
-      const result = await fetchAdminAnalytics(range);
+      const result = await fetchAdminAnalytics(range, controller.signal)
+      if (controller.signal.aborted) return;;
       setData(result);
       setState("ready");
     } catch (error) {
+      if (controller.signal.aborted) return;
       setState("error");
       setMessage(error instanceof Error ? error.message : "分析数据暂时无法读取，请稍后重试。");
     } finally {
-      setRefreshing(false);
+      if (pending.current === controller) {
+        pending.current = null;
+        setRefreshing(false);
+      }
     }
   }, [range]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void load(), 0);
-    return () => window.clearTimeout(timer);
+    return () => {
+      window.clearTimeout(timer);
+      pending.current?.abort();
+      pending.current = null;
+    };
   }, [load]);
 
   function exportCsv() {

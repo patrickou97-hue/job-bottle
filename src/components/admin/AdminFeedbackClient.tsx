@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   CheckCircle2,
   ChevronLeft,
@@ -44,12 +44,18 @@ export function AdminFeedbackClient() {
   const [expandedId, setExpandedId] = useState("");
   const [resolvingId, setResolvingId] = useState("");
 
+  const pending = useRef<AbortController | null>(null);
+
   const load = useCallback(async (showLoading = false) => {
+    pending.current?.abort();
+    const controller = new AbortController();
+    pending.current = controller;
     if (showLoading) setRefreshing(true);
     setMessage("");
     setNotice("");
     try {
-      const result = await fetchAdminFeedback({ page, pageSize: PAGE_SIZE, query, status, platform });
+      const result = await fetchAdminFeedback({ page, pageSize: PAGE_SIZE, query, status, platform }, controller.signal)
+      if (controller.signal.aborted) return;;
       setFeedback(result.feedback);
       setMetrics(result.metrics);
       setPage(result.page);
@@ -58,16 +64,24 @@ export function AdminFeedbackClient() {
       setExpandedId("");
       setState("ready");
     } catch (error) {
+      if (controller.signal.aborted) return;
       setState("error");
       setMessage(error instanceof Error ? error.message : "反馈记录暂时无法读取，请稍后重试。");
     } finally {
-      setRefreshing(false);
+      if (pending.current === controller) {
+        pending.current = null;
+        setRefreshing(false);
+      }
     }
   }, [page, platform, query, status]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void load(), query ? 260 : 0);
-    return () => window.clearTimeout(timer);
+    return () => {
+      window.clearTimeout(timer);
+      pending.current?.abort();
+      pending.current = null;
+    };
   }, [load, query]);
 
   function updateStatus(value: AdminFeedbackStatus) {

@@ -1,0 +1,80 @@
+.admin-shell.theme-work {
+  --admin-surface: var(--background);
+  --admin-surface-strong: var(--surface-read-bg-strong);
+  --admin-surface-soft: var(--surface-bg);
+  --admin-ink: var(--text-primary);
+  --admin-ink-soft: var(--text-secondary);
+  --admin-line: var(--line-ghost);
+  --admin-line-soft: var(--line-ghost);
+  --admin-accent: var(--brand-blue-deep);
+  --admin-accent-soft: var(--surface-hover-bg);
+}
+.admin-shell .admin-shell__header {
+  background: var(--surface-read-bg-strong);
+  box-shadow: none;
+  backdrop-filter: none;
+  border-color: var(--line-ghost);
+}
+.admin-shell .admin-shell__brand-cn { width: 4rem; }
+.admin-shell .admin-shell__brand-section { font-size: .86rem; letter-spacing: 0; }
+.admin-shell .admin-shell__layout { grid-template-columns: 192px minmax(0, 1fr); }
+.admin-shell .admin-shell__sidebar {
+  padding-top: 1.5rem;
+  background: none;
+  border-right: 1px solid var(--line-ghost);
+}
+.admin-shell .admin-shell__nav { gap: 1rem; padding-top: 0; }
+.admin-shell .admin-shell__nav-link { min-height: 42px; border-radius: var(--radius-control, 8px); }
+.admin-shell .admin-shell__main { padding: clamp(1.3rem, 3vw, 2.6rem) clamp(1rem, 4vw, 3.5rem) 4rem; }
+.admin-shell .admin-page .page-hero { padding-block: 0 1.25rem; border-bottom: 1px solid var(--line-ghost); }
+.admin-shell .admin-page .page-title { font-size: clamp(1.65rem, 3vw, 2.2rem); }
+.admin-shell .admin-page .page-description { margin-top: .65rem; color: var(--text-secondary); }
+.admin-shell .admin-page .page-hero .page-kicker { display: none; }
+.admin-shell .admin-page :is(input, select, button) { scroll-margin-top: 8rem; }
+.admin-shell .admin-page :is(.form-section, .table-surface, .admin-feedback-list) {
+  box-shadow: none;
+  border-color: var(--line-ghost);
+}
+.admin-shell .admin-page :is(.admin-pagination, .admin-jobs-toolbar__count) { font-variant-numeric: tabular-nums; }
+.admin-overview { display: grid; margin-top: .7rem; }
+.admin-overview__group {
+  display: grid;
+  grid-template-columns: minmax(110px, .24fr) minmax(0, 1fr);
+  gap: 1rem 2rem;
+  padding-block: 1.3rem;
+  border-bottom: 1px solid var(--line-ghost);
+}
+.admin-overview__group h2 { padding-top: .75rem; font-size: .94rem; font-weight: 650; }
+.admin-overview__group li + li { border-top: 1px solid var(--line-ghost); }
+.admin-overview__link {
+  display: grid;
+  grid-template-columns: 1.25rem minmax(0, 1fr) 1rem;
+  gap: .9rem;
+  align-items: center;
+  min-height: 64px;
+  padding: .75rem .75rem;
+  border-radius: var(--radius-control, 8px);
+}
+.admin-overview__link:hover { background: var(--surface-hover-bg); }
+.admin-overview__link svg { color: var(--text-secondary); }
+.admin-overview__link strong { display: block; font-size: .9375rem; font-weight: 650; }
+.admin-overview__link small { display: block; margin-top: 3px; font-size: .81rem; color: var(--text-secondary); }
+.admin-route-loading { min-height: 10rem; display: grid; align-items: start; padding-block: 1rem; color: var(--text-secondary); }
+@media (max-width: 767px) {
+  .admin-shell .admin-shell__layout { grid-template-columns: minmax(0, 1fr); }
+  .admin-shell .admin-shell__mobile-nav { background: var(--surface-read-bg-strong); }
+}
+@media (max-width: 600px) {
+  .admin-overview__group { grid-template-columns: 1fr; gap: .5rem; padding-block: .75rem; }
+  .admin-overview__link { padding-inline: .35rem; }
+}
+.admin-shell .admin-shell__sidebar :is(.admin-shell__nav-label, .admin-shell__nav-icon) { color: var(--text-secondary); }
+.admin-shell .admin-shell__sidebar .admin-shell__nav-link { color: var(--text-secondary); }
+.admin-shell .admin-shell__sidebar .admin-shell__nav-link:hover { background: var(--surface-hover-bg); color: var(--text-primary); }
+.admin-shell .admin-shell__sidebar .admin-shell__nav-link--active {
+  background: var(--surface-hover-bg);
+  box-shadow: none;
+  color: var(--text-primary);
+}
+.admin-shell .admin-shell__sidebar .admin-shell__nav-link--active .admin-shell__nav-icon { color: var(--admin-accent); }
+.admin-shell .admin-shell__main:first-child { grid-column: 1 / -1; }

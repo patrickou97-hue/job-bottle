@@ -1,0 +1,128 @@
+@font-face {
+  font-family:"Bodoni Moda";
+  src:url("/fonts/vip/bodoni-moda-latin-500-italic.woff2") format("woff2");
+  font-weight:500;
+  font-style:italic;
+  font-display:swap;
+}
+.vip-pass-stage { position: relative; isolation: isolate; display: grid; place-items: center; min-width: 0; padding: 7% 5%; perspective: 2000px; }
+.vip-pass-stage::before {
+  content: ""; position: absolute; width: 80%; height: 24%; bottom: 4%; left: 10%;
+  background: #293e5e; opacity: .23; border-radius: 50%; filter: blur(22px); transform: rotate(-7deg);
+}
+.vip-pass-body {
+  position:relative; width:100%; max-width:490px; aspect-ratio:1.66;
+  border-radius:clamp(15px,1.75vw,25px); transform-style:preserve-3d;
+  transform:rotateY(-12deg) rotateX(9deg) rotateZ(-7deg);
+  --pass-depth:8px; --pass-edge:#34495e;
+}
+/* The parallel cross sections share one outline. The face occludes the far rim. */
+.vip-pass-edge { position:absolute; inset:0; border-radius:inherit; background:var(--pass-edge); pointer-events:none; }
+.vip-pass-body[data-finish="one"] { --pass-depth:5px; --pass-edge:#93b5c9; }
+.vip-pass-body[data-finish="premium"] { --pass-edge:#967137; }
+.vip-pass-body[data-finish="jade"] { --pass-edge:#28523e; }
+.vip-pass-body[data-finish="legend"] { --pass-edge:#918f86; }
+.vip-pass {
+  position:absolute; inset:0; overflow:hidden; isolation:isolate; border-radius:inherit;
+  background: linear-gradient(135deg,#344b69 0%,#1a304e 28%,#10233e 57%,#243d5b 86%,#54677b);
+  border: 1px solid #8494a7; box-shadow: inset 0 0 0 1px #ffffff2c;
+  container-type: inline-size;
+}
+.vip-pass::before { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(107deg, transparent 0 2px,#c6d7ef05 3px,transparent 4px); pointer-events: none; }
+.vip-pass-etch { position: absolute; inset: 0; width: 100%; height: 100%; fill: none; stroke: #d5dfeb; stroke-opacity: .19; stroke-width: .65; }
+.vip-pass-top, .vip-pass-foot { position: absolute; left: 7%; right: 7%; display: flex; justify-content: space-between; align-items: center; color: #dae3ed; }
+.vip-pass-top { top: 12%; }
+.vip-pass-top .starjob-wordmark { width: 24%; filter: brightness(0) invert(1); }
+.vip-pass-top > span:last-child, .vip-pass-foot > span:last-child { font: 500 clamp(8px,2.1cqw,12px)/1.3 ui-monospace,monospace; letter-spacing: .13em; }
+.vip-pass .vip-metal-mark { position: absolute; width: 32%; height: auto; top: 21%; right: 7.5%; transform: rotate(5deg); filter: drop-shadow(1px 6px 3px #0008); }
+.vip-pass-type { position: absolute; top: 31%; left: 7%; color: #eadbbc; font: italic 500 20cqw/1 Georgia,serif; letter-spacing: -.09em; text-shadow: 0 1px #171f31; }
+.vip-pass-foot { gap: 2.5%; bottom: 9%; padding-top: 3%; border-top: 1px solid #bdc9db4d; }
+.vip-pass-foot > span:first-child { font-size: clamp(10px,2.9cqw,15px); letter-spacing: .16em; }
+.vip-pass-foot > .vip-pass-email:first-child { min-width: 0; font: 500 clamp(11px,3.1cqw,15px)/1.3 ui-monospace,monospace; letter-spacing: 0; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.vip-pass-foot > span:last-child { flex: none; }
+/* The three collector finishes share the original pass's embossing and footprint. */
+.vip-pass[data-edition="premium"] {
+  --pass-face: linear-gradient(118deg,#c7a469,#efd999 25%,#fff0c9 36%,#d4ae67 60%,#f7e4ad 81%,#ab8242);
+  --pass-rim:linear-gradient(128deg,#856338,#f8e5a4 19%,#9a723a 45%,#76562c 69%,#e8cc86 90%,#92703e);
+  --pass-ink:#4d341a; --pass-rule:#79532165; --pass-etch:#896023; --pass-type:#573714;
+}
+.vip-pass[data-edition="jade"] {
+  --pass-face:linear-gradient(135deg,#0d4539,#27664b 25%,#4c8352 47%,#36774f 60%,#114e3d 85%,#0c3d32);
+  --pass-rim:linear-gradient(128deg,#366349,#93ac72 19%,#4b7950 42%,#1a4a37 68%,#61855a 91%,#254c39);
+  --pass-ink:#edf1dd; --pass-rule:#d3e9ac55; --pass-etch:#cce698; --pass-type:#f3eac8;
+}
+.vip-pass[data-edition="legend"] {
+  --pass-face: linear-gradient(112deg,#aebbc7 0%,#e9edf0 18%,#fcfcf7 30%,#d6dce1 50%,#b8c4d0 68%,#edf1f3 82%,#bbc6cf);
+  --pass-rim:linear-gradient(128deg,#767974,#f9f5e7 19%,#aba99f 41%,#696c69 67%,#e5dfcd 89%,#8e8d83);
+  --pass-ink:#2c3d50; --pass-rule:#40546465; --pass-etch:#546b7d; --pass-type:#213447;
+}
+.vip-pass:is([data-edition="premium"],[data-edition="jade"],[data-edition="legend"]) {
+  border:1.5px solid transparent;
+  background-image:var(--pass-face),var(--pass-rim);
+  background-origin:padding-box,border-box;
+  background-clip:padding-box,border-box;
+  box-shadow:inset 0 0 0 1px #ffffff48;
+}
+.vip-pass:is([data-edition="premium"],[data-edition="jade"],[data-edition="legend"])::before {
+  background:repeating-linear-gradient(118deg,#fff2 0 .45px,transparent .55px 2.5px);
+  opacity:.4;
+}
+.vip-pass:is([data-edition="premium"],[data-edition="jade"],[data-edition="legend"]) :is(.vip-pass-top,.vip-pass-foot) { color:var(--pass-ink); border-color:var(--pass-rule); }
+.vip-pass:is([data-edition="premium"],[data-edition="legend"]) .vip-pass-top .starjob-wordmark { filter:brightness(0); opacity:.8; }
+.vip-pass:is([data-edition="premium"],[data-edition="jade"],[data-edition="legend"]) .vip-pass-etch { stroke:var(--pass-etch); stroke-opacity:.35; stroke-width:.7; }
+.vip-pass:is([data-edition="premium"],[data-edition="jade"],[data-edition="legend"]) .vip-pass-type {
+  top:36%; font:italic 500 13cqw/1.12 "Bodoni Moda",Didot,serif; letter-spacing:-.04em; color:var(--pass-type); text-shadow:0 1px 0 #fff6;
+}
+.vip-pass[data-edition="premium"] .vip-pass-type { font-size:11.2cqw; top:37%; }
+.vip-pass[data-edition="jade"] .vip-pass-type { font-size:15.6cqw; top:33%; text-shadow:0 1px 1px #042c25; }
+.vip-pass[data-edition="legend"] .vip-metal-mark { filter:grayscale(.95) sepia(.08) contrast(1.18) drop-shadow(1px 4px 2px #26374780); }
+.vip-pass[data-edition="jade"] .vip-metal-mark { filter:saturate(.63) brightness(1.07) drop-shadow(1px 4px 2px #021c1a99); }
+.vip-pass[data-edition="legend"] .vip-linework { opacity:.6; }
+
+.vip-pass[data-edition="jade"]::before {
+  background:radial-gradient(ellipse at 84% 5%,#d4e39a91,transparent 42%),
+    radial-gradient(ellipse at 39% 68%,#9bca8f42,transparent 32%),
+    linear-gradient(151deg,transparent 28%,#c7e1b029 37%,transparent 43%,#a8cb9c23 55%,transparent 60%);
+  opacity:1;
+}
+.vip-pass[data-edition="jade"] .vip-pass-etch { stroke-width:.55; stroke-opacity:.34; }
+.vip-pass[data-edition="legend"] .vip-pass-type {
+  color:#24303f; text-shadow:0 1px 0 #fff; letter-spacing:-.045em;
+}
+.vip-pass[data-edition="legend"] .vip-facets { fill:#fff7; stroke:#526779; stroke-opacity:.57; }
+.vip-pass[data-edition="legend"] .vip-seal { fill:none; stroke:#7c6b47; stroke-opacity:.64; }
+
+.vip-pass[data-edition="legend"]::before {
+  background:repeating-linear-gradient(96deg,#fff9 0 .55px,transparent .8px 2.2px),
+    linear-gradient(112deg,transparent 14%,#fff9 25%,transparent 39%,#81766025 71%,transparent 84%);
+  opacity:.54;
+}
+.vip-pass-signature {
+  display:block; margin:-.04em -.46em 0 0; text-align:right; font-size:3.6cqw;
+  letter-spacing:.035em; line-height:1.25; color:#84591f; text-shadow:0 1px #fff9;
+}
+.vip-pass[data-edition="one"] {
+  background:linear-gradient(142deg,#deeff9 0%,#bfddee 48%,#a7cee6 100%);
+  border:1px solid #a1bfd1;
+  box-shadow:inset 0 1px 1px #fffd;
+}
+.vip-pass[data-edition="one"]::before { background:linear-gradient(113deg,#ffffff35,transparent 49%); }
+.vip-pass[data-edition="one"] .vip-pass-top .starjob-wordmark { filter:brightness(0); opacity:.62; }
+.vip-pass[data-edition="one"] .vip-pass-type {
+  font-size:18cqw; letter-spacing:-.065em; color:#284b65; text-shadow:0 1px #fff7;
+}
+.vip-pass[data-edition="one"] .vip-pass-foot { color:#385a72; border-color:#628ca254; }
+.one-relief { position:absolute; bottom:100%; right:1%; width:41%; height:auto; overflow:visible; pointer-events:none; fill:#b8d8ea; stroke:#eef9ff88; stroke-width:.85; filter:drop-shadow(0 1px 1px #7397ac70); }
+.vip-pass-top .starjob-wordmark__image { display:block; width:100%; height:auto; }
+.profile-pass-layout { display:grid; grid-template-columns:minmax(0,1fr) minmax(235px,335px); align-items:start; gap:24px; }
+.profile-pass-layout .vip-pass-stage { width:100%; padding:6% 6% 8%; }
+.profile-pass-layout .vip-pass-body { --pass-depth:5px; transform:rotateY(-8deg) rotateX(6deg) rotateZ(-4deg); }
+.profile-pass-layout .vip-pass-stage::before { opacity:.17; }
+@media (max-width:760px) {
+  .profile-pass-layout { grid-template-columns:1fr; gap:12px; }
+  .profile-pass-layout .vip-pass-stage { max-width:340px; justify-self:start; }
+}
+
+@container (max-width: 310px) {
+  .vip-pass-foot > span:nth-child(2) { display:none; }
+}

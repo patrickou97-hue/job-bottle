@@ -1,6 +1,8 @@
 import type { ProfileRole } from "@/lib/types";
 import type { AccountType } from "@/lib/account-identity";
 
+import type { AssignedVipCard } from "./starjob-vip";
+
 export type AdminUserSummary = {
   id: string;
   email: string;
@@ -17,6 +19,8 @@ export type AdminUserSummary = {
   school: string | null;
   targetRoles: string[];
   vipActive: boolean | null;
+  cardAssignment: AssignedVipCard | null;
+  vipPlan: "free_launch" | "full" | null;
 };
 
 export type AdminUserMetrics = {
@@ -73,7 +77,7 @@ export type AdminUserQuery = {
   sort?: AdminUserSort;
 };
 
-export async function fetchAdminUsers(input: AdminUserQuery = {}) {
+export async function fetchAdminUsers(input: AdminUserQuery = {}, signal?: AbortSignal) {
   const params = new URLSearchParams();
   params.set("page", String(input.page ?? 1));
   params.set("pageSize", String(input.pageSize ?? 25));
@@ -86,7 +90,7 @@ export async function fetchAdminUsers(input: AdminUserQuery = {}) {
   }
   if (input.sort && input.sort !== "activity_desc") params.set("sort", input.sort);
 
-  const response = await fetch(`/api/admin/users?${params.toString()}`, { cache: "no-store" });
+  const response = await fetch(`/api/admin/users?${params.toString()}`, { cache: "no-store", signal });
   const payload = await readJson(response);
   if (!response.ok) throw new Error(getErrorMessage(payload, "用户列表暂时无法读取，请稍后重试。"));
   return payload as AdminUsersResponse;
@@ -132,6 +136,14 @@ export async function recoverAdminUserMutation(
     };
   }
   throw new Error(getErrorMessage(payload, "账户安全恢复失败，请重新核对后再试。"));
+}
+
+export async function setVipCard(id: string, edition: AssignedVipCard | null) {
+  const response = await fetch("/api/admin/users", { method: "PATCH", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "set_vip_card", id, edition }) });
+  const payload = await readJson(response);
+  if (!response.ok) throw new Error(getErrorMessage(payload, "卡面保存失败，请重试。"));
+  return payload as { id: string; edition: AssignedVipCard | null };
 }
 
 export async function updateVipMembership(id: string, active: boolean) {

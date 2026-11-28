@@ -77,8 +77,8 @@ export type AdminAnalyticsResponse = {
   warnings: string[];
 };
 
-export async function fetchAdminAnalytics(range: AdminAnalyticsRange = 30) {
-  const response = await fetch(`/api/admin/analytics?range=${range}`, { cache: "no-store" });
+export async function fetchAdminAnalytics(range: AdminAnalyticsRange = 30, signal?: AbortSignal) {
+  const response = await fetch(`/api/admin/analytics?range=${range}`, { cache: "no-store", signal });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
     const error = payload && typeof payload === "object" && "error" in payload

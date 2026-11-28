@@ -11,6 +11,7 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { SITE_NAME } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@/lib/types";
+import { vipCardName, vipCardNames } from "@/lib/starjob-vip";
 import { useVipStatus } from "@/components/vip/useVipStatus";
 import { isSceneRoute, markSceneDeparture } from "@/lib/scene-transition";
 
@@ -210,14 +211,14 @@ export function Navbar({ appearance = "work" }: { appearance?: "scene" | "work" 
             </div>
           </details>
 
-        <Link href="/vip" className="starjob-vip-link text-sm font-medium" data-active={Boolean(vip?.active)}
-          aria-label={vip?.active ? "StarJob VIP，已解锁" : "StarJob VIP，待解锁"}
+        <Link href="/vip" className="starjob-vip-link text-sm font-medium" data-active={Boolean(vip?.active)} data-edition={vip?.active ? vip.cardEdition ?? "vip" : undefined}
+          aria-label={vip?.active ? vipCardName(vip.cardEdition ?? "vip") + "，已解锁" : "StarJob VIP，待解锁"}
           aria-current={pathname === "/vip" ? "page" : undefined}
           onClick={(event) => handleSceneLink(event, "/vip")}
         >
           <span className="starjob-vip-name relative inline-flex items-center pr-2" lang="en">
             <span className="starjob-vip-wordmark">StarJob</span>
-            <span className="nav-beta" aria-hidden="true">VIP</span>
+            <span className="nav-beta" aria-hidden="true">{vipCardNames[vip?.active ? vip.cardEdition ?? "vip" : "vip"]}</span>
           </span>
           {vip?.active ? null : <span className="starjob-vip-lock">待解锁</span>}
         </Link>

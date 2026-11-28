@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import "./admin.css";
 import { AdminShell } from "@/components/layout/AdminShell";
 import { requireAdminAccess } from "@/lib/admin-access";
 

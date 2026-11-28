@@ -7,30 +7,24 @@ export function VipAnimationFigure({ title, caption, className, children }: {
 }) {
   const figure = useRef<HTMLElement>(null);
   const [started, setStarted] = useState(false);
-  const [visible, setVisible] = useState(false);
   useEffect(() => {
     const element = figure.current;
     if (!element) return;
-    let inView = !("IntersectionObserver" in window);
-    function sync() {
-      const showing = inView && !document.hidden;
-      if (showing) setStarted(true);
-      setVisible(showing);
+    if (typeof IntersectionObserver === "undefined") {
+      const frame = requestAnimationFrame(() => setStarted(true));
+      return () => cancelAnimationFrame(frame);
     }
-    const observer = typeof IntersectionObserver === "undefined" ? null : new IntersectionObserver(([entry]) => {
-      inView = entry.isIntersecting;
-      sync();
-    });
-    observer?.observe(element);
-    if (!observer) sync();
-    document.addEventListener("visibilitychange", sync);
-    return () => {
-      observer?.disconnect();
-      document.removeEventListener("visibilitychange", sync);
-    };
+
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.intersectionRatio < 0.18) return;
+      observer.disconnect();
+      setStarted(true);
+    }, { threshold: 0.18 });
+    observer.observe(element);
+    return () => observer.disconnect();
   }, []);
 
-  return <figure ref={figure} aria-label={caption ? undefined : title} className={className + " vip-loop"} data-started={started} data-running={visible}>
+  return <figure ref={figure} aria-label={caption ? undefined : title} className={className + " vip-animation"} data-started={started}>
     {children}
     {caption && <figcaption>{caption}</figcaption>}
   </figure>;

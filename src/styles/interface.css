@@ -261,3 +261,47 @@
 @media (max-width: 360px) {
   .starjob-vip-link { gap: 3px; }
 }
+
+.starjob-vip-link[data-edition="vip"] { --vip-nav-ink:#233c57; --vip-nav-light:#647e95; }
+.starjob-vip-link[data-edition="premium"] { --vip-nav-ink:#825618; --vip-nav-light:#bd9240; }
+.starjob-vip-link[data-edition="jade"] { --vip-nav-ink:#164926; --vip-nav-light:#5d8839; }
+.starjob-vip-link[data-edition="legend"] { --vip-nav-ink:#23374d; --vip-nav-light:#b3c2cd; }
+.starjob-vip-link[data-active="true"][data-edition] { color:var(--vip-nav-ink); }
+.starjob-vip-link[data-edition] .starjob-vip-wordmark,
+.starjob-vip-link[data-active="true"][data-edition] .nav-beta {
+  background-image:linear-gradient(115deg,var(--vip-nav-ink) 14%,var(--vip-nav-light) 46%,var(--vip-nav-ink) 75%);
+}
+.starjob-vip-link[data-edition="legend"] .starjob-vip-wordmark {
+  background-image:linear-gradient(106deg,#503d2e 4%,#9d8453 26%,#665649 44%,#39362f 67%,#9d8054 90%);
+}
+.app-navbar--scene .starjob-vip-link[data-edition="legend"] .starjob-vip-wordmark {
+  background-image:linear-gradient(110deg,#cfb98e,#fff6e1 34%,#b6a583 57%,#f0e1b9);
+}
+.app-navbar--scene .starjob-vip-link[data-edition] { --vip-nav-ink:#eed5a0; }
+.app-navbar--scene .starjob-vip-link[data-edition="vip"] { --vip-nav-ink:#c6d9ec; }
+.app-navbar--scene .starjob-vip-link[data-edition="jade"] { --vip-nav-ink:#b4e6ce; }
+
+.admin-shell .admin-card-setting {
+  display:grid; grid-template-columns:minmax(5em,auto) minmax(0,1fr); align-items:center;
+  gap:6px 14px; margin-top:16px; padding-top:14px; border-top:1px solid var(--line-ghost);
+}
+.admin-card-setting > span,.admin-card-setting strong {font-size:.82rem;font-weight:600;color:var(--text-primary);}
+.admin-card-setting small {grid-column:1/-1;font-size:.75rem;color:var(--text-muted);}
+.admin-shell section[aria-label="用户列表"] {background:var(--surface-bg);border-radius:var(--radius-lg,14px);}
+.admin-shell section[aria-label="用户列表"] article:has(>button[aria-expanded="true"]) {box-shadow:inset 3px 0 var(--aurora);}
+@media (max-width:640px) {
+  .admin-shell section[aria-label="用户列表"] article>button {grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;}
+  .admin-shell section[aria-label="用户列表"] article>button>span {grid-column:1;}
+  .admin-shell section[aria-label="用户列表"] article>button>svg {grid-column:2;grid-row:1;display:block;}
+}
+
+.starjob-vip-link[data-edition]:not([data-edition="vip"]) .nav-beta {
+  font-size:.56rem; letter-spacing:.025em; top:-.68rem; right:.05rem;
+}
+.starjob-vip-link[data-active="true"][data-edition="legend"] .nav-beta {
+  font:italic 600 .67rem/1 Georgia,serif; letter-spacing:.025em; top:-.73rem; right:.03rem;
+  background-image:linear-gradient(110deg,#78521d,#a48041 50%,#755323);
+}
+.app-navbar--scene .starjob-vip-link[data-active="true"][data-edition="legend"] .nav-beta {
+  background-image:linear-gradient(110deg,#dce6ef,#f5ebce,#dce6ef); color:transparent;
+}
