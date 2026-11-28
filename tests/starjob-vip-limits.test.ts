@@ -27,8 +27,8 @@ test("管理页与会员权益页展示的六组限额与数据库执行规则�
 
 test("VIP 划线价与新订单默认金额一致", async () => {
   const { VIP_PRICE, VIP_PRICE_FEN } = await import(new URL("../src/lib/starjob-vip.ts", import.meta.url).href);
-  const migration = await readFile(new URL("../supabase/migrations/20261128040805_starjob_vip_price_6590.sql", import.meta.url), "utf8");
-  assert.equal(VIP_PRICE, "65.9");
-  assert.equal(VIP_PRICE_FEN, 6590);
+  const migration = await readFile(new URL("../supabase/migrations/20261128075455_starjob_vip_price_8990.sql", import.meta.url), "utf8");
+  assert.equal(VIP_PRICE, "89.9");
+  assert.equal(VIP_PRICE_FEN, 8990);
   assert.match(migration, new RegExp(`alter column amount_fen set default ${VIP_PRICE_FEN}\\b`));
 });

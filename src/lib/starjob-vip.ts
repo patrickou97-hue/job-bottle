@@ -1,4 +1,4 @@
-export const VIP_PRICE_FEN = 6590;
+export const VIP_PRICE_FEN = 8990;
 export const VIP_PRICE = String(VIP_PRICE_FEN / 100);
 export const VIP_COMPOSE_DAILY_LIMIT = 3;
 export const VIP_COMPOSE_WEEKLY_LIMIT = 10;

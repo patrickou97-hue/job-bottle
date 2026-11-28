@@ -54,7 +54,7 @@ function VipMembershipPage({ basicModelId, status, statusError }: {
       {welcome && <MotionDialog labelledBy="welcome-vip-title" describedBy="welcome-vip-copy" className="vip-welcome" onBackdropClick={closeWelcome} onEscapeKeyDown={closeWelcome}>
         <button type="button" className="vip-welcome-close" aria-label="关闭欢迎页" onClick={closeWelcome}><X size={20} /></button>
         <header className="vip-welcome-heading">
-          <h2 id="welcome-vip-title">欢迎加入 <span>StarJob VIP</span></h2>
+          <h2 id="welcome-vip-title">欢迎加入 <VipBrandName /></h2>
           <p id="welcome-vip-copy">限免会员已开通。现在你可以从这三件事开始。</p>
         </header>
         <MembershipPass email={memberEmail} />
@@ -70,7 +70,7 @@ function VipMembershipPage({ basicModelId, status, statusError }: {
         <div className="vip-hero-copy">
           <h1 id="vip-title" lang="en">
             <em className="vip-introducing">Introducing</em>{" "}
-            <span className="vip-product-name">StarJob <span>VIP</span></span>
+            <VipBrandName />
           </h1>
           <p className="vip-detail">
             <mark>跃进全面AI赋能</mark>
@@ -150,6 +150,10 @@ function VipMembershipPage({ basicModelId, status, statusError }: {
       </div>
     </div>
   );
+}
+
+function VipBrandName() {
+  return <span className="vip-product-name"><span className="starjob-vip-wordmark">StarJob</span>{" "}<span className="vip-product-tier">VIP</span></span>;
 }
 
 function MembershipPass({ email }: { email?: string | null }) {

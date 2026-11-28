@@ -43,16 +43,18 @@
 .vip-hero-copy { min-width: 0; container-type: inline-size; }
 .vip-hero h1 { margin: 0; color: var(--vip-ink); font-family: "StarJob Membership", Georgia, serif; font-weight: 600; letter-spacing: -.055em; }
 .vip-introducing { display: block; margin-left: .06em; color: #496381; font: italic 400 clamp(2.125rem, 9.5cqw, 3.5rem)/1.16 "Great Vibes", "Snell Roundhand", cursive; letter-spacing: 0; }
-.vip-product-name { display: block; width: fit-content; white-space: nowrap; font-size: clamp(3rem, 16.5cqw, 6rem); line-height: .99; letter-spacing: -.047em; }
-.vip-product-name > span { color: #89612b; padding-inline-end: .09em; }
+.vip-product-name { display: inline-grid; grid-template-columns: 3.85em auto; align-items: center; gap: .16em; white-space: nowrap; vertical-align: middle; }
+.vip-product-name .starjob-vip-wordmark { width: 100%; }
+.vip-hero .vip-product-name { font-size: clamp(2.5rem, 15cqw, 5.5rem); line-height: 1.05; letter-spacing: -.047em; margin-top: .16em; }
+.vip-product-tier { color: #89612b; padding-inline-end: .09em; }
 @supports (background-clip: text) {
-  .vip-product-name > span {
+  .vip-product-tier {
     background: linear-gradient(123deg,#68451f 5%,#966e35 30%,#ab8144 48%,#80582a 70%,#76512b 94%);
     background-clip: text; color: transparent;
   }
 }
 @media (forced-colors: active) {
-  .vip-product-name > span { background: none; color: CanvasText; }
+  .vip-product-tier { background: none; color: CanvasText; }
 }
 .vip-detail { display: grid; justify-items: start; gap: 6px; margin-top: 22px; }
 .vip-detail mark { padding-inline: .07em; color: var(--vip-ink); background: linear-gradient(transparent 65%, #efdaa4 65%, #efdaa4 93%, transparent 93%); font-size: clamp(1.125rem, 1.45vw, 1.3125rem); line-height: 1.45; font-weight: 650; }
@@ -206,7 +208,7 @@
 .vip-welcome-close { position: absolute; z-index: 1; top: 8px; right: 8px; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; }
 .vip-welcome-close:hover, .vip-welcome nav a:hover { background: #edf2f6; }
 .vip-welcome h2 { font-size: clamp(24px,5vw,32px); line-height: 1.25; }
-.vip-welcome h2 span { color: #815e28; }
+.vip-welcome .vip-product-name { color: #815e28; font: 600 .84em/1.1 "StarJob Membership", Georgia, serif; }
 .vip-welcome p { margin-top: 10px; font-size: 14px; line-height: 1.7; color: #53657b; }
 .vip-welcome nav { margin-top: 24px; }
 .vip-welcome nav a { display: grid; grid-template-columns: 20px 1fr 16px; align-items: center; gap: 12px; padding: 14px 4px; border-top: 1px solid #dae2e9; }
