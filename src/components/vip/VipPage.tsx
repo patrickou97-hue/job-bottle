@@ -23,6 +23,8 @@ function VipMembershipPage({ basicModelId, status, statusError }: {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [welcome, setWelcome] = useState(false);
+  const basicModelName = ["deepseek-flash", "deepseek-v4-flash", "deepseek-v4-flash-vision-exp"].includes(basicModelId)
+    ? "DeepSeek V4.1 Flash" : basicModelId;
   const memberEmail = status?.active || welcome ? status?.account?.email : null;
   function closeWelcome() {
     setWelcome(false);
@@ -139,7 +141,7 @@ function VipMembershipPage({ basicModelId, status, statusError }: {
         <h2 id="vip-terms-heading">会员服务说明</h2>
         <dl>
           <div><dt>开通与升级</dt><dd>限免期间开通为 ¥0，无自动续费。高级模型属于正式付费版权益，限免会员可在正式版发布后选择折扣升级。</dd></div>
-          <div><dt>模型说明</dt><dd>基础模型目前为 {basicModelId === "deepseek-v4-flash" ? "DeepSeek V4 Flash" : basicModelId}。高级模型首期计划使用 {VIP_ADVANCED_MODEL.name}，Claude 和 Gemini 仍在评估中。型号可能随版本更新，以本页公布的信息为准。</dd></div>
+          <div><dt>模型说明</dt><dd>基础模型目前为 {basicModelName}。高级模型首期计划使用 {VIP_ADVANCED_MODEL.name}，Claude 和 Gemini 仍在评估中。型号可能随版本更新，以本页公布的信息为准。</dd></div>
           <div><dt>材料与隐私</dt><dd>生成简历时，你提交的材料文字会发送给 AI 模型服务处理。请使用有权分享的材料，并先隐去客户姓名、联系方式等敏感信息。</dd></div>
           <div><dt>使用 AI 建议</dt><dd>投递前，请核对简历中的日期、职责和成果。AI 提供的公司介绍与岗位推荐仅供参考，招聘要求和截止时间请以招聘方公告为准。</dd></div>
           <div><dt>使用帮助</dt><dd>各项使用次数可在<a href="#vip-benefits">权益内容</a>中查看。遇到开通或额度问题，可通过<Link href="/feedback">帮助与反馈</Link>联系我们。</dd></div>
