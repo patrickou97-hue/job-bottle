@@ -241,51 +241,61 @@
 .vip-artwork .vip-playback button { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; }
 .vip-artwork .vip-playback button:hover { background: #e6ecf1; }
 .vip-svg-flow circle { opacity: 0; offset-rotate: 0deg; }
-.vip-particle-one { offset-path: path("M243 155q31 8 52 38l32 34"); --delay: .55s; }
-.vip-particle-two { offset-path: path("M274 240q26 0 54-15"); --delay: .68s; }
-.vip-particle-three { offset-path: path("M223 340q64-12 103-105"); --delay: .72s; }
+.vip-particle-one { offset-path: path("M243 155q31 8 52 38l32 34"); --particle-delay: .55s; }
+.vip-particle-two { offset-path: path("M274 240q26 0 54-15"); --particle-delay: .68s; }
+.vip-particle-three { offset-path: path("M223 340q64-12 103-105"); --particle-delay: .72s; }
 
 @media (prefers-reduced-motion: no-preference) {
+  .vip-loop { --cycle: 9.5s; }
   .vip-loop[data-running=true] { --play-state: running; }
+  .vip-loop[data-started=true] > svg {
+    animation: vip-loop-scene var(--cycle) ease-in-out infinite both;
+    animation-play-state: var(--play-state, paused);
+  }
   .vip-loop[data-started=true] :is(.vip-demo-first, .vip-demo-middle, .vip-demo-last, .vip-demo-line, .vip-demo-highlight,
-    .vip-svg-note, .vip-svg-route, .vip-svg-arrow, .vip-svg-asterisk, .vip-svg-resume, .vip-svg-ink, .vip-svg-flow circle) {
-    animation: var(--track, vip-loop-arrive) 9.5s var(--delay, 0s) cubic-bezier(.2,.7,.25,1) infinite both;
+    .vip-svg-note, .vip-svg-route, .vip-svg-arrow, .vip-svg-asterisk, .vip-svg-resume, .vip-svg-ink) {
+    animation: var(--track, vip-loop-arrive) var(--cycle) ease-out infinite both;
+    /* Stage the entrance within the cycle so every layer resets on the same invisible frame. */
+    animation-timing-function: linear(0 0% var(--start, 0%), .45 calc(var(--start, 0%) + 4%), .86 calc(var(--start, 0%) + 9%), 1 calc(var(--start, 0%) + 14%) 100%);
     animation-play-state: var(--play-state, paused);
   }
   .vip-demo-first, .vip-demo-middle, .vip-demo-last { --entry: translateY(5px); }
-  .vip-demo-middle { --delay: .55s; }
-  .vip-demo-last { --delay: 1.12s; }
+  .vip-demo-middle { --start: 6%; }
+  .vip-demo-last { --start: 12%; }
   .vip-demo-line, .vip-svg-route { --track: vip-loop-trace; stroke-dasharray: 1; }
-  .vip-demo-line { --delay: .24s; }
-  .vip-demo-highlight { --track: vip-loop-highlight; --delay: .94s; transform-box: fill-box; transform-origin: left; }
+  .vip-demo-line { --start: 3%; }
+  .vip-demo-highlight { --track: vip-loop-highlight; --start: 10%; transform-box: fill-box; transform-origin: left; }
   .vip-svg-note { --entry: translate(-19px, 11px) rotate(-3deg); }
-  .vip-svg-note--two { --delay: .11s; }
-  .vip-svg-note--three { --delay: .22s; }
-  .vip-svg-route { --delay: .43s; }
-  .vip-svg-route--second { --delay: .50s; }
-  .vip-svg-route--third { --delay: .59s; }
-  .vip-svg-arrow, .vip-svg-asterisk { --delay: .85s; }
-  .vip-svg-resume { --entry: translate(13px, 12px) rotate(2deg); --delay: .72s; }
-  .vip-svg-ink { --delay: 1.05s; }
-  .vip-svg-ink--two { --delay: 1.22s; }
-  .vip-svg-ink--three { --delay: 1.39s; }
-  .vip-svg-flow circle { --track: vip-loop-particle; }
+  .vip-svg-note--two { --start: 1%; }
+  .vip-svg-note--three { --start: 2.5%; }
+  .vip-svg-route { --start: 4.5%; }
+  .vip-svg-route--second { --start: 5.5%; }
+  .vip-svg-route--third { --start: 6.5%; }
+  .vip-svg-arrow, .vip-svg-asterisk { --start: 9%; }
+  .vip-svg-resume { --entry: translate(13px, 12px) rotate(2deg); --start: 8%; }
+  .vip-svg-ink { --start: 11%; }
+  .vip-svg-ink--two { --start: 13%; }
+  .vip-svg-ink--three { --start: 15%; }
+  .vip-loop[data-started=true] .vip-svg-flow circle {
+    animation: vip-loop-particle var(--cycle) var(--particle-delay) ease-out infinite both;
+    animation-play-state: var(--play-state, paused);
+  }
+}
+@keyframes vip-loop-scene {
+  0%, 96%, 100% { opacity: 0; }
+  10%, 78% { opacity: 1; }
 }
 @keyframes vip-loop-arrive {
-  0%, 100% { opacity: 0; transform: var(--entry, none); }
-  13%, 64% { opacity: 1; transform: none; animation-timing-function: ease-in-out; }
-  83%, 91% { opacity: 0; transform: none; }
+  from { opacity: 0; transform: var(--entry, none); }
+  to { opacity: 1; transform: none; }
 }
 @keyframes vip-loop-trace {
-  0%, 100% { stroke-dashoffset: 1; opacity: 0; }
-  3% { opacity: 1; }
-  17%, 65% { stroke-dashoffset: 0; opacity: 1; animation-timing-function: ease-in-out; }
-  84%, 91% { stroke-dashoffset: 0; opacity: 0; }
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
 }
 @keyframes vip-loop-highlight {
-  0%, 100% { transform: scaleX(0); opacity: 0; }
-  12%, 63% { transform: scaleX(1); opacity: 1; animation-timing-function: ease-in-out; }
-  82%, 91% { transform: scaleX(1); opacity: 0; }
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
 }
 @keyframes vip-loop-particle {
   0% { offset-distance: 0%; opacity: 0; }
