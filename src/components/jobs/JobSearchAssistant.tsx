@@ -6,14 +6,14 @@ import { AssistantComposer } from "@/components/ui/AssistantComposer";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { buildLocationGroups } from "@/lib/locations";
 import { hasJobPreferences, jobMatchesProfilePreferences } from "@/lib/jobs";
-import { matchJobRole } from "@/lib/job-role-search";
+import { matchJobRole, type EvidenceItem } from "@/lib/job-role-search";
 import { globalRanking, verifiedCompanyProfile, type CompanyProfile } from "@/lib/company-overview";
 import type { SearchState } from "@/lib/job-search-assistant";
 import type { Job, Profile } from "@/lib/types";
 
 type Props = {
   current: SearchState;
-  facets: { roleTerms: string[]; locations: string[]; industries: string[]; batchTypes: string[]; categories: string[] };
+  facets: { roleEvidence: EvidenceItem[]; roleTerms: string[]; locations: string[]; industries: string[]; batchTypes: string[]; categories: string[] };
   profile: Profile | null;
   focusedCompany?: string;
   onApply: (state: SearchState) => { jobs: Job[]; chips: string[] };
@@ -71,7 +71,7 @@ function SearchConversation({ current, facets, profile, focusedCompany, onApply,
       if (group.province !== "其他") locations.add("province:" + group.province);
       for (const city of group.cities) locations.add("city:" + city);
     }
-    return { roleTerms: facets.roleTerms, locations: [...locations], industries: facets.industries, categories: facets.categories, batchTypes: facets.batchTypes, hasPreferences };
+    return { roleEvidence: facets.roleEvidence, roleTerms: facets.roleEvidence.length ? undefined : facets.roleTerms, locations: [...locations], industries: facets.industries, categories: facets.categories, batchTypes: facets.batchTypes, hasPreferences };
   }, [facets, hasPreferences]);
 
   async function ask(message: string) {
@@ -129,18 +129,18 @@ function SearchConversation({ current, facets, profile, focusedCompany, onApply,
             if (evidence.level === "related") related++;
             if (rows.length >= 3 || companies.has(job.company_name)) continue;
             companies.add(job.company_name);
-            const title = evidence.level === "named" ? evidence.term :
-              evidence.level === "category" ? "校招大类含「" + evidence.term + "」" : "相关方向 · " + evidence.term;
+            const title = evidence.source === "岗位职责" ? "职责与「" + role.name + "」相关" :
+              evidence.level === "category" ? evidence.term + " · 大类线索" : evidence.term;
             rows.push({ id: job.id, company: job.company_name, title, evidenceUrl: evidence.url, profile: verifiedCompanyProfile(job.company_name),
-              detail: [evidence.source + "列出「" + evidence.term + "」", job.batch_type, job.locations && "公告地点：" + job.locations].filter(Boolean).join(" · ") });
+              detail: [evidence.source + "写有「" + evidence.term + "」", job.batch_type, job.locations && "公告地点：" + job.locations].filter(Boolean).join(" · ") });
           }
           const category = matches.length - named - related;
-          let answer = "你想找「" + role.name + "」。";
-          if (named) answer += "有 " + named + " 条招聘或内推资料明确列出了这个岗位方向。";
-          else answer += "当前范围内还没找到明确列出这个岗位的资料。";
-          if (related) answer += "另有 " + related + " 条公告提到相近方向或相关关键词。";
-          if (category) answer += "还有 " + category + " 条只在招聘大类的说明中提到相关方向，具体职位需看招聘方岗位表。";
-          if (!matches.length) answer += data.state.location ? "可以试试「不限城市，继续找这个方向」。" : "你也可以说说想做的具体工作，我会按职责方向再找。";
+          const conditions = [data.state.industry, data.state.location?.replace(/^(city|province):/, "").replace("scope:nationwide", "全国"), data.state.batchType].filter(Boolean).join("、");
+          let answer = (conditions ? "按「" + conditions + "」筛选，" : "") + "为你查找「" + role.name + "」。";
+          if (named) answer += named + " 条招聘或内推资料明确列出匹配职位。";
+          if (related) answer += related + " 条公告的职责、相近职位或关键词与目标有关。";
+          if (category) answer += category + " 条公告列出了相关岗位大类，具体职位名称需以招聘方岗位表为准。";
+          if (!matches.length) answer += "现有招聘资料里暂时没有足够依据推荐岗位。";
           turn = { message, answer, ranked, rows, total: matches.length, companies: rows.map(row => row.company) };
         } else {
           const preferred = recommend && hasPreferences ? results.jobs.filter(job => jobMatchesProfilePreferences(job, profile)) : [];

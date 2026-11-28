@@ -79,3 +79,17 @@ test("公司词干及模型给出的别名仅用作候选检索，已知全称�
   assert.equal(verifiedCompanyProfile("中国国际金融有限公司").catalogueName, "中金公司");
   assert.ok(companyLookupTerms("示例企业", ["某品牌"]).includes("某品牌"));
 });
+
+test("模型可直接选择招聘大类和职责原文，外企条件与岗位判断分别生效", () => {
+  const options = { ...input.options, industries: ["外企"], roleEvidence: [
+    { source: "岗位大类", term: "产品类" },
+    { source: "岗位职责", term: "整理访谈结果，梳理用户需求并参与产品迭代" },
+  ] };
+  const result = resolveSearch({ ...input, options }, searchIntent.parse({ action: "recommend", changes: {
+    industry: "外企", categories: [], role: { name: "产品经理", decisions: [1, 0, 99, 1], direct: [1, 0, 99] },
+  } }));
+  assert.equal(result.state.industry, "外企");
+  assert.deepEqual(result.state.role.judgments.map(({ term, level }: { term: string; level: string }) => [term, level]),
+    [[options.roleEvidence[1].term, "related"], ["产品类", "category"]]);
+  assert.deepEqual(resolveSearch({ ...input, options, current: result.state }, { action: "filter", changes: { location: "" } }).state.role, result.state.role);
+});

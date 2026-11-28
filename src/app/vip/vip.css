@@ -44,7 +44,7 @@
 .vip-hero h1 { margin: 0; color: var(--vip-ink); font-family: "StarJob Membership", Georgia, serif; font-weight: 600; letter-spacing: -.055em; }
 .vip-introducing { display: block; margin-left: .06em; color: #496381; font: italic 400 clamp(39px,11cqw,68px)/1.16 "Great Vibes", "Snell Roundhand", cursive; letter-spacing: 0; }
 .vip-product-name { display: block; width: fit-content; white-space: nowrap; font-size: clamp(52px,20.3cqw,118px); line-height: .99; letter-spacing: -.047em; }
-.vip-product-name > span { color: #89612b; }
+.vip-product-name > span { color: #89612b; padding-inline-end: .09em; }
 @supports (background-clip: text) {
   .vip-product-name > span {
     background: linear-gradient(123deg,#68451f 5%,#966e35 30%,#ab8144 48%,#80582a 70%,#76512b 94%);
@@ -133,6 +133,7 @@
 .vip-terms a, .vip-preview-note a { text-decoration: underline; text-underline-offset: 2px; }
 .vip-example-arrow { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--brand-blue); color: white; }
 .vip-benefits { padding-block: clamp(40px,5.5vw,80px); }
+.vip-section-heading h2 { font-size: clamp(26px, 2.7vw, 40px); }
 .vip-section-heading > span { white-space: nowrap; }
 .vip-section-heading small { font: 500 13px/1.5 var(--font-sans-cn); color: var(--vip-copy); }
 .vip-benefits ul { padding: 0; margin: 26px 0 0; list-style: none; border-top: 1px solid var(--vip-rule); }

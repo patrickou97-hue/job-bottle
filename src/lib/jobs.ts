@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { jobRoleFields, matchJobRole, roleLevelOrder } from "@/lib/job-role-search";
+import { jobRoleFields, matchJobRole, roleLevelOrder, type EvidenceItem } from "@/lib/job-role-search";
 import { verifiedCompanyProfile } from "@/lib/company-overview";
 import { JOB_CATEGORIES, jobMatchesSelectedCategories, normalizeJobCategories } from "@/lib/categories";
 import { sanitizeApplicationUrl } from "@/lib/application-url";
@@ -11,7 +11,7 @@ const DEFAULT_JOBS_TIMEOUT_MS = 7000;
 const PUBLIC_JOB_PAGE_SIZE = 1000;
 const PUBLIC_JOB_CACHE_TTL_MS = 30_000;
 export const RECENT_JOB_WINDOW_DAYS = 7;
-const PUBLIC_JOB_LIST_COLUMNS = "id,company_name,start_date,industry,batch_type,job_titles,job_categories,locations,apply_url,logo_url,tags,keywords,is_active,opens_at,closes_at,created_at,updated_at";
+const PUBLIC_JOB_LIST_COLUMNS = "id,company_name,start_date,industry,batch_type,job_titles,job_categories,locations,apply_url,logo_url,tags,keywords,responsibilities,is_active,opens_at,closes_at,created_at,updated_at";
 const JOB_CALENDAR_COLUMNS = "id,company_name,job_titles,apply_url,is_active,opens_at,closes_at";
 const JOB_CALENDAR_PAGE_SIZE = 1000;
 const JOB_CALENDAR_CACHE_TTL_MS = 30_000;
@@ -245,7 +245,7 @@ export function filterJobs(jobs: Job[], filters: JobFilters) {
     if (filters.role) {
       const evidence = matchJobRole(job, filters.role);
       if (!evidence) return false;
-      relevance.set(job.id, roleLevelOrder[evidence.level]);
+      relevance.set(job.id, evidence.rank ?? roleLevelOrder[evidence.level]);
     }
     if ((filters.employerGroup || filters.role) && (
       (job.closes_at && Date.parse(job.closes_at) <= now) ||
@@ -382,6 +382,7 @@ function getStartTime(job: Job) {
 
 export function getJobFacetOptions(jobs: Job[]) {
   const roleTerms = new Set<string>();
+  const evidence = new Map<string, EvidenceItem>();
   const industries = new Set<string>();
   const batchTypes = new Set<string>();
   const locations = new Set<string>();
@@ -389,7 +390,8 @@ export function getJobFacetOptions(jobs: Job[]) {
 
   jobs.forEach((job) => {
     for (const field of jobRoleFields(job)) {
-      if (field.term.length <= 80) roleTerms.add(field.term);
+      if (field.term.length <= 80 && field.source !== "岗位职责") roleTerms.add(field.term);
+      if (field.term.length <= 260) evidence.set(field.source + "|" + field.term, { source: field.source, term: field.term });
     }
     if (job.industry) {
       job.industry.split(",").forEach((v) => {
@@ -402,7 +404,17 @@ export function getJobFacetOptions(jobs: Job[]) {
     job.tags?.forEach((tag) => tags.add(tag));
   });
 
+  // Keep room for location options and conversation state in the bounded request.
+  const roleEvidence: EvidenceItem[] = [];
+  let evidenceBytes = 0;
+  const encoder = new TextEncoder();
+  for (const item of evidence.values()) {
+    evidenceBytes += encoder.encode(JSON.stringify(item)).length + 1;
+    if (roleEvidence.length >= 1600 || evidenceBytes > 85_000) break;
+    roleEvidence.push(item);
+  }
   return {
+    roleEvidence,
     roleTerms: Array.from(roleTerms).slice(0, 1200),
     industries: Array.from(industries).sort(),
     batchTypes: Array.from(batchTypes).sort(),
