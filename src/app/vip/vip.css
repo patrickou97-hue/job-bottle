@@ -86,8 +86,10 @@
 .vip-pass-top > span:last-child, .vip-pass-foot > span:last-child { font: 500 clamp(8px,2.1cqw,12px)/1.3 ui-monospace,monospace; letter-spacing: .13em; }
 .vip-pass .vip-metal-mark { position: absolute; width: 41%; height: auto; top: 16%; right: 6%; transform: rotate(5deg); filter: drop-shadow(1px 6px 3px #0008); }
 .vip-pass-type { position: absolute; top: 31%; left: 7%; color: #eadbbc; font: italic 500 20cqw/1 Georgia,serif; letter-spacing: -.09em; text-shadow: 0 1px #171f31; }
-.vip-pass-foot { bottom: 9%; padding-top: 3%; border-top: 1px solid #bdc9db4d; }
+.vip-pass-foot { gap: 2.5%; bottom: 9%; padding-top: 3%; border-top: 1px solid #bdc9db4d; }
 .vip-pass-foot > span:first-child { font-size: clamp(10px,2.9cqw,15px); letter-spacing: .16em; }
+.vip-pass-foot > .vip-pass-email:first-child { min-width: 0; font: 500 clamp(11px,3.1cqw,15px)/1.3 ui-monospace,monospace; letter-spacing: 0; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.vip-pass-foot > span:last-child { flex: none; }
 .vip-index { display: flex; gap: clamp(24px,4vw,70px); align-items: center; border-bottom: 1px solid var(--vip-rule); }
 .vip-index a { display: inline-flex; align-items: center; gap: 7px; min-height: 56px; color: #405672; font-size: 13px; font-weight: 650; }
 .vip-index a:hover, .vip-text-link:hover { text-decoration: underline; text-underline-offset: 4px; }
@@ -209,9 +211,17 @@
 .vip-upgrade > svg { flex-shrink: 0; margin-top: 3px; color: #795b30; }
 .vip-upgrade p { margin-top: 6px; max-width: 64em; color: var(--vip-copy); font-size: 14px; line-height: 1.75; }
 
-.vip-welcome { position: relative; max-width: 480px; padding: clamp(24px,5vw,36px); background: radial-gradient(ellipse at top right,#fbf1da,transparent 52%),#fff; color: #21334b; }
-.vip-welcome .vip-metal-mark { width: 56px; height: 56px; margin-bottom: 12px; }
-.vip-welcome-close { position: absolute; top: 12px; right: 12px; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; }
+.vip-welcome {
+  position: relative; display: grid; grid-template-columns: minmax(0,1fr) minmax(0,.95fr);
+  grid-template-areas: "heading card" "actions card" "note card"; align-content: center;
+  column-gap: clamp(24px,4vw,52px); max-width: 900px; padding: clamp(28px,4vw,48px);
+  background: linear-gradient(115deg,#fff 40%,#eaf0f7); color: #21334b;
+}
+.vip-welcome-heading { grid-area: heading; }
+.vip-welcome .vip-pass-stage { grid-area: card; align-self: center; width: 100%; padding: 8% 3%; }
+.vip-welcome nav { grid-area: actions; }
+.vip-welcome-note { grid-area: note; }
+.vip-welcome-close { position: absolute; z-index: 1; top: 8px; right: 8px; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; }
 .vip-welcome-close:hover, .vip-welcome nav a:hover { background: #edf2f6; }
 .vip-welcome h2 { font-size: clamp(24px,5vw,32px); line-height: 1.25; }
 .vip-welcome h2 span { color: #815e28; }
@@ -222,3 +232,10 @@
 .vip-welcome nav strong, .vip-welcome nav small { display: block; }
 .vip-welcome nav small { margin-top: 3px; color: #53657b; line-height: 1.5; }
 .vip-welcome .vip-welcome-note { font-size: 12px; }
+
+@media (max-width: 700px) {
+  .vip-welcome { grid-template-columns: minmax(0,1fr); grid-template-areas: "heading" "card" "actions" "note"; align-content: start; max-width: 480px; padding: 22px; }
+  .vip-welcome-heading { padding-right: 26px; }
+  .vip-welcome .vip-pass-stage { max-width: 300px; justify-self: center; padding: 20px 10px; }
+  .vip-welcome nav { margin-top: 4px; }
+}

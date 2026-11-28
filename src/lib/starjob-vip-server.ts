@@ -37,13 +37,17 @@ export function freeEnrollmentOpen(request: NextRequest) {
   return (isVipEnabled() || isVipPreview(request)) && process.env.STARJOB_VIP_FREE_ENROLLMENT !== "0";
 }
 
-export async function getVipWebUserId() {
+async function getVipWebUser() {
   try {
     const { data, error } = await (await createClient()).auth.getUser();
-    return error ? null : data.user?.id ?? null;
+    return error ? null : data.user;
   } catch {
     return null;
   }
+}
+
+export async function getVipWebUserId() {
+  return (await getVipWebUser())?.id ?? null;
 }
 
 export async function getVipStatus(request: NextRequest): Promise<VipStatus> {
@@ -53,13 +57,14 @@ export async function getVipStatus(request: NextRequest): Promise<VipStatus> {
     composeResetAt: null, advancedHourlyResetAt: null, weeklyResetAt: null,
   };
   if (!isVipEnabled() && !isVipPreview(request)) return base;
-  const userId = await getVipWebUserId();
-  const quota = userId ? await (await createClient()).rpc("my_starjob_vip_status") : null;
+  const user = await getVipWebUser();
+  const quota = user ? await (await createClient()).rpc("my_starjob_vip_status") : null;
   if (quota?.error) throw quota.error;
   return {
     ...base,
     ...quota?.data,
-    signedIn: Boolean(userId),
+    signedIn: Boolean(user),
+    account: user ? { id: user.id, email: user.email ?? null } : null,
     advancedAvailable: quota?.data?.plan === "full" && isVipSalesEnabled(),
     ...(!isVipSalesEnabled() ? { advancedHourlyRemaining: 0, advancedWeeklyRemaining: 0, advancedHourlyResetAt: null } : {}),
     checkoutAvailable: freeEnrollmentOpen(request),

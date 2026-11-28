@@ -16,6 +16,7 @@ export const VIP_ASTRA_LABEL = "高级模型";
 
 export type VipUsageKind = "compose" | "advanced" | "flash";
 export type VipStatus = {
+  account?: { id: string; email: string | null } | null;
   unlimited?: boolean;
   active: boolean;
   plan: "free_launch" | "full" | null;
