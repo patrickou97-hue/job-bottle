@@ -8,6 +8,7 @@ import {
   ArrowRight,
   BookOpen,
   Compass,
+  IdCard,
   LogOut,
   Mail,
   MapPin,
@@ -36,12 +37,21 @@ import {
 import { getResumeTargetLine, type ResumeDocument } from "@/lib/resume";
 import { fetchMyResumes, isMissingResumeTableError } from "@/lib/resume-sync";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { vipCardName, type VipCardEdition } from "@/lib/starjob-vip";
 import type { ApplicationWithJob, Job, Profile } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+const accountIdentityDescriptions: Record<VipCardEdition | "one", string> = {
+  one: "基础版账户",
+  vip: "拾星会员",
+  premium: "拾星高级会员",
+  jade: "拾星尚玉会员",
+  legend: "拾星典藏会员/创始人",
+};
+
 export function ProfileClient() {
   const router = useRouter();
-  const { status: vip } = useVipStatus();
+  const { status: vip, error: vipStatusError } = useVipStatus();
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState("");
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -260,6 +270,12 @@ export function ProfileClient() {
     );
   }
 
+  const accountMembership = vip?.signedIn && vip.account?.id === userId ? vip : null;
+  const accountEdition = accountMembership ? (accountMembership.active ? accountMembership.cardEdition ?? "vip" : "one") : null;
+  const accountIdentity = accountEdition
+    ? `${accountEdition === "one" ? "StarJob One" : vipCardName(accountEdition)}（${accountIdentityDescriptions[accountEdition]}）`
+    : vipStatusError || vip ? "暂时无法读取" : "正在读取";
+
   return (
     <div className="observatory-page">
       <section className="page-hero grid gap-6 border-b border-[color:var(--line-ghost)] pb-7 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
@@ -447,6 +463,7 @@ export function ProfileClient() {
           <div className="profile-pass-layout">
             <div className="max-w-2xl space-y-5">
               <InfoLine icon={<Mail aria-hidden="true" className="size-4" />} label="登录邮箱" value={userEmail || "未读取"} />
+              <InfoLine icon={<IdCard aria-hidden="true" className="size-4" />} label="账户身份" value={accountIdentity} />
               <button
                 type="button"
                 className="text-action pressable inline-flex min-h-10 items-center gap-2 text-sm text-[color:var(--text-danger)]"
@@ -456,12 +473,12 @@ export function ProfileClient() {
                 退出登录
               </button>
             </div>
-            {vip?.signedIn && vip.account?.id === userId && (
+            {accountEdition && (
               <div className="min-w-0">
-                <MembershipPass email={userEmail} edition={vip.active ? vip.cardEdition ?? "vip" : "one"} />
+                <MembershipPass email={userEmail} edition={accountEdition} />
                 <div className="flex justify-center">
-                  <Link href={vip.active ? "/vip#vip-benefits" : "/vip"} className="text-action inline-flex min-h-11 items-center gap-2 text-sm font-medium">
-                    {vip.active ? "查看我的权益" : "升级"}
+                  <Link href={accountEdition === "one" ? "/vip" : "/vip#vip-benefits"} className="text-action inline-flex min-h-11 items-center gap-2 text-sm font-medium">
+                    {accountEdition === "one" ? "升级" : "查看我的权益"}
                     <ArrowRight aria-hidden="true" className="size-4" />
                   </Link>
                 </div>
@@ -587,10 +604,10 @@ function OptionGrid({
 function InfoLine({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
     <div className="flex gap-3">
-      <span className="mt-0.5 text-ink-muted">{icon}</span>
+      <span className="mt-0.5 shrink-0 text-ink-muted">{icon}</span>
       <span className="min-w-0">
         <span className="block text-xs text-ink-muted">{label}</span>
-        <span className="mt-1 block truncate text-sm text-ink-primary">{value}</span>
+        <span className="mt-1 block [overflow-wrap:anywhere] text-sm leading-relaxed text-ink-primary">{value}</span>
       </span>
     </div>
   );
