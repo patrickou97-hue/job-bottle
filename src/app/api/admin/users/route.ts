@@ -5,7 +5,7 @@ import type {
   AdminUserMetrics,
   AdminUserRoleFilter,
   AdminUserSort,
-  AdminUserStarInterviewFilter,
+  AdminUserVipFilter,
   AdminUserStatusFilter,
   AdminUserSummary,
   AdminUserUpdate,
@@ -30,7 +30,6 @@ import {
   classifyGuardedAuthState,
   guardedAuthMatchesOriginal,
   isEmptyGuardedAuthPatch,
-  STAR_INTERVIEW_ACCESS_KEY,
   type GuardedAuthPlan,
 } from "@/lib/admin-auth-mutation";
 import {
@@ -80,14 +79,18 @@ export async function GET(request: NextRequest) {
     const admin = createAdminClient();
     const authUsers = await listAllAuthUsers(admin);
     const authUserIds = authUsers.map((user) => user.id);
-    const { profiles, wechatIdentities } = await fetchAdminUserDirectory(admin, authUserIds);
-    const metrics = buildMetrics(authUsers, profiles);
+    const [{ profiles, wechatIdentities }, members] = await Promise.all([
+      fetchAdminUserDirectory(admin, authUserIds),
+      fetchVipMembers(admin, authUserIds),
+    ]);
+    const metrics = buildMetrics(authUsers, members);
     const filteredUsers = authUsers
       .filter((user) => matchesFilters(
         user,
         profiles.get(user.id),
         wechatIdentities.get(user.id),
         filters,
+        members?.has(user.id) ?? null,
       ))
       .sort(getUserComparator(filters.sort));
     const totalFiltered = filteredUsers.length;
@@ -106,6 +109,7 @@ export async function GET(request: NextRequest) {
       wechatIdentities.get(user.id),
       applicationCounts.get(user.id) ?? 0,
       resumeCounts.get(user.id) ?? 0,
+      members?.has(user.id) ?? null,
     ));
 
     return NextResponse.json({
@@ -116,7 +120,7 @@ export async function GET(request: NextRequest) {
       totalPages,
       metrics,
       currentUserId: access.userId,
-      canManageStarInterviewAccess: access.isPrimaryAdmin,
+      canManageVipMembership: access.isPrimaryAdmin && members !== null,
     });
   } catch (error) {
     return NextResponse.json({ error: getServerError(error) }, { status: 500 });
@@ -197,14 +201,14 @@ export async function PATCH(request: NextRequest) {
     if ("response" in access) return access.response;
     authUsersCache = null;
     directoryCache = null;
-    if (isStarInterviewAccessUpdate(body)) {
+    if (isVipMembershipUpdate(body)) {
       if (!access.isPrimaryAdmin) {
-        return NextResponse.json({ error: "只有主管理员可以调整 StarInterview 无限访问。" }, { status: 403 });
+        return NextResponse.json({ error: "只有主管理员可以调整 StarJob VIP。" }, { status: 403 });
       }
-      return await updateStarInterviewAccess(
+      return await updateVipMembership(
         access.userId,
         body.id,
-        body.unlimitedAccess,
+        body.active,
       );
     }
     if (isConfirmEmailUpdate(body)) {
@@ -217,10 +221,11 @@ export async function PATCH(request: NextRequest) {
     }
 
     const admin = createAdminClient();
-    const [applicationCountResult, resumeCountResult, wechatIdentityResult] = await Promise.all([
+    const [applicationCountResult, resumeCountResult, wechatIdentityResult, members] = await Promise.all([
       admin.from("user_applications").select("id", { count: "exact", head: true }).eq("user_id", input.id),
       admin.from("resumes").select("id", { count: "exact", head: true }).eq("user_id", input.id),
       admin.from("wechat_identities").select("id,user_id").eq("user_id", input.id).maybeSingle(),
+      fetchVipMembers(admin, [input.id]),
     ]);
     if (applicationCountResult.error) throw applicationCountResult.error;
     if (resumeCountResult.error) throw resumeCountResult.error;
@@ -328,6 +333,7 @@ export async function PATCH(request: NextRequest) {
         (wechatIdentityResult.data as AdminWechatIdentity | null) ?? undefined,
         applicationCountResult.count ?? 0,
         resumeCountResult.count ?? 0,
+        members?.has(input.id) ?? null,
       ),
     });
   } catch (error) {
@@ -371,11 +377,12 @@ async function confirmUserEmail(id: string) {
     );
   }
 
-  const [{ data: profile, error: profileError }, applicationCountResult, resumeCountResult, wechatIdentityResult] = await Promise.all([
+  const [{ data: profile, error: profileError }, applicationCountResult, resumeCountResult, wechatIdentityResult, members] = await Promise.all([
     admin.from("profiles").select("id,display_name,role,school,target_roles").eq("id", id).maybeSingle(),
     admin.from("user_applications").select("id", { count: "exact", head: true }).eq("user_id", id),
     admin.from("resumes").select("id", { count: "exact", head: true }).eq("user_id", id),
     admin.from("wechat_identities").select("id,user_id").eq("user_id", id).maybeSingle(),
+    fetchVipMembers(admin, [id]),
   ]);
   if (profileError) throw profileError;
   if (applicationCountResult.error) throw applicationCountResult.error;
@@ -396,6 +403,7 @@ async function confirmUserEmail(id: string) {
       (wechatIdentityResult.data as AdminWechatIdentity | null) ?? undefined,
       applicationCountResult.count ?? 0,
       resumeCountResult.count ?? 0,
+      members?.has(id) ?? null,
     ),
   });
 }
@@ -421,17 +429,17 @@ function isConfirmEmailUpdate(value: unknown): value is { id: string; action: "c
   return typeof input.id === "string" && Boolean(input.id) && input.action === "confirm_email";
 }
 
-function isStarInterviewAccessUpdate(value: unknown): value is {
+function isVipMembershipUpdate(value: unknown): value is {
   id: string;
-  action: "star_interview_access";
-  unlimitedAccess: boolean;
+  action: "set_vip_membership";
+  active: boolean;
 } {
   if (!value || typeof value !== "object") return false;
   const input = value as Record<string, unknown>;
   return typeof input.id === "string"
-    && Boolean(input.id)
-    && input.action === "star_interview_access"
-    && typeof input.unlimitedAccess === "boolean";
+    && UUID_PATTERN.test(input.id)
+    && input.action === "set_vip_membership"
+    && typeof input.active === "boolean";
 }
 
 function isAdminMutationRecovery(value: unknown): value is {
@@ -452,44 +460,15 @@ function isAdminMutationRecovery(value: unknown): value is {
     && input.reason.trim().length <= 200;
 }
 
-async function updateStarInterviewAccess(
-  actorUserId: string,
-  id: string,
-  unlimitedAccess: boolean,
-) {
-  const admin = createAdminClient();
-  const reservation = await reserveAdminUserMutation(admin, {
-    actorUserId,
-    targetUserId: id,
-    mutationKind: "star_interview_access",
-    nextStarInterviewAccess: unlimitedAccess,
+async function updateVipMembership(actor: string, target: string, active: boolean) {
+  const { data, error } = await createAdminClient().rpc("set_starjob_vip_membership", {
+    p_actor: actor, p_target: target, p_active: active,
   });
-  if (reservation.action !== "claimed" || !reservation.reservationToken) {
-    return adminMutationGuardResponse(reservation);
-  }
-  const guard = {
-    reservationToken: reservation.reservationToken,
-    actorUserId,
-    targetUserId: id,
-  };
-  const authPlan = guardAuthPlan(reservation);
-  await applyGuardedAuthTarget(admin, guard, authPlan);
-  const finalized = await finalizeAdminUserMutation(admin, {
-    ...guard,
-    displayName: "",
-  });
-  if (finalized.action !== "applied") {
-    const safelyRolledBack = await rollbackGuardedAuthAndCancel(admin, guard, authPlan);
-    if (!safelyRolledBack) {
-      throw new Error("StarInterview 访问权限状态无法证明，目标账户已保持锁定，需由主管理员恢复。");
-    }
-    return adminMutationGuardResponse(finalized);
-  }
-  return NextResponse.json({
-    id,
-    starInterviewUnlimitedAccess: unlimitedAccess,
-    starInterviewAccessSource: "explicit",
-  });
+  if (error) throw error;
+  if (data === "ok") return NextResponse.json({ id: target, vipActive: active });
+  if (data === "busy") return NextResponse.json({ error: "账户有未完成的管理操作，请稍后重试。" }, { status: 409 });
+  if (data === "missing") return NextResponse.json({ error: "目标账户不存在。" }, { status: 404 });
+  return NextResponse.json({ error: "会员权限调整未获授权。" }, { status: 403 });
 }
 
 type GuardIdentity = {
@@ -592,12 +571,12 @@ function toSummary(
   wechatIdentity: AdminWechatIdentity | undefined,
   applicationCount: number,
   resumeCount: number,
+  vipActive: boolean | null,
 ): AdminUserSummary {
   const accountType = getAccountType(user.email, Boolean(wechatIdentity));
   const realEmail = user.email && !isWechatInternalEmail(user.email)
     ? user.email
     : null;
-  const starInterviewAccess = resolveStarInterviewAccess(user, profile?.role ?? "user");
   return {
     id: user.id,
     email: realEmail ?? "微信用户",
@@ -613,8 +592,7 @@ function toSummary(
     resumeCount,
     school: profile?.school ?? null,
     targetRoles: profile?.target_roles ?? [],
-    starInterviewUnlimitedAccess: starInterviewAccess.unlimited,
-    starInterviewAccessSource: starInterviewAccess.source,
+    vipActive,
   };
 }
 
@@ -646,9 +624,9 @@ function parseListFilters(searchParams: URLSearchParams) {
     status: (["enabled", "disabled", "unconfirmed"] as const).includes(status as Exclude<AdminUserStatusFilter, "all">)
       ? status as AdminUserStatusFilter
       : "all",
-    starInterviewAccess: searchParams.get("starInterviewAccess") === "unlimited"
-      || searchParams.get("starInterviewAccess") === "standard"
-      ? searchParams.get("starInterviewAccess") as AdminUserStarInterviewFilter
+    vipMembership: searchParams.get("vipMembership") === "active"
+      || searchParams.get("vipMembership") === "inactive"
+      ? searchParams.get("vipMembership") as AdminUserVipFilter
       : "all",
     sort: (["created_desc", "created_asc", "email_asc"] as const).includes(sort as Exclude<AdminUserSort, "activity_desc">)
       ? sort as AdminUserSort
@@ -739,7 +717,7 @@ async function fetchUsageCounts(
   throw new Error("用户使用记录超过当前管理页的安全读取上限。");
 }
 
-function buildMetrics(users: User[], profiles: Map<string, AdminProfile>): AdminUserMetrics {
+function buildMetrics(users: User[], members: Set<string> | null): AdminUserMetrics {
   const now = Date.now();
   return users.reduce<AdminUserMetrics>((metrics, user) => {
     const lastSignIn = getTimestamp(user.last_sign_in_at);
@@ -748,9 +726,6 @@ function buildMetrics(users: User[], profiles: Map<string, AdminProfile>): Admin
     if (lastSignIn >= now - 3 * 24 * HOUR_MS) metrics.active3d += 1;
     if (!lastSignIn) metrics.neverSignedIn += 1;
     if (isFutureDate(user.banned_until)) metrics.disabledUsers += 1;
-    if (resolveStarInterviewAccess(user, profiles.get(user.id)?.role ?? "user").unlimited) {
-      metrics.starInterviewUnlimitedUsers += 1;
-    }
     return metrics;
   }, {
     totalUsers: 0,
@@ -758,7 +733,7 @@ function buildMetrics(users: User[], profiles: Map<string, AdminProfile>): Admin
     active3d: 0,
     neverSignedIn: 0,
     disabledUsers: 0,
-    starInterviewUnlimitedUsers: 0,
+    vipMembers: members?.size ?? null,
   });
 }
 
@@ -767,6 +742,7 @@ function matchesFilters(
   profile: AdminProfile | undefined,
   wechatIdentity: AdminWechatIdentity | undefined,
   filters: ReturnType<typeof parseListFilters>,
+  vipActive: boolean | null,
 ) {
   if (filters.query) {
     const haystack = [
@@ -781,9 +757,8 @@ function matchesFilters(
   }
 
   if (filters.role !== "all" && (profile?.role ?? "user") !== filters.role) return false;
-  const starInterviewAccess = resolveStarInterviewAccess(user, profile?.role ?? "user").unlimited;
-  if (filters.starInterviewAccess === "unlimited" && !starInterviewAccess) return false;
-  if (filters.starInterviewAccess === "standard" && starInterviewAccess) return false;
+  if (filters.vipMembership === "active" && !vipActive) return false;
+  if (filters.vipMembership === "inactive" && vipActive !== false) return false;
 
   const disabled = isFutureDate(user.banned_until);
   if (filters.status === "enabled" && disabled) return false;
@@ -800,15 +775,17 @@ function matchesFilters(
   return true;
 }
 
-function resolveStarInterviewAccess(user: User, role: ProfileRole) {
-  const explicitValue = user.app_metadata?.[STAR_INTERVIEW_ACCESS_KEY];
-  if (typeof explicitValue === "boolean") {
-    return { unlimited: explicitValue, source: "explicit" as const };
+async function fetchVipMembers(admin: SupabaseClient<Database>, ids: string[]) {
+  const members = new Set<string>();
+  for (let offset = 0; offset < ids.length; offset += DATABASE_CHUNK_SIZE) {
+    const { data, error } = await admin.from("starjob_vip_memberships").select("user_id")
+      .eq("active", true).in("user_id", ids.slice(offset, offset + DATABASE_CHUNK_SIZE));
+    // Keep account management available while a deployment is waiting for the VIP migration.
+    if (error && ["42P01", "42703", "PGRST204", "PGRST205"].includes(error.code)) return null;
+    if (error) throw error;
+    for (const member of data ?? []) members.add(member.user_id);
   }
-  if (role === "admin") {
-    return { unlimited: true, source: "admin_default" as const };
-  }
-  return { unlimited: false, source: "default" as const };
+  return members;
 }
 
 function getUserComparator(sort: AdminUserSort) {

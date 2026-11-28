@@ -15,7 +15,7 @@ type PreviewState =
   | { status: "ready"; layout: ResumePreviewLayout }
   | { status: "error"; layout: ResumePreviewLayout | null; message: string };
 
-export function ResumePreview({ resume }: { resume: ResumeDocument }) {
+export function ResumePreview({ resume, showTextVersion = false }: { resume: ResumeDocument; showTextVersion?: boolean }) {
   const [revision, setRevision] = useState(0);
   const [preview, setPreview] = useState<PreviewState>({ status: "rendering", layout: null });
 
@@ -58,6 +58,13 @@ export function ResumePreview({ resume }: { resume: ResumeDocument }) {
         {preview.status === "rendering" && layout ? <span>正在同步内容</span> : null}
       </div>
 
+      {showTextVersion && preview.status === "ready" ? (
+        <details className="mb-3 rounded-lg border border-[var(--line-ghost)] bg-white px-3 py-2 text-sm">
+          <summary className="cursor-pointer font-medium">查看简历正文</summary>
+          <div className="mt-3 whitespace-pre-wrap leading-7 text-ink-primary">{resumeLayoutText(preview.layout)}</div>
+        </details>
+      ) : null}
+
       <div className="space-y-5">
         {layout
           ? Array.from({ length: layout.pageCount }, (_, index) => (
@@ -88,6 +95,25 @@ export function ResumePreview({ resume }: { resume: ResumeDocument }) {
       ) : null}
     </div>
   );
+}
+
+// Use the same visible headings, field order and text as the A4 and PDF renderers.
+function resumeLayoutText(layout: ResumePreviewLayout) {
+  const rows: string[] = [];
+  let lastPage = 0;
+  let lastY = 0;
+  for (const op of layout.operations) {
+    if (op.type !== "text") continue;
+    if (op.page === lastPage && Math.abs(op.y - lastY) < 0.5) {
+      rows[rows.length - 1] += " " + op.text;
+    } else {
+      if (lastPage && op.page !== lastPage) rows.push("");
+      rows.push(op.text);
+    }
+    lastPage = op.page;
+    lastY = op.y;
+  }
+  return rows.join("\n");
 }
 
 function ResumePage({ layout, page }: { layout: ResumePreviewLayout; page: number }) {

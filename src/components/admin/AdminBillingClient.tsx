@@ -330,7 +330,7 @@ export function AdminBillingClient() {
           <div className="mt-6 flex gap-2">
             <label className="min-w-0 flex-1">
               <span className="sr-only">搜索用户</span>
-              <Input
+              <Input type="search"
                 value={query}
                 onChange={(event) => {
                   setQuery(event.target.value);

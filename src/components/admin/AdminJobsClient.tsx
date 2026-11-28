@@ -276,7 +276,7 @@ export function AdminJobsClient() {
                   aria-hidden="true"
                   className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-nebula-blue/70"
                 />
-                <Input
+                <Input type="search"
                   className="pl-11"
                   value={keyword}
                   onChange={(event) => { setKeyword(event.target.value); setPage(1); }}

@@ -163,6 +163,7 @@ export type ResumeDocument = {
   updatedAt: string;
   /** Preview-only sample resumes are never synchronized until the user edits them. */
   isSample?: boolean;
+  generationSource?: "materials";
 };
 
 const LEGACY_STORAGE_KEY = "job_bottle_resumes_v1";
@@ -255,7 +256,7 @@ export function createResumeId() {
 }
 
 export function isResumeId(value: string) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[48][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
 export function getResumeTargetLine(resume: ResumeDocument) {
@@ -444,7 +445,7 @@ function readLocalResumes(key: string) {
   if (typeof window === "undefined") return [];
   try {
     const raw = window.localStorage.getItem(key);
-    if (!raw) return [];
+    if (raw === null) return null;
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
     return parsed.map(normalizeResumeDocument).filter((resume) => resume !== null);
@@ -455,14 +456,45 @@ function readLocalResumes(key: string) {
 
 export function loadLocalResumes(userId?: string | null) {
   const scoped = readLocalResumes(getResumeStorageKey(userId));
-  if (scoped.length > 0 || userId) return scoped;
-  return readLocalResumes(LEGACY_STORAGE_KEY);
+  const rows = scoped ?? (userId ? [] : readLocalResumes(LEGACY_STORAGE_KEY)) ?? [];
+  return rows.filter((row) => resumeRecordState(userId, row.id) !== "deleted");
+}
+
+function recordStateKey(userId: string | null | undefined, id: string) {
+  return `${getResumeStorageKey(userId)}:record:${id}`;
+}
+
+export function resumeRecordState(userId: string | null | undefined, id: string) {
+  try { return window.localStorage.getItem(recordStateKey(userId, id)); } catch { return null; }
+}
+
+export function markResumeSynced(userId: string, id: string) {
+  try {
+    if (resumeRecordState(userId, id) !== "deleted") window.localStorage.setItem(recordStateKey(userId, id), "synced");
+  } catch { /* Private browsing may disable storage. */ }
+}
+
+export function forgetLocalResume(userId: string | null, id: string) {
+  try {
+    window.localStorage.setItem(recordStateKey(userId, id), "deleted");
+    window.localStorage.setItem(getResumeStorageKey(userId) + ":hide-sample", "1");
+    return saveLocalResumes(loadLocalResumes(userId), userId);
+  } catch { return false; }
+}
+
+export function initialResumeList(resumes: ResumeDocument[], userId?: string | null) {
+  if (resumes.length) return resumes;
+  try {
+    if (window.localStorage.getItem(getResumeStorageKey(userId) + ":hide-sample")) return [];
+  } catch { /* The example is available without browser storage. */ }
+  return [createSampleResume()];
 }
 
 export function saveLocalResumes(resumes: ResumeDocument[], userId?: string | null) {
   if (typeof window === "undefined") return false;
   try {
-    window.localStorage.setItem(getResumeStorageKey(userId), JSON.stringify(resumes));
+    const kept = resumes.filter((row) => resumeRecordState(userId, row.id) !== "deleted");
+    window.localStorage.setItem(getResumeStorageKey(userId), JSON.stringify(kept));
     return true;
   } catch {
     return false;

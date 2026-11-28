@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { resolveResumeAiAccess } from "@/lib/resume-ai-access";
 import { cleanResumeBullet } from "@/lib/resume-import-text";
+import { callDeepSeek, UpstreamError, type AiConfig, type ChatMessage } from "@/lib/deepseek-json";
 import { getDeepSeekConfiguration } from "@/lib/deepseek-config";
 
 export const maxDuration = 120;
@@ -186,9 +187,6 @@ function createProgressResponse(input: ImportInput, config: AiConfig, requestSig
   });
 }
 
-type AiConfig = { apiKey: string; baseUrl: string; model: string };
-type ChatMessage = { role: "system" | "user"; content: string };
-
 async function reviewResumeInParts(
   input: ImportInput,
   config: AiConfig,
@@ -199,6 +197,7 @@ async function reviewResumeInParts(
     ...config,
     messages: buildWholeResumeMessages(input),
     maxTokens: 7_600,
+    timeoutMs: REQUEST_TIMEOUT_MS,
     externalSignal: signal,
   });
   onProgress?.({
@@ -225,46 +224,6 @@ async function reviewResumeInParts(
     label: "全部区块已完成智能整理，可以核对后导入",
   });
   return verified.data;
-}
-
-async function callDeepSeek({
-  apiKey,
-  baseUrl,
-  model,
-  messages,
-  maxTokens,
-  externalSignal,
-}: AiConfig & { messages: ChatMessage[]; maxTokens: number; externalSignal?: AbortSignal }) {
-  const controller = new AbortController();
-  const cancelFromOutside = () => controller.abort();
-  externalSignal?.addEventListener("abort", cancelFromOutside, { once: true });
-  if (externalSignal?.aborted) cancelFromOutside();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-  try {
-    const response = await fetch(getChatCompletionsUrl(baseUrl), {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model,
-        messages,
-        temperature: 0,
-        stream: false,
-        max_tokens: maxTokens,
-        thinking: { type: "disabled" },
-        response_format: { type: "json_object" },
-      }),
-      signal: controller.signal,
-      cache: "no-store",
-    });
-    if (!response.ok) throw new UpstreamError(response.status);
-    const payload = await response.json().catch(() => null) as { choices?: { message?: { content?: string } }[] } | null;
-    const content = payload?.choices?.[0]?.message?.content;
-    if (!content?.trim()) throw new UpstreamError(502, "empty");
-    return content;
-  } finally {
-    clearTimeout(timeout);
-    externalSignal?.removeEventListener("abort", cancelFromOutside);
-  }
 }
 
 function buildWholeResumeMessages(input: ImportInput): ChatMessage[] {
@@ -348,17 +307,6 @@ function preserveDeterministicBasics(ai: z.infer<typeof basicsSchema>, local: z.
     github: local.github || ai.github,
     website: local.website || ai.website,
   };
-}
-
-function getChatCompletionsUrl(baseUrl: string) {
-  const normalized = baseUrl.trim().replace(/\/+$/, "");
-  return normalized.endsWith("/chat/completions") ? normalized : `${normalized}/chat/completions`;
-}
-
-class UpstreamError extends Error {
-  constructor(public status: number, public kind = "http") {
-    super(`AI upstream ${status}`);
-  }
 }
 
 function logServerError(scope: string, error: unknown, input?: ImportInput, elapsedMs?: number) {

@@ -1,4 +1,8 @@
 :root {
+  --field-radius-single: 10px;
+  --field-radius-multi: 12px;
+  --field-radius-search: 16px;
+  --field-radius-chat: 20px;
   /* Calm blue structure; yellow is reserved for the StarJob brand accent. */
   --brand-blue-deep: #12294E;
   --brand-blue: #1D2F4F;

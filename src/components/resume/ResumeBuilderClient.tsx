@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
-import { ChevronDown, Copy, FileText, FileUp, Languages, Plus, Puzzle, Trash2 } from "lucide-react";
+import { ChevronDown, Copy, FileText, FileUp, Languages, Plus, Puzzle, Sparkles, Trash2 } from "lucide-react";
 import { AnimatePresence } from "motion/react";
 import { ResumeCreateDialog } from "@/components/resume/ResumeCreateDialog";
 import { ResumeEditor, type EditorSection } from "@/components/resume/ResumeEditor";
@@ -21,7 +21,9 @@ import {
   adoptLocalResumesForUser,
   createEmptyResume,
   createResumeId,
-  createSampleResume,
+  initialResumeList,
+  forgetLocalResume,
+  resumeRecordState,
   getResumeTemplateMeta,
   getResumeTargetLine,
   getResumeLanguage,
@@ -39,6 +41,7 @@ import {
 } from "@/lib/resume";
 import {
   deleteMyResume,
+  DeletedResumeError,
   fetchMyResumes,
   getResumeSyncErrorMessage,
   isMissingResumeTableError,
@@ -80,13 +83,18 @@ const MAX_BACKGROUND_SYNC_ATTEMPTS = 3;
 export function ResumeBuilderClient({
   targetJob = null,
   initialAction = null,
+  initialResumeId = null,
+  initialSection = "basic",
 }: {
   targetJob?: TargetJobContext | null;
   initialAction?: "import" | "create" | null;
+  initialResumeId?: string | null;
+  initialSection?: "basic" | "education";
 }) {
+  const requestedResume = useRef(initialResumeId);
   const [resumes, setResumes] = useState<ResumeDocument[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [activeSection, setActiveSection] = useState<EditorSection>("basic");
+  const [activeSection, setActiveSection] = useState<EditorSection>(initialSection);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [applications, setApplications] = useState<ApplicationWithJob[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -105,6 +113,7 @@ export function ResumeBuilderClient({
   const deletedResumeIdsRef = useRef(new Set<string>());
   const cloudSaveWorkerRef = useRef<Promise<void> | null>(null);
   const cloudRetryTimerRef = useRef<number | null>(null);
+  const signedInUserIdRef = useRef<string | null>(null);
   const activeUserIdRef = useRef<string | null>(null);
   const hydratingUserIdRef = useRef<string | null>(null);
   const mountedRef = useRef(true);
@@ -155,6 +164,13 @@ export function ResumeBuilderClient({
           } catch (error) {
             failedCount += 1;
             if (!mountedRef.current) break;
+            if (error instanceof DeletedResumeError) {
+              pendingCloudSavesRef.current.delete(resumeId);
+              if (activeUserIdRef.current !== activeUserId) break;
+              forgetLocalResume(activeUserId, resumeId);
+              setResumes(current => current.filter(row => row.id !== resumeId));
+              continue;
+            }
             if (isResumeTemplateConstraintError(error)) {
               setStorageMode("local");
               setSaveState("云端模板库待升级，已保存到本地");
@@ -239,9 +255,9 @@ export function ResumeBuilderClient({
   useEffect(() => {
     const timer = window.setTimeout(() => {
       const stored = loadLocalResumes();
-      const initial = stored.length > 0 ? stored : [createSampleResume()];
+      const initial = initialResumeList(stored);
       setResumes(initial);
-      setSelectedId(initial[0]?.id ?? null);
+      setSelectedId(initial.find((resume) => resume.id === requestedResume.current)?.id ?? initial[0]?.id ?? null);
       setLoaded(true);
     }, 0);
 
@@ -273,6 +289,7 @@ export function ResumeBuilderClient({
     setSaveState("正在同步");
     const timer = window.setTimeout(() => {
       for (const resume of dirtyResumes) {
+        if (deletedResumeIdsRef.current.has(resume.id) || resumeRecordState(userId, resume.id) === "deleted") continue;
         const fingerprint = JSON.stringify(resume);
         if (pendingCloudSavesRef.current.get(resume.id)?.fingerprint === fingerprint) continue;
         pendingCloudSavesRef.current.set(resume.id, { attempts: 0, fingerprint, resume });
@@ -291,10 +308,12 @@ export function ResumeBuilderClient({
       const user = userFromSession ?? await getCurrentUserOrNull(supabase);
       if (!mounted) return;
       if (!user) {
+        if (hydratingUserIdRef.current || signedInUserIdRef.current) return;
         setAuthResolved(true);
         return;
       }
       if (activeUserIdRef.current === user.id || hydratingUserIdRef.current === user.id) return;
+      signedInUserIdRef.current = user.id;
       hydratingUserIdRef.current = user.id;
 
       void Promise.allSettled([
@@ -303,8 +322,8 @@ export function ResumeBuilderClient({
       ]);
 
       try {
-        const cloudResumes = (await fetchMyResumes(supabase)).filter((resume) => !isSampleResume(resume));
-        if (!mounted) return;
+        const cloudResumes = (await fetchMyResumes(supabase, user.id)).filter((resume) => !isSampleResume(resume));
+        if (!mounted || hydratingUserIdRef.current !== user.id) return;
         const mergedResumes = adoptLocalResumesForUser(user.id, cloudResumes);
         cloudFingerprintsRef.current = new Map(
           cloudResumes.map((resume) => [resume.id, JSON.stringify(resume)]),
@@ -316,9 +335,8 @@ export function ResumeBuilderClient({
         if (mergedResumes.length > 0) {
           setResumes(mergedResumes);
           setSelectedId((current) =>
-            current && mergedResumes.some((resume) => resume.id === current)
-              ? current
-              : mergedResumes[0]?.id ?? null,
+            mergedResumes.find((resume) => resume.id === requestedResume.current)?.id
+              ?? (current && mergedResumes.some((resume) => resume.id === current) ? current : mergedResumes[0]?.id ?? null),
           );
           setSaveState(
             mergedResumes.every(
@@ -330,12 +348,16 @@ export function ResumeBuilderClient({
           return;
         }
 
-        const initial = [createSampleResume()];
+        const initial = initialResumeList([], user.id);
         setResumes(initial);
         setSelectedId(initial[0]?.id ?? null);
         setSaveState("正在同步");
       } catch (error) {
-        if (!mounted) return;
+        if (!mounted || hydratingUserIdRef.current !== user.id) return;
+        setUserId(user.id);
+        const cached = initialResumeList(loadLocalResumes(user.id), user.id);
+        setResumes(cached);
+        setSelectedId(cached[0]?.id ?? null);
         if (isMissingResumeTableError(error)) {
           setStorageMode("local");
           setSaveState("云端简历库未升级，已保存到本地");
@@ -343,15 +365,19 @@ export function ResumeBuilderClient({
         }
         setSaveState("暂时无法读取云端简历，本地副本已保留");
       } finally {
-        if (hydratingUserIdRef.current === user.id) hydratingUserIdRef.current = null;
-        if (mounted) setAuthResolved(true);
+        if (hydratingUserIdRef.current === user.id) {
+          hydratingUserIdRef.current = null;
+          if (mounted) setAuthResolved(true);
+        }
       }
     }
     void loadCloudData();
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT" && !session) {
+        signedInUserIdRef.current = null;
+        deletedResumeIdsRef.current.clear();
         const guestResumes = loadLocalResumes();
-        const initial = guestResumes.length > 0 ? guestResumes : [createSampleResume()];
+        const initial = initialResumeList(guestResumes);
         activeUserIdRef.current = null;
         hydratingUserIdRef.current = null;
         pendingCloudSavesRef.current.clear();
@@ -365,7 +391,8 @@ export function ResumeBuilderClient({
         return;
       }
       if (session?.user) {
-        if (activeUserIdRef.current && activeUserIdRef.current !== session.user.id) {
+        if (signedInUserIdRef.current && signedInUserIdRef.current !== session.user.id) {
+          deletedResumeIdsRef.current.clear();
           const guestResumes = loadLocalResumes();
           activeUserIdRef.current = null;
           hydratingUserIdRef.current = null;
@@ -543,6 +570,7 @@ export function ResumeBuilderClient({
     const primaryRole = targetJob.role.split(/[,，、]/)[0]?.trim() || "目标岗位";
     const next: ResumeDocument = touchResume({
       ...selectedResume,
+      generationSource: undefined,
       id: createEmptyResume().id,
       title: `${targetJob.company} · ${primaryRole}`,
       targetRole: primaryRole,
@@ -568,6 +596,7 @@ export function ResumeBuilderClient({
     const now = new Date().toISOString();
     const copy: ResumeDocument = touchResume({
       ...resume,
+      generationSource: undefined,
       id: createEmptyResume().id,
       title: `${resume.title} 副本`,
       createdAt: now,
@@ -580,17 +609,18 @@ export function ResumeBuilderClient({
   function removeResumeFromState(id: string) {
     cloudFingerprintsRef.current.delete(id);
     pendingCloudSavesRef.current.delete(id);
-    setResumes((current) => {
-      const next = current.filter((resume) => resume.id !== id);
-      if (next.length === 0) {
-        const fallback = createSampleResume();
-        setSelectedId(fallback.id);
-        return [fallback];
-      }
-      if (selectedId === id) setSelectedId(next[0].id);
-      return next;
-    });
+    setResumes((current) => current.filter((resume) => resume.id !== id));
   }
+
+  useEffect(() => {
+    function onStorageChange(event: StorageEvent) {
+      if (event.newValue !== "deleted" || !event.key?.includes(":record:")) return;
+      const id = event.key.split(":").at(-1);
+      if (id && resumeRecordState(userId, id) === "deleted") removeResumeFromState(id);
+    }
+    window.addEventListener("storage", onStorageChange);
+    return () => window.removeEventListener("storage", onStorageChange);
+  }, [userId]);
 
   async function deleteResume(id: string) {
     if (pendingDeleteId !== id) {
@@ -600,21 +630,22 @@ export function ResumeBuilderClient({
     }
     setPendingDeleteId(null);
 
-    if (storageMode !== "cloud" || !userId || !isSupabaseConfigured()) {
-      removeResumeFromState(id);
-      setSaveState("已从当前浏览器删除");
-      return;
-    }
-
+    if (deletedResumeIdsRef.current.has(id)) return;
     deletedResumeIdsRef.current.add(id);
     pendingCloudSavesRef.current.delete(id);
-    setSaveState("正在从账户删除");
     try {
-      await cloudSaveWorkerRef.current;
-      await deleteMyResume(createClient(), id);
+      if (userId && isSupabaseConfigured()) {
+        setSaveState("正在从账户删除");
+        await cloudSaveWorkerRef.current;
+        await deleteMyResume(createClient(), userId, id);
+      }
+      const persisted = forgetLocalResume(userId, id);
+      if (!mountedRef.current || signedInUserIdRef.current !== userId) return;
+      if (!persisted && !userId) throw new Error("未能更新浏览器存储");
       removeResumeFromState(id);
-      setSaveState("简历已删除");
+      setSaveState(userId ? "简历已从账户删除" : "已从当前浏览器删除");
     } catch (error) {
+      if (!mountedRef.current || signedInUserIdRef.current !== userId) return;
       deletedResumeIdsRef.current.delete(id);
       if (isMissingResumeTableError(error)) {
         setStorageMode("local");
@@ -623,12 +654,10 @@ export function ResumeBuilderClient({
       }
       setSaveState("删除未完成，当前简历与已填内容均已保留。请检查网络后重试。");
       return;
-    } finally {
-      deletedResumeIdsRef.current.delete(id);
     }
   }
 
-  if (!loaded || !selectedResume || (isSupabaseConfigured() && !authResolved)) {
+  if (!loaded || (isSupabaseConfigured() && !authResolved)) {
     const loadingLabel = isSupabaseConfigured() && !authResolved
       ? "正在载入账户简历"
       : "正在整理简历";
@@ -646,6 +675,21 @@ export function ResumeBuilderClient({
     );
   }
 
+  if (!selectedResume) return (
+    <div className="observatory-page space-y-8">
+      <section className="page-hero"><ResumePageTitle /></section>
+      <section className="empty-state"><h2>还没有简历</h2><p>新建一份简历，或导入已有的内容。</p>
+        <div className="mt-4 flex flex-wrap justify-center gap-3">
+          <Button onClick={() => setShowCreateDialog(true)}>新建简历</Button>
+          <Button variant="secondary" onClick={() => setShowImportDialog(true)}>导入简历</Button>
+          <Link href="/resume/materials" className="text-action self-center">用材料生成简历</Link>
+        </div>
+      </section>
+      {showCreateDialog && <ResumeCreateDialog onClose={() => setShowCreateDialog(false)} onCreate={createResume} />}
+      {showImportDialog && <ResumeImportDialog onClose={() => setShowImportDialog(false)} onImport={importResume} />}
+    </div>
+  );
+
   const translationTarget = getResumeLanguage(selectedResume.templateId) === "en-US" ? "中文" : "英文";
 
   return (
@@ -653,6 +697,9 @@ export function ResumeBuilderClient({
       <section className="page-hero">
         <div>
           <ResumePageTitle />
+          <Link href="/resume/materials" className="muted-button pressable mt-4 inline-flex min-h-10 items-center gap-2 rounded-lg px-3 text-sm font-semibold">
+            <Sparkles aria-hidden="true" className="size-4 text-[#805a1b]" /> 试试直接用材料生成简历
+          </Link>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <span className="status-pill rounded-md px-3 py-2 text-sm text-ink-secondary">
@@ -833,7 +880,7 @@ export function ResumeBuilderClient({
       </section>
 
       <section className="grid gap-10 xl:grid-cols-[minmax(0,1.08fr)_minmax(500px,0.92fr)] xl:items-start 2xl:grid-cols-[minmax(0,1.12fr)_minmax(540px,0.88fr)]">
-          <section className="min-w-0 border-t border-[color:var(--line-ghost)] pt-5">
+          <section id="resume-editor" className="min-w-0 scroll-mt-20 border-t border-[color:var(--line-ghost)] pt-5">
             <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="section-title">编辑简历</h2>

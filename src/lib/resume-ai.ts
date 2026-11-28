@@ -35,6 +35,7 @@ export type ResumePolishRequest = {
   customInstruction?: string;
   variationSeed?: string;
   previousSuggestion?: ResumePolishContent;
+  vipModel?: "flash" | "astra";
 };
 
 export type ResumePolishChange = {

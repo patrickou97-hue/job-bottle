@@ -388,7 +388,7 @@ function CompanySearchCombobox({
     <div className="relative isolate">
       <div className="relative">
         <Search aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 z-10 size-4 -translate-y-1/2 text-ink-muted" />
-        <Input
+        <Input type="search"
           role="combobox"
           aria-label="搜索并选择公司"
           aria-autocomplete="list"

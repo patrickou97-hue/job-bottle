@@ -12,7 +12,7 @@ const adminActions = [
   { href: "/admin/feedback", eyebrow: "02 · 待办队列", title: "反馈管理", body: "按状态、来源和关键词处理用户问题与建议。", icon: MessageSquareText, note: "处理待跟进" },
   { href: "/admin/jobs", eyebrow: "03 · 内容运营", title: "岗位管理", body: "维护岗位内容、投递链接、展示状态与公司信息。", icon: Rows3, note: "维护岗位库" },
   { href: "/admin/referrals", eyebrow: "04 · 增长治理", title: "内推码管理", body: "检查来源、审核状态与社区内容质量。", icon: KeyRound, note: "检查来源" },
-  { href: "/admin/users", eyebrow: "05 · 账户治理", title: "用户管理", body: "查找账户并管理身份、状态与 StarInterview 权限。", icon: Users, note: "管理账户" },
+  { href: "/admin/users", eyebrow: "05 · 账户治理", title: "用户管理", body: "查找账户并管理身份、状态与 StarJob VIP 会员资格。", icon: Users, note: "管理账户" },
 ] as const;
 
 const adminTools = [

@@ -16,8 +16,7 @@ export type AdminUserSummary = {
   resumeCount: number;
   school: string | null;
   targetRoles: string[];
-  starInterviewUnlimitedAccess: boolean;
-  starInterviewAccessSource: "explicit" | "admin_default" | "default";
+  vipActive: boolean | null;
 };
 
 export type AdminUserMetrics = {
@@ -26,13 +25,13 @@ export type AdminUserMetrics = {
   active3d: number;
   neverSignedIn: number;
   disabledUsers: number;
-  starInterviewUnlimitedUsers: number;
+  vipMembers: number | null;
 };
 
 export type AdminUserActivityFilter = "all" | "24h" | "3d" | "7d" | "never";
 export type AdminUserRoleFilter = "all" | ProfileRole;
 export type AdminUserStatusFilter = "all" | "enabled" | "disabled" | "unconfirmed";
-export type AdminUserStarInterviewFilter = "all" | "unlimited" | "standard";
+export type AdminUserVipFilter = "all" | "active" | "inactive";
 export type AdminUserSort = "activity_desc" | "created_desc" | "created_asc" | "email_asc";
 
 export type AdminUsersResponse = {
@@ -43,7 +42,7 @@ export type AdminUsersResponse = {
   totalPages: number;
   metrics: AdminUserMetrics;
   currentUserId: string;
-  canManageStarInterviewAccess: boolean;
+  canManageVipMembership: boolean;
 };
 
 export type AdminUserUpdate = {
@@ -70,7 +69,7 @@ export type AdminUserQuery = {
   activity?: AdminUserActivityFilter;
   role?: AdminUserRoleFilter;
   status?: AdminUserStatusFilter;
-  starInterviewAccess?: AdminUserStarInterviewFilter;
+  vipMembership?: AdminUserVipFilter;
   sort?: AdminUserSort;
 };
 
@@ -82,8 +81,8 @@ export async function fetchAdminUsers(input: AdminUserQuery = {}) {
   if (input.activity && input.activity !== "all") params.set("activity", input.activity);
   if (input.role && input.role !== "all") params.set("role", input.role);
   if (input.status && input.status !== "all") params.set("status", input.status);
-  if (input.starInterviewAccess && input.starInterviewAccess !== "all") {
-    params.set("starInterviewAccess", input.starInterviewAccess);
+  if (input.vipMembership && input.vipMembership !== "all") {
+    params.set("vipMembership", input.vipMembership);
   }
   if (input.sort && input.sort !== "activity_desc") params.set("sort", input.sort);
 
@@ -135,18 +134,17 @@ export async function recoverAdminUserMutation(
   throw new Error(getErrorMessage(payload, "账户安全恢复失败，请重新核对后再试。"));
 }
 
-export async function updateStarInterviewAccess(id: string, unlimitedAccess: boolean) {
+export async function updateVipMembership(id: string, active: boolean) {
   const response = await fetch("/api/admin/users", {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ id, action: "star_interview_access", unlimitedAccess }),
+    body: JSON.stringify({ id, action: "set_vip_membership", active }),
   });
   const payload = await readJson(response);
-  if (!response.ok) throw new Error(getErrorMessage(payload, "StarInterview 访问权限更新失败，原设置未改变。"));
+  if (!response.ok) throw new Error(getErrorMessage(payload, "StarJob VIP 会员资格更新失败，原设置未改变。"));
   return payload as {
     id: string;
-    starInterviewUnlimitedAccess: boolean;
-    starInterviewAccessSource: "explicit";
+    vipActive: boolean;
   };
 }
 

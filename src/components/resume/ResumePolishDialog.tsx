@@ -1,5 +1,8 @@
 "use client";
 
+import Link from "next/link";
+import { refreshVipStatus, useVipStatus } from "@/components/vip/useVipStatus";
+import { BASIC_POLISH_HOURLY_LIMIT, BASIC_POLISH_WEEKLY_LIMIT, formatVipReset, VIP_ASTRA_LABEL, VIP_FLASH_LABEL } from "@/lib/starjob-vip";
 import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, RefreshCw, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -48,6 +51,8 @@ export function ResumePolishDialog({
   onApply: (result: ResumePolishResult, bulletIndex: number | null) => void;
   onClose: () => void;
 }) {
+  const { status: vip } = useVipStatus(true);
+  const [vipModel, setVipModel] = useState<"flash" | "astra">("flash");
   const [instruction, setInstruction] = useState<ResumePolishInstruction>(language === "en-US" ? "english" : "professional");
   const [customInstruction, setCustomInstruction] = useState("");
   const [scope, setScope] = useState("all");
@@ -66,6 +71,9 @@ export function ResumePolishDialog({
     };
   }, []);
 
+  const exhausted = vip && !vip.unlimited && (vip.active || vip.signedIn) && (vip.active && vipModel === "astra"
+    ? !vip.advancedHourlyRemaining || !vip.advancedWeeklyRemaining
+    : !vip.basicHourlyRemaining || !vip.basicWeeklyRemaining);
   const bulletIndex = scope === "all" ? null : Number(scope);
   const sourceBullets = bulletIndex === null
     ? target.content.bullets
@@ -93,6 +101,7 @@ export function ResumePolishDialog({
         instruction,
         customInstruction: customInstruction.trim(),
         variationSeed: createVariationSeed(),
+        ...(vip?.active ? { vipModel } : {}),
         ...(previousSuggestion ? { previousSuggestion } : {}),
       }, controller.signal);
       if (!mountedRef.current) return;
@@ -103,6 +112,7 @@ export function ResumePolishDialog({
     } finally {
       if (requestAbortRef.current === controller) requestAbortRef.current = null;
       if (mountedRef.current) setBusy(false);
+      refreshVipStatus();
     }
   }
 
@@ -131,6 +141,26 @@ export function ResumePolishDialog({
         </header>
 
         <div className="grid gap-4 border-b border-[color:var(--line-ghost)] py-5 sm:grid-cols-2">
+          {vip?.active ? (
+            <label className="block sm:col-span-2">
+              <span className="mb-2 block text-xs font-medium text-ink-muted">VIP 润色模型</span>
+              <Select value={vipModel} disabled={busy} onChange={(event) => {
+                setVipModel(event.target.value === "astra" ? "astra" : "flash");
+                setResult(null);
+                setVerificationConfirmed(false);
+              }}>
+                <option value="flash">{VIP_FLASH_LABEL} · {vip.unlimited ? "不限次数" : `近 60 分钟剩 ${vip.basicHourlyRemaining} 次 · 本周剩 ${vip.basicWeeklyRemaining} 次`}</option>
+                <option value="astra" disabled={!vip.advancedAvailable || !vip.unlimited && (!vip.advancedHourlyRemaining || !vip.advancedWeeklyRemaining) && vipModel !== "astra"}>{VIP_ASTRA_LABEL}{vip.advancedAvailable ? vip.unlimited ? " · 不限次数" : ` · 小时剩 ${vip.advancedHourlyRemaining} 次 · 本周剩 ${vip.advancedWeeklyRemaining} 次` : "（将与正式付费版一起发布）"}</option>
+              </Select>
+              <span className="mt-1.5 block text-xs leading-5 text-ink-muted">
+                {vip.unlimited ? "管理员使用已开放的模型不限次数。" : vip.advancedAvailable ? "与材料工作台的继续修改共用高级额度。" : "限免会员可使用基础模型。"}
+                {vip.advancedHourlyResetAt ? ` 小时额度下次恢复 ${formatVipReset(vip.advancedHourlyResetAt)}。` : ""}
+                {vip.weeklyResetAt ? ` 周额度重置 ${formatVipReset(vip.weeklyResetAt)}（北京时间）。` : ""}
+              </span>
+            </label>
+          ) : (
+            <Link href="/vip" className="w-fit text-sm font-medium text-[#805a1b] underline underline-offset-4 sm:col-span-2">基础润色{vip?.signedIn ? ` · 小时剩 ${vip.basicHourlyRemaining} 次 · 本周剩 ${vip.basicWeeklyRemaining} 次` : `每小时 ${BASIC_POLISH_HOURLY_LIMIT} 次、每周 ${BASIC_POLISH_WEEKLY_LIMIT} 次`} · 查看会员额度</Link>
+          )}
           <label className="block">
             <span className="mb-2 block text-xs font-medium text-ink-muted">润色范围</span>
             <Select value={scope} onChange={(event) => { setScope(event.target.value); setResult(null); setVerificationConfirmed(false); }}>
@@ -228,7 +258,7 @@ export function ResumePolishDialog({
         <footer className="mt-6 flex flex-wrap items-center justify-end gap-3 border-t border-[color:var(--line-ghost)] pt-5">
           <CommunityHelpLink className="mr-auto" onClick={closeDialog} />
           <Button variant="secondary" onClick={closeDialog}>保留原文</Button>
-          <Button variant="secondary" className="gap-2" onClick={busy ? () => requestAbortRef.current?.abort() : generate}>
+          <Button variant="secondary" className="gap-2" disabled={!busy && Boolean(exhausted)} onClick={busy ? () => requestAbortRef.current?.abort() : generate}>
             {busy ? <PixelStarLoader size="xs" /> : result ? <RefreshCw aria-hidden="true" className="size-4" /> : <Sparkles aria-hidden="true" className="size-4" />}
             {busy ? "取消" : result ? "重新生成" : "生成建议"}
           </Button>

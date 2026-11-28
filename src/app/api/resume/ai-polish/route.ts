@@ -3,7 +3,8 @@ import { z } from "zod";
 import { createHash } from "node:crypto";
 import { RESUME_POLISH_INSTRUCTIONS, RESUME_POLISH_SECTION_TYPES } from "@/lib/resume-ai";
 import { resolveResumeAiAccess } from "@/lib/resume-ai-access";
-import { getDeepSeekConfiguration } from "@/lib/deepseek-config";
+import { advancedLocked, isVipSalesEnabled, checkVipIdentity, isVipSameOrigin, reserveAccountUse, reserveVipUse, type VipIdentity } from "@/lib/starjob-vip-server";
+import { getVipModel, requestVipModel } from "@/lib/starjob-vip-model";
 
 export const maxDuration = 60;
 
@@ -28,6 +29,7 @@ const inputSchema = z.object({
   customInstruction: z.string().trim().max(600).optional().default(""),
   variationSeed: z.string().trim().max(64).optional().default(""),
   previousSuggestion: polishContentSchema.optional(),
+  vipModel: z.enum(["flash", "astra"]).optional(),
 }).strict();
 
 const resultSchema = z.object({
@@ -59,68 +61,57 @@ export async function POST(request: NextRequest) {
   if (contentLength > MAX_REQUEST_BYTES) {
     return NextResponse.json({ error: "当前段落内容过长，请精简后重试" }, { status: 413 });
   }
-  const access = await resolveResumeAiAccess(request);
-  if (!access) {
-    return NextResponse.json({ error: "请先登录，再使用智能润色。" }, { status: 401 });
-  }
-
   const body = await request.json().catch(() => null);
   const parsed = inputSchema.safeParse(body);
+  const vipChoice = parsed.success ? parsed.data.vipModel : undefined;
+  const access = vipChoice ? null : await resolveResumeAiAccess(request);
+  if (!vipChoice && !access) {
+    return NextResponse.json({ error: "请先登录，再使用智能润色。" }, { status: 401 });
+  }
   if (!parsed.success) {
     return NextResponse.json({ error: "当前段落格式无效或内容过长，请精简后重试" }, { status: 400 });
   }
   if (!parsed.data.content.bullets.some((bullet) => bullet.trim())) {
     return NextResponse.json({ error: "当前段落为空，请先填写内容" }, { status: 400 });
   }
+  let vipIdentity: VipIdentity | null = null;
+  if (vipChoice) {
+    if (!isVipSameOrigin(request)) return NextResponse.json({ error: "请求来源无效。" }, { status: 403 });
+    const identity = await checkVipIdentity(request);
+    if (identity instanceof NextResponse) return identity;
+    if (vipChoice === "astra" && (identity.plan !== "full" || !isVipSalesEnabled())) return advancedLocked();
+    vipIdentity = identity;
+  }
 
-  const configuration = getDeepSeekConfiguration();
-  if (!configuration) {
+  const vipModel = getVipModel(vipChoice ?? "flash");
+  if (!vipModel) {
     return NextResponse.json(
       { error: "润色暂时不可用，请稍后重试。" },
       { status: 503 },
     );
   }
 
-  const { apiKey, baseUrl, model } = configuration;
-
-  const cacheKey = createPolishCacheKey(access.userId, parsed.data);
-  const cached = polishCache.get(cacheKey);
-  if (cached && cached.expiresAt > Date.now()) {
-    return NextResponse.json(cached.result, { headers: { "Cache-Control": "no-store", "X-StarJob-AI-Cache": "HIT" } });
-  }
-  if (cached) polishCache.delete(cacheKey);
-
-  const { data: rateSlot, error: rateSlotError } = await access.takeRateSlot();
-  if (rateSlotError) {
-    logServerError("resume_ai_rate_slot", rateSlotError);
-    return NextResponse.json(
-      { error: "AI 请求保护服务暂时不可用，请稍后重试" },
-      { status: 503 },
-    );
-  }
-  if (!rateSlot) {
-    return NextResponse.json(
-      { error: "请求较频繁，请十分钟后再试" },
-      { status: 429, headers: { "Retry-After": "600" } },
-    );
+  const cacheKey = access ? createPolishCacheKey(access.userId, parsed.data) : null;
+  if (cacheKey && access) {
+    const cached = polishCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return NextResponse.json(cached.result, { headers: { "Cache-Control": "no-store", "X-StarJob-AI-Cache": "HIT" } });
+    }
+    if (cached) polishCache.delete(cacheKey);
   }
 
+  const reservation = access
+    ? await reserveAccountUse(access.userId, "standard", access.client)
+    : vipIdentity && vipChoice
+      ? await reserveVipUse(vipIdentity, vipChoice === "astra" ? "advanced" : "flash")
+      : NextResponse.json({ error: "请先登录，再使用智能润色。" }, { status: 401 });
+  if (reservation instanceof NextResponse) return reservation;
+  let completed = false;
   try {
     const startedAt = Date.now();
-    const first = await callDeepSeek({
-      apiKey,
-      baseUrl,
-      model,
-      messages: buildMessages(parsed.data),
-      signal: request.signal,
-    });
-    const validation = parseResult(
-      first,
-      parsed.data.content,
-      parsed.data.previousSuggestion,
-      parsed.data.sectionType,
-      parsed.data.language,
-    );
+    const messages = buildMessages(parsed.data);
+    const first = await requestVipModel(vipModel, messages, MAX_OUTPUT_TOKENS, AbortSignal.any([request.signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)]));
+    const validation = parseResult(first, parsed.data.content, parsed.data.previousSuggestion, parsed.data.sectionType, parsed.data.language);
     if (!validation.result) {
       console.warn("[resume_ai_validation]", {
         reason: validation.reason,
@@ -136,70 +127,22 @@ export async function POST(request: NextRequest) {
           : "AI 建议格式暂时无法识别，原文未改变。请重新生成，或补充具体职责和结果后再试。";
       return NextResponse.json({ error: message }, { status: 502 });
     }
-    rememberPolishResult(cacheKey, validation.result);
+    if (request.signal.aborted) return NextResponse.json({ error: "请求已取消。" }, { status: 499 });
+    if (!await reservation.finish(true).catch(() => false)) {
+      return NextResponse.json({ error: "额度结算暂时不可用，请稍后重试。" }, { status: 503 });
+    }
+    completed = true;
+    if (cacheKey) rememberPolishResult(cacheKey, validation.result);
     return NextResponse.json(validation.result, { headers: { "Cache-Control": "no-store", "X-StarJob-AI-Cache": "MISS" } });
   } catch (error) {
     logServerError("resume_ai_upstream", error);
     return mapUpstreamError(error);
+  } finally {
+    if (!completed) await reservation.finish(false).catch(() => undefined);
   }
 }
 
 type ChatMessage = { role: "system" | "user"; content: string };
-
-async function callDeepSeek({
-  apiKey,
-  baseUrl,
-  model,
-  messages,
-  signal,
-}: {
-  apiKey: string;
-  baseUrl: string;
-  model: string;
-  messages: ChatMessage[];
-  signal?: AbortSignal;
-}) {
-  const controller = new AbortController();
-  const abortFromRequest = () => controller.abort();
-  signal?.addEventListener("abort", abortFromRequest, { once: true });
-  if (signal?.aborted) abortFromRequest();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-  try {
-    const response = await fetch(getChatCompletionsUrl(baseUrl), {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        messages,
-        temperature: 0.68,
-        stream: false,
-        max_tokens: MAX_OUTPUT_TOKENS,
-        thinking: { type: "disabled" },
-        response_format: { type: "json_object" },
-      }),
-      signal: controller.signal,
-      cache: "no-store",
-    });
-    if (!response.ok) throw new UpstreamError(response.status);
-    const payload = await response.json().catch(() => null) as {
-      choices?: { message?: { content?: string } }[];
-    } | null;
-    const content = payload?.choices?.[0]?.message?.content;
-    if (!content?.trim()) throw new UpstreamError(502, "empty");
-    return content;
-  } finally {
-    clearTimeout(timeout);
-    signal?.removeEventListener("abort", abortFromRequest);
-  }
-}
-
-function getChatCompletionsUrl(baseUrl: string) {
-  const normalized = baseUrl.trim().replace(/\/+$/, "");
-  return normalized.endsWith("/chat/completions") ? normalized : `${normalized}/chat/completions`;
-}
 
 function buildMessages(input: z.infer<typeof inputSchema>): ChatMessage[] {
   return [
@@ -401,7 +344,7 @@ function ensureQuantifiedOutcomeCandidate(
   sectionType: z.infer<typeof inputSchema>["sectionType"],
   language: z.infer<typeof inputSchema>["language"],
 ): PolishResult {
-  // The model can decline to estimate missing outcomes despite the prompt; fulfill the user's explicit request without a second slow upstream call.
+  // MiMo can decline to estimate missing outcomes despite the prompt; fulfill the user's explicit request without a second slow upstream call.
   if (!["work", "project", "campus", "custom"].includes(sectionType)
     || hasQuantifiedResult(source.bullets)
     || hasQuantifiedResult(result.revised.bullets)) return result;
@@ -584,7 +527,7 @@ function isChangeType(value: unknown): value is "clarity" | "structure" | "relev
 
 class UpstreamError extends Error {
   constructor(public status: number, public kind = "http") {
-    super(`DeepSeek upstream ${status}`);
+    super(`MiMo upstream ${status}`);
   }
 }
 

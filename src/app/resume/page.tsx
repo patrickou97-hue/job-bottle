@@ -15,6 +15,8 @@ type ResumePageProps = {
     job?: string;
     role?: string;
     action?: string;
+    resume?: string;
+    section?: string;
   }>;
 };
 
@@ -53,7 +55,7 @@ export default async function ResumePage({ searchParams }: ResumePageProps) {
 
   return (
     <UserShell>
-      <ResumeBuilderClient targetJob={targetJob} initialAction={initialAction} />
+      <ResumeBuilderClient targetJob={targetJob} initialAction={initialAction} initialResumeId={params.resume ?? null} initialSection={params.resume && params.section === "education" ? "education" : "basic"} />
     </UserShell>
   );
 }

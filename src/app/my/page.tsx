@@ -1,3 +1,4 @@
+import "./assistant.css";
 import type { Metadata } from "next";
 import { MyApplicationsClient } from "@/components/applications/MyApplicationsClient";
 import { PageShell } from "@/components/layout/PageShell";

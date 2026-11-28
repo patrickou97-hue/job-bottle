@@ -24,6 +24,7 @@ import { fetchMyResumes, isMissingResumeTableError } from "@/lib/resume-sync";
 import { track } from "@/lib/track";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { isValidHttpUrl, safeOpenUrl, formatDateTime, sanitizeApplicationUrl } from "@/lib/utils";
+import { JobSearchAssistant } from "@/components/jobs/JobSearchAssistant";
 import { JobFilterBar } from "@/components/jobs/JobFilterBar";
 import { ApplyReturnConfirm } from "@/components/jobs/ApplyReturnConfirm";
 import { ProgressDrawer } from "@/components/applications/ProgressDrawer";
@@ -227,13 +228,8 @@ export function HomeClient() {
     () => jobs.filter((job) => referralCompanies.has(job.company_name.trim())),
     [jobs, referralCompanies],
   );
-  const discoveryJobs = discoveryScope === "recent"
-    ? recentJobs
-    : discoveryScope === "recent_preference"
-      ? recentPreferenceJobs
-      : discoveryScope === "with_referral"
-        ? withReferralJobs
-        : jobs;
+  const discoveryPools = { all: jobs, recent: recentJobs, recent_preference: recentPreferenceJobs, with_referral: withReferralJobs };
+  const discoveryJobs = discoveryPools[discoveryScope];
   const matchingJobs = useMemo(
     () => filterJobs(discoveryJobs, filters),
     [discoveryJobs, filters],
@@ -242,24 +238,8 @@ export function HomeClient() {
     () => filterJobs(discoveryJobs, { ...filters, location: "" }),
     [discoveryJobs, filters],
   );
-  const baseVisibleJobs = useMemo(() => {
-    if (jobView === "applied") {
-      return matchingJobs.filter((job) => applicationByJobId.has(job.id));
-    }
-    if (jobView === "unapplied") {
-      return matchingJobs.filter((job) => !applicationByJobId.has(job.id));
-    }
-    return matchingJobs;
-  }, [applicationByJobId, jobView, matchingJobs]);
-  const mapVisibleJobs = useMemo(() => {
-    if (jobView === "applied") {
-      return mapMatchingJobs.filter((job) => applicationByJobId.has(job.id));
-    }
-    if (jobView === "unapplied") {
-      return mapMatchingJobs.filter((job) => !applicationByJobId.has(job.id));
-    }
-    return mapMatchingJobs;
-  }, [applicationByJobId, jobView, mapMatchingJobs]);
+  const baseVisibleJobs = useMemo(() => byJobView(matchingJobs, jobView, applicationByJobId), [matchingJobs, jobView, applicationByJobId]);
+  const mapVisibleJobs = useMemo(() => byJobView(mapMatchingJobs, jobView, applicationByJobId), [mapMatchingJobs, jobView, applicationByJobId]);
   const filteredJobs = baseVisibleJobs;
   const activeFilterChips = useMemo(
     () => getActiveFilterChips(filters, jobView, discoveryScope),
@@ -526,6 +506,14 @@ export function HomeClient() {
     );
   }
 
+  const keywordSearch = (<label className="discovery-search">
+        <span>搜索岗位</span>
+        <div className="discovery-search__field">
+          <Search aria-hidden="true" size={20} />
+          <Input type="search" value={filters.keyword} onChange={(event) => handleFiltersChange({ ...filters, keyword: event.target.value })} placeholder="搜索公司或岗位名称" />
+        </div>
+      </label>);
+
   return (
     <div className="observatory-page discovery-workspace">
       {loadError && jobs.length > 0 ? (
@@ -565,13 +553,19 @@ export function HomeClient() {
         onClear={clearAllFilters}
       />
 
-      <label className="discovery-search">
-        <span>搜索岗位</span>
-        <div className="discovery-search__field">
-          <Search aria-hidden="true" size={20} />
-          <Input value={filters.keyword} onChange={(event) => handleFiltersChange({ ...filters, keyword: event.target.value })} placeholder="搜索公司或岗位名称" />
-        </div>
-      </label>
+      <JobSearchAssistant
+        key={currentUserId ?? "guest"} current={{ ...filters, scope: discoveryScope, view: jobView }}
+        facets={facets} profile={profile}
+        focusedCompany={jobs.find(job => job.id === focusedJobId)?.company_name}
+        onApply={({ scope, view, ...nextFilters }) => {
+          setFocusedJobId(null);
+          handleFiltersChange(nextFilters);
+          setDiscoveryScope(scope);
+          setJobView(view);
+          return { jobs: byJobView(filterJobs(discoveryPools[scope], nextFilters), view, applicationByJobId),
+            chips: getActiveFilterChips(nextFilters, view, scope) };
+        }}
+      >{keywordSearch}</JobSearchAssistant>
 
       <section id="job-map" className="job-map-section discovery-map">
         <div className="section-heading items-end">
@@ -880,6 +874,10 @@ function StatNumber({ value, label }: { value: number; label: string }) {
   );
 }
 
+function byJobView(jobs: Job[], view: JobViewMode, applications: ReadonlyMap<string, UserApplication>) {
+  return view === "all" ? jobs : jobs.filter(job => applications.has(job.id) === (view === "applied"));
+}
+
 function getActiveFilterChips(
   filters: JobFilters,
   jobView: JobViewMode,
@@ -893,6 +891,7 @@ function getActiveFilterChips(
   if (filters.location) chips.push(`地点：${getLocationFilterLabel(filters.location)}`);
   filters.categories.forEach((category) => chips.push(`类别：${category}`));
   if (filters.sortBy === "start_date_desc") chips.push("最新开放");
+  if (filters.sortBy === "updated_desc") chips.push("最近更新");
   if (filters.sortBy === "start_date_asc") chips.push("最早开放");
   if (filters.sortBy === "company_asc") chips.push("按公司名称");
   if (discoveryScope === "recent") chips.push("近 7 日新增");

@@ -6,11 +6,12 @@ const MAX_FILE_SIZE = 8 * 1024 * 1024;
 const MAX_PDF_TEXT_LENGTH = 60_000;
 const SUPPORTED_EXTENSIONS = ["pdf", "docx", "txt"] as const;
 
-export async function extractResumeFileText(file: File) {
+export async function extractResumeFileText(file: File, purpose: "resume" | "materials" = "resume") {
   if (file.size > MAX_FILE_SIZE) throw new Error("文件不能超过 8 MB");
   const extension = file.name.split(".").pop()?.toLowerCase();
+  if (extension === "sql" && purpose === "materials") return normalizeText(await file.text());
   if (!extension || !SUPPORTED_EXTENSIONS.includes(extension as typeof SUPPORTED_EXTENSIONS[number])) {
-    throw new Error("请选择 PDF、DOCX 或 TXT 文件");
+    throw new Error(purpose === "materials" ? "请选择 PDF、DOCX、TXT 或 SQL 文件" : "请选择 PDF、DOCX 或 TXT 文件");
   }
 
   if (extension === "txt") return normalizeText(await file.text());

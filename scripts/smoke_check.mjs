@@ -458,8 +458,14 @@ const SOURCE_INVARIANTS = [
     label: "全站共享英文品牌名统一为 StarJob",
   },
   {
+    file: "src/lib/arcsweep/login-context.ts",
+    mustInclude: ["safeLocalReturnPath(next)", "target.origin === LOCAL_ORIGIN", "navigateAfterLogin"],
+    mustNotInclude: ["window.location.assign(next)"],
+    label: "登录返回交给同源路径校验",
+  },
+  {
     file: "src/components/auth/LoginForm.tsx",
-    mustInclude: ["mode", "register", "reason", "resume-download", "getSafeNextPath", "data.session", "继续刚才的操作", "placeholder=\"2027\""],
+    mustInclude: ["mode", "register", "reason", "resume-download", "navigateAfterLogin", "data.session", "继续刚才的操作", "placeholder=\"2027\""],
     mustNotInclude: ["router.push(searchParams.get(\"next\")", "placeholder=\"成都\"", "西南财经大学", "金融学"],
     label: "注册登录可安全返回来源页并兼容邮箱确认流程",
   },
@@ -530,8 +536,14 @@ const SOURCE_INVARIANTS = [
     label: "所有长时 AI 任务共用真实区块进度、已用时、取消操作和原文保护提示",
   },
   {
+    file: "src/lib/deepseek-json.ts",
+    mustInclude: ["server-only", "chat/completions", "response_format", "json_object", 'thinking: { type: "disabled" }', "externalSignal", 'cache: "no-store"'],
+    mustNotInclude: ["NEXT_PUBLIC_"],
+    label: "简历导入和投递助手使用相同的 DeepSeek JSON 接口",
+  },
+  {
     file: "src/app/api/resume/import/route.ts",
-    mustInclude: ["getDeepSeekConfiguration", 'thinking: { type: "disabled" }', "resolveResumeAiAccess", "access.takeRateSlot", "response_format", "json_object", "localDraft", "sourceText", "preserveDeterministicBasics", "language", "zh-CN", "en-US", "role", "不得虚构", "区块", "Cache-Control", "no-store", "maxDuration = 120", "REQUEST_TIMEOUT_MS = 100_000", "buildWholeReviewHints", "bulletCount", "elapsedMs", "progressMode", "application/x-ndjson", "REVIEW_PARTS_TOTAL = 2", "buildWholeResumeMessages", "sanitizeReviewedDraft", "holistic_structure_v3", "本地识别结果仍可直接导入"],
+    mustInclude: ["resolveResumeAiAccess", "access.takeRateSlot", "getDeepSeekConfiguration", "callDeepSeek", "localDraft", "sourceText", "preserveDeterministicBasics", "language", "zh-CN", "en-US", "role", "不得虚构", "区块", "Cache-Control", "no-store", "maxDuration = 120", "REQUEST_TIMEOUT_MS = 100_000", "buildWholeReviewHints", "bulletCount", "elapsedMs", "progressMode", "application/x-ndjson", "REVIEW_PARTS_TOTAL = 2", "buildWholeResumeMessages", "sanitizeReviewedDraft", "holistic_structure_v3", "本地识别结果仍可直接导入"],
     mustNotInclude: ["createAdminClient", "SUPABASE_SERVICE_ROLE_KEY", "NEXT_PUBLIC_", "request.formData", "console.log", "createFallbackPart", "Promise.all(REVIEW_PARTS"],
     label: "AI 先通读整份原文再一次性决定全部区块归属，完整校验后才返回且保留旧 JSON 契约",
   },
@@ -841,8 +853,8 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/applications/MyApplicationsClient.tsx",
-    mustInclude: ["application.job.company_name", "getApplicationDisplayPosition", "min-h-5", "StatusPill", "handleApplicationChanged", "handleApplicationDeleted", "type StageGroup", "type FreshnessFilter", "getApplicationWorkflow(application)", "activeApplications", "endedApplications", "记录投递进度，安排下一步跟进。", "每一行就是一条投递", "endedExpanded", "打开官网", "查看详情", "编辑当前岗位流程", "7 天以上无进展", "需要关注优先", "text-lg font-semibold leading-6 tracking-tight text-ink-primary", "text-sm font-normal leading-5 text-ink-secondary"],
-    mustNotInclude: ["DeadlineChip", "ApplicationStageSelect", "ApplicationCompanyGroup", "groupApplications", "按公司归组，每个岗位的进度单独记录", "onChanged={loadData}", "type WorkspaceView", "现在要做", "材料准备", "ApplicationOrbitSystem", 'text-xs font-medium text-ink-muted">{application.job.company_name}', 'text-sm font-semibold text-ink-primary">{jobTitle}'],
+    mustInclude: ["application.job.company_name", "getApplicationDisplayPosition", "min-h-5", "StatusPill", "onChanged={handleApplicationChanged}", "handleApplicationDeleted", "type StageGroup", "type FreshnessFilter", "getApplicationWorkflow(application)", "activeApplications", "endedApplications", "记录投递进度，安排下一步跟进。", "每一行就是一条投递", "endedExpanded", "打开官网", "查看详情", "编辑当前岗位流程", "7 天以上无进展", "需要关注优先", "text-lg font-semibold leading-6 tracking-tight text-ink-primary", "text-sm font-normal leading-5 text-ink-secondary"],
+    mustNotInclude: ["DeadlineChip", "ApplicationStageSelect", "ApplicationCompanyGroup", "groupApplications", "按公司归组，每个岗位的进度单独记录", "type WorkspaceView", "现在要做", "材料准备", "ApplicationOrbitSystem", 'text-xs font-medium text-ink-muted">{application.job.company_name}', 'text-sm font-semibold text-ink-primary">{jobTitle}'],
     label: "投递管理只显示用户明确填写的实际投递岗位并保留空白状态",
   },
   {
@@ -894,9 +906,9 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/resume/ai-polish/route.ts",
-    mustInclude: ["getDeepSeekConfiguration", 'thinking: { type: "disabled" }', "resolveResumeAiAccess", "access.takeRateSlot", "REQUEST_TIMEOUT_MS", "MAX_OUTPUT_TOKENS", "response_format", "json_object", "createPolishCacheKey", "X-StarJob-AI-Cache", "logServerError", "kind: \"kind\" in error", "不得虚构", "不把“协助/参与/支持”升级", "不强补结果", "verificationItems", "待确认信息", "只用于用户核实", "warnings", "严格 JSON", "resultSchema", "parseResult", "normalizeResultCandidate", "typeof change === \"string\"", "title: source.title", "subtitle: source.subtitle", "customInstruction: z.string().trim().max(600).optional().default(\"\")", "用户补充要求", "不得覆盖以上事实约束", "原文未改变"],
+    mustInclude: ["getVipModel", "requestVipModel", "resolveResumeAiAccess", "reserveAccountUse", "reserveVipUse", "REQUEST_TIMEOUT_MS", "MAX_OUTPUT_TOKENS", "createPolishCacheKey", "X-StarJob-AI-Cache", "logServerError", "kind: \"kind\" in error", "不得虚构", "不把“协助/参与/支持”升级", "没有结果时不得把补充结果写成已确认事实", "量化候选只能按第 4 条作为待核实假设提供", "verificationItems", "待确认信息", "只用于用户核实", "warnings", "严格 JSON", "resultSchema", "parseResult", "normalizeResultCandidate", "typeof change === \"string\"", "title: source.title", "subtitle: source.subtitle", "customInstruction: z.string().trim().max(600).optional().default(\"\")", "用户补充要求", "不得覆盖以上事实约束", "原文未改变"],
     mustNotInclude: ["NEXT_PUBLIC_MIMO", "console.log", "SUPABASE_SERVICE_ROLE_KEY"],
-    label: "简历分段润色仅在服务端调用 DeepSeek 并限制幻觉、输入、超时和频率",
+    label: "简历分段润色按模型权益在服务端调用 并限制幻觉、输入、超时和频率",
   },
   {
     file: "src/components/resume/ResumePolishDialog.tsx",
@@ -996,7 +1008,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/app/api/admin/users/route.ts",
-    mustInclude: ["requireAdminAccess", "requirePrimaryAdminRecoveryAccess", "createAdminClient", "listAllAuthUsers", "listUsers", "buildMetrics", "active24h", "active3d", "last_sign_in_at", "matchesFilters", "totalFiltered", "admin.auth.admin.getUserById", "admin.auth.admin.updateUserById", "reserveAdminUserMutation", "finalizeAdminUserMutation", "cancelAdminUserMutation", "recoverAdminUserMutation", "rollbackGuardedAuthAndCancel", "classifyGuardedAuthState", "不能停用或降级当前管理员账号", "email_confirm: true", "只有主管理员可以调整 StarInterview 无限访问", "isPrimaryAdmin", "reservationToken", "maxDuration = 60"],
+    mustInclude: ["requireAdminAccess", "requirePrimaryAdminRecoveryAccess", "createAdminClient", "listAllAuthUsers", "listUsers", "buildMetrics", "active24h", "active3d", "last_sign_in_at", "matchesFilters", "totalFiltered", "admin.auth.admin.getUserById", "admin.auth.admin.updateUserById", "reserveAdminUserMutation", "finalizeAdminUserMutation", "cancelAdminUserMutation", "recoverAdminUserMutation", "rollbackGuardedAuthAndCancel", "classifyGuardedAuthState", "不能停用或降级当前管理员账号", "email_confirm: true", "只有主管理员可以调整 StarJob VIP", "isPrimaryAdmin", "reservationToken", "maxDuration = 60"],
     mustNotInclude: ["NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY"],
     label: "管理员用户 API 使用持久 guard 编排 Auth/Profile 写入、显式恢复并将无限权限调整限制给主管理员",
   },
@@ -1020,7 +1032,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/admin/AdminUsersClient.tsx",
-    mustInclude: ["全部用户", "24 小时内活跃", "3 日内活跃", "邮箱、姓名、学校、方向或 ID", "最近活跃", "筛选用户", "账户身份", "普通用户", "管理员", "停用账户", "恢复登录", "确认停用账户", "设为已确认", "确认邮箱", "StarInterview 无限访问", "标准访问", "role=\"switch\"", "仅主管理员可调整此权限"],
+    mustInclude: ["全部用户", "24 小时内活跃", "3 日内活跃", "邮箱、姓名、学校、方向或 ID", "最近活跃", "筛选用户", "账户身份", "普通用户", "管理员", "停用账户", "恢复登录", "确认停用账户", "设为已确认", "确认邮箱", "StarJob VIP", "VIP 未开通", "role=\"switch\"", "仅主管理员可调整此权限"],
     mustNotInclude: ["SUPABASE_SERVICE_ROLE_KEY", "deleteUser"],
     label: "管理员用户页用摘要表、组合筛选和展开编辑管理账户及 StarInterview 权限",
   },

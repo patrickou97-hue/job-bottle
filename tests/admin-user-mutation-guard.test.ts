@@ -149,13 +149,11 @@ test("finalize 响应不确定时不会盲目回滚，只有确定的非 applied
   assert.doesNotMatch(profileFlow, /catch[\s\S]*rollbackGuardedAuthAndCancel/);
 });
 
-test("StarInterview 权限与角色/封禁共享同一 target guard，metadata 仅写自己的单键", () => {
-  const starFlow = usersRoute.slice(
-    usersRoute.indexOf("async function updateStarInterviewAccess"),
-    usersRoute.indexOf("type GuardIdentity"),
-  );
-  assert.match(starFlow, /reserveAdminUserMutation[\s\S]*mutationKind: "star_interview_access"/);
-  assert.match(starFlow, /applyGuardedAuthTarget[\s\S]*finalizeAdminUserMutation/);
+test("会员设置使用独立事务，遇到账户安全操作时暂停授权", async () => {
+  const sql = await readFile(new URL("../supabase/migrations/20261128032038_starjob_vip_free_launch.sql", import.meta.url), "utf8");
+  assert.match(usersRoute, /rpc\("set_starjob_vip_membership"/);
+  assert.match(sql, /admin_user_mutation_guards where target_user_id in \(p_actor, p_target\)/);
+  assert.match(sql, /revoke all on function public\.set_starjob_vip_membership[^;]+from public, anon, authenticated/);
   assert.doesNotMatch(usersRoute, /\.\.\.\s*(?:current|previousAuth\.user)\.app_metadata/);
   assert.match(starInterviewAccess, /from\("admin_user_mutation_guards"\)/);
   assert.match(starInterviewAccess, /STAR_INTERVIEW_ACCOUNT_RECOVERY_REQUIRED/);

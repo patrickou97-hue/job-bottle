@@ -50,7 +50,7 @@
   .theme-work .gold-button:hover { background: #1b2d46; border-color: #1b2d46; }
   .theme-work [data-slot="button"][data-variant="secondary"] { background: #fafbfd; border: 1px solid #d9e0e9; color: #324761; }
   .theme-work [data-slot="button"][data-variant="secondary"]:hover { background: #eaf0f7; }
-  .theme-work .field-shell { border-radius: var(--ui-radius-control); background: #fafbfd; border: 1px solid #ccd5e0; color: #233650; }
+  .theme-work .field-shell { border-radius: var(--field-corner, var(--field-radius-single)); background: #fafbfd; border: 1px solid #ccd5e0; color: #233650; }
   .theme-work .field-shell::placeholder { color: #758093; }
   .theme-work .field-shell:focus-visible { outline: 2px solid #7e98ba; outline-offset: 2px; box-shadow: none; background: #fff; }
   .theme-work .field-shell[aria-invalid="true"] { border-color: var(--text-danger); outline-color: var(--text-danger); }
@@ -93,7 +93,7 @@
   .application-records { display: grid; gap: 10px; border: 0; }
   .theme-scene .ui-nav-indicator { background: rgba(219,230,246,.12); }
   .theme-scene .ui-nav-link:hover { background: rgba(219,230,246,.07); }
-  .theme-scene :is(.gold-button,.muted-button,.field-shell,.chip-button) { border-radius: var(--ui-radius-control); }
+  .theme-scene :is(.gold-button,.muted-button,.chip-button) { border-radius: var(--ui-radius-control); }
   /* Login is part of the same light interface, including its form surface. */
   .login-page, .login-page__story { background: #edf1f6; color: #233650; }
   .login-page__form-side { background: #f8fafc; color: #233650; }
@@ -211,4 +211,53 @@
     .theme-work :is(.resume-version-item,.application-record):hover { box-shadow: 0 4px 14px -10px #233c6060; }
     [data-ui-route="/forum"] a.group:hover { background: var(--surface-hover-bg); }
   }
+}
+
+/* Global VIP entry is shared by the work and scene navigation. */
+.starjob-vip-link {
+  display: inline-flex;
+  flex: 0 0 auto;
+  min-height: 2.5rem;
+  align-items: center;
+  gap: 4px;
+  padding-inline: 3px;
+  border-radius: 3px;
+  color: #56616b;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.starjob-vip-name { min-height: 1.25rem; }
+@supports (mask-image: url("")) or (-webkit-mask-image: url("")) {
+  .starjob-vip-wordmark {
+    display: block;
+    width: 4.5rem;
+    aspect-ratio: 2056 / 279;
+    background-color: currentColor;
+    -webkit-mask: url("/brand/starjob-wordmark-lockup.png") center / contain no-repeat;
+    mask: url("/brand/starjob-wordmark-lockup.png") center / contain no-repeat;
+    font-size: 0;
+    forced-color-adjust: none;
+  }
+}
+.starjob-vip-name .nav-beta { background-image: linear-gradient(112deg, #7b8792, #505e6c); }
+.starjob-vip-link[data-active="true"] .nav-beta { background-image: linear-gradient(112deg, #bc964e, #80591e); }
+.app-navbar--scene .starjob-vip-name .nav-beta { background-image: none; color: inherit; }
+@media (forced-colors: active) {
+  .starjob-vip-name .nav-beta { background: none; color: LinkText; }
+}
+.starjob-vip-link:hover { background-color: var(--surface-hover-bg); }
+.starjob-vip-link:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.starjob-vip-link[data-active="true"] { color: #876222; }
+.app-navbar--scene .starjob-vip-link { color: #b8c0cb; }
+.app-navbar--scene .starjob-vip-link[data-active="true"] { color: #f0ca79; }
+.starjob-vip-lock {
+  border: 1px solid var(--line-ghost);
+  border-radius: 4px;
+  padding: 0 3px;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 15px;
+}
+@media (max-width: 360px) {
+  .starjob-vip-link { gap: 3px; }
 }

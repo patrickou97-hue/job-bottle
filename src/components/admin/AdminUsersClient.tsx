@@ -27,13 +27,13 @@ import {
   fetchAdminUsers,
   recoverAdminUserMutation,
   updateAdminUser,
-  updateStarInterviewAccess,
+  updateVipMembership,
   type AdminUserActivityFilter,
   type AdminUserMetrics,
   type AdminUserMutationGuardSummary,
   type AdminUserRoleFilter,
   type AdminUserSort,
-  type AdminUserStarInterviewFilter,
+  type AdminUserVipFilter,
   type AdminUserStatusFilter,
   type AdminUserSummary,
 } from "@/lib/admin-users";
@@ -48,14 +48,14 @@ const EMPTY_METRICS: AdminUserMetrics = {
   active3d: 0,
   neverSignedIn: 0,
   disabledUsers: 0,
-  starInterviewUnlimitedUsers: 0,
+  vipMembers: 0,
 };
 
 export function AdminUsersClient() {
   const [users, setUsers] = useState<AdminUserSummary[]>([]);
   const [metrics, setMetrics] = useState<AdminUserMetrics>(EMPTY_METRICS);
   const [currentUserId, setCurrentUserId] = useState("");
-  const [canManageStarInterviewAccess, setCanManageStarInterviewAccess] = useState(false);
+  const [canManageVipMembership, setCanManageVipMembership] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [totalFiltered, setTotalFiltered] = useState(0);
@@ -65,7 +65,7 @@ export function AdminUsersClient() {
   const [activity, setActivity] = useState<AdminUserActivityFilter>("all");
   const [role, setRole] = useState<AdminUserRoleFilter>("all");
   const [status, setStatus] = useState<AdminUserStatusFilter>("all");
-  const [starInterviewAccess, setStarInterviewAccess] = useState<AdminUserStarInterviewFilter>("all");
+  const [vipMembership, setVipMembership] = useState<AdminUserVipFilter>("all");
   const [sort, setSort] = useState<AdminUserSort>("activity_desc");
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [refreshing, setRefreshing] = useState(false);
@@ -135,13 +135,13 @@ export function AdminUsersClient() {
       if (hasLoadedRef.current) setRefreshing(true);
       else setState("loading");
       setMessage("");
-      void fetchAdminUsers({ page, pageSize, query, activity, role, status, starInterviewAccess, sort })
+      void fetchAdminUsers({ page, pageSize, query, activity, role, status, vipMembership, sort })
         .then((result) => {
           if (cancelled) return;
           setUsers(result.users);
           setMetrics(result.metrics);
           setCurrentUserId(result.currentUserId);
-          setCanManageStarInterviewAccess(result.canManageStarInterviewAccess);
+          setCanManageVipMembership(result.canManageVipMembership);
           setPage(result.page);
           setPageSize(result.pageSize);
           setTotalFiltered(result.totalFiltered);
@@ -166,7 +166,7 @@ export function AdminUsersClient() {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [activity, page, pageSize, query, revision, role, sort, starInterviewAccess, status]);
+  }, [activity, page, pageSize, query, revision, role, sort, vipMembership, status]);
 
   const hasActiveRecoveryCountdown = mutationGuards.some((guard) => (
     guard.recoveryRequestedAt
@@ -273,50 +273,26 @@ export function AdminUsersClient() {
     }
   }
 
-  async function requestStarInterviewAccessToggle(user: AdminUserSummary) {
-    if (!canManageStarInterviewAccess) return;
+  async function requestVipMembershipToggle(user: AdminUserSummary) {
+    if (user.role === "admin" || !canManageVipMembership || user.vipActive === null) return;
     if (confirmAccessId !== user.id) {
       setConfirmAccessId(user.id);
       setMessage(
-        `再次点击，将${user.starInterviewUnlimitedAccess ? "关闭" : "开启"} ${user.email} 的 StarInterview 无限访问权限。`,
+        `再次点击，将${user.vipActive ? "关闭" : "开启"} ${user.email} 的 StarJob VIP 会员资格。`,
       );
       return;
     }
     setSavingId(user.id);
     setMessage("");
     try {
-      const result = await updateStarInterviewAccess(user.id, !user.starInterviewUnlimitedAccess);
-      setUsers((current) => current
-        .map((item) => item.id === user.id ? {
-          ...item,
-          starInterviewUnlimitedAccess: result.starInterviewUnlimitedAccess,
-          starInterviewAccessSource: result.starInterviewAccessSource,
-        } : item)
-        .filter((item) => (
-          starInterviewAccess === "all"
-          || (starInterviewAccess === "unlimited" && item.starInterviewUnlimitedAccess)
-          || (starInterviewAccess === "standard" && !item.starInterviewUnlimitedAccess)
-        )));
-      setMetrics((current) => ({
-        ...current,
-        starInterviewUnlimitedUsers: Math.max(
-          0,
-          current.starInterviewUnlimitedUsers + (result.starInterviewUnlimitedAccess ? 1 : -1),
-        ),
-      }));
-      if (starInterviewAccess !== "all") {
-        const nextTotal = Math.max(0, totalFiltered - 1);
-        const nextTotalPages = Math.max(1, Math.ceil(nextTotal / pageSize));
-        setTotalFiltered(nextTotal);
-        setTotalPages(nextTotalPages);
-        if (page > nextTotalPages) setPage(nextTotalPages);
-      }
+      const result = await updateVipMembership(user.id, !user.vipActive);
+      setRevision((value) => value + 1);
       setConfirmAccessId("");
       setMessage(
-        `${user.email} 的 StarInterview 无限访问权限已${result.starInterviewUnlimitedAccess ? "开启" : "关闭"}。`,
+        `${user.email} 的 StarJob VIP 会员资格已${result.vipActive ? "开启" : "关闭"}。`,
       );
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "StarInterview 访问权限未能更新，原设置未改变。");
+      setMessage(error instanceof Error ? error.message : "StarJob VIP 会员资格未能更新，原设置未改变。");
     } finally {
       setSavingId("");
     }
@@ -327,7 +303,7 @@ export function AdminUsersClient() {
     setActivity("all");
     setRole("all");
     setStatus("all");
-    setStarInterviewAccess("all");
+    setVipMembership("all");
     setSort("activity_desc");
     setPage(1);
   }
@@ -374,7 +350,7 @@ export function AdminUsersClient() {
     || activity !== "all"
     || role !== "all"
     || status !== "all"
-    || starInterviewAccess !== "all"
+    || vipMembership !== "all"
     || sort !== "activity_desc",
   );
 
@@ -578,19 +554,20 @@ export function AdminUsersClient() {
         })}
         <button
           type="button"
+          disabled={metrics.vipMembers === null}
           onClick={() => {
-            setStarInterviewAccess(starInterviewAccess === "unlimited" ? "all" : "unlimited");
+            setVipMembership(vipMembership === "active" ? "all" : "active");
             setPage(1);
           }}
           className={cn(
             "pressable min-w-0 bg-[color:var(--background)] px-4 py-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--aurora)] sm:col-span-2 xl:col-span-1",
-            starInterviewAccess === "unlimited" ? "bg-[color:var(--surface-hover-bg)]" : "hover:bg-[color:var(--surface-hover-bg)]/55",
+            vipMembership === "active" ? "bg-[color:var(--surface-hover-bg)]" : "hover:bg-[color:var(--surface-hover-bg)]/55",
           )}
-          aria-pressed={starInterviewAccess === "unlimited"}
+          aria-pressed={vipMembership === "active"}
         >
-          <span className="flex items-center gap-2 text-xs font-medium text-ink-muted"><Sparkles aria-hidden="true" className="size-4 text-nebula-blue" />StarInterview 无限访问</span>
-          <strong className="mt-2 block text-2xl font-semibold tabular-nums tracking-[-0.04em] text-ink-primary">{metrics.starInterviewUnlimitedUsers}</strong>
-          <span className="mt-1 block text-xs text-ink-muted">查看已授权用户</span>
+          <span className="flex items-center gap-2 text-xs font-medium text-ink-muted"><Sparkles aria-hidden="true" className="size-4 text-nebula-blue" />StarJob VIP</span>
+          <strong className="mt-2 block text-2xl font-semibold tabular-nums tracking-[-0.04em] text-ink-primary">{metrics.vipMembers ?? "—"}</strong>
+          <span className="mt-1 block text-xs text-ink-muted">{metrics.vipMembers === null ? "等待会员数据迁移" : "查看单独开通的会员"}</span>
         </button>
       </section>
 
@@ -610,7 +587,7 @@ export function AdminUsersClient() {
           <label className="relative block sm:col-span-2 xl:col-span-2">
             <span className="mb-1.5 block text-xs font-medium text-ink-muted">关键词</span>
             <Search aria-hidden="true" className="pointer-events-none absolute bottom-3.5 left-4 size-4 text-ink-muted" />
-            <Input
+            <Input type="search"
               value={query}
               onChange={(event) => { setQuery(event.target.value); setPage(1); }}
               placeholder="邮箱、姓名、学校、方向或 ID"
@@ -645,17 +622,18 @@ export function AdminUsersClient() {
             </Select>
           </label>
           <label>
-            <span className="mb-1.5 block text-xs font-medium text-ink-muted">StarInterview</span>
+            <span className="mb-1.5 block text-xs font-medium text-ink-muted">StarJob VIP</span>
             <Select
-              value={starInterviewAccess}
+              disabled={metrics.vipMembers === null}
+              value={vipMembership}
               onChange={(event) => {
-                setStarInterviewAccess(event.target.value as AdminUserStarInterviewFilter);
+                setVipMembership(event.target.value as AdminUserVipFilter);
                 setPage(1);
               }}
             >
               <option value="all">不限</option>
-              <option value="unlimited">无限访问</option>
-              <option value="standard">标准访问</option>
+              <option value="active">已开通</option>
+              <option value="inactive">未开通</option>
             </Select>
           </label>
           <label className="sm:col-span-2 xl:col-span-1">
@@ -711,7 +689,7 @@ export function AdminUsersClient() {
                   </span>
                   <span className="flex flex-wrap items-center gap-2">
                     <StatusTag tone={user.role === "admin" ? "blue" : "neutral"}>{user.role === "admin" ? "管理员" : "普通用户"}</StatusTag>
-                    <StatusTag tone={user.starInterviewUnlimitedAccess ? "gold" : "neutral"}>{user.starInterviewUnlimitedAccess ? "StarInterview 无限访问" : "标准访问"}</StatusTag>
+                    <StatusTag tone={user.role === "admin" || user.vipActive ? "gold" : "neutral"}>{user.role === "admin" ? "管理员 · 不限额" : user.vipActive === null ? "会员状态待同步" : user.vipActive ? "StarJob VIP" : "VIP 未开通"}</StatusTag>
                     {disabled ? <StatusTag tone="danger">已停用</StatusTag> : null}
                     {user.accountType !== "wechat" && !user.emailConfirmedAt ? <StatusTag tone="neutral">邮箱未确认</StatusTag> : null}
                   </span>
@@ -735,17 +713,17 @@ export function AdminUsersClient() {
                       </div>
 
                       <div className="border-t border-[color:var(--line-ghost)] pt-5 xl:border-l xl:border-t-0 xl:pl-6 xl:pt-0">
-                        <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-ink-muted"><Sparkles aria-hidden="true" className="size-4" />StarInterview 访问</h3>
+                        <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-ink-muted"><Sparkles aria-hidden="true" className="size-4" />StarJob VIP</h3>
                         <div className="mt-3 flex items-center justify-between gap-4">
                           <div>
-                            <p className="text-sm font-semibold text-ink-primary">{user.starInterviewUnlimitedAccess ? "无限访问" : "标准访问"}</p>
-                            <p className="mt-1 text-xs leading-5 text-ink-muted">{user.starInterviewAccessSource === "admin_default" ? "沿用管理员默认权限，尚未单独设置" : user.starInterviewAccessSource === "explicit" ? "已由主管理员单独设置" : "普通用户默认权限"}</p>
+                            <p className="text-sm font-semibold text-ink-primary">{user.role === "admin" ? "管理员权益" : user.vipActive === null ? "待同步" : user.vipActive ? "已开通" : "未开通"}</p>
+                            <p className="mt-1 text-xs leading-5 text-ink-muted">{user.role === "admin" ? "按当前管理员身份授权，已开放的 AI 功能不限次数。" : user.vipActive === null ? "会员数据迁移后即可管理。" : user.vipActive ? "可使用会员简历功能，额度按使用周期恢复。" : "开通后，该账号即可使用会员简历功能。"}</p>
                           </div>
-                          <button type="button" role="switch" aria-checked={user.starInterviewUnlimitedAccess} aria-label={`调整 ${user.email} 的 StarInterview 无限访问`} disabled={!canManageStarInterviewAccess || refreshing || savingId === user.id} onClick={() => void requestStarInterviewAccessToggle(user)} className={cn("relative h-7 w-12 shrink-0 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--aurora)] disabled:cursor-not-allowed disabled:opacity-45", user.starInterviewUnlimitedAccess ? "border-nebula-blue/70 bg-nebula-blue/75" : "border-[color:var(--line)] bg-[color:var(--surface-hover-bg)]")}>
-                            <span className={cn("absolute left-0 top-1 size-[18px] rounded-full bg-white shadow-sm transition-transform", user.starInterviewUnlimitedAccess ? "translate-x-6" : "translate-x-1")} />
-                          </button>
+                          {user.role !== "admin" && <button type="button" role="switch" aria-checked={user.vipActive === true} aria-label={`调整 ${user.email} 的 StarJob VIP`} disabled={!canManageVipMembership || refreshing || savingId === user.id} onClick={() => void requestVipMembershipToggle(user)} className={cn("relative h-7 w-12 shrink-0 rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--aurora)] disabled:cursor-not-allowed disabled:opacity-45", user.vipActive ? "border-nebula-blue/70 bg-nebula-blue/75" : "border-[color:var(--line)] bg-[color:var(--surface-hover-bg)]")}>
+                            <span className={cn("absolute left-0 top-1 size-[18px] rounded-full bg-white shadow-sm transition-transform", user.vipActive ? "translate-x-6" : "translate-x-1")} />
+                          </button>}
                         </div>
-                        {!canManageStarInterviewAccess ? <p className="mt-3 text-xs leading-5 text-ink-muted">仅主管理员可调整此权限。</p> : confirmAccessId === user.id ? <p className="mt-3 text-xs leading-5 text-[#d8a8b7]">请再次点击开关确认变更。</p> : null}
+                        {!canManageVipMembership && user.vipActive !== null ? <p className="mt-3 text-xs leading-5 text-ink-muted">仅主管理员可调整此权限。</p> : confirmAccessId === user.id ? <p className="mt-3 text-xs leading-5 text-[#d8a8b7]">请再次点击开关确认变更。</p> : null}
                       </div>
                     </div>
                     <details className="mt-5 border-t border-[color:var(--line-ghost)] pt-4 text-xs text-ink-muted">
@@ -825,7 +803,7 @@ function formatGuardIdentity(guard: AdminUserMutationGuardSummary) {
 }
 
 function formatGuardMutationKind(value: AdminUserMutationGuardSummary["mutationKind"]) {
-  return value === "profile_auth" ? "账户资料与登录状态" : "StarInterview 访问权限";
+  return value === "profile_auth" ? "账户资料与登录状态" : "旧版诘星访问权限";
 }
 
 function getRecoveryRemainingSeconds(recoveryRequestedAt: string, now: number) {

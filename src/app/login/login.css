@@ -45,7 +45,7 @@
 .auth-gateway .login-form__method-switch .apple-segmented__item { min-height: 42px; border-radius: 10px; }
 .auth-gateway .login-form__method { border-radius: 10px; color: #677684; }
 .auth-gateway .login-form__method[aria-pressed="true"] { background: #fff; color: var(--auth-ink); box-shadow: 0 2px 4px #24374a0a; }
-.auth-gateway .field-shell { min-height: 48px; border: 1px solid #d4dcdd; border-radius: 12px; background: #fff; color: var(--auth-ink); box-shadow: none; }
+.auth-gateway .field-shell { min-height: 48px; border: 1px solid #d4dcdd; border-radius: var(--field-corner, var(--field-radius-single)); background: #fff; color: var(--auth-ink); box-shadow: none; }
 .auth-gateway .field-shell:hover { border-color: #a3b1b8; }
 .auth-password-toggle { position: absolute; right: 4px; top: 4px; width: 40px; height: 40px; display: grid; place-items: center; color: #697583; border-radius: 9px; }
 .auth-password-toggle:hover { color: #24374a; background: #edf1f3; }

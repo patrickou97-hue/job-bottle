@@ -11,9 +11,11 @@ import { exportResumeToPdf } from "./resumePdf";
 export function ResumePdfExportButton({
   preserveDraft,
   resume,
+  localPreview = false,
 }: {
   preserveDraft: () => boolean;
   resume: ResumeDocument;
+  localPreview?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -31,7 +33,7 @@ export function ResumePdfExportButton({
         setMessage("浏览器存储空间不足，当前简历尚未完整保存。请压缩或删除照片后重试。");
         return;
       }
-      const authenticated = await hasVerifiedDownloadSession();
+      const authenticated = localPreview || await hasVerifiedDownloadSession();
 
       if (!authenticated) {
         const query = searchParams.toString();

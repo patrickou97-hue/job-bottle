@@ -96,6 +96,7 @@ export async function createWechatNativeOrder(input: {
   amountFen: number;
   expiresAt: string;
   attach: string;
+  product?: "starjob-vip";
 }) {
   const config = requireWechatPayConfiguration();
   const payload = await requestWechatPay<{ code_url?: string }>({
@@ -104,10 +105,10 @@ export async function createWechatNativeOrder(input: {
     body: {
       appid: config.appId,
       mchid: config.mchId,
-      description: "诘星 StarInterview 余额充值",
+      description: input.product === "starjob-vip" ? "拾星 StarJob VIP 一次性开通" : "诘星 StarInterview 余额充值",
       out_trade_no: input.outTradeNo,
       time_expire: input.expiresAt,
-      notify_url: config.notifyUrl,
+      notify_url: input.product === "starjob-vip" ? "https://www.starjob.space/api/vip/checkout/wechat-notify" : config.notifyUrl,
       attach: input.attach,
       amount: { total: input.amountFen, currency: "CNY" },
     },

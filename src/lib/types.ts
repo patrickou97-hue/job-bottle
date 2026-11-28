@@ -406,6 +406,30 @@ export type ForumPostWithComments = ForumPostView & {
   comments: ForumCommentView[];
 };
 
+type StarJobVipOrder = {
+  id: string;
+  user_id: string;
+  amount_fen: number;
+  provider_order_id: string;
+  provider_transaction_id: string | null;
+  status: "pending" | "paid" | "closed";
+  code_url: string | null;
+  checkout_started_at: string;
+  provider_last_checked_at: string | null;
+  expires_at: string;
+  paid_at: string | null;
+};
+
+type StarJobVipMembership = {
+  plan: "free_launch" | "full";
+  free_claimed_at: string | null;
+  user_id: string;
+  order_id: string | null;
+  active: boolean;
+  activated_at: string;
+  last_started_at: string | null;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -1076,6 +1100,18 @@ export type Database = {
         };
         Relationships: [];
       };
+      starjob_vip_orders: {
+        Row: StarJobVipOrder;
+        Insert: Pick<StarJobVipOrder, "user_id" | "provider_order_id"> & Partial<StarJobVipOrder>;
+        Update: Partial<StarJobVipOrder>;
+        Relationships: [];
+      };
+      starjob_vip_memberships: {
+        Row: StarJobVipMembership;
+        Insert: Pick<StarJobVipMembership, "user_id"> & Partial<StarJobVipMembership>;
+        Update: Partial<StarJobVipMembership>;
+        Relationships: [];
+      };
       star_interview_recharge_orders: {
         Row: {
           id: string;
@@ -1159,6 +1195,36 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      claim_my_starjob_vip_free: { Args: Record<never, never>; Returns: boolean };
+      my_starjob_vip_status: { Args: Record<never, never>; Returns: Database["public"]["Functions"]["starjob_vip_available_uses"]["Returns"] };
+      reserve_my_starjob_vip_use: { Args: { p_id: string; p_task: string }; Returns: string };
+      finish_my_starjob_vip_use: { Args: { p_id: string; p_success: boolean }; Returns: boolean };
+      claim_starjob_vip_free: { Args: { p_user_id: string }; Returns: boolean };
+      set_starjob_vip_membership: {
+        Args: { p_actor: string; p_target: string; p_active: boolean };
+        Returns: string;
+      };
+      prepare_starjob_vip_order: {
+        Args: { p_user_id: string; p_provider_order_id: string };
+        Returns: { state: "active" | "processing" } | { state: "ready" | "create" | "expired"; order: StarJobVipOrder };
+      };
+      complete_starjob_vip_order: {
+        Args: { p_id: string; p_provider_order_id: string; p_transaction_id: string };
+        Returns: undefined;
+      };
+      starjob_vip_available_uses: {
+        Args: { p_user_id: string };
+        Returns: Pick<import("./starjob-vip").VipStatus, "unlimited" | "active" | "plan" | "basicHourlyRemaining" | "basicWeeklyRemaining" | "composeRemaining" | "composeWeeklyRemaining" | "advancedHourlyRemaining" |
+          "advancedWeeklyRemaining" | "composeResetAt" | "advancedHourlyResetAt" | "weeklyResetAt">;
+      };
+      reserve_starjob_vip_use: {
+        Args: { p_user_id: string; p_id: string; p_task: "compose" | "flash" | "advanced" | "standard" };
+        Returns: string;
+      };
+      finish_starjob_vip_use: {
+        Args: { p_user_id: string; p_id: string; p_success: boolean };
+        Returns: boolean;
+      };
       create_referral_code_for_review: {
         Args: {
           p_user_id: string;

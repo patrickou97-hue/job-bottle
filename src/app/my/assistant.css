@@ -1,0 +1,17 @@
+.application-assistant { border-block:1px solid var(--line-ghost); padding:1.4rem 0 1.65rem; color:var(--text-primary); scroll-margin-top:6rem }
+.application-assistant-heading,.application-assistant-prompts,.application-assistant-reply,.application-assistant-confirm {display:flex; align-items:center; gap:.65rem}
+.application-assistant-heading h2 {font-size:1rem;font-weight:650}
+.application-assistant-heading > span {color:#785826;background:#f4ead8;border:1px solid #d9c6a4;border-radius:4px;padding:0 .35rem;font:600 .71rem/1.6 Georgia,serif;letter-spacing:.04em}
+.application-assistant-prompts {flex-wrap:wrap;margin-top:.6rem}
+.application-assistant-prompts button {display:inline-flex;align-items:center;gap:.3rem;color:var(--text-secondary);font-size:.8rem;padding:.35rem .15rem}
+.application-assistant button:hover:enabled {filter:brightness(.92)}
+.application-assistant-turn {padding-top:1.1rem;font-size:.91rem;overflow-wrap:anywhere;white-space:pre-wrap}
+.application-assistant-reply {margin:.7rem 0;font-weight:550;align-items:baseline}
+.application-assistant-records {border-left:2px solid #c9d7df;padding-left:1rem;max-height:19rem;overflow:auto}
+.application-assistant-records li {display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.35rem 0}
+.application-assistant-records small {display:block;font-size:.78rem;color:var(--text-secondary)}
+.application-assistant-confirm {flex-wrap:wrap;margin-top:.7rem;font-size:.85rem}
+.application-assistant-confirm p {flex-basis:100%}
+.application-assistant-records button,.application-assistant-confirm button {padding:.4rem .7rem;border:1px solid var(--line-ghost);border-radius:7px}
+.application-assistant-confirm button:first-of-type {background:#294451;color:white}
+.application-assistant-confirm button[data-delete="true"] {background:#923d46}

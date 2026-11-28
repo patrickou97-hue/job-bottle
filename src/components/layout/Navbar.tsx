@@ -11,6 +11,7 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { SITE_NAME } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@/lib/types";
+import { useVipStatus } from "@/components/vip/useVipStatus";
 import { isSceneRoute, markSceneDeparture } from "@/lib/scene-transition";
 
 const navItems = [
@@ -45,6 +46,7 @@ type NavbarProfile = Pick<Profile, "id" | "display_name" | "role">;
 export function Navbar({ appearance = "work" }: { appearance?: "scene" | "work" }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { status: vip } = useVipStatus();
   const moreRef = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
     function dismiss(event: PointerEvent | KeyboardEvent) {
@@ -81,8 +83,8 @@ export function Navbar({ appearance = "work" }: { appearance?: "scene" | "work" 
       if (mounted) setProfile((data as NavbarProfile | null) ?? null);
     }
 
-    void loadProfile();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "TOKEN_REFRESHED") return;
       window.setTimeout(() => {
         if (mounted) void loadProfile();
       }, 0);
@@ -127,7 +129,7 @@ export function Navbar({ appearance = "work" }: { appearance?: "scene" | "work" 
   return (
     <>
       <header className={cn("app-navbar sticky top-0 z-40 border-b", appearance === "scene" && "app-navbar--scene")}>
-        <div className="mx-auto flex h-15 w-full max-w-[1320px] items-center gap-4 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-15 w-full max-w-[1320px] items-center gap-2 px-4 sm:gap-4 sm:px-6 lg:px-8">
         <div className="flex shrink-0 items-center">
           <Link href="/" className="flex items-center" aria-label="返回首页">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -207,6 +209,18 @@ export function Navbar({ appearance = "work" }: { appearance?: "scene" | "work" 
               })}
             </div>
           </details>
+
+        <Link href="/vip" className="starjob-vip-link text-sm font-medium" data-active={Boolean(vip?.active)}
+          aria-label={vip?.active ? "StarJob VIP，已解锁" : "StarJob VIP，待解锁"}
+          aria-current={pathname === "/vip" ? "page" : undefined}
+          onClick={(event) => handleSceneLink(event, "/vip")}
+        >
+          <span className="starjob-vip-name relative inline-flex items-center pr-2" lang="en">
+            <span className="starjob-vip-wordmark">StarJob</span>
+            <span className="nav-beta" aria-hidden="true">VIP</span>
+          </span>
+          {vip?.active ? null : <span className="starjob-vip-lock">待解锁</span>}
+        </Link>
 
         <div className="nav-account ml-auto hidden items-center gap-1 border-l pl-3 md:flex">
           {profile ? (

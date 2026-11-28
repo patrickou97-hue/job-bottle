@@ -1,0 +1,6 @@
+.assistant-composer { display: flex; align-items: flex-end; gap: 1rem; margin-top: .75rem; border: 1px solid var(--line-ghost); border-radius: var(--field-radius-chat); background: var(--surface-panel-bg,white); padding: .75rem; box-shadow: 0 2px 7px rgb(38 58 75 / 4%); }
+.assistant-composer:focus-within { outline: 2px solid #607e91; outline-offset: 2px; }
+.assistant-composer textarea { border-radius: 0; flex: 1; display: block; min-width: 0; min-height: 3.2rem; resize: vertical; background: transparent; color: inherit; outline: none; font: inherit; line-height: 1.65; padding: .15rem .3rem; }
+.assistant-composer button { flex: 0 0 auto; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: #284451; color: white; }
+.assistant-composer button:disabled { background: #e1e7e9; color: #687d85; }
+.assistant-user-message {width:fit-content;max-width:90%;margin-left:auto;border-radius:14px 14px 3px 14px;background:#e6edef;color:#264453;padding:.55rem .9rem}

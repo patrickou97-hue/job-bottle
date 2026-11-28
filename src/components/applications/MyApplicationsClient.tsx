@@ -13,6 +13,7 @@ import { getCurrentUserOrNull } from "@/lib/auth";
 import { fetchJobCalendarRecords } from "@/lib/jobs";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { formatDateTime, isValidHttpUrl, sanitizeApplicationUrl } from "@/lib/utils";
+import { ApplicationAssistant } from "@/components/applications/ApplicationAssistant";
 import { ProgressDrawer } from "@/components/applications/ProgressDrawer";
 import { StatusPill } from "@/components/applications/StatusPill";
 import { ApplicationWorkflowEditor } from "@/components/applications/ApplicationWorkflowRail";
@@ -39,6 +40,8 @@ const ENDED_STATUSES: ApplicationStatus[] = ["rejected", "withdrawn"];
 
 export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { loginNextPath?: string }) {
   const router = useRouter();
+  const [accountId, setAccountId] = useState<string | null>(null);
+  const identityRef = useRef<string | null>(null);
   const [applications, setApplications] = useState<ApplicationWithJob[]>([]);
   const [jobCalendarRecords, setJobCalendarRecords] = useState<JobCalendarRecord[]>([]);
   const [statusHistory, setStatusHistory] = useState<StatusHistory[]>([]);
@@ -75,6 +78,8 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
       }
       const supabase = createClient();
       const user = await getCurrentUserOrNull(supabase);
+      if (requestId !== loadRequestRef.current) return;
+      identityRef.current = user?.id ?? null;
       if (!user) {
         setRedirecting(true);
         router.replace(`/login?next=${encodeURIComponent(loginNextPath)}`);
@@ -83,6 +88,7 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
       setRedirecting(false);
       const applicationRows = await fetchMyApplications(supabase, user.id);
       if (requestId !== loadRequestRef.current) return;
+      setAccountId(user.id);
       setApplications(applicationRows);
       setJobCalendarRecords([]);
       void fetchJobCalendarRecords(supabase)
@@ -112,7 +118,23 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
       setCalendarReferenceTime(Date.now());
       void loadData();
     }, 0);
+    let reloadTimer: number | undefined;
+    const auth = isSupabaseConfigured() ? createClient().auth.onAuthStateChange((event, session) => {
+      const next = session?.user.id ?? null;
+      if ((event !== "SIGNED_IN" && event !== "SIGNED_OUT") || identityRef.current === next) return;
+      identityRef.current = next;
+      loadRequestRef.current++;
+      setAccountId(null);
+      setApplications([]);
+      setStatusHistory([]);
+      setDrawerApplication(null);
+      setWorkflowEditorApplication(null);
+      window.clearTimeout(reloadTimer);
+      reloadTimer = window.setTimeout(() => { void loadData(); }, 0);
+    }) : null;
     return () => {
+      auth?.data.subscription.unsubscribe();
+      window.clearTimeout(reloadTimer);
       window.clearTimeout(timer);
       loadRequestRef.current += 1;
     };
@@ -312,6 +334,10 @@ export function MyApplicationsClient({ loginNextPath = "/my-applications" }: { l
           <StatBlock value={loading || redirecting ? "—" : staleCount} label="7 天以上无进展" urgent={!loading && !redirecting && staleCount > 0} />
         </div>
       </section>
+
+      {accountId && !redirecting && !loadError && (
+        <ApplicationAssistant key={accountId} accountId={accountId} applications={applications} onChanged={loadData} />
+      )}
 
       {customJobOpen ? (
         <section className="border-y border-[color:var(--line-ghost)] py-5" aria-labelledby="custom-job-title">

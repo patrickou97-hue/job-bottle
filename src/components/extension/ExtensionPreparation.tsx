@@ -70,7 +70,7 @@ export function ExtensionPreparation({
           return;
         }
 
-        const cloudResumes = (await fetchMyResumes(supabase)).filter((resume) => !isSampleResume(resume));
+        const cloudResumes = (await fetchMyResumes(supabase, user.id)).filter((resume) => !isSampleResume(resume));
         if (cloudResumes.length > 0) {
           setResumes(cloudResumes);
           setSelectedId(cloudResumes[0].id);

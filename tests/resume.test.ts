@@ -44,3 +44,36 @@ test("登录时不会把访客示例简历重新认领为云端简历", () => {
     });
   }
 });
+
+test("最后一份简历删除后，旧访客缓存、另一页的旧副本和重新登录都不能恢复它", async () => {
+  const { loadLocalResumes, forgetLocalResume, initialResumeList, markResumeSynced, resumeRecordState } = await import(resumeModulePath);
+  const previous = Object.getOwnPropertyDescriptor(globalThis, "window");
+  const store = new Map<string, string>();
+  Object.defineProperty(globalThis, "window", { configurable: true, value: { localStorage: {
+    getItem: (k: string) => store.get(k) ?? null,
+    setItem: (k: string, v: string) => store.set(k,v),
+    removeItem: (k: string) => store.delete(k),
+  } } });
+  try {
+    const doc = touchResume({ ...createSampleResume(), title: "测试版本" });
+    store.set("job_bottle_resumes_v1", JSON.stringify([doc]));
+    assert.equal(loadLocalResumes()[0]?.id, doc.id);
+    saveLocalResumes([]);
+    assert.deepEqual(loadLocalResumes(), []);
+    assert.ok(forgetLocalResume(null, doc.id));
+    assert.deepEqual(initialResumeList(loadLocalResumes()), []);
+    saveLocalResumes([doc], "owner");
+    markResumeSynced("owner", doc.id);
+    assert.equal(resumeRecordState("owner", doc.id), "synced");
+    assert.ok(forgetLocalResume("owner", doc.id));
+    saveLocalResumes([doc], "owner");
+    assert.deepEqual(adoptLocalResumesForUser("owner", []), []);
+    assert.deepEqual(loadLocalResumes("owner"), []);
+    assert.equal(resumeRecordState("owner", doc.id), "deleted");
+    saveLocalResumes([doc], "another-user");
+    assert.equal(loadLocalResumes("another-user")[0]?.id, doc.id);
+  } finally {
+    if (previous) Object.defineProperty(globalThis, "window", previous);
+    else Reflect.deleteProperty(globalThis, "window");
+  }
+});

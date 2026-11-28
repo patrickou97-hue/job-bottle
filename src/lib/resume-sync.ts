@@ -2,6 +2,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   createEmptyResume,
   getResumeLanguage,
+  forgetLocalResume,
+  loadLocalResumes,
+  markResumeSynced,
+  resumeRecordState,
   normalizeResumeSectionOrder,
   type ResumeContent,
   type ResumeDocument,
@@ -12,12 +16,13 @@ import type { Database, ResumeRow } from "@/lib/types";
 
 type ResumeClient = SupabaseClient<Database>;
 const TEMPLATE_META_KEY = "__job_bottle_template_id";
+const SOURCE_META_KEY = "__job_bottle_generation_source";
 const SAMPLE_META_KEY = "__job_bottle_sample";
 const CLOUD_RETRY_DELAYS_MS = [450, 1_200] as const;
 const CLOUD_OPERATION_TIMEOUT_MS = 8_000;
 
 function isNonRetryableResumeError(error: unknown) {
-  return isMissingResumeTableError(error) || isResumeTemplateConstraintError(error);
+  return error instanceof DeletedResumeError || isMissingResumeTableError(error) || isResumeTemplateConstraintError(error);
 }
 
 async function withCloudRetry<T>(operation: () => Promise<T>) {
@@ -99,11 +104,12 @@ function getStoredSampleFlag(value: unknown) {
   return typeof flag === "boolean" ? flag : undefined;
 }
 
-function contentForStorage({ content, templateId, fontId, latinFontId, isSample }: ResumeDocument) {
+function contentForStorage({ content, templateId, fontId, latinFontId, generationSource, isSample }: ResumeDocument) {
   return {
     ...content,
     [TEMPLATE_META_KEY]: templateId,
     [SAMPLE_META_KEY]: isSample,
+    [SOURCE_META_KEY]: generationSource,
     ...resumeFontMetadata({ fontId, latinFontId }, getResumeLanguage(templateId)),
   };
 }
@@ -145,6 +151,7 @@ export function getResumeSyncErrorMessage(error: unknown) {
     typeof error === "object" && error ? String("message" in error ? error.message : "") : "";
   const normalized = message.toLowerCase();
 
+  if (error instanceof DeletedResumeError) return error.message;
   if (
     code === "401" ||
     code === "PGRST301" ||
@@ -165,6 +172,7 @@ export function getResumeSyncErrorMessage(error: unknown) {
 export function resumeRowToDocument(row: ResumeRow): ResumeDocument {
   const isSample = getStoredSampleFlag(row.content_json);
   const templateId = getResumeRowTemplateId(row);
+  const generated = (row.content_json as Record<string, unknown> | null)?.[SOURCE_META_KEY] === "materials";
   return {
     id: row.id,
     title: row.title,
@@ -177,19 +185,45 @@ export function resumeRowToDocument(row: ResumeRow): ResumeDocument {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     ...(isSample === undefined ? {} : { isSample }),
+    ...(generated ? { generationSource: "materials" } : {}),
   };
 }
 
-export async function fetchMyResumes(supabase: ResumeClient) {
-  return withCloudRetry(async () => {
-    const { data, error } = await supabase
-      .from("resumes")
-      .select("*")
-      .order("updated_at", { ascending: false });
+export class DeletedResumeError extends Error {
+  constructor() { super("这份简历已删除，请回到简历制作查看最新列表。"); }
+}
 
-    if (error) throw error;
-    return (data ?? []).map(resumeRowToDocument);
-  });
+export async function fetchMyResumes(supabase: ResumeClient, userId?: string) {
+  // Only reconcile rows known before this snapshot. A new save can finish while it is loading.
+  const previous = userId ? loadLocalResumes(userId).filter(row => resumeRecordState(userId, row.id) === "synced") : [];
+  const rows: ResumeRow[] = [];
+  const pageSize = 100;
+  let cursor = "";
+  for (;;) {
+    const page = await withCloudRetry(async () => {
+      let query = supabase.from("resumes").select("*");
+      if (userId) query = query.eq("user_id", userId);
+      if (cursor) query = query.gt("id", cursor);
+      const { data, error } = await query.order("id").limit(pageSize);
+      if (error) throw error;
+      return data ?? [];
+    });
+    rows.push(...page);
+    if (page.length < pageSize) break;
+    cursor = page[page.length - 1].id;
+  }
+  if (userId) {
+    const seen = new Set(rows.map(row => row.id));
+    const missing = previous.filter(row => !seen.has(row.id));
+    if (missing.length) {
+      const identity = await supabase.auth.getUser();
+      if (identity.error || identity.data.user?.id !== userId) throw new Error("请重新登录后重试。");
+    }
+    for (const row of rows) markResumeSynced(userId, row.id);
+    for (const row of missing) forgetLocalResume(userId, row.id);
+  }
+  return rows.filter(row => resumeRecordState(row.user_id, row.id) !== "deleted")
+    .sort((a,b) => Date.parse(b.updated_at) - Date.parse(a.updated_at)).map(resumeRowToDocument);
 }
 
 export async function upsertMyResume(
@@ -198,40 +232,59 @@ export async function upsertMyResume(
   resume: ResumeDocument,
 ) {
   const now = new Date().toISOString();
-  const payload: Database["public"]["Tables"]["resumes"]["Insert"] = {
-    id: resume.id,
-    user_id: userId,
+  const values = {
     title: resume.title || "未命名简历",
     target_role: resume.targetRole || null,
     job_target: resume.jobTarget || null,
     linked_job_id: resume.linkedJobId,
     template_id: resume.templateId,
     content_json: contentForStorage(resume),
-    created_at: resume.createdAt,
     updated_at: resume.updatedAt || now,
   };
 
   await withCloudRetry(async () => {
-    let { error } = await supabase
-      .from("resumes")
-      .upsert(payload, { onConflict: "id" });
-
-    // Older hosted projects may still have a narrower template check constraint.
-    // Keep the selected template inside content_json and retry with the stable
-    // compact value so switching layouts never prevents a cloud save.
-    if (error && isResumeTemplateConstraintError(error) && resume.templateId !== "compact") {
-      ({ error } = await supabase
-        .from("resumes")
-        .upsert({ ...payload, template_id: "compact" }, { onConflict: "id" }));
+    async function write(row: typeof values) {
+      const state = resumeRecordState(userId, resume.id);
+      if (state === "deleted") throw new DeletedResumeError();
+      if (state !== "synced") {
+        return supabase.from("resumes").upsert({
+          ...row, id: resume.id, user_id: userId, created_at: resume.createdAt,
+        }, { onConflict: "id" }).abortSignal(AbortSignal.timeout(CLOUD_OPERATION_TIMEOUT_MS));
+      }
+      // Editing a previously synced resume must never insert it again after a remote delete.
+      const result = await supabase.from("resumes").update(row)
+        .eq("user_id", userId).eq("id", resume.id).select("id").maybeSingle();
+      if (!result.error && !result.data) {
+        await confirmResumeAbsent(supabase, userId, resume.id);
+        throw new DeletedResumeError();
+      }
+      return result;
     }
-
+    let { error } = await write(values);
+    if (error && isResumeTemplateConstraintError(error) && resume.templateId !== "compact") {
+      ({ error } = await write({ ...values, template_id: "compact" }));
+    }
     if (error) throw error;
+    markResumeSynced(userId, resume.id);
   });
 }
 
-export async function deleteMyResume(supabase: ResumeClient, id: string) {
-  await withCloudRetry(async () => {
-    const { error } = await supabase.from("resumes").delete().eq("id", id);
-    if (error) throw error;
-  });
+export async function deleteMyResume(supabase: ResumeClient, userId: string, id: string) {
+  const auth = await supabase.auth.getUser();
+  if (auth.error || auth.data.user?.id !== userId) throw new Error("请重新登录后删除。");
+  const result = await supabase.from("resumes").delete()
+    .eq("user_id", userId).eq("id", id).select("id").maybeSingle();
+  if (result.error) throw result.error;
+  if (!result.data) {
+    // A never-synced draft or an already completed delete may legitimately affect zero rows.
+    // A visible row here means the DELETE did not take effect.
+    await confirmResumeAbsent(supabase, userId, id);
+  }
+}
+
+async function confirmResumeAbsent(supabase: ResumeClient, userId: string, id: string) {
+  const remaining = await supabase.from("resumes").select("id").eq("user_id", userId).eq("id", id).maybeSingle();
+  if (remaining.error || remaining.data) throw new Error("云端简历变更未完成。");
+  const { data, error } = await supabase.auth.getUser();
+  if (error || data.user?.id !== userId) throw new Error("请重新登录后重试。");
 }
