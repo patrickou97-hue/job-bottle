@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowRight, Check, ChevronDown, ChevronRight, FileText, LoaderCircle, MessageSquareText, RotateCcw, Search, Sparkles, X, Zap } from "lucide-react";
 import { useState } from "react";
 import { MotionDialog } from "@/components/ui/MotionDialog";
+import { VipBenefitDemos } from "@/components/vip/VipBenefitDemos";
 import { VipMark } from "@/components/vip/VipMark";
 import { StarJobWordmark } from "@/components/brand/StarJobWordmark";
 import { refreshVipStatus, useVipStatus } from "@/components/vip/useVipStatus";
@@ -98,6 +99,7 @@ function VipMembershipPage({ basicModelId, status, statusError }: {
       </nav>
       <section className="vip-benefits" id="vip-benefits" aria-labelledby="vip-benefits-title">
         <div className="vip-section-heading"><h2 id="vip-benefits-title">权益内容</h2><span><del>¥{VIP_PRICE}</del> <small>限时免费开通</small></span></div>
+        <VipBenefitDemos />
         <ul>
           <li><Search /><div><h3>问公司，也能找岗位</h3><p>问“中金公司怎么样？”，直接看公司业务和招聘方向。也可以问“有哪些世界五百强科技公司的产品岗？”，对照榜单、公司简介和招聘公告，再追问感兴趣的那一家。</p><Link href="/explore#job-assistant" className="vip-text-link">去找岗位 <ArrowRight size={15} /></Link></div><strong>AI 岗位问答</strong></li>
           <li><FileText /><div><h3>把手头的材料写成简历</h3><p>把周报、项目文档和 SQL 一起交给{VIP_FLASH_LABEL}，按教育、实习、项目等模块整理成初稿。缺少的学校、专业和照片可在编辑器补充。</p><Link href="/resume/materials" className="vip-text-link">从材料开始 <ArrowRight size={15} /></Link></div><strong>每天 {VIP_COMPOSE_DAILY_LIMIT} 次 · 每周 {VIP_COMPOSE_WEEKLY_LIMIT} 次</strong></li>

@@ -240,3 +240,29 @@
   .vip-welcome .vip-pass-stage { max-width: 300px; justify-self: center; padding: 20px 10px; }
   .vip-welcome nav { margin-top: 4px; }
 }
+
+.vip-demos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(10px, 1.6vw, 22px); margin-top: 24px; scroll-margin-top: 90px; }
+.vip-demo { margin: 0; min-width: 0; }
+.vip-demo > svg { display: block; width: 100%; height: auto; border-radius: 9px; font-family: var(--font-sans-cn); }
+.vip-demo-em { fill: #243b52; font-size: 16px; font-weight: 650; }
+.vip-demo-body { fill: #354a5d; font-size: 15px; }
+.vip-demo-meta { fill: #506579; font-size: 13px; }
+.vip-demo figcaption { display: flex; align-items: center; justify-content: space-between; padding: 4px 2px 0; font-size: 13px; font-weight: 600; color: var(--vip-copy); }
+.vip-demo button { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; color: var(--vip-copy); cursor: pointer; }
+.vip-demo button:hover { background: #e6ecf1; }
+@media (max-width: 800px) {
+  .vip-demos { grid-template-columns: repeat(auto-fit, minmax(min(100%, 285px), 1fr)); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .vip-demo [data-play=true] :is(.vip-demo-first, .vip-demo-middle, .vip-demo-last) { animation: vip-demo-settle .44s cubic-bezier(.2,.7,.25,1) backwards; }
+  .vip-demo [data-play=true] .vip-demo-middle { animation-delay: .55s; }
+  .vip-demo [data-play=true] .vip-demo-last { animation-delay: 1.12s; }
+  .vip-demo [data-play=true] .vip-demo-line { stroke-dasharray: 1; animation: vip-route-trace .8s .24s ease-out both; }
+  .vip-demo [data-play=true] .vip-demo-highlight { transform-box: fill-box; transform-origin: left; animation: vip-highlight-ink .52s .94s ease-out backwards; }
+}
+@keyframes vip-demo-settle { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes vip-highlight-ink { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .vip-demo button { display: none; }
+  .vip-demo figcaption { padding-block: 10px; }
+}
