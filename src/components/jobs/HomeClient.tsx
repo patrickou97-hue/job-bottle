@@ -555,6 +555,7 @@ export function HomeClient() {
 
       <JobSearchAssistant
         key={currentUserId ?? "guest"} current={{ ...filters, scope: discoveryScope, view: jobView }}
+        scopedIds={discoveryScope === "all" && jobView === "all" ? undefined : baseVisibleJobs.map(job => job.id)}
         facets={facets} profile={profile}
         focusedCompany={jobs.find(job => job.id === focusedJobId)?.company_name}
         onApply={({ scope, view, ...nextFilters }) => {

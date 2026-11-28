@@ -1,3 +1,5 @@
+import { personalJobRouting } from "@/lib/job-search-assistant";
+import { recommendFromResume } from "@/lib/resume-job-recommendations";
 import { careerAdvice } from "@/lib/job-career-advice";
 import { readCompanyProfile } from "@/lib/company-public-profile";
 import { companyLookupTerms, companyRecruitmentFacts, namedCompanyOverview, verifiedCompanyProfile } from "@/lib/company-overview";
@@ -25,14 +27,18 @@ async function interpretQuestion(input: z.infer<typeof searchQuestion>, config: 
   const options = evidence?.length ? { ...input.options, roleTerms: undefined,
     roleEvidence: evidence.map(({ source, term }, id) => [id, source, term]) } : input.options;
   const routing = input.history ? instructions + `
-优先判断用户是要咨询还是要筛选。求职建议、公司对比、评价、校招友好度、带数量的雇主清单、希望你搜网或明确不用列岗位，优先输出 {"action":"advice","query":"查证这些条件的公开网页检索词","count":10,"industry":"外企"}。缺少筛选字段时用咨询回答，不应降级成只筛行业或要求重新提问。读 history 延续用户的条件。count 为用户想要的企业数（最多20）；没指定且需要推荐可取5，仅提问或不需要清单取0。一般知识无需联网时 query 为空，评价、时效和推荐要写实际搜索词。搜索词只含必要的公开检索概念，去掉个人身份、联系方式。industry 仅在明确要求企业性质且可对应 options 时提供。单纯筛选岗位或指定查某家公司仍走原有流程。` : instructions;
-  const content = JSON.stringify({ ...input, options });
+优先判断用户是要咨询还是要筛选。求职建议、公司对比、评价、校招友好度、带数量的雇主清单、希望你搜网或明确不用列岗位，优先输出 {"action":"advice","query":"查证这些条件的公开网页检索词","count":10,"industry":"外企"}。缺少筛选字段时用咨询回答，不应降级成只筛行业或要求重新提问。读 history 延续用户的条件。count 为用户想要的企业数（最多20）；没指定且需要推荐可取5，仅提问或不需要清单取0。一般知识无需联网时 query 为空，评价、时效和推荐要写实际搜索词。搜索词只含必要的公开检索概念，去掉个人身份、联系方式。industry 仅在明确要求企业性质且可对应 options 时提供。单纯筛选岗位或指定查某家公司仍走原有流程。
+${personalJobRouting}` : instructions;
+  const content = JSON.stringify({ ...input, scopedIds: undefined, options });
   for (const repair of [false, true]) {
     const system = repair ? routing + "\n上一次返回的 JSON 格式有误。只返回一个合法 JSON 对象；资料编号数组只填整数。" : routing;
     const reply = await callDeepSeek({ ...config, messages: [{ role: "system", content: system }, { role: "user", content }],
       maxTokens: 2300, timeoutMs: repair ? 12_000 : 22_000, externalSignal: signal });
     try {
       const intent = searchIntent.parse(JSON.parse(reply));
+      if (input.history && intent.action === "recommend" && !intent.reset && Object.keys(intent.changes).length === 0) {
+        return { action: "personal_jobs" as const, terms: [], count: 5 };
+      }
       if ("changes" in intent && intent.changes.role && evidence?.length && !intent.changes.role.decisions) continue;
       return intent;
     } catch (error) {
@@ -51,7 +57,7 @@ export async function POST(request: NextRequest) {
     }
     return identity;
   }
-  if (Number(request.headers.get("content-length")) > 160000) return vipJson({ error: "筛选条件过长。" }, 413);
+  if (Number(request.headers.get("content-length")) > 560000) return vipJson({ error: "筛选条件过长。" }, 413);
   const raw = await request.json().catch(() => null);
   const input = searchQuestion.safeParse(raw);
   if (!input.success) return vipJson({ error: "请缩短问题，或刷新岗位列表重试。" }, 400);
@@ -72,6 +78,10 @@ export async function POST(request: NextRequest) {
     const intent = explicitName && (verifiedCompanyProfile(explicitName) || !config)
       ? { action: "company" as const, name: explicitName, topic: "overview" as const }
       : fastRecommendation ?? await interpretQuestion(input.data, config!, request.signal);
+    if (intent.action === "personal_jobs") {
+      const { message, history, current, scopedIds } = input.data;
+      return vipJson(await recommendFromResume(db, identity.userId, { ...intent, message, history, filters: current, scopedIds }, config!, request.signal));
+    }
     if (intent.action === "advice") return vipJson(await careerAdvice(input.data, intent, config!, db, request.signal));
     if (intent.action !== "company") {
       if (intent.action !== "clarify" && "keyword" in intent.changes && intent.changes.keyword) {

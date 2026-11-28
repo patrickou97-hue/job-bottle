@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ChevronRight, MessageSquareText, Sparkles } from "lucide-react";
 import { AssistantComposer } from "@/components/ui/AssistantComposer";
@@ -11,7 +12,7 @@ import type { ApplicationWithJob } from "@/lib/types";
 
 type RecordItem = { id: string; updatedAt: string; title: string; detail: string };
 type Proposal = { mode: "delete" } | { mode: "update"; edit: AssistantEdit };
-type Turn = { create?: { id: string; draft: AssistantCreate }; id: number; message: string; reply: string; clarification?: string; rows: RecordItem[]; proposal?: Proposal; selected?: string };
+type Turn = { jobs?: { jobId: string; name: string; reason: string }[]; create?: { id: string; draft: AssistantCreate }; id: number; message: string; reply: string; clarification?: string; rows: RecordItem[]; proposal?: Proposal; selected?: string };
 const prompts = ["哪些投递超过 7 天没有进展？", "新增一条外部岗位投递"];
 
 async function callAssistant(body: object, signal: AbortSignal) {
@@ -73,13 +74,17 @@ function AssistantConversation({ accountId, applications, onChanged }: Assistant
     const controller = new AbortController();
     request.current = controller;
     const id = (turns.at(-1)?.id ?? 0) + 1;
-    const context = turns.slice(-3).flatMap((turn) => turn.create ? [turn.message, JSON.stringify(turn.create.draft)] : turn.clarification ? [turn.message, turn.clarification] : [turn.message]);
+    const context = turns.slice(-3).flatMap((turn) => turn.create ? [turn.message, JSON.stringify(turn.create.draft)] : turn.clarification ? [turn.message, turn.clarification] : turn.jobs ? [turn.message, (turn.reply + " " + turn.jobs.map(job => job.name).join("、")).slice(0, 1000)] : [turn.message]);
     const previousIds = last?.selected ? [last.selected] : last?.rows.map((r) => r.id) ?? [];
     setBusy(true); setText("");
     setTurns((all) => [...all, { id, message: message.trim(), reply: "", rows: [] }]);
     try {
       const result = await callAssistant({ mode: "chat", accountId, message: message.trim(), history: context }, controller.signal);
       const intent: AssistantIntent = result.intent;
+      if (intent.action === "personal_jobs") {
+        patchTurn(id, { reply: result.advice.answer + " " + result.advice.note, jobs: result.advice.items });
+        return;
+      }
       if (intent.action === "clarify") { patchTurn(id, { reply: intent.question, clarification: intent.question }); return; }
       if (intent.action === "create") {
         const draft = intent.draft;
@@ -134,6 +139,9 @@ function AssistantConversation({ accountId, applications, onChanged }: Assistant
         return <div className="application-assistant-turn" key={turn.id}>
           <p className="application-assistant-message assistant-user-message">{turn.message}</p>
           <div className="application-assistant-reply"><Sparkles size={15} aria-hidden="true"/><p>{turn.reply || "正在整理…"}</p></div>
+          {!!turn.jobs?.length && <ol className="application-assistant-records">{turn.jobs.map(job => <li key={job.jobId}>
+            <span><Link className="text-action" href={`/jobs/${job.jobId}`}>{job.name}</Link><small>{job.reason}</small></span>
+          </li>)}</ol>}
           {turn.rows.length > 0 && <ol className="application-assistant-records">{turn.rows.map((item, index) => <li key={item.id}>
             <span><strong>{index + 1}. {item.title}</strong><small>{item.detail}</small></span>
             {latest && turn.proposal && turn.rows.length > 1 && <button type="button" disabled={busy} aria-pressed={turn.selected === item.id} onClick={() => patchTurn(turn.id, { selected: item.id })}>{turn.selected === item.id ? "已选中" : "选择"}</button>}

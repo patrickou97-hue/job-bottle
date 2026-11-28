@@ -28,11 +28,22 @@ export const searchOptions = z.object({
 }).strict();
 export const searchQuestion = z.object({
   message: z.string().trim().min(1).max(500), current: searchState,
+  scopedIds: z.array(z.uuid()).max(10000).optional(),
   history: z.array(z.object({ question: z.string().max(500), answer: z.string().max(1800) })).max(4).optional(),
   options: searchOptions, companies: z.array(term).max(20).optional(), focusedCompany: term.optional(), clarification: z.string().max(800).optional(),
 }).strict();
 
+
+export const personalJobIntent = z.object({
+  action: z.literal("personal_jobs"),
+  count: z.number().int().min(1).max(20).default(5),
+  terms: z.array(z.string().trim().min(1).max(60)).max(12).default([]),
+}).strict();
+
+export const personalJobRouting = `用户希望推荐要投的岗位，例如“有没有推荐的”“我适合投什么”“根据我的经历推荐上海岗位”，以及对这类推荐追加条件，输出 {"action":"personal_jobs","count":5,"terms":["用户明确的方向、地区或相关职位词"]}。没有方向时 terms=[]，无需追问简历，系统会读取本人最新简历并推荐。不要将单纯的公司评价、公司名单、条件筛选或推荐优先跟进已有投递识别成个人岗位推荐。`;
+
 export const searchIntent = z.discriminatedUnion("action", [
+  personalJobIntent,
   z.object({ action: z.literal("advice"), query: z.string().trim().max(128).default(""), count: z.number().int().min(0).max(20).default(0), industry: term.optional() }).strict(),
   z.object({ action: z.literal("clarify"), question: z.string().trim().min(1).max(240) }).strict(),
   z.object({ action: z.literal("company"), name: term.min(1), searchNames: z.array(term.min(2)).max(3).optional(), background: z.string().trim().max(500).optional(), topic: z.enum(["overview", "business", "roles", "locations", "requirements", "deadline", "salary"]) }).strict(),
@@ -49,7 +60,7 @@ export function directRankedProductIntent(message: string) {
 }
 
 export function resolveSearch(input: z.infer<typeof searchQuestion>, intent: z.infer<typeof searchIntent>) {
-  if (intent.action === "advice" || intent.action === "clarify" || intent.action === "company") return intent;
+  if (intent.action === "personal_jobs" || intent.action === "advice" || intent.action === "clarify" || intent.action === "company") return intent;
   const next: SearchState = intent.reset ? {
     keyword: "", industry: "", batchType: "", location: "", categories: [], tags: [],
     sortBy: "start_date_desc", scope: "all", view: "all",

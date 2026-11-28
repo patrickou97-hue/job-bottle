@@ -13,6 +13,7 @@ import type { Job, Profile } from "@/lib/types";
 
 type Props = {
   current: SearchState;
+  scopedIds?: string[];
   facets: { roleEvidence: EvidenceItem[]; roleTerms: string[]; locations: string[]; industries: string[]; batchTypes: string[]; categories: string[] };
   profile: Profile | null;
   focusedCompany?: string;
@@ -21,7 +22,7 @@ type Props = {
 type Row = { id: string; company: string; title: string; detail: string; evidenceUrl?: string; profile?: CompanyProfile };
 type Overview = { name: string; related?: boolean; introduction?: string; profile?: CompanyProfile; facts: { label: string; value: string }[]; count: number };
 type Citation = { title: string; url: string };
-type AdviceItem = { name: string; reason: string; jobId?: string; sources: Citation[] };
+type AdviceItem = { company?: string; name: string; reason: string; jobId?: string; sources: Citation[] };
 type Turn = { items?: AdviceItem[]; sources?: Citation[]; note?: string; ranked?: boolean; overview?: Overview; message: string; answer: string; rows?: Row[]; question?: string; companies?: string[]; total?: number };
 
 function rowFor(job: Job, state: SearchState, reason: string): Row {
@@ -50,7 +51,7 @@ export function JobSearchAssistant({ children, ...props }: Props & { children: R
   </section>;
 }
 
-function SearchConversation({ current, facets, profile, focusedCompany, onApply, chat, children }: Props & { chat: boolean; children: ReactNode }) {
+function SearchConversation({ current, scopedIds, facets, profile, focusedCompany, onApply, chat, children }: Props & { chat: boolean; children: ReactNode }) {
   const [text, setText] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [busy, setBusy] = useState(false);
@@ -104,11 +105,11 @@ function SearchConversation({ current, facets, profile, focusedCompany, onApply,
         question: turn.message, answer: [turn.answer, turn.overview?.name, turn.overview?.introduction,
           ...(turn.items ?? []).map(item => item.name + "：" + item.reason), ...(turn.rows ?? []).map(row => row.company + " · " + row.title)].filter(Boolean).join("\n").slice(0, 1800),
       }));
-      const data = await post({ current, options, message, history, focusedCompany, companies: last?.companies,
+      const data = await post({ current, scopedIds, options, message, history, focusedCompany, companies: last?.companies,
         clarification: last?.question ? last.message + "\n" + last.question : undefined });
       let turn: Turn;
       if (data.action === "advice") {
-        turn = { message, answer: data.answer, items: data.items, sources: data.sources, note: data.note, companies: data.items.map((item: AdviceItem) => item.name) };
+        turn = { message, answer: data.answer, items: data.items, sources: data.sources, note: data.note, companies: data.items.map((item: AdviceItem) => item.company ?? item.name) };
       } else if (data.action === "clarify") {
         turn = { message, answer: data.question, question: data.question, companies: data.companies ?? last?.companies };
       } else if (data.action === "company") {
@@ -205,7 +206,7 @@ function SearchConversation({ current, facets, profile, focusedCompany, onApply,
               <p className="job-company-listings">{turn.overview.count > 0 ? "拾星收录 " + turn.overview.count + " 条招聘信息" +
                 (turn.overview.count > 3 ? "，以下为最近更新的 3 条。" : "。") : turn.rows?.length ? "以下为库中名称或检索词相关的招聘记录，公司主体关系待核实。" : "岗位库暂未匹配到这家公司的招聘记录。"}</p>
             </article> : <p style={{whiteSpace: "pre-line"}}>{turn.answer}</p>}
-            {turn.items && turn.items.length > 0 && <ol>{turn.items.map(item => <li key={item.name}>
+            {turn.items && turn.items.length > 0 && <ol>{turn.items.map(item => <li key={item.jobId ?? item.name}>
               <strong>{item.name}</strong><p>{item.reason}</p>
               {item.jobId && <Link className="job-company-source" href={`/jobs/${item.jobId}`}>查看站内招聘公告</Link>}
               <AdviceSources sources={item.sources} />

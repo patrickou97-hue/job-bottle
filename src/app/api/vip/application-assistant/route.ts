@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createCustomApplication } from "@/lib/applications";
 import { assistantCreate, assistantEdit, editorPatch } from "@/lib/application-assistant";
+import { recommendFromResume } from "@/lib/resume-job-recommendations";
+import { getDeepSeekConfiguration } from "@/lib/deepseek-config";
 import { interpretApplicationMessage } from "@/lib/application-assistant-model";
 import { UpstreamError } from "@/lib/deepseek-json";
 import { createClient } from "@/lib/supabase/server";
 import { checkVipIdentity, isVipSameOrigin, vipJson } from "@/lib/starjob-vip-server";
 
-export const maxDuration = 60;
+export const maxDuration = 90;
 const target = { accountId: z.uuid(), id: z.uuid(), updatedAt: z.iso.datetime({ offset: true }) };
 const bodySchema = z.discriminatedUnion("mode", [
   z.object({ mode: z.literal("chat"), accountId: z.uuid(), message: z.string().trim().min(1).max(700), history: z.array(z.string().max(1000)).max(6) }).strict(),
@@ -34,6 +36,12 @@ export async function POST(request: NextRequest) {
     if (!slot.data) return vipJson({ error: "短时间内请求较多，请稍后再试。" }, 429);
     try {
       const intent = await interpretApplicationMessage(input.message, input.history, request.signal);
+      if (intent.action === "personal_jobs") {
+        const config = getDeepSeekConfiguration();
+        if (!config) throw new Error("MODEL_UNAVAILABLE");
+        const advice = await recommendFromResume(db, userId, { ...intent, message: input.message, history: input.history }, config, request.signal);
+        return vipJson({ intent, advice });
+      }
       return vipJson({ intent });
     } catch (error) {
       if ((error instanceof Error && error.message === "MODEL_UNAVAILABLE")

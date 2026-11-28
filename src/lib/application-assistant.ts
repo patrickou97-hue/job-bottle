@@ -1,3 +1,4 @@
+import { personalJobIntent } from "./job-search-assistant";
 import { z } from "zod";
 import { APPLICATION_STATUS } from "./constants";
 import { getApplicationWorkflow, getApplicationWorkflowLabel } from "./application-workflow";
@@ -32,6 +33,7 @@ export const assistantCreate = z.object({
 export type AssistantCreate = z.infer<typeof assistantCreate>;
 
 export const assistantIntent = z.discriminatedUnion("action", [
+  personalJobIntent,
   z.object({ action: z.literal("create"), draft: assistantCreate }).strict(),
   z.object({ action: z.literal("query"), filter: selector }).strict(),
   z.object({ action: z.literal("update"), filter: selector, edit: assistantEdit }).strict(),

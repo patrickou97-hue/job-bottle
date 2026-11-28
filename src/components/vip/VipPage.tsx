@@ -10,7 +10,7 @@ import { VipBenefitDemos } from "@/components/vip/VipBenefitDemos";
 import { VipMark } from "@/components/vip/VipMark";
 import { StarJobWordmark } from "@/components/brand/StarJobWordmark";
 import { refreshVipStatus, useVipStatus } from "@/components/vip/useVipStatus";
-import { BASIC_POLISH_HOURLY_LIMIT, BASIC_POLISH_WEEKLY_LIMIT, VIP_BASIC_POLISH_HOURLY_LIMIT, VIP_BASIC_POLISH_WEEKLY_LIMIT, VIP_ADVANCED_MODEL, VIP_ADVANCED_HOURLY_LIMIT, VIP_ADVANCED_WEEKLY_LIMIT, VIP_COMPOSE_DAILY_LIMIT, VIP_COMPOSE_WEEKLY_LIMIT, VIP_FLASH_LABEL, VIP_PRICE } from "@/lib/starjob-vip";
+import { VIP_BASIC_POLISH_HOURLY_LIMIT, VIP_BASIC_POLISH_WEEKLY_LIMIT, VIP_ADVANCED_MODEL, VIP_ADVANCED_HOURLY_LIMIT, VIP_ADVANCED_WEEKLY_LIMIT, VIP_COMPOSE_DAILY_LIMIT, VIP_COMPOSE_WEEKLY_LIMIT, VIP_PRICE } from "@/lib/starjob-vip";
 
 export function VipPage({ basicModelId }: { basicModelId: string }) {
   const { status, error: statusError } = useVipStatus();
@@ -106,17 +106,17 @@ function VipMembershipPage({ basicModelId, status, statusError }: {
         <div className="vip-section-heading"><h2 id="vip-benefits-title">权益内容</h2><span><del>¥{VIP_PRICE}</del> <small>限时免费开通</small></span></div>
         <VipBenefitDemos />
         <ul>
-          <li><Search /><div><h3>问公司，也能找岗位</h3><p>问“中金公司怎么样？”，直接看公司业务和招聘方向。也可以问“有哪些世界五百强科技公司的产品岗？”，对照榜单、公司简介和招聘公告，再追问感兴趣的那一家。</p><Link href="/explore#job-assistant" className="vip-text-link">去找岗位 <ArrowRight size={15} /></Link></div><strong>AI 岗位问答</strong></li>
-          <li><FileText /><div><h3>把手头的材料写成简历</h3><p>把周报、项目文档和 SQL 一起交给{VIP_FLASH_LABEL}，按教育、实习、项目等模块整理成初稿。缺少的学校、专业和照片可在编辑器补充。</p><Link href="/resume/materials" className="vip-text-link">从材料开始 <ArrowRight size={15} /></Link></div><strong>每天 {VIP_COMPOSE_DAILY_LIMIT} 次 · 每周 {VIP_COMPOSE_WEEKLY_LIMIT} 次</strong></li>
-          <li><Zap /><div><h3>按目标岗位润色一段经历</h3><p>在简历编辑器选中一段，交给基础模型精简或改写。普通用户每小时 {BASIC_POLISH_HOURLY_LIMIT} 次、每周 {BASIC_POLISH_WEEKLY_LIMIT} 次。</p><Link href="/resume" className="vip-text-link">去简历制作 <ArrowRight size={15} /></Link></div><strong>每小时 {VIP_BASIC_POLISH_HOURLY_LIMIT} 次 · 每周 {VIP_BASIC_POLISH_WEEKLY_LIMIT} 次</strong></li>
-          <li><MessageSquareText /><div><h3>跟进已经投出的岗位</h3><p>说“帮我记录路易威登管培生的一面”，核对后即可新增外部投递。也可以问哪些投递该跟进，更新面试阶段、追加备注或删除记录。</p><Link href="/my#application-assistant" className="vip-text-link">打开投递助手 <ArrowRight size={15} /></Link></div><strong>AI 投递助手</strong></li>
+          <li><Search /><div><h3>问公司，也能找岗位</h3><p>不知道投什么岗位？直接问拾星 AI，根据你的简历推荐匹配的岗位。不了解公司？从公司详情到可投岗位，一次看全。</p><Link href="/explore#job-assistant" className="vip-text-link">去找岗位 <ArrowRight size={15} /></Link></div><strong>AI 岗位问答</strong></li>
+          <li><FileText /><div><h3>把手头的材料写成简历</h3><p>将项目材料、过往经历直接交给拾星 AI，自动提炼贡献、梳理时间线，不用逐字填写就能拿到成品简历。</p><Link href="/resume/materials" className="vip-text-link">从材料开始 <ArrowRight size={15} /></Link></div><strong>每天 {VIP_COMPOSE_DAILY_LIMIT} 次 · 每周 {VIP_COMPOSE_WEEKLY_LIMIT} 次</strong></li>
+          <li><Zap /><div><h3>按目标岗位润色一段经历</h3><p>更多的简历 AI 润色次数，更多的可能性。</p><Link href="/resume" className="vip-text-link">去简历制作 <ArrowRight size={15} /></Link></div><strong>每小时 {VIP_BASIC_POLISH_HOURLY_LIMIT} 次 · 每周 {VIP_BASIC_POLISH_WEEKLY_LIMIT} 次</strong></li>
+          <li><MessageSquareText /><div><h3>跟进已经投出的岗位</h3><p>告别手动记录投递过程，告诉拾星 AI 你的新进展，一句话就能搞定。</p><Link href="/my#application-assistant" className="vip-text-link">打开投递助手 <ArrowRight size={15} /></Link></div><strong>AI 投递助手</strong></li>
         </ul>
         <div className="vip-upgrade"><Sparkles size={20} aria-hidden="true" /><div><h3>高级模型 <small>（将与正式付费版一起发布）</small></h3><p>正式付费版可在材料工作台继续修改整份简历，也可在编辑器高级润色单段。两处共用每小时 {VIP_ADVANCED_HOURLY_LIMIT} 次、每周 {VIP_ADVANCED_WEEKLY_LIMIT} 次的额度。限免会员需另行升级，届时享折扣优惠。</p><a className="vip-text-link" href="#vip-models">查看高级模型预告 <ArrowRight size={15} /></a></div></div>
       </section>
       <section className="vip-feature vip-materials-feature" id="vip-materials" aria-labelledby="materials-heading">
         <div className="vip-feature-copy">
           <h2 id="materials-heading">从一叠材料，<br />到一份简历。</h2>
-          <p>直接粘贴笔记，或上传 PDF、DOCX、TXT 和 SQL 文件。AI 会把材料中的时间、职责和成果放进对应的简历模块。</p>
+          <p>一份项目报告、几页实习笔记，都可以成为简历的起点。拾星 AI 帮你理清先后顺序，写清你做了什么、交付了什么，也找出藏在经历里的技能。</p>
           <ul className="vip-ticks">
             <li><Check /> 从已有简历带入姓名、联系方式和照片</li>
             <li><Check /> 对照 A4 预览，检查教育、实习与项目经历</li>
@@ -131,7 +131,7 @@ function VipMembershipPage({ basicModelId, status, statusError }: {
       <section className="vip-faq" id="vip-faq" aria-labelledby="vip-faq-title">
         <h2 id="vip-faq-title">开通前，你可能想问</h2>
         <div>
-          <details open><summary>现在开通 VIP，可以用哪些功能？ <ChevronDown size={18} /></summary><p>你可以用 AI 了解公司、找岗位，把手头的材料整理成简历，再用基础模型润色。投出简历后，还可以让投递助手记录进度，看看哪些岗位该跟进。</p></details>
+          <details open><summary>现在开通 VIP，可以用哪些功能？ <ChevronDown size={18} /></summary><p>不知道该投哪里，可以让拾星 AI 读你的最新简历，找到值得投的岗位。也可以把手头的材料做成简历、按岗位润色，投出后再用一句话记录进展。</p></details>
           <details><summary>限时免费开通怎么收费？会续费吗？ <ChevronDown size={18} /></summary><p>活动期间，登录并点击「限时免费开通」即可领取当前账号的会员权益。实付 ¥0，不会自动续费。</p></details>
           <details><summary>正式付费版上线后，怎么升级？ <ChevronDown size={18} /></summary><p>你可以自行决定是否升级。使用高级模型需要升级到正式付费版，限免会员届时可享升级折扣。价格和开通方式将在发布时公布。</p></details>
           <details><summary>之后可能会有哪些新功能？ <ChevronDown size={18} /></summary><p>我们正在考虑简历投递托管，让你能按自己的求职意向，委托助手处理投递。目前还在规划中，开放时间和使用方式尚未确定。</p></details>
@@ -142,7 +142,7 @@ function VipMembershipPage({ basicModelId, status, statusError }: {
         <dl>
           <div><dt>开通与升级</dt><dd>限免期间开通为 ¥0，无自动续费。高级模型属于正式付费版权益，限免会员可在正式版发布后选择折扣升级。</dd></div>
           <div><dt>模型说明</dt><dd>基础模型目前为 {basicModelName}。高级模型首期计划使用 {VIP_ADVANCED_MODEL.name}，Claude 和 Gemini 仍在评估中。型号可能随版本更新，以本页公布的信息为准。</dd></div>
-          <div><dt>材料与隐私</dt><dd>生成简历时，你提交的材料文字会发送给 AI 模型服务处理。请使用有权分享的材料，并先隐去客户姓名、联系方式等敏感信息。</dd></div>
+          <div><dt>材料与隐私</dt><dd>生成简历时，AI 会处理你提交的材料。请求个人岗位推荐时，AI 会参考你最近保存的简历中的求职方向、经历与技能。请使用有权分享的材料，并先隐去客户姓名、联系方式等敏感信息。</dd></div>
           <div><dt>使用 AI 建议</dt><dd>投递前，请核对简历中的日期、职责和成果。岗位助手可查询公开网页，并在回答中附上资料来源。公司评价仅供参考，招聘要求和截止时间请以招聘方公告为准。</dd></div>
           <div><dt>使用帮助</dt><dd>各项使用次数可在<a href="#vip-benefits">权益内容</a>中查看。遇到开通或额度问题，可通过<Link href="/feedback">帮助与反馈</Link>联系我们。</dd></div>
         </dl>
