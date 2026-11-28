@@ -219,7 +219,7 @@ const SOURCE_INVARIANTS = [
   },
   {
     file: "src/components/galaxy/SpaceHome.tsx",
-    mustInclude: ["HOME_ORBITS", "orbitPosition", "requestAnimationFrame(tick)", "visibilitychange", "ResizeObserver", "isBehindStar", "hrefFor", "encodeURIComponent(planet.href)", "全部功能", "useReducedMotion"],
+    mustInclude: ["HOME_ORBITS", "orbitPosition", "requestAnimationFrame(tick)", "visibilitychange", "ResizeObserver", "isBehindStar", "hrefFor", "encodeURIComponent(planet.href)", "全部功能", "prefers-reduced-motion"],
     mustNotInclude: ["StartPage", "start-title", "setInterval", "canvas"],
     label: "主页按倾斜轨道运行并处理遮挡、低动态偏好和全部功能导航",
   },

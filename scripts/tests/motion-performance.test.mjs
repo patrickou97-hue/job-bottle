@@ -31,7 +31,8 @@ test("主页首屏不再等待认证态，认证与公告在首屏之后处理",
 
 test("倾斜轨道使用单一时钟并处理不可见页面和减少动态效果", async () => {
   const home = await source("src/components/galaxy/SpaceHome.tsx");
-  assert.match(home, /useReducedMotion/);
+  assert.match(home, /prefers-reduced-motion/);
+  assert.match(home, /useSyncExternalStore\(subscribeReducedMotion, readReducedMotion, readServerReducedMotion\)/);
   assert.match(home, /cancelAnimationFrame/);
   assert.match(home, /visibilitychange/);
   assert.match(home, /!document.hidden && !reducedMotion/);

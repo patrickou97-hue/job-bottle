@@ -1,19 +1,31 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { useReducedMotion } from "motion/react";
 import { ArrowUpRight, BookOpen, BriefcaseBusiness, FileText, ListChecks, Menu, Pause, Play, ShieldCheck, Sparkles, X } from "lucide-react";
 import { getCurrentUserOrNull } from "@/lib/auth";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { PLANET_ROUTES } from "@/lib/planet-routes";
 import { HOME_ORBITS, isBehindStar, orbitPath, orbitPosition } from "@/lib/home-orbits";
+import { VipEditionLabel } from "@/components/vip/VipEditionLabel";
+import { useVipStatus } from "@/components/vip/useVipStatus";
+import { vipCardName } from "@/lib/starjob-vip";
 import "./orbital-home.css";
 
 const GLYPHS = { jobs: BriefcaseBusiness, resume: FileText, applications: ListChecks, extension: Sparkles, bottle: Sparkles, forum: BookOpen, admin: ShieldCheck };
 
+const reducedMotionQuery = "(prefers-reduced-motion: reduce)";
+const readReducedMotion = () => window.matchMedia(reducedMotionQuery).matches;
+const readServerReducedMotion = () => false;
+
+function subscribeReducedMotion(listener: () => void) {
+  const query = window.matchMedia(reducedMotionQuery);
+  query.addEventListener("change", listener);
+  return () => query.removeEventListener("change", listener);
+}
+
 export function SpaceHome() {
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useSyncExternalStore(subscribeReducedMotion, readReducedMotion, readServerReducedMotion);
   const [user, setUser] = useState<{ id: string } | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -124,10 +136,13 @@ export function SpaceHome() {
   return (
     <main ref={sceneRef} className="orbital-home" aria-label="拾星主页" onKeyDown={(event) => { if (event.key === "Escape") setMenuOpen(false); }}>
       <header className="orbital-home-header">
-        <Link href="/" aria-label="返回拾星主页" className="orbital-home-brand">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/brand/shi-xing-wordmark.png" alt="拾星" width={1216} height={542} />
-        </Link>
+        <div className="orbital-home-identity">
+          <Link href="/" aria-label="返回拾星主页" className="orbital-home-brand">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/shi-xing-wordmark.png" alt="拾星" width={1216} height={542} />
+          </Link>
+          {user && <HomeVipLink userId={user.id} />}
+        </div>
         <div className="orbital-home-controls">
           <button type="button" aria-label={paused ? "继续行星运动" : "暂停行星运动"} aria-pressed={paused} onClick={() => setPaused((value) => !value)} disabled={Boolean(reducedMotion)}>{paused || reducedMotion ? <Play size={17} /> : <Pause size={17} />}</button>
           <Link href={user ? "/profile" : "/login"}>{user ? "资料" : "登录"}</Link>
@@ -167,5 +182,17 @@ export function SpaceHome() {
         </Link>;
       })}
     </main>
+  );
+}
+
+function HomeVipLink({ userId }: { userId: string }) {
+  const { status } = useVipStatus();
+  if (!status?.active || status.account?.id !== userId) return null;
+
+  const edition = status.cardEdition ?? "vip";
+  return (
+    <Link href="/vip" className="orbital-home-vip" aria-label={vipCardName(edition)}>
+      <VipEditionLabel edition={edition} />
+    </Link>
   );
 }

@@ -6,13 +6,6 @@
   font-display: swap;
 }
 @font-face {
-  font-family: "Great Vibes";
-  src: url("/fonts/vip/great-vibes-latin-400-normal.woff2") format("woff2");
-  font-weight: 400;
-  font-style: italic;
-  font-display: swap;
-}
-@font-face {
   font-family: "StarJob Editorial";
   src: url("/fonts/starjob-vip-editorial.ttf") format("truetype");
   font-weight: 700;
@@ -37,15 +30,17 @@
   overflow: hidden;
   background: radial-gradient(ellipse at 76% 40%, #d9e3f1 0%, transparent 49%), linear-gradient(117deg,#f7f9fc 11%, #edf2f8 74%, #e8edf5);
 }
-.vip-hero { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 24px; padding-block: clamp(45px,5.4vw,82px); }
+.vip-hero { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 24px; padding-block: clamp(58px,6.4vw,100px); }
 .vip-page .starjob-wordmark__image { width: 100%; height: auto; display: block; }
 .vip-page h2 { font-family: var(--font-display); font-weight: 600; color: var(--vip-ink); letter-spacing: -.025em; text-wrap: balance; }
 .vip-hero-copy { min-width: 0; container-type: inline-size; }
 .vip-hero h1 { margin: 0; color: var(--vip-ink); font-family: "StarJob Membership", Georgia, serif; font-weight: 600; letter-spacing: -.055em; }
-.vip-introducing { display: block; margin-left: .06em; color: #496381; font: italic 400 clamp(2.125rem, 9.5cqw, 3.5rem)/1.16 "Great Vibes", "Snell Roundhand", cursive; letter-spacing: 0; }
+.vip-introducing { display: block; margin-left: .06em; color: #496381; font: italic 500 clamp(1.75rem, 7cqw, 2.85rem)/1.2 "Bodoni Moda", Georgia, serif; letter-spacing: 0; }
 .vip-product-name { display: inline-grid; grid-template-columns: 4.15em auto; align-items: end; gap: .19em; white-space: nowrap; vertical-align: middle; }
 .vip-product-name .starjob-vip-wordmark { width: 100%; }
-.vip-hero .vip-product-name { font-size: clamp(2.5rem, 15cqw, 5.5rem); line-height: 1.05; letter-spacing: -.047em; margin-top: .16em; }
+.vip-hero .vip-product-name { font-size: clamp(2.5rem, 15cqw, 5.5rem); line-height: 1.05; letter-spacing: -.047em; margin-top: .46em; }
+.vip-product-tier-wrap { position: relative; display: grid; }
+.vip-product-badge { position: absolute; right: 0; bottom: calc(100% + .34em); font-size: .21em; }
 .vip-product-tier { font-size: .89em; text-box-trim: trim-both; text-box-edge: cap alphabetic; color: #89612b; padding-inline-end: .09em; }
 @supports (background-clip: text) {
   .vip-product-tier {
@@ -56,25 +51,25 @@
 @media (forced-colors: active) {
   .vip-product-tier { background: none; color: CanvasText; }
 }
-.vip-detail { display: grid; justify-items: start; gap: 6px; margin-top: 22px; }
+.vip-detail { display: grid; justify-items: start; gap: 15px; margin-top: 36px; }
 .vip-detail mark { padding-inline: .07em; color: var(--vip-ink); background: linear-gradient(transparent 65%, #efdaa4 65%, #efdaa4 93%, transparent 93%); font-size: clamp(1.125rem, 1.45vw, 1.3125rem); line-height: 1.45; font-weight: 650; }
-.vip-detail > span { color: var(--vip-copy); font-size: clamp(14px,1.1vw,16px); line-height: 1.65; text-wrap: pretty; }
-.vip-hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; margin-top: 25px; }
+.vip-detail > span { color: var(--vip-copy); font-size: clamp(14px,1.1vw,16px); line-height: 1.85; text-wrap: pretty; }
+.vip-hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; margin-top: 40px; }
 .vip-button { display: inline-flex; align-items: center; justify-content: center; gap: 12px; min-height: 44px; padding: 11px 19px; border-radius: 8px; background: var(--vip-ink); color: white; font-size: 14px; font-weight: 650; transition: background-color .16s; cursor: pointer; }
 .vip-button:not(:disabled):hover { background: #2b4d78; }
 .vip-button:disabled { opacity: .65; cursor: default; }
 .vip-price { display: flex; align-items: baseline; gap: 8px; }
 .vip-price strong, .vip-section-heading > span { font: 500 1.5rem/1 Georgia,serif; letter-spacing: -.04em; }
 .vip-price span, .vip-preview-note { font-size: 12px; color: var(--vip-copy); }
-.vip-preview-note { margin-top: 10px; }
+.vip-preview-note { margin-top: 20px; line-height: 1.85; }
 .vip-hero-error { color: #922d43; font-size: 13px; margin-top: 8px; }
 .vip-index { display: flex; gap: clamp(24px,4vw,70px); align-items: center; border-bottom: 1px solid var(--vip-rule); }
 .vip-index a { display: inline-flex; align-items: center; gap: 7px; min-height: 56px; color: #405672; font-size: 13px; font-weight: 650; }
 .vip-index a:hover, .vip-text-link:hover { text-decoration: underline; text-underline-offset: 4px; }
 .vip-page h2 { margin: 0; font-size: clamp(var(--text-2xl), 2.25vw, 2rem); line-height: 1.28; }
 .vip-feature { display: grid; grid-template-columns: .88fr 1.12fr; align-items: center; gap: clamp(32px,7vw,110px); padding-block: clamp(42px,6vw,86px); }
-.vip-feature-copy > p, .vip-example-header p, .vip-faq p { color: var(--vip-copy); font-size: var(--text-sm); line-height: 1.8; margin-top: 16px; }
-.vip-ticks { display: grid; gap: 9px; margin: 20px 0 23px; padding: 0; list-style: none; }
+.vip-feature-copy > p, .vip-example-header p, .vip-faq p { color: var(--vip-copy); font-size: var(--text-sm); line-height: 1.9; margin-top: 19px; }
+.vip-ticks { display: grid; gap: 12px; margin: 24px 0 28px; padding: 0; list-style: none; }
 .vip-ticks li, .vip-text-link { display: flex; align-items: center; gap: 8px; font-size: 14px; }
 .vip-ticks svg { width: 15px; height: 15px; flex-shrink: 0; color: #54714d; }
 .vip-text-link { width: fit-content; font-weight: 650; color: #274d79; cursor: pointer; }
@@ -113,10 +108,11 @@
 .vip-section-heading > span { white-space: nowrap; }
 .vip-section-heading small { font: 500 13px/1.5 var(--font-sans-cn); color: var(--vip-copy); }
 .vip-benefits ul { padding: 0; margin: 26px 0 0; list-style: none; border-top: 1px solid var(--vip-rule); }
-.vip-benefits li { display: grid; grid-template-columns: 34px 1fr auto; align-items: center; column-gap: 18px; padding: 23px 0; border-bottom: 1px solid var(--vip-rule); }
+.vip-benefits li { display: grid; grid-template-columns: 34px 1fr auto; align-items: center; column-gap: 18px; padding: 28px 0; border-bottom: 1px solid var(--vip-rule); }
 .vip-benefits li > svg { color: #426284; width: 23px; }
 .vip-benefits h3 { font-size: var(--text-base); font-weight: 660; }
-.vip-benefits li p { color: var(--vip-copy); margin-top: 5px; font-size: 14px; line-height: 1.7; max-width: 42em; }
+.vip-benefits li p { color: var(--vip-copy); margin-top: 8px; font-size: 14px; line-height: 1.9; max-width: 42em; }
+.vip-benefits li .vip-text-link { margin-top: 8px; }
 .vip-benefits strong { font-size: 14px; }
 .vip-faq { display: grid; grid-template-columns: .75fr 1.25fr; gap: 36px; }
 .vip-faq summary { min-height: 52px; display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: var(--text-sm); font-weight: 610; cursor: pointer; list-style: none; }
@@ -141,9 +137,9 @@
 @media (max-width: 650px) {
   .vip-boundary { width: calc(100% - 40px); }
   .vip-hero, .vip-feature, .vip-faq, .vip-example-pages { grid-template-columns: 1fr; }
-  .vip-hero { padding-block: 32px 20px; gap: 12px; }
-  .vip-detail { margin-top: 15px; }
-  .vip-hero-actions { margin-top: 19px; }
+  .vip-hero { padding-block: 42px 25px; gap: 20px; }
+  .vip-detail { gap: 12px; margin-top: 28px; }
+  .vip-hero-actions { margin-top: 30px; }
   .vip-pass-stage { width: min(100%,430px); justify-self: center; padding: 6% 8%; }
   .vip-index { justify-content: space-between; gap: 4px; }
   .vip-index a { gap: 2px; font-size: 12px; min-height: 48px; }
@@ -164,7 +160,8 @@
 }
 .vip-price del, .vip-section-heading del { color: #677385; text-decoration-thickness: 1.5px; font-variant-numeric: tabular-nums; }
 .vip-price del { font: 500 clamp(1.25rem, 2vw, 1.75rem)/1.1 Georgia, serif; }
-.vip-price span, .vip-benefits h3 small { color: #795b30; }
+.vip-price span, .vip-member-status, .vip-benefits h3 small { color: #795b30; }
+.vip-member-status { font-size: 13px; font-weight: 550; }
 .vip-benefits h3 small { font-size: .78em; font-weight: 500; }
 .vip-upgrade { display: flex; align-items: flex-start; gap: 14px; margin-top: 24px; padding: 18px 22px; border-left: 2px solid #bea06a; background: #f4f1eb; border-radius: 0 10px 10px 0; }
 .vip-upgrade > svg { flex-shrink: 0; margin-top: 3px; color: #795b30; }

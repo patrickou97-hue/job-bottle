@@ -7,8 +7,9 @@
 }
 .vip-pass-stage { position: relative; isolation: isolate; display: grid; place-items: center; min-width: 0; padding: 7% 5%; perspective: 2000px; }
 .vip-pass-stage::before {
-  content: ""; position: absolute; width: 80%; height: 24%; bottom: 4%; left: 10%;
-  background: #293e5e; opacity: .23; border-radius: 50%; filter: blur(22px); transform: rotate(-7deg);
+  content: ""; position: absolute; width: 108%; height: 45%; bottom: -5%; left: -4%;
+  background: radial-gradient(ellipse closest-side, #293e5e70 0%, #293e5e32 50%, #293e5e00 100%);
+  opacity: .7; transform: rotate(-7deg); pointer-events: none;
 }
 .vip-pass-body {
   position:relative; width:100%; max-width:490px; aspect-ratio:1.66;
@@ -117,12 +118,19 @@
 .profile-pass-layout { display:grid; grid-template-columns:minmax(0,1fr) minmax(235px,335px); align-items:start; gap:24px; }
 .profile-pass-layout .vip-pass-stage { width:100%; padding:6% 6% 8%; }
 .profile-pass-layout .vip-pass-body { --pass-depth:5px; transform:rotateY(-8deg) rotateX(6deg) rotateZ(-4deg); }
-.profile-pass-layout .vip-pass-stage::before { opacity:.17; }
+.profile-pass-layout .vip-pass-stage::before { opacity:.45; }
 @media (max-width:760px) {
   .profile-pass-layout { grid-template-columns:1fr; gap:12px; }
   .profile-pass-layout .vip-pass-stage { max-width:340px; justify-self:start; }
 }
 
 @container (max-width: 310px) {
-  .vip-pass-foot > span:nth-child(2) { display:none; }
+  .vip-pass:not([data-edition="legend"]) .vip-pass-foot > span:nth-child(2) { display:none; }
+  .vip-pass[data-edition="legend"] .vip-pass-foot > .vip-pass-email:first-child {
+    font-size: clamp(8px, 3.2cqw, 10px);
+  }
+  .vip-pass[data-edition="legend"] .vip-pass-foot > span:nth-child(2) {
+    font-size: max(7px, 2.2cqw);
+    letter-spacing: .08em;
+  }
 }

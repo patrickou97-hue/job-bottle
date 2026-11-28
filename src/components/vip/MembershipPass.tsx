@@ -37,7 +37,8 @@ function Engraving({ edition }: { edition: VipCardEdition }) {
 
 export function MembershipPass({ email, edition }: { email?: string | null; edition: VipCardEdition | "one" }) {
   const isOne = edition === "one";
-  const label = isOne ? "StarJob One 普通卡" : vipCardName(edition) + " 会员卡";
+  const isFounder = edition === "legend";
+  const label = isFounder ? "StarJob Legend 创始人卡，WANG RUI" : isOne ? "StarJob One 普通卡" : vipCardName(edition) + " 会员卡";
 
   return <div className="vip-pass-stage" role="img" aria-label={label + (email ? "，" + email : "")}>
     <div className="vip-pass-body" data-finish={edition}>
@@ -49,7 +50,10 @@ export function MembershipPass({ email, edition }: { email?: string | null; edit
         {!isOne && (
           <svg aria-hidden="true" className="vip-pass-etch" viewBox="0 0 520 320" preserveAspectRatio="none"><Engraving edition={edition} /></svg>
         )}
-        <div className="vip-pass-top"><StarJobWordmark />{!isOne && <span>MEMBER PASS</span>}</div>
+        <div className="vip-pass-top">
+          <StarJobWordmark />
+          {!isOne && <span>{isFounder ? "WANG RUI" : "MEMBER PASS"}</span>}
+        </div>
         {!isOne && <VipMark large />}
         <div className="vip-pass-type">
           {isOne ? "One" : vipCardNames[edition]}
@@ -57,7 +61,7 @@ export function MembershipPass({ email, edition }: { email?: string | null; edit
         </div>
         <div className="vip-pass-foot">
           <span className={email ? "vip-pass-email" : undefined} title={email ?? undefined}>{email || (isOne ? "StarJob" : "拾星会员")}</span>
-          {!isOne && <span>STARJOB MEMBERSHIP</span>}
+          {!isOne && <span>{isFounder ? "STARJOB FOUNDER" : "STARJOB MEMBERSHIP"}</span>}
           {isOne && (
             <svg aria-hidden="true" className="one-relief" viewBox="0 0 160 192">
               <path d="M80 0 Q86 88 160 96 Q86 104 80 192 Q74 104 0 96 Q74 88 80 0Z" />

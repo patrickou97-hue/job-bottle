@@ -4,7 +4,10 @@
 @media (max-width: 639px) { .orbital-home::before { background-image: linear-gradient(180deg,#10151f26,#10151f80),url('/assets/space/home-deep-space-v2.png'); } }
 .orbital-home-header { position: absolute; z-index: 3000; top: 28px; left: 36px; right: 36px; display: flex; justify-content: space-between; align-items: center; pointer-events: none; }
 .orbital-home-header > * { pointer-events: auto; }
+.orbital-home-identity { display: flex; align-items: center; gap: 5px; }
 .orbital-home-brand img { width: 74px; height: auto; opacity: .92; }
+.orbital-home-vip { display: inline-flex; align-items: flex-start; padding-top: 4px; min-height: 44px; padding-inline: 4px; font-size: .75rem; }
+.orbital-home-vip:hover { text-decoration: underline; text-underline-offset: .2em; }
 .orbital-home-controls { display: flex; align-items: center; gap: 8px; }
 .orbital-home-controls > * { display: inline-flex; min-width: 40px; min-height: 40px; align-items: center; justify-content: center; padding: 8px 12px; border: 1px solid #a1b2ce26; border-radius: 13px; background: #1d263480; color: #b8c6da; font-size: 12px; }
 .orbital-home-controls > *:hover { background: #2c374b; }

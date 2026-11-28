@@ -8,8 +8,9 @@ import { VipFeatureStories } from "./VipFeatureStories";
 import { VipAnimationFigure } from "./VipAnimationFigure";
 import { VipBenefitDemos } from "@/components/vip/VipBenefitDemos";
 import { MembershipPass } from "./MembershipPass";
+import { VipEditionLabel } from "./VipEditionLabel";
 import { refreshVipStatus, useVipStatus } from "@/components/vip/useVipStatus";
-import { VIP_BASIC_POLISH_HOURLY_LIMIT, VIP_BASIC_POLISH_WEEKLY_LIMIT, VIP_ADVANCED_MODEL, VIP_ADVANCED_HOURLY_LIMIT, VIP_ADVANCED_WEEKLY_LIMIT, VIP_COMPOSE_DAILY_LIMIT, VIP_COMPOSE_WEEKLY_LIMIT, VIP_PRICE } from "@/lib/starjob-vip";
+import { VIP_BASIC_POLISH_HOURLY_LIMIT, VIP_BASIC_POLISH_WEEKLY_LIMIT, VIP_ADVANCED_MODEL, VIP_ADVANCED_HOURLY_LIMIT, VIP_ADVANCED_WEEKLY_LIMIT, VIP_COMPOSE_DAILY_LIMIT, VIP_COMPOSE_WEEKLY_LIMIT, VIP_PRICE, type VipCardEdition } from "@/lib/starjob-vip";
 
 export function VipPage({ basicModelId }: { basicModelId: string }) {
   const { status, error: statusError } = useVipStatus();
@@ -24,7 +25,11 @@ function VipMembershipPage({ basicModelId, status, statusError }: {
   const [welcome, setWelcome] = useState(false);
   const basicModelName = ["deepseek-flash", "deepseek-v4-flash", "deepseek-v4-flash-vision-exp"].includes(basicModelId)
     ? "DeepSeek V4.1 Flash" : basicModelId;
-  const memberEmail = status?.active ? status.account?.email : null;
+  const active = status?.active === true;
+  const memberEmail = active ? status.account?.email : null;
+  const edition = active ? status.cardEdition ?? "vip" : "vip";
+  const showOffer = status !== null && !active;
+  const showFreeMemberStatus = active && edition === "vip" && status.plan === "free_launch";
   function closeWelcome() {
     setWelcome(false);
     requestAnimationFrame(() => document.getElementById("vip-benefits-link")?.focus({ preventScroll: true }));
@@ -53,10 +58,10 @@ function VipMembershipPage({ basicModelId, status, statusError }: {
       {welcome && status?.active && <MotionDialog labelledBy="welcome-vip-title" describedBy="welcome-vip-copy" className="vip-welcome" onBackdropClick={closeWelcome} onEscapeKeyDown={closeWelcome}>
         <button type="button" className="vip-welcome-close" aria-label="关闭欢迎页" onClick={closeWelcome}><X size={20} /></button>
         <header className="vip-welcome-heading">
-          <h2 id="welcome-vip-title">欢迎加入 <VipBrandName /></h2>
-          <p id="welcome-vip-copy">限免会员已开通。现在你可以从这三件事开始。</p>
+          <h2 id="welcome-vip-title">欢迎加入 <VipBrandName edition={edition} /></h2>
+          <p id="welcome-vip-copy">{showFreeMemberStatus ? "限免会员已开通" : "会员已开通"}。现在你可以从这三件事开始。</p>
         </header>
-        <MembershipPass email={memberEmail} edition={status?.cardEdition ?? "vip"} />
+        <MembershipPass email={memberEmail} edition={edition} />
         <nav aria-label="开始使用会员权益">
           <Link href="/explore#job-assistant"><Search /><span><strong>找一个想投的岗位</strong><small>了解公司业务，按城市和岗位方向找机会。</small></span><ChevronRight /></Link>
           <Link href="/resume/materials"><FileText /><span><strong>把手头的材料写成简历</strong><small>上传周报、项目文档或 SQL，生成可编辑的初稿。</small></span><ChevronRight /></Link>
@@ -69,7 +74,7 @@ function VipMembershipPage({ basicModelId, status, statusError }: {
         <div className="vip-hero-copy">
           <h1 id="vip-title" lang="en">
             <em className="vip-introducing">Introducing</em>{" "}
-            <VipBrandName />
+            <VipBrandName edition={edition} />
           </h1>
           <p className="vip-detail">
             <mark>跃进全面AI赋能</mark>
@@ -85,12 +90,16 @@ function VipMembershipPage({ basicModelId, status, statusError }: {
                 {busy ? <><LoaderCircle className="motion-safe:animate-spin" size={17} /> 正在处理</> : <>{status?.checkoutAvailable ? "限时免费开通" : "开通暂未开放"} <ArrowRight size={18} /></>}
               </button>
             )}
-            <div className="vip-price"><del aria-label={`划线价 ${VIP_PRICE} 元`}>¥{VIP_PRICE}</del><span>{status?.plan === "free_launch" ? "限免会员已开通" : "限时免费开通"}</span></div>
+            {showOffer && <div className="vip-price"><del aria-label={`划线价 ${VIP_PRICE} 元`}>¥{VIP_PRICE}</del><span>限时免费开通</span></div>}
+            {showFreeMemberStatus && <span className="vip-member-status">限免会员已开通</span>}
           </div>
-          <p className="vip-preview-note">本次开通 ¥0，无自动续费。高级模型随正式付费版发布，限免会员届时可折扣升级。  <a href="#vip-terms">服务说明</a></p>
+          <p className="vip-preview-note">
+            {showOffer && "本次开通 ¥0，无自动续费。高级模型随正式付费版发布，限免会员届时可折扣升级。 "}
+            <a href="#vip-terms">服务说明</a>
+          </p>
           {statusError || error ? <p className="vip-hero-error" role="alert">{error || "暂时无法获取 VIP 状态，请刷新页面重试。"}</p> : null}
         </div>
-        <MembershipPass email={memberEmail} edition={status?.cardEdition ?? "vip"} />
+        <MembershipPass email={memberEmail} edition={edition} />
       </section>
       </div>
 
@@ -102,7 +111,7 @@ function VipMembershipPage({ basicModelId, status, statusError }: {
         <a href="#vip-faq">开通与升级 <ChevronDown size={14} /></a>
       </nav>
       <section className="vip-benefits" id="vip-benefits" aria-labelledby="vip-benefits-title">
-        <div className="vip-section-heading"><h2 id="vip-benefits-title">权益内容</h2><span><del>¥{VIP_PRICE}</del> <small>限时免费开通</small></span></div>
+        <div className="vip-section-heading"><h2 id="vip-benefits-title">权益内容</h2>{showOffer && <span><del>¥{VIP_PRICE}</del> <small>限时免费开通</small></span>}</div>
         <VipBenefitDemos />
         <ul>
           <li><Search /><div><h3>问公司，也能找岗位</h3><p>不知道投什么岗位？直接问拾星 AI，根据你的简历推荐匹配的岗位。不了解公司？从公司详情到可投岗位，一次看全。</p><Link href="/explore#job-assistant" className="vip-text-link">去找岗位 <ArrowRight size={15} /></Link></div><strong>AI 岗位问答</strong></li>
@@ -151,8 +160,16 @@ function VipMembershipPage({ basicModelId, status, statusError }: {
   );
 }
 
-function VipBrandName() {
-  return <span className="vip-product-name"><span className="starjob-vip-wordmark">StarJob</span>{" "}<span className="vip-product-tier">VIP</span></span>;
+function VipBrandName({ edition = "vip" }: { edition?: VipCardEdition }) {
+  return (
+    <span className="vip-product-name">
+      <span className="starjob-vip-wordmark">StarJob</span>{" "}
+      <span className="vip-product-tier-wrap">
+        <span className="vip-product-tier">VIP</span>
+        {edition !== "vip" && <VipEditionLabel edition={edition} className="vip-product-badge" />}
+      </span>
+    </span>
+  );
 }
 
 const examples = [

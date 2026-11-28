@@ -11,7 +11,8 @@ import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { SITE_NAME } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@/lib/types";
-import { vipCardName, vipCardNames } from "@/lib/starjob-vip";
+import { vipCardName } from "@/lib/starjob-vip";
+import { VipEditionLabel } from "@/components/vip/VipEditionLabel";
 import { useVipStatus } from "@/components/vip/useVipStatus";
 import { isSceneRoute, markSceneDeparture } from "@/lib/scene-transition";
 
@@ -218,7 +219,7 @@ export function Navbar({ appearance = "work" }: { appearance?: "scene" | "work" 
         >
           <span className="starjob-vip-name relative inline-flex items-center pr-2" lang="en">
             <span className="starjob-vip-wordmark">StarJob</span>
-            <span className="nav-beta" aria-hidden="true">{vipCardNames[vip?.active ? vip.cardEdition ?? "vip" : "vip"]}</span>
+            <VipEditionLabel className="starjob-vip-badge" edition={vip?.active ? vip.cardEdition ?? "vip" : undefined} />
           </span>
           {vip?.active ? null : <span className="starjob-vip-lock">待解锁</span>}
         </Link>
