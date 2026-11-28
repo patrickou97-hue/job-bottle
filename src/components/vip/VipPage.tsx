@@ -98,7 +98,7 @@ function VipMembershipPage({ basicModelId, status, statusError }: {
         <a href="#vip-benefits">权益内容 <ChevronDown size={14} /></a>
         <a href="#vip-materials">材料如何成稿 <ChevronDown size={14} /></a>
         <a href="#vip-workflow">更多功能 <ChevronDown size={14} /></a>
-        <a href="#vip-faq">开通与额度 <ChevronDown size={14} /></a>
+        <a href="#vip-faq">开通与升级 <ChevronDown size={14} /></a>
       </nav>
       <section className="vip-benefits" id="vip-benefits" aria-labelledby="vip-benefits-title">
         <div className="vip-section-heading"><h2 id="vip-benefits-title">权益内容</h2><span><del>¥{VIP_PRICE}</del> <small>限时免费开通</small></span></div>
@@ -129,20 +129,20 @@ function VipMembershipPage({ basicModelId, status, statusError }: {
       <section className="vip-faq" id="vip-faq" aria-labelledby="vip-faq-title">
         <h2 id="vip-faq-title">开通前，你可能想问</h2>
         <div>
-          <details><summary>已有一份简历，可以只改其中一段吗？ <ChevronDown size={18} /></summary><p>可以。限免会员在「简历制作」里选中一段经历，即可使用基础模型润色。高级润色与指定模块继续修改将随正式付费版发布。</p></details>
-          <details><summary>继续修改后，会有很多份草稿吗？ <ChevronDown size={18} /></summary><p>材料工作台会更新同一份生成稿。「简历制作」里保留最新内容，原先用来带入个人信息的简历会保留。</p></details>
-          <details><summary>额度什么时候恢复？ <ChevronDown size={18} /></summary><p>每日额度在北京时间 00:00 恢复，每周额度在周一 00:00 恢复。基础润色与高级修改分别按滚动 60 分钟计数，每条成功记录满 60 分钟后恢复一次。工作台会显示剩余次数和恢复时间，生成失败会退回次数。</p></details>
-          <details><summary>限时免费开通，需要付款吗？ <ChevronDown size={18} /></summary><p>活动期间登录后可免费开通，费用为 ¥0，无自动续费。权益绑定当前账号，刷新或重新登录后仍可使用。</p></details>
+          <details open><summary>现在开通 VIP，可以用哪些功能？ <ChevronDown size={18} /></summary><p>你可以用 AI 了解公司、找岗位，把手头的材料整理成简历，再用基础模型润色。投出简历后，还可以让投递助手记录进度，看看哪些岗位该跟进。</p></details>
+          <details><summary>限时免费开通怎么收费？会续费吗？ <ChevronDown size={18} /></summary><p>活动期间，登录并点击「限时免费开通」即可领取当前账号的会员权益。实付 ¥0，不会自动续费。</p></details>
+          <details><summary>正式付费版上线后，怎么升级？ <ChevronDown size={18} /></summary><p>你可以自行决定是否升级。使用高级模型需要升级到正式付费版，限免会员届时可享升级折扣。价格和开通方式将在发布时公布。</p></details>
+          <details><summary>之后可能会有哪些新功能？ <ChevronDown size={18} /></summary><p>我们正在考虑简历投递托管，让你能按自己的求职意向，委托助手处理投递。目前还在规划中，开放时间和使用方式尚未确定。</p></details>
         </div>
       </section>
       <section id="vip-terms" className="vip-terms" aria-labelledby="vip-terms-heading">
         <h2 id="vip-terms-heading">会员服务说明</h2>
         <dl>
-          <div><dt>限免与升级</dt><dd>限时免费开通的会员不含高级模型访问权限。正式付费版发布后，也需升级才能使用高级模型。我们将为限免会员提供折扣升级优惠，具体价格、时间和规则将在正式版发布时公布，敬请期待。</dd></div>
-          <div><dt>模型与更新</dt><dd>基础模型当前配置为 {basicModelId === "deepseek-v4-flash" ? "DeepSeek V4 Flash" : basicModelId}，正式付费版首期计划使用 {VIP_ADVANCED_MODEL.name}，Claude 与 Gemini 系列仍在接入评估中。对应型号可能随模型迭代或供应商调整而更新，最新对应关系会在此列明。</dd></div>
-          <div><dt>计费与服务</dt><dd>当前限免开通实付 ¥0，无自动续费。各功能按上方权益额度使用。网络中断或模型服务异常可能导致请求失败。如遇扣费、额度或开通异常，可通过<Link href="/feedback">帮助与反馈</Link>联系我们，依法享有的消费者权益不受影响。</dd></div>
-          <div><dt>岗位与投递问答</dt><dd>找岗位时，模型接收问题、当前筛选和可选条件。推荐依据当前岗位库和已填的求职偏好。问公司时，AI 可结合已有知识回答，并按全称、简称和相关名称查找本站招聘记录。部分企业资料可追溯到官网、维基数据或维基百科。世界500强推荐采用标明年份的《财富》全球榜单，仅覆盖已核实企业名称和业务的招聘记录。可打开资料来源或岗位详情核对。投递助手会发送指令及近期问题，投递记录在浏览器内匹配。岗位问答、投递问答与简历 AI 导入共用每滚动 10 分钟 15 次的请求限制。管理员免除此限制。确认新增或修改投递不再消耗 AI 请求，问答也不扣简历生成或润色额度。岗位要求和招聘进度请以招聘方公告为准。</dd></div>
-          <div><dt>材料与生成结果</dt><dd>提交生成时，材料文字会发送给模型服务处理。请仅提交有权使用的内容，并先移除客户身份、访问凭据等敏感信息。AI 可能误读日期、职责或数字，请核对后再投递。招聘方独立决定面试与录用结果。</dd></div>
+          <div><dt>开通与升级</dt><dd>限免期间开通为 ¥0，无自动续费。高级模型属于正式付费版权益，限免会员可在正式版发布后选择折扣升级。</dd></div>
+          <div><dt>模型说明</dt><dd>基础模型目前为 {basicModelId === "deepseek-v4-flash" ? "DeepSeek V4 Flash" : basicModelId}。高级模型首期计划使用 {VIP_ADVANCED_MODEL.name}，Claude 和 Gemini 仍在评估中。型号可能随版本更新，以本页公布的信息为准。</dd></div>
+          <div><dt>材料与隐私</dt><dd>生成简历时，你提交的材料文字会发送给 AI 模型服务处理。请使用有权分享的材料，并先隐去客户姓名、联系方式等敏感信息。</dd></div>
+          <div><dt>使用 AI 建议</dt><dd>投递前，请核对简历中的日期、职责和成果。AI 提供的公司介绍与岗位推荐仅供参考，招聘要求和截止时间请以招聘方公告为准。</dd></div>
+          <div><dt>使用帮助</dt><dd>各项使用次数可在<a href="#vip-benefits">权益内容</a>中查看。遇到开通或额度问题，可通过<Link href="/feedback">帮助与反馈</Link>联系我们。</dd></div>
         </dl>
       </section>
       </div>

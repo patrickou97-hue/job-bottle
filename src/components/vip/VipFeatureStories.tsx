@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Check, FileText, MessageSquareText, Search } from "lucide-react";
+import { ArrowRight, FileText, MessageSquareText, Search } from "lucide-react";
 import { VipAnimationFigure } from "./VipAnimationFigure";
 import { VIP_ADVANCED_HOURLY_LIMIT, VIP_ADVANCED_WEEKLY_LIMIT } from "@/lib/starjob-vip";
 
@@ -46,32 +46,42 @@ export function VipFeatureStories() {
       <div className="vip-feature-copy">
         <span className="vip-models-status">即将上线 · 正式付费版</span>
         <h2 id="vip-models-title">高级模型访问</h2>
-        <ul className="vip-ticks">
-          <li><Check /> 整份继续修改与高级润色共用每小时 {VIP_ADVANCED_HOURLY_LIMIT} 次、每周 {VIP_ADVANCED_WEEKLY_LIMIT} 次的额度</li>
-          <li><Check /> 限免会员届时可享折扣，升级后使用高级模型</li>
-        </ul>
+        <p>整份简历的继续修改与高级润色共用额度。</p>
+        <dl className="vip-model-quota">
+          <div><dt>每小时</dt><dd>{VIP_ADVANCED_HOURLY_LIMIT}<small>次</small></dd></div>
+          <div><dt>每周</dt><dd>{VIP_ADVANCED_WEEKLY_LIMIT}<small>次</small></dd></div>
+        </dl>
+        <p className="vip-model-upgrade">限免会员可在正式版发布后折扣升级。</p>
       </div>
       <VipAnimationFigure title="高级模型预告" className="vip-artwork vip-model-art">
-        <svg viewBox="0 0 510 304" role="img" aria-label="高级模型访问预告，展示 ChatGPT、Claude 和 Gemini 品牌。">
-          <defs><linearGradient id="vip-model-field" x2="1" y2="1"><stop stopColor="#e6eaf2" /><stop offset=".53" stopColor="#f4f3ef" /><stop offset="1" stopColor="#f2e6d3" /></linearGradient></defs>
-          <rect width="510" height="304" rx="15" fill="url(#vip-model-field)" />
-          <g fill="none" stroke="#c3c8cc" opacity=".7"><ellipse cx="263" cy="205" rx="207" ry="66" /><ellipse cx="263" cy="205" rx="235" ry="82" strokeDasharray="2 6" /></g>
-          <g fill="none" stroke="#ab894f" strokeWidth="2">
-            <path className="vip-svg-route" pathLength="1" d="M92 115c0 50 111 22 163 84" />
-            <path className="vip-svg-route vip-svg-route--second" pathLength="1" d="M255 101v98" />
-            <path className="vip-svg-route vip-svg-route--third" pathLength="1" d="M418 115c0 50-111 22-163 84" />
+        <svg viewBox="0 0 510 304" role="img" aria-label="ChatGPT、Claude 和 Gemini 模型预告。示例简历用金色笔迹标出正在润色的项目经历。">
+          <defs>
+            <linearGradient id="vip-model-paper" x2="0.9" y2="1">
+              <stop stopColor="#ffffff" /><stop offset="1" stopColor="#f5f4f0" />
+            </linearGradient>
+          </defs>
+          <g fill="none" stroke="#bd9b66" strokeWidth="1.25">
+            <path className="vip-svg-route" pathLength="1" d="M89 54v13c0 25 111 11 132 52" />
+            <path className="vip-svg-route vip-svg-route--second" pathLength="1" d="M255 54v59" />
+            <path className="vip-svg-route vip-svg-route--third" pathLength="1" d="M421 54v13c0 25-111 11-132 52" />
           </g>
-          <g fill="#fff" stroke="#c7cdd3">
-            <rect x="18" y="52" width="148" height="65" rx="12" /><rect x="181" y="38" width="148" height="65" rx="12" /><rect x="344" y="52" width="148" height="65" rx="12" />
-          </g>
-          <image href="/brand/models/chatgpt-lockup.svg" x="34" y="69" width="116" height="31" />
-          <image href="/brand/models/claude-lockup.svg" x="198" y="55" width="114" height="31" />
-          <image href="/brand/models/gemini-lockup.svg" x="361" y="69" width="114" height="31" />
-          <g transform="translate(168 191)">
-            <rect x="3" y="5" width="175" height="57" rx="10" fill="#8e97a5" opacity=".18" />
-            <rect width="175" height="57" rx="10" fill="#20374e" />
-            <path d="M23 17h11l6 6v16H23zM34 17v7h6m-13 5h9m-9 5h7" fill="none" stroke="#e9cf9e" strokeWidth="1.5" />
-            <text x="53" y="36" fill="#fff" fontSize="17">简历深度修改</text>
+          <rect x="8" y="9" width="494" height="51" rx="7" fill="#fafbfd" stroke="#cbd5df" />
+          <path d="M172 22v25m166-25v25" stroke="#d7dfe7" />
+          <image href="/brand/models/chatgpt-lockup.svg" x="32" y="21" width="116" height="27" />
+          <image href="/brand/models/claude-lockup.svg" x="198" y="21" width="114" height="27" />
+          <image href="/brand/models/gemini-lockup.svg" x="362" y="21" width="116" height="27" />
+          <g transform="rotate(-3 255 196)">
+            <rect x="100" y="114" width="309" height="167" rx="3" fill="#40556d" opacity=".16" />
+            <rect x="97" y="108" width="309" height="167" rx="3" fill="#29415a" transform="rotate(7 255 196)" />
+            <rect x="99" y="108" width="309" height="167" rx="3" fill="#b9c7d6" transform="rotate(3 255 196)" />
+            <rect x="99" y="108" width="309" height="167" rx="3" fill="url(#vip-model-paper)" stroke="#c6d0db" />
+            <path d="M121 130h20m-20 45h264" stroke="#a58a58" />
+            <text x="121" y="161" fill="#203249" fontSize="21" fontWeight="600">项目经历</text>
+            <g className="vip-svg-ink" fill="#374758" fontSize="16">
+              <text x="121" y="206">整理用户访谈记录，归纳高频问题，</text>
+              <text x="121" y="233">为下一轮产品迭代提供依据。</text>
+            </g>
+            <path className="vip-svg-route vip-svg-route--third" pathLength="1" d="M123 239q83-4 165-1m57-12 6 5 12-15" fill="none" stroke="#ae843f" strokeWidth="1.6" strokeLinecap="round" />
           </g>
         </svg>
       </VipAnimationFigure>
