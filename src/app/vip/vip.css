@@ -208,3 +208,17 @@
 .vip-upgrade { display: flex; align-items: flex-start; gap: 14px; margin-top: 24px; padding: 18px 22px; border-left: 2px solid #bea06a; background: #f4f1eb; border-radius: 0 10px 10px 0; }
 .vip-upgrade > svg { flex-shrink: 0; margin-top: 3px; color: #795b30; }
 .vip-upgrade p { margin-top: 6px; max-width: 64em; color: var(--vip-copy); font-size: 14px; line-height: 1.75; }
+
+.vip-welcome { position: relative; max-width: 480px; padding: clamp(24px,5vw,36px); background: radial-gradient(ellipse at top right,#fbf1da,transparent 52%),#fff; color: #21334b; }
+.vip-welcome .vip-metal-mark { width: 56px; height: 56px; margin-bottom: 12px; }
+.vip-welcome-close { position: absolute; top: 12px; right: 12px; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; }
+.vip-welcome-close:hover, .vip-welcome nav a:hover { background: #edf2f6; }
+.vip-welcome h2 { font-size: clamp(24px,5vw,32px); line-height: 1.25; }
+.vip-welcome h2 span { color: #815e28; }
+.vip-welcome p { margin-top: 10px; font-size: 14px; line-height: 1.7; color: #53657b; }
+.vip-welcome nav { margin-top: 24px; }
+.vip-welcome nav a { display: grid; grid-template-columns: 20px 1fr 16px; align-items: center; gap: 12px; padding: 14px 4px; border-top: 1px solid #dae2e9; }
+.vip-welcome nav svg { width: 100%; }
+.vip-welcome nav strong, .vip-welcome nav small { display: block; }
+.vip-welcome nav small { margin-top: 3px; color: #53657b; line-height: 1.5; }
+.vip-welcome .vip-welcome-note { font-size: 12px; }

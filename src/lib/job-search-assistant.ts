@@ -6,6 +6,7 @@ const values = z.array(term).max(200);
 const scopes = z.enum(["all", "recent", "recent_preference", "with_referral"]);
 const views = z.enum(["all", "applied", "unapplied"]);
 const filterFields = {
+  employerGroup: z.enum(["global500_tech", ""]).optional(),
   keyword: term, location: term, industry: term, batchType: term,
   categories: z.array(term).max(20), tags: z.array(term).max(50),
   sortBy: z.enum(["start_date_desc", "updated_desc", "start_date_asc", "company_asc"]),
@@ -26,6 +27,13 @@ export const searchIntent = z.discriminatedUnion("action", [
   ...(["filter", "recommend"] as const).map(action => z.object({ action: z.literal(action), reset: z.boolean().optional(), changes: searchState.omit({ tags: true }).partial() }).strict()),
 ]);
 
+// Fast path only for an entire unambiguous request. Extra conditions stay with the intent parser.
+export function directRankedProductIntent(message: string) {
+  const text = message.replace(/\s+/gu, "").replace(/^(?:(?:请|帮我|给我|我想要?|想要|推荐|找|看|一些|几个|一下|有没有|有哪些))+/u, "");
+  if (!/^(?:2026年?)?(?:财富)?(?:世界|全球)(?:五百|500)强(?:的)?科技(?:公司|企业)?(?:的)?产品(?:类)?岗(?:位)?[？?。！!]*$/u.test(text)) return;
+  return { action: "recommend" as const, changes: { employerGroup: "global500_tech" as const, categories: ["产品类"] } };
+}
+
 export function resolveSearch(input: z.infer<typeof searchQuestion>, intent: z.infer<typeof searchIntent>) {
   if (intent.action === "clarify" || intent.action === "company") return intent;
   const next: SearchState = intent.reset ? {
@@ -33,6 +41,10 @@ export function resolveSearch(input: z.infer<typeof searchQuestion>, intent: z.i
     sortBy: "start_date_desc", scope: "all", view: "all",
   } : { ...input.current };
   Object.assign(next, intent.changes);
+  if (/(?:世界|全球)\s*(?:500|五百)\s*强/iu.test(input.message) && /科技/u.test(input.message) &&
+      next.employerGroup !== "global500_tech") {
+    return { action: "clarify" as const, question: "要按 2026 年《财富》世界500强中已核实的科技公司筛选吗？" };
+  }
   const allowed = input.options;
   if ((next.location && !allowed.locations.includes(next.location)) ||
       (next.industry && !allowed.industries.includes(next.industry)) ||

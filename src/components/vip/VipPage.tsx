@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Check, ChevronDown, ChevronRight, FileText, LoaderCircle, MessageSquareText, RotateCcw, Search, Sparkles, Zap } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, ChevronRight, FileText, LoaderCircle, MessageSquareText, RotateCcw, Search, Sparkles, X, Zap } from "lucide-react";
 import { useState } from "react";
+import { MotionDialog } from "@/components/ui/MotionDialog";
 import { VipMark } from "@/components/vip/VipMark";
 import { StarJobWordmark } from "@/components/brand/StarJobWordmark";
 import { refreshVipStatus, useVipStatus } from "@/components/vip/useVipStatus";
@@ -12,6 +13,11 @@ export function VipPage({ basicModelId }: { basicModelId: string }) {
   const { status, error: statusError } = useVipStatus();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [welcome, setWelcome] = useState(false);
+  function closeWelcome() {
+    setWelcome(false);
+    requestAnimationFrame(() => document.getElementById("vip-benefits-link")?.focus({ preventScroll: true }));
+  }
   async function purchase() {
     setBusy(true);
     setError("");
@@ -22,6 +28,7 @@ export function VipPage({ basicModelId }: { basicModelId: string }) {
       });
       const body = await response.json();
       if (!response.ok || body.active !== true) throw new Error(body.error || "开通未完成，请重试。");
+      setWelcome(true);
       refreshVipStatus();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "连接中断，请重试。");
@@ -32,6 +39,18 @@ export function VipPage({ basicModelId }: { basicModelId: string }) {
 
   return (
     <div className="vip-page">
+      {welcome && <MotionDialog labelledBy="welcome-vip-title" describedBy="welcome-vip-copy" className="vip-welcome" onBackdropClick={closeWelcome} onEscapeKeyDown={closeWelcome}>
+        <button type="button" className="vip-welcome-close" aria-label="关闭欢迎页" onClick={closeWelcome}><X size={20} /></button>
+        <VipMark />
+        <h2 id="welcome-vip-title">欢迎加入 <span>StarJob VIP</span></h2>
+        <p id="welcome-vip-copy">限免会员已开通。现在你可以从这三件事开始。</p>
+        <nav aria-label="开始使用会员权益">
+          <Link href="/explore#job-assistant"><Search /><span><strong>找一个想投的岗位</strong><small>了解公司业务，按城市和岗位方向找机会。</small></span><ChevronRight /></Link>
+          <Link href="/resume/materials"><FileText /><span><strong>把手头的材料写成简历</strong><small>上传周报、项目文档或 SQL，生成可编辑的初稿。</small></span><ChevronRight /></Link>
+          <Link href="/my#application-assistant"><MessageSquareText /><span><strong>看看哪些投递该跟进了</strong><small>向投递助手提问，整理记录、更新面试进度。</small></span><ChevronRight /></Link>
+        </nav>
+        <p className="vip-welcome-note">本次开通 ¥0，无自动续费。高级模型随正式付费版发布，限免会员届时可享折扣升级。</p>
+      </MotionDialog>}
       <div className="vip-hero-field">
       <section className="vip-hero vip-boundary" aria-labelledby="vip-title">
         <div className="vip-hero-copy">
@@ -45,7 +64,7 @@ export function VipPage({ basicModelId }: { basicModelId: string }) {
           </p>
           <div className="vip-hero-actions">
             {status?.active ? (
-              <Link href="#vip-benefits" className="vip-button"><Check size={17} /> 使用会员权益 <ArrowRight size={18} /></Link>
+              <Link id="vip-benefits-link" href="#vip-benefits" className="vip-button"><Check size={17} /> 使用会员权益 <ArrowRight size={18} /></Link>
             ) : status?.checkoutAvailable && !status.signedIn ? (
               <Link className="vip-button" href="/login?next=%2Fvip">限时免费开通 <ArrowRight size={18} /></Link>
             ) : (
@@ -71,7 +90,7 @@ export function VipPage({ basicModelId }: { basicModelId: string }) {
       <section className="vip-benefits" id="vip-benefits" aria-labelledby="vip-benefits-title">
         <div className="vip-section-heading"><h2 id="vip-benefits-title">权益内容</h2><span><del>¥{VIP_PRICE}</del> <small>限时免费开通</small></span></div>
         <ul>
-          <li><Search /><div><h3>问公司，也能找岗位</h3><p>在「搜索岗位」旁切到「智能问答」，问“上海有哪些产品岗适合我？”，拿到推荐后，可以再问“第二家公司有哪些要求？”。助手从真实招聘资料中摘出相关信息，每条推荐都连到岗位详情。</p><Link href="/explore#job-assistant" className="vip-text-link">去找岗位 <ArrowRight size={15} /></Link></div><strong>AI 岗位问答</strong></li>
+          <li><Search /><div><h3>问公司，也能找岗位</h3><p>问“中金公司怎么样？”，直接看公司业务和招聘方向。也可以问“有哪些世界五百强科技公司的产品岗？”，对照榜单、公司简介和招聘公告，再追问感兴趣的那一家。</p><Link href="/explore#job-assistant" className="vip-text-link">去找岗位 <ArrowRight size={15} /></Link></div><strong>AI 岗位问答</strong></li>
           <li><FileText /><div><h3>把手头的材料写成简历</h3><p>把周报、项目文档和 SQL 一起交给{VIP_FLASH_LABEL}，按教育、实习、项目等模块整理成初稿。缺少的学校、专业和照片可在编辑器补充。</p><Link href="/resume/materials" className="vip-text-link">从材料开始 <ArrowRight size={15} /></Link></div><strong>每天 {VIP_COMPOSE_DAILY_LIMIT} 次 · 每周 {VIP_COMPOSE_WEEKLY_LIMIT} 次</strong></li>
           <li><Zap /><div><h3>按目标岗位润色一段经历</h3><p>在简历编辑器选中一段，交给基础模型精简或改写。普通用户每小时 {BASIC_POLISH_HOURLY_LIMIT} 次、每周 {BASIC_POLISH_WEEKLY_LIMIT} 次。</p><Link href="/resume" className="vip-text-link">去简历制作 <ArrowRight size={15} /></Link></div><strong>每小时 {VIP_BASIC_POLISH_HOURLY_LIMIT} 次 · 每周 {VIP_BASIC_POLISH_WEEKLY_LIMIT} 次</strong></li>
           <li><MessageSquareText /><div><h3>跟进已经投出的岗位</h3><p>问“哪些投递一周没进展了？”，或说“把第三条改成一面”。修改、追加备注和删除记录前，都能先核对公司和岗位。</p><Link href="/my#application-assistant" className="vip-text-link">打开投递助手 <ArrowRight size={15} /></Link></div><strong>AI 投递助手</strong></li>
@@ -107,7 +126,7 @@ export function VipPage({ basicModelId }: { basicModelId: string }) {
           <div><dt>限免与升级</dt><dd>限时免费开通的会员不含高级模型访问权限。正式付费版发布后，也需升级才能使用高级模型。我们将为限免会员提供折扣升级优惠，具体价格、时间和规则将在正式版发布时公布，敬请期待。</dd></div>
           <div><dt>模型与更新</dt><dd>基础模型当前配置为 {basicModelId === "deepseek-v4-flash" ? "DeepSeek V4 Flash" : basicModelId}，正式付费版计划使用的高级模型为 {VIP_ADVANCED_MODEL.name}。对应型号可能随模型迭代或供应商调整而更新，最新对应关系会在此列明。</dd></div>
           <div><dt>计费与服务</dt><dd>当前限免开通实付 ¥0，无自动续费。各功能按上方权益额度使用。网络中断或模型服务异常可能导致请求失败。如遇扣费、额度或开通异常，可通过<Link href="/feedback">帮助与反馈</Link>联系我们，依法享有的消费者权益不受影响。</dd></div>
-          <div><dt>岗位与投递问答</dt><dd>找岗位时，模型接收问题、当前筛选和可选条件。推荐依据当前岗位库和已填的求职偏好。问公司时，会展示有来源的企业简介及本站招聘记录，也可能按公司名称查询维基数据。可打开资料来源或岗位详情核对。投递助手会发送指令及近期问题，投递记录在浏览器内匹配。两项问答均不扣减简历生成或润色额度。岗位要求和招聘进度请以招聘方公告为准。</dd></div>
+          <div><dt>岗位与投递问答</dt><dd>找岗位时，模型接收问题、当前筛选和可选条件。推荐依据当前岗位库和已填的求职偏好。问公司时，会展示有来源的企业简介及本站招聘记录，也可能按公司名称查询维基数据和维基百科。世界500强推荐采用标明年份的《财富》全球榜单，仅覆盖已核实企业名称和业务的招聘记录。可打开资料来源或岗位详情核对。投递助手会发送指令及近期问题，投递记录在浏览器内匹配。两项问答均不扣减简历生成或润色额度。岗位要求和招聘进度请以招聘方公告为准。</dd></div>
           <div><dt>材料与生成结果</dt><dd>提交生成时，材料文字会发送给模型服务处理。请仅提交有权使用的内容，并先移除客户身份、访问凭据等敏感信息。AI 可能误读日期、职责或数字，请核对后再投递。招聘方独立决定面试与录用结果。</dd></div>
         </dl>
       </section>

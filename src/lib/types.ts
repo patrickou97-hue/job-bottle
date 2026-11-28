@@ -136,6 +136,7 @@ export type ApplicationWithJob = UserApplication & {
 };
 
 export type JobFilters = {
+  employerGroup?: "global500_tech" | "";
   keyword: string;
   industry: string;
   batchType: string;

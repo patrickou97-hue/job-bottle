@@ -106,6 +106,7 @@ export function JobFilterBar({
   }
 
   const activeFilterCount = [
+    filters.employerGroup,
     filters.keyword.trim(),
     filters.industry,
     filters.batchType,

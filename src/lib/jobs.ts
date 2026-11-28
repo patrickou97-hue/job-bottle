@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { verifiedCompanyProfile } from "@/lib/company-overview";
 import { JOB_CATEGORIES, jobMatchesSelectedCategories, normalizeJobCategories } from "@/lib/categories";
 import { sanitizeApplicationUrl } from "@/lib/application-url";
 import { splitToTags } from "@/lib/utils";
@@ -236,7 +237,13 @@ function escapePostgrestSearch(value: string) {
 
 export function filterJobs(jobs: Job[], filters: JobFilters) {
   const keyword = filters.keyword.trim().toLowerCase();
+  const now = Date.now();
   const filtered = jobs.filter((job) => {
+    if (filters.employerGroup === "global500_tech" && (
+      !verifiedCompanyProfile(job.company_name)?.globalTechRank ||
+      (job.closes_at && Date.parse(job.closes_at) <= now) ||
+      (job.opens_at && Date.parse(job.opens_at) > now)
+    )) return false;
     const keywordMatched =
       !keyword ||
       job.company_name.toLowerCase().includes(keyword) ||

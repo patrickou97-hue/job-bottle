@@ -42,3 +42,22 @@ test("直接询问公司概况时按名称识别，指代与薪资追问交给�
   assert.equal(verifiedCompanyProfile("君乐宝供应商"), undefined);
   assert.deepEqual(companyRecruitmentFacts([{ industry: null, batch_type: null, locations: "上海", job_titles: null }]), [{ label: "招聘地点", value: "上海" }]);
 });
+
+test("公司概况使用正式名称，世界500强推荐按上榜企业匹配并保留追问地点", async () => {
+  const { directRankedProductIntent } = await import(new URL("../src/lib/job-search-assistant.ts", import.meta.url).href);
+  const { namedCompanyOverview, verifiedCompanyProfile } = await import(new URL("../src/lib/company-overview.ts", import.meta.url).href);
+  assert.equal(namedCompanyOverview("中金公司怎么样？"), "中金公司");
+  assert.match(verifiedCompanyProfile("CICC").displayName, /股份/);
+  assert.equal(verifiedCompanyProfile("京东方"), undefined);
+  assert.equal(verifiedCompanyProfile("小米生态链供应商"), undefined);
+  assert.equal(verifiedCompanyProfile("腾讯").globalTechRank, 97);
+  const query = { ...input, message: "给我找一些世界五百强科技公司产品岗" };
+  const result = resolveSearch(query, directRankedProductIntent(query.message));
+  assert.equal(result.state.employerGroup, "global500_tech");
+  assert.deepEqual(result.state.categories, ["产品类"]);
+  assert.equal(result.state.location, "city:上海");
+  assert.equal(resolveSearch({ ...input, current: result.state }, { action: "filter", changes: { view: "unapplied" } }).state.employerGroup, "global500_tech");
+  assert.equal(resolveSearch(query, { action: "recommend", changes: {} }).action, "clarify");
+  assert.equal(directRankedProductIntent("找一些上海的世界五百强科技公司产品岗"), undefined);
+  assert.equal(directRankedProductIntent("2025年世界五百强科技公司产品岗"), undefined);
+});

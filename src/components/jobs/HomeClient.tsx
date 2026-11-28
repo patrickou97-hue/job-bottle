@@ -885,6 +885,7 @@ function getActiveFilterChips(
 ) {
   const chips: string[] = [];
   const keyword = filters.keyword.trim();
+  if (filters.employerGroup) chips.push("世界500强科技公司");
   if (keyword) chips.push(`关键词：${keyword}`);
   if (filters.industry) chips.push(`行业：${filters.industry}`);
   if (filters.batchType) chips.push(`批次：${filters.batchType}`);

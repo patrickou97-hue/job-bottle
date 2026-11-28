@@ -192,3 +192,9 @@
 @media (prefers-reduced-motion: reduce) {
   .job-mode-switch::before, .job-mode-input, .job-mode-replies, .job-chat-prompts { transition: none; }
 }
+.job-recommendation-profile { margin: 5px 0 14px; line-height: 1.65; }
+.job-recommendation-profile strong { font-size: 12px; color: #785820; }
+.job-recommendation-profile p { margin: 2px 0; }
+.job-search-answer .job-company-source { color: var(--discovery-accent); font-size: 12px; text-decoration: underline; text-underline-offset: 3px; }
+.job-company-overview details { margin-block: 10px; }
+.job-company-overview summary { cursor: pointer; color: var(--text-secondary); font-size: 13px; }
