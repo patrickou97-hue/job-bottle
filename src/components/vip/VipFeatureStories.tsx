@@ -46,15 +46,13 @@ export function VipFeatureStories() {
       <div className="vip-feature-copy">
         <span className="vip-models-status">即将上线 · 正式付费版</span>
         <h2 id="vip-models-title">高级模型访问</h2>
-        <p>如果想把同一份简历改投另一个岗位，可以让高级模型重写整份，也可以只打磨一段项目经历。</p>
-        <p>计划支持 GPT 系列，并评估接入 Claude、Gemini。具体开放的模型和版本以正式发布时为准。</p>
         <ul className="vip-ticks">
           <li><Check /> 整份继续修改与高级润色共用每小时 {VIP_ADVANCED_HOURLY_LIMIT} 次、每周 {VIP_ADVANCED_WEEKLY_LIMIT} 次的额度</li>
           <li><Check /> 限免会员届时可享折扣，升级后使用高级模型</li>
         </ul>
       </div>
       <VipAnimationFigure title="高级模型预告" className="vip-artwork vip-model-art">
-        <svg viewBox="0 0 510 304" role="img" aria-label="高级模型规划示意：GPT、Claude、Gemini 系列连接到简历编辑场景。">
+        <svg viewBox="0 0 510 304" role="img" aria-label="高级模型访问预告，展示 ChatGPT、Claude 和 Gemini 品牌。">
           <defs><linearGradient id="vip-model-field" x2="1" y2="1"><stop stopColor="#e6eaf2" /><stop offset=".53" stopColor="#f4f3ef" /><stop offset="1" stopColor="#f2e6d3" /></linearGradient></defs>
           <rect width="510" height="304" rx="15" fill="url(#vip-model-field)" />
           <g fill="none" stroke="#c3c8cc" opacity=".7"><ellipse cx="263" cy="205" rx="207" ry="66" /><ellipse cx="263" cy="205" rx="235" ry="82" strokeDasharray="2 6" /></g>
@@ -64,12 +62,11 @@ export function VipFeatureStories() {
             <path className="vip-svg-route vip-svg-route--third" pathLength="1" d="M418 115c0 50-111 22-163 84" />
           </g>
           <g fill="#fff" stroke="#c7cdd3">
-            <rect x="41" y="42" width="102" height="84" rx="12" /><rect x="204" y="28" width="102" height="84" rx="12" /><rect x="367" y="42" width="102" height="84" rx="12" />
+            <rect x="18" y="52" width="148" height="65" rx="12" /><rect x="181" y="38" width="148" height="65" rx="12" /><rect x="344" y="52" width="148" height="65" rx="12" />
           </g>
-          <image href="/brand/models/openai-blossom.svg" x="59" y="36" width="66" height="66" />
-          <image href="/brand/models/claude-spark.svg" x="237" y="41" width="36" height="36" />
-          <image href="/brand/models/gemini-spark.png" x="399" y="50" width="38" height="38" />
-          <g textAnchor="middle" fill="#26394c" fontSize="18" fontWeight="600"><text x="92" y="112">GPT</text><text x="255" y="98">Claude</text><text x="418" y="112">Gemini</text></g>
+          <image href="/brand/models/chatgpt-lockup.svg" x="34" y="69" width="116" height="31" />
+          <image href="/brand/models/claude-lockup.svg" x="198" y="55" width="114" height="31" />
+          <image href="/brand/models/gemini-lockup.svg" x="361" y="69" width="114" height="31" />
           <g transform="translate(168 191)">
             <rect x="3" y="5" width="175" height="57" rx="10" fill="#8e97a5" opacity=".18" />
             <rect width="175" height="57" rx="10" fill="#20374e" />

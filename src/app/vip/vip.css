@@ -235,7 +235,7 @@
 @media (max-width: 800px) {
   .vip-demos { grid-template-columns: repeat(auto-fit, minmax(min(100%, 285px), 1fr)); }
 }
-/* The four storyboards share a six-second timeline, including time to read the result. */
+/* The four storyboards share a 9.5-second timeline, including time to read the result. */
 .vip-playback { display: inline-flex; align-items: center; }
 .vip-artwork .vip-playback { border-radius: 20px; background: #fffd; color: var(--vip-copy); }
 .vip-artwork .vip-playback button { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; }
@@ -249,7 +249,7 @@
   .vip-loop[data-running=true] { --play-state: running; }
   .vip-loop[data-started=true] :is(.vip-demo-first, .vip-demo-middle, .vip-demo-last, .vip-demo-line, .vip-demo-highlight,
     .vip-svg-note, .vip-svg-route, .vip-svg-arrow, .vip-svg-asterisk, .vip-svg-resume, .vip-svg-ink, .vip-svg-flow circle) {
-    animation: var(--track, vip-loop-arrive) 6s var(--delay, 0s) cubic-bezier(.2,.7,.25,1) infinite both;
+    animation: var(--track, vip-loop-arrive) 9.5s var(--delay, 0s) cubic-bezier(.2,.7,.25,1) infinite both;
     animation-play-state: var(--play-state, paused);
   }
   .vip-demo-first, .vip-demo-middle, .vip-demo-last { --entry: translateY(5px); }
@@ -273,24 +273,24 @@
 }
 @keyframes vip-loop-arrive {
   0%, 100% { opacity: 0; transform: var(--entry, none); }
-  10%, 68% { opacity: 1; transform: none; }
-  77% { opacity: 0; transform: none; }
+  13%, 64% { opacity: 1; transform: none; animation-timing-function: ease-in-out; }
+  83%, 91% { opacity: 0; transform: none; }
 }
 @keyframes vip-loop-trace {
   0%, 100% { stroke-dashoffset: 1; opacity: 0; }
-  2% { opacity: 1; }
-  14%, 69% { stroke-dashoffset: 0; opacity: 1; }
-  78% { stroke-dashoffset: 0; opacity: 0; }
+  3% { opacity: 1; }
+  17%, 65% { stroke-dashoffset: 0; opacity: 1; animation-timing-function: ease-in-out; }
+  84%, 91% { stroke-dashoffset: 0; opacity: 0; }
 }
 @keyframes vip-loop-highlight {
   0%, 100% { transform: scaleX(0); opacity: 0; }
-  9%, 67% { transform: scaleX(1); opacity: 1; }
-  75% { transform: scaleX(1); opacity: 0; }
+  12%, 63% { transform: scaleX(1); opacity: 1; animation-timing-function: ease-in-out; }
+  82%, 91% { transform: scaleX(1); opacity: 0; }
 }
 @keyframes vip-loop-particle {
   0% { offset-distance: 0%; opacity: 0; }
-  3% { opacity: 1; }
-  12%, 100% { offset-distance: 100%; opacity: 0; }
+  4% { opacity: 1; }
+  16%, 100% { offset-distance: 100%; opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .vip-playback { display: none; }
