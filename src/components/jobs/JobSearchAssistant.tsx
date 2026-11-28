@@ -20,7 +20,9 @@ type Props = {
 };
 type Row = { id: string; company: string; title: string; detail: string; evidenceUrl?: string; profile?: CompanyProfile };
 type Overview = { name: string; related?: boolean; introduction?: string; profile?: CompanyProfile; facts: { label: string; value: string }[]; count: number };
-type Turn = { ranked?: boolean; overview?: Overview; message: string; answer: string; rows?: Row[]; question?: string; companies?: string[]; total?: number };
+type Citation = { title: string; url: string };
+type AdviceItem = { name: string; reason: string; jobId?: string; sources: Citation[] };
+type Turn = { items?: AdviceItem[]; sources?: Citation[]; note?: string; ranked?: boolean; overview?: Overview; message: string; answer: string; rows?: Row[]; question?: string; companies?: string[]; total?: number };
 
 function rowFor(job: Job, state: SearchState, reason: string): Row {
   const shortTitle = (job.job_titles || "查看招聘详情").split(/[\r\n]/)[0];
@@ -98,10 +100,16 @@ function SearchConversation({ current, facets, profile, focusedCompany, onApply,
     };
     try {
       const last = turns.at(-1);
-      const data = await post({ current, options, message, focusedCompany, companies: last?.companies,
+      const history = turns.slice(-4).map(turn => ({
+        question: turn.message, answer: [turn.answer, turn.overview?.name, turn.overview?.introduction,
+          ...(turn.items ?? []).map(item => item.name + "：" + item.reason), ...(turn.rows ?? []).map(row => row.company + " · " + row.title)].filter(Boolean).join("\n").slice(0, 1800),
+      }));
+      const data = await post({ current, options, message, history, focusedCompany, companies: last?.companies,
         clarification: last?.question ? last.message + "\n" + last.question : undefined });
       let turn: Turn;
-      if (data.action === "clarify") {
+      if (data.action === "advice") {
+        turn = { message, answer: data.answer, items: data.items, sources: data.sources, note: data.note, companies: data.items.map((item: AdviceItem) => item.name) };
+      } else if (data.action === "clarify") {
         turn = { message, answer: data.question, question: data.question, companies: data.companies ?? last?.companies };
       } else if (data.action === "company") {
         if (data.overview) {
@@ -196,7 +204,14 @@ function SearchConversation({ current, facets, profile, focusedCompany, onApply,
                 <div key={fact.label}><dt>{fact.label}</dt><dd>{fact.value}</dd></div>)}</dl></details>}
               <p className="job-company-listings">{turn.overview.count > 0 ? "拾星收录 " + turn.overview.count + " 条招聘信息" +
                 (turn.overview.count > 3 ? "，以下为最近更新的 3 条。" : "。") : turn.rows?.length ? "以下为库中名称或检索词相关的招聘记录，公司主体关系待核实。" : "岗位库暂未匹配到这家公司的招聘记录。"}</p>
-            </article> : <p>{turn.answer}</p>}
+            </article> : <p style={{whiteSpace: "pre-line"}}>{turn.answer}</p>}
+            {turn.items && turn.items.length > 0 && <ol>{turn.items.map(item => <li key={item.name}>
+              <strong>{item.name}</strong><p>{item.reason}</p>
+              {item.jobId && <Link className="job-company-source" href={`/jobs/${item.jobId}`}>查看站内招聘公告</Link>}
+              <AdviceSources sources={item.sources} />
+            </li>)}</ol>}
+            {turn.sources && <AdviceSources sources={turn.sources} />}
+            {turn.note && <small>{turn.note}</small>}
             {turn.ranked && <a className="job-company-source" href={globalRanking.url} target="_blank" rel="noreferrer">{globalRanking.year} 年《财富》世界500强榜单 ↗</a>}
             {Boolean(turn.rows?.length) && <ol>{turn.rows?.map(row => <li key={row.id}>
               <Link href={`/jobs/${row.id}`}>{row.company} · {row.title}</Link>{row.detail && <small>{row.detail}</small>}
@@ -216,4 +231,8 @@ function SearchConversation({ current, facets, profile, focusedCompany, onApply,
       </div>
     </div>
   </div>;
+}
+
+function AdviceSources({ sources }: { sources: Citation[] }) {
+  return sources.map(source => <p key={source.url}><a className="job-company-source" href={source.url} target="_blank" rel="noreferrer">{source.title} ↗</a></p>);
 }

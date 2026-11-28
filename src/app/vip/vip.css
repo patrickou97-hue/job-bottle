@@ -43,10 +43,10 @@
 .vip-hero-copy { min-width: 0; container-type: inline-size; }
 .vip-hero h1 { margin: 0; color: var(--vip-ink); font-family: "StarJob Membership", Georgia, serif; font-weight: 600; letter-spacing: -.055em; }
 .vip-introducing { display: block; margin-left: .06em; color: #496381; font: italic 400 clamp(2.125rem, 9.5cqw, 3.5rem)/1.16 "Great Vibes", "Snell Roundhand", cursive; letter-spacing: 0; }
-.vip-product-name { display: inline-grid; grid-template-columns: 3.85em auto; align-items: center; gap: .16em; white-space: nowrap; vertical-align: middle; }
+.vip-product-name { display: inline-grid; grid-template-columns: 4.15em auto; align-items: end; gap: .19em; white-space: nowrap; vertical-align: middle; }
 .vip-product-name .starjob-vip-wordmark { width: 100%; }
 .vip-hero .vip-product-name { font-size: clamp(2.5rem, 15cqw, 5.5rem); line-height: 1.05; letter-spacing: -.047em; margin-top: .16em; }
-.vip-product-tier { color: #89612b; padding-inline-end: .09em; }
+.vip-product-tier { font-size: .89em; text-box-trim: trim-both; text-box-edge: cap alphabetic; color: #89612b; padding-inline-end: .09em; }
 @supports (background-clip: text) {
   .vip-product-tier {
     background: linear-gradient(123deg,#68451f 5%,#966e35 30%,#ab8144 48%,#80582a 70%,#76512b 94%);
@@ -104,7 +104,6 @@
 .vip-text-link { width: fit-content; font-weight: 650; color: #274d79; cursor: pointer; }
 .vip-artwork { margin: 0; min-width: 0; overflow: hidden; position: relative; }
 .vip-artwork > svg { width: 100%; height: auto; display: block; border-radius: 16px; }
-.vip-artwork figcaption { position: absolute; bottom: 10px; right: 13px; }
 .vip-art-label { fill: #253e5c; font-size: 15px; font-weight: 700; }
 .vip-art-caption { fill: #425672; font-size: 10px; font-weight: 550; }
 .vip-art-resume-title { fill: #203654; font: 700 26px var(--vip-serif); }
@@ -184,7 +183,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .vip-artwork * { animation: none !important; }
-  .vip-artwork figcaption, .vip-svg-flow { display: none; }
+  .vip-svg-flow { display: none; }
   .vip-button { transition: none; }
 }
 .vip-price del, .vip-section-heading del { color: #677385; text-decoration-thickness: 1.5px; font-variant-numeric: tabular-nums; }
@@ -208,7 +207,7 @@
 .vip-welcome-close { position: absolute; z-index: 1; top: 8px; right: 8px; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; }
 .vip-welcome-close:hover, .vip-welcome nav a:hover { background: #edf2f6; }
 .vip-welcome h2 { font-size: clamp(24px,5vw,32px); line-height: 1.25; }
-.vip-welcome .vip-product-name { color: #815e28; font: 600 .84em/1.1 "StarJob Membership", Georgia, serif; }
+.vip-welcome .vip-product-name { color: #815e28; font: 600 .99em/1.1 "StarJob Membership", Georgia, serif; }
 .vip-welcome p { margin-top: 10px; font-size: 14px; line-height: 1.7; color: #53657b; }
 .vip-welcome nav { margin-top: 24px; }
 .vip-welcome nav a { display: grid; grid-template-columns: 20px 1fr 16px; align-items: center; gap: 12px; padding: 14px 4px; border-top: 1px solid #dae2e9; }
@@ -237,10 +236,6 @@
   .vip-demos { grid-template-columns: repeat(auto-fit, minmax(min(100%, 285px), 1fr)); }
 }
 /* The four storyboards share a 9.5-second timeline, including time to read the result. */
-.vip-playback { display: inline-flex; align-items: center; }
-.vip-artwork .vip-playback { border-radius: 20px; background: #fffd; color: var(--vip-copy); }
-.vip-artwork .vip-playback button { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; }
-.vip-artwork .vip-playback button:hover { background: #e6ecf1; }
 .vip-svg-flow circle { opacity: 0; offset-rotate: 0deg; }
 .vip-particle-one { offset-path: path("M243 155q31 8 52 38l32 34"); --particle-delay: .55s; }
 .vip-particle-two { offset-path: path("M274 240q26 0 54-15"); --particle-delay: .68s; }
@@ -304,7 +299,6 @@
   16%, 100% { offset-distance: 100%; opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .vip-playback { display: none; }
   .vip-demo figcaption { padding-block: 10px; }
 }
 
@@ -341,13 +335,9 @@
 .vip-model-quota small { margin-left: 7px; font-family: var(--font-sans); }
 .vip-models .vip-feature-copy > .vip-model-upgrade { color: var(--vip-copy); font-size: 13px; }
 .vip-model-art > svg { border-radius: 0; }
-.vip-model-art .vip-playback { background: #f9fbfd; color: var(--vip-copy); box-shadow: inset 0 0 0 1px var(--vip-rule); }
-.vip-model-art .vip-playback button:hover { background: #e2eaf0; }
-.vip-model-art figcaption { right: 0; bottom: 0; }
 .vip-upgrade .vip-text-link { margin-top: 8px; }
 @media (max-width: 650px) {
   .vip-index { flex-wrap: wrap; column-gap: 10px; justify-content: flex-start; }
   .vip-models { grid-template-columns: 1fr; }
-  .vip-model-art figcaption { position: static; text-align: right; }
   .vip-story-sheet { min-height: 0; }
 }

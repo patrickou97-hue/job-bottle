@@ -93,3 +93,10 @@ test("模型可直接选择招聘大类和职责原文，外企条件与岗位�
     [[options.roleEvidence[1].term, "related"], ["产品类", "category"]]);
   assert.deepEqual(resolveSearch({ ...input, options, current: result.state }, { action: "filter", changes: { location: "" } }).state.role, result.state.role);
 });
+
+test("咨询可按要求推荐十家企业，也可只作答，两种情况都保留当前岗位筛选", () => {
+  for (const count of [0, 10]) {
+    const advice = { action: "advice", count, query: count ? "外企 校招 雇主评价" : "" };
+    assert.deepEqual(resolveSearch(input, searchIntent.parse(advice)), advice);
+  }
+});

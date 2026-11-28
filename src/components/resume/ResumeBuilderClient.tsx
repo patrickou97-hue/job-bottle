@@ -7,6 +7,7 @@ import { ChevronDown, Copy, FileText, FileUp, Languages, Plus, Puzzle, Sparkles,
 import { AnimatePresence } from "motion/react";
 import { ResumeCreateDialog } from "@/components/resume/ResumeCreateDialog";
 import { ResumeEditor, type EditorSection } from "@/components/resume/ResumeEditor";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { ResumeFontPicker } from "@/components/resume/ResumeFontPicker";
 import { ResumeImportDialog, type ResumeImportMode } from "@/components/resume/ResumeImportDialog";
 import { ResumePdfExportButton } from "@/components/resume/ResumePdfExportButton";
@@ -29,6 +30,8 @@ import {
   getResumeLanguage,
   isSampleResume,
   loadLocalResumes,
+  getResumeFontOptions,
+  getResumeLatinFontOptions,
   normalizeResumeFontId,
   normalizeResumeLatinFontId,
   saveLocalResumes,
@@ -104,6 +107,8 @@ export function ResumeBuilderClient({
   const [userId, setUserId] = useState<string | null>(null);
   const [showImportDialog, setShowImportDialog] = useState(initialAction === "import");
   const [showCreateDialog, setShowCreateDialog] = useState(initialAction === "create");
+  const [appearance, setAppearance] = useState<"font" | "template" | null>(null);
+  const [pane, setPane] = useState<"edit" | "preview">("edit");
   const [previewFontRevision, setPreviewFontRevision] = useState(0);
   const [translating, setTranslating] = useState(false);
   const [translationProgress, setTranslationProgress] = useState<ResumeTranslationProgress | null>(null);
@@ -690,6 +695,13 @@ export function ResumeBuilderClient({
     </div>
   );
 
+  const language = getResumeLanguage(selectedResume.templateId);
+  const fontId = normalizeResumeFontId(selectedResume.fontId, language);
+  const latinFontId = normalizeResumeLatinFontId(selectedResume.latinFontId);
+  const fontLabels = [getResumeFontOptions(language).find(font => font.id === fontId)?.label];
+  if (language === "zh-CN" && latinFontId !== "default") {
+    fontLabels.push(getResumeLatinFontOptions(language).find(font => font.id === latinFontId)?.label);
+  }
   const translationTarget = getResumeLanguage(selectedResume.templateId) === "en-US" ? "中文" : "英文";
 
   return (
@@ -879,8 +891,52 @@ export function ResumeBuilderClient({
         </div>
       </section>
 
-      <section className="grid gap-10 xl:grid-cols-[minmax(0,1.08fr)_minmax(500px,0.92fr)] xl:items-start 2xl:grid-cols-[minmax(0,1.12fr)_minmax(540px,0.88fr)]">
-          <section id="resume-editor" className="min-w-0 scroll-mt-20 border-t border-[color:var(--line-ghost)] pt-5">
+      <section aria-label="简历外观" className="min-w-0 border-y border-[color:var(--line-ghost)]">
+        <div className="grid grid-cols-2 divide-x divide-[color:var(--line-ghost)] py-2">
+          {([
+            ["font", "简历字体", fontLabels.filter(Boolean).join(" · ")],
+            ["template", "简历版式", getResumeTemplateMeta(selectedResume.templateId).label],
+          ] as const).map(([key, label, value]) => (
+            <button key={key} type="button" aria-expanded={appearance === key} aria-controls={`resume-appearance-${key}`}
+              onClick={() => setAppearance(open => open === key ? null : key)}
+              className="flex min-w-0 items-center gap-3 rounded-md px-3 py-2 text-left hover:bg-[#e8edf2] sm:px-4">
+              <span className="min-w-0 sm:flex sm:items-baseline sm:gap-3">
+                <strong className="block text-sm font-semibold">{label}</strong>
+                <span className="block truncate text-xs text-ink-secondary">{value}</span>
+              </span>
+              <ChevronDown aria-hidden="true" className={`ml-auto size-4 shrink-0 ${appearance === key ? "rotate-180" : ""}`} />
+            </button>
+          ))}
+        </div>
+        <div id="resume-appearance-font" hidden={appearance !== "font"} className="min-w-0 pb-4 pt-2">
+          <ResumeFontPicker
+                key={selectedResume.id}
+                language={language}
+                fontId={fontId}
+                latinFontId={latinFontId}
+                onChange={updateFont}
+                onLatinChange={updateLatinFont}
+                onLocalFontEnabled={() => setPreviewFontRevision((revision) => revision + 1)}
+              />
+        </div>
+        <div id="resume-appearance-template" hidden={appearance !== "template"} className="min-w-0">
+          <ResumeTemplatePicker
+                language={language}
+                selectedTemplateId={selectedResume.templateId}
+                onChange={updateTemplate}
+              />
+        </div>
+      </section>
+
+      <div className="sticky top-16 z-10 bg-[var(--page-bg,#f4f6f7)] py-1 lg:hidden">
+        <SegmentedControl ariaLabel="简历工作区" value={pane} options={[{ value: "edit", label: "编辑内容" }, { value: "preview", label: "查看预览" }]}
+          onChange={value => {
+            setPane(value);
+            document.getElementById("resume-workspace")?.scrollIntoView({ block: "start" });
+          }} />
+      </div>
+      <section id="resume-workspace" className="grid scroll-mt-32 gap-6 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)] lg:items-start xl:gap-10 xl:grid-cols-[minmax(0,1.08fr)_minmax(500px,0.92fr)] 2xl:grid-cols-[minmax(0,1.12fr)_minmax(540px,0.88fr)]">
+          <section id="resume-editor" className={`min-w-0 scroll-mt-20 lg:block ${pane === "edit" ? "" : "hidden"}`}>
             <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="section-title">编辑简历</h2>
@@ -923,22 +979,6 @@ export function ResumeBuilderClient({
                 </button>
               </div>
             </div>
-            <div className="mb-6">
-              <ResumeFontPicker
-                key={selectedResume.id}
-                language={getResumeLanguage(selectedResume.templateId)}
-                fontId={normalizeResumeFontId(selectedResume.fontId, getResumeLanguage(selectedResume.templateId))}
-                latinFontId={normalizeResumeLatinFontId(selectedResume.latinFontId)}
-                onChange={updateFont}
-                onLatinChange={updateLatinFont}
-                onLocalFontEnabled={() => setPreviewFontRevision((revision) => revision + 1)}
-              />
-              <ResumeTemplatePicker
-                language={getResumeLanguage(selectedResume.templateId)}
-                selectedTemplateId={selectedResume.templateId}
-                onChange={updateTemplate}
-              />
-            </div>
             <ResumeEditor
               resume={selectedResume}
               jobs={jobs}
@@ -949,7 +989,7 @@ export function ResumeBuilderClient({
             />
           </section>
 
-          <section className="min-w-0 xl:sticky xl:top-20">
+          <section id="resume-live-preview" className={`min-w-0 lg:sticky lg:top-20 lg:flex lg:max-h-[calc(100dvh-6rem)] lg:flex-col ${pane === "preview" ? "" : "hidden"}`}>
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="section-title">实时预览</h2>
@@ -962,7 +1002,7 @@ export function ResumeBuilderClient({
                 preserveDraft={() => saveLocalResumes(resumes, userId)}
               />
             </div>
-            <div className="pb-4">
+            <div className="min-h-0 pb-4 lg:overflow-y-auto">
               <ResumePreview key={previewFontRevision} resume={selectedResume} />
             </div>
           </section>
